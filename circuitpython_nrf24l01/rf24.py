@@ -25,7 +25,7 @@
 ========================================================================================
 
 CircuitPython port of the nRF24L01 library from Micropython.
-Original work by Damien P. George & Peter Hinch can be found `Link here <https://github.com/micropython/micropython/tree/master/drivers/nrf24l01>`_
+Original work by Damien P. George & Peter Hinch can be found `here <https://github.com/micropython/micropython/tree/master/drivers/nrf24l01>`_
 
 The Micropython source has been rewritten to work on the Raspberry Pi and other Circuitpython compatible devices using Adafruit's `busio`, `bus_device.spi_device`, and `digitalio`, modules.
 Modified by Brendan Doherty, Rhys Thomas
@@ -98,7 +98,7 @@ FLUSH_RX     = 0xe2 # flush RX FIFO
 NOP          = 0xff # use to read STATUS register
 
 class RF24(SPIDevice):
-    """A driver class for the nRF24L01 transceiver radio. This class aims to be compatible with other devices in the nRF24xxx product line, but officially only supports (through testing) the nRF24L01 and nRF24L01+ devices. This class also inherits from adafruit_bus_device.spi_device, thus that module should be extracted/copied from the `Link Adafruit library and driver bundle <https://github.com/adafruit/Adafruit_CircuitPython_Bundle>`_, or, if using CPython's pip, automatically installed using ``pip install circuitpython-nrf24l01``.
+    """A driver class for the nRF24L01 transceiver radio. This class aims to be compatible with other devices in the nRF24xxx product line, but officially only supports (through testing) the nRF24L01 and nRF24L01+ devices. This class also inherits from adafruit_bus_device.spi_device, thus that module should be extracted/copied from the `Adafruit library and driver bundle <https://github.com/adafruit/Adafruit_CircuitPython_Bundle>`_, or, if using CPython's pip, automatically installed using ``pip install circuitpython-nrf24l01``.
         
         :param ~busio.SPI spi: The SPI bus that the nRF24L01 is connected to.
             This object is meant to be shared amongst other driver classes (like adafruit_mcp3xxx.mcp3008 for example) that use the same SPI bus. Otherwise, multiple devices on the same SPI bus with different spi objects may produce errors or undesirable behavior.
@@ -165,7 +165,7 @@ class RF24(SPIDevice):
         """ 
         A helper function to read a single byte of data from a specified register on the nRF24L01's internal IC. THIS IS NOT MEANT TO BE DIRECTLY CALLED BY END-USERS.
             :param int reg: The address of the register you wish to read from.
-        Please refer to `Link Chapter 9 of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1090864>`_ for applicable register addresses.
+        Please refer to `Chapter 9 of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1090864>`_ for applicable register addresses.
         """
         buf = bytearray(2) # 2 = 1 status byte + 1 byte of returned content
         with self:
@@ -183,7 +183,7 @@ class RF24(SPIDevice):
             :param int reg: The address of the register you wish to read from.
             :param int buf_len: the amount of bytes to read from a register specified by `reg`. A default of 5 is meant to be used for checking pipe addresses. 
                 To read the full payload in a FIFO, pass `buf_len` as `32`. .. note:: reading buf_len bytes from FIFO would also remove `buf_len` bytes from the FIFO. There is no bounds checking on this parameter.
-        Please refer to `Link Chapter 9 of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1090864>`_ for applicable register addresses.
+        Please refer to `Chapter 9 of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1090864>`_ for applicable register addresses.
         """
         # allow an extra byte for status data
         buf = bytearray(buf_len + 1)
@@ -199,7 +199,7 @@ class RF24(SPIDevice):
             :param int reg: The address of the register you wish to read from.
             :param bytearray outBuf: The buffer of bytes to write to a register specified by `reg`. Useful for writing pipe address or TX payload data.
                 .. note:: nRF24L01's internal FIFO buffer stack is 3 levels, meaning you can only write up to 3 payloads (maximum 32 byte length per payload). There is no bounds checking on this parameter.
-        Please refer to `Link Chapter 9 of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1090864>`_ for applicable register addresses.
+        Please refer to `Chapter 9 of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1090864>`_ for applicable register addresses.
         """
         outBuf = bytes([0x20 | reg]) + outBuf
         inBuf = bytearray(len(outBuf))
@@ -213,7 +213,7 @@ class RF24(SPIDevice):
         A helper function to write a single byte of data to a specified register on the nRF24L01's internal IC. THIS IS NOT MEANT TO BE DIRECTLY CALLED BY END-USERS.
             :param int reg: The address of the register you wish to read from.
             :param int value: The one byte content to write to a register specified by `reg`. There is a rigid expectation of bit order & content. There is no bounds checking on this parameter. 
-        Please refer to `Link Chapter 9 of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1090864>`_ for applicable register addresses.
+        Please refer to `Chapter 9 of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1090864>`_ for applicable register addresses.
         """
         outBuf = bytes([0x20 | reg, value])
         inBuf = bytearray(len(outBuf))
@@ -303,7 +303,7 @@ class RF24(SPIDevice):
             :param bool dataReady: specifies wheather to clear the "RX Data Ready" flag.
             :param bool dataSent: specifies wheather to clear the "TX Data Sent" flag.
             :param bool maxRetry: specifies wheather to clear the "Max Re-transmit reached" flag.
-        .. note:: Clearing certain flags is necessary for continued operation of radio despite wheather or not the user is taking advantage of the interrupt (IRQ) pin. Directly calling this function without being familiar with the nRF24L01's expected behavior (as outlined in the Specifications Sheet) can cause undesirable behavior. `Link See Appendix A-B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1047965>`_ for an outline of proper behavior.
+        .. note:: Clearing certain flags is necessary for continued operation of radio despite wheather or not the user is taking advantage of the interrupt (IRQ) pin. Directly calling this function without being familiar with the nRF24L01's expected behavior (as outlined in the Specifications Sheet) can cause undesirable behavior. `See Appendix A-B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1047965>`_ for an outline of proper behavior.
         """
         self._reg_write(STATUS, (RX_DR & (dataReady << 6)) | (TX_DS & (dataSent << 5)) | (MAX_RT & (maxRetry << 4)))
 
@@ -313,7 +313,7 @@ class RF24(SPIDevice):
         This `bool` attribute controls the PWR_UP bit in the CONFIG register.
         - `False` basically puts the radio to sleep. No transmissions are executed when sleeping.
         - `True` powers up the nRF24L01
-        .. note:: This attribute needs to be `True` if you want to put radio on standby-I (CE pin is HIGH) or standby-II (CE pin is LOW) modes. In case of either standby modes, transmissions are only executed based on certain criteria (see `Link Chapter 6.1.2-7 of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132980>`_).
+        .. note:: This attribute needs to be `True` if you want to put radio on standby-I (CE pin is HIGH) or standby-II (CE pin is LOW) modes. In case of either standby modes, transmissions are only executed based on certain criteria (see `Chapter 6.1.2-7 of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132980>`_).
         """
         return self._power_mode
 
@@ -610,7 +610,7 @@ class RF24(SPIDevice):
             self._reg_write_bytes(W_ACK_PAYLOAD | pipe_number, ack_payload)
 
     def start_listening(self):
-        """Puts the nRF24L01 into RX mode. Additionally, per `Link Appendix A of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1047965>`_, this function flushes the RX and TX FIFOs, clears the status flags, and puts radio in powers up mode.
+        """Puts the nRF24L01 into RX mode. Additionally, per `Appendix A of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1047965>`_, this function flushes the RX and TX FIFOs, clears the status flags, and puts radio in powers up mode.
             .. note:: Proper functionality of the nRF24L01 requires this function to block for a total of at least 5.13 milliseconds.
         """
         # ensure radio is in power down or standby-I mode
@@ -632,7 +632,7 @@ class RF24(SPIDevice):
         time.sleep(0.00013) # ensure pulse is > 130 us
 
     def stop_listening(self):
-        """Puts the nRF24L01 into TX mode. Additionally, per `Link Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this function flushes the RX and TX FIFOs, clears the status flags, and puts radio in powers down (sleep) mode. 
+        """Puts the nRF24L01 into TX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this function flushes the RX and TX FIFOs, clears the status flags, and puts radio in powers down (sleep) mode. 
         """
         # disable comms
         self.ce.value = 0
@@ -727,9 +727,9 @@ class RF24(SPIDevice):
                 If the `dynamic_payloads` attribute is disabled and this bytearray's length is less than the `payload_length` attribute, then this bytearray is padded with zeros until its length is equal to the `payload_length` attribute.
                 If the `dynamic_payloads` attribute is disabled and this bytearray's length is greater than `payload_length` attribute, then this bytearray's length is truncated to equal the `payload_length` attribute.
         This function isn't completely non-blocking as we still need to wait just under 5 ms for the CSN pin to settle (allowing for a clean SPI transaction). Also the nRF24L01 doesn't initiate sending until a mandatory minimum 10 microsecond pulse on the CE pin is acheived, but we have left that wait time to be managed by the user (in cases of asychronous application).
-        Important NOTE paraphrased from the `Link nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1121422>`_:
+        Important NOTE paraphrased from the `nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1121422>`_:
             It is important never to keep the nRF24L01+ in TX mode for more than 4 milliseconds at a time. If the [`auto_ack` and `dynamic_payloads`] features are enabled, nRF24L01+ is never in TX mode longer than 4 milliseconds.
-        Conclusion: Use this function at your own risk. If you do, you MUST additionally use either interrupt flags/IRQ pin with user defined timer(s) OR enable the `dynamic_payloads` attribute (the `auto_ack` attribute is enabled with `dynamic_payloads` automatically) to obey the 4 milliseconds rule. If the nRF24L01+ Specifications Sheet explicitly states this, we have to assume radio damage or misbehavior as a result of disobeying the 4 milliseconds rule. Cleverly, `Link TMRh20's arduino library <http://tmrh20.github.io/RF24/classRF24.html>`_ recommends using auto re-transmit delay (the `ard` attribute) to avoid breaking this rule, but we have not verified this strategy as it requires the `auto_ack` attribute to be enabled anyway.
+        Conclusion: Use this function at your own risk. If you do, you MUST additionally use either interrupt flags/IRQ pin with user defined timer(s) OR enable the `dynamic_payloads` attribute (the `auto_ack` attribute is enabled with `dynamic_payloads` automatically) to obey the 4 milliseconds rule. If the nRF24L01+ Specifications Sheet explicitly states this, we have to assume radio damage or misbehavior as a result of disobeying the 4 milliseconds rule. Cleverly, `TMRh20's arduino library <http://tmrh20.github.io/RF24/classRF24.html>`_ recommends using auto re-transmit delay (the `ard` attribute) to avoid breaking this rule, but we have not verified this strategy as it requires the `auto_ack` attribute to be enabled anyway.
         """
         # pad out or truncate data to fill payload_length if dynamic_payloads == False
         if not self.dynamic_payloads:
