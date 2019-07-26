@@ -60,7 +60,7 @@ To install in a virtual environment in your current project:
 
 Pinout
 ======
-.. image:: https://github.com/2bndy5/CircuitPython_nRF24L01/blob/master/docs/_static/nRF24L01_Pinout.png
+.. image:: /docs/_static/nRF24L01_Pinout.png
 
 The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) that can only be connected to their counterparts on the microcontroller. The other 2 essential pins (CE & CSN) can be connected to any digital output pins. The following pinout is used in the example codes of this repo's example directory.
 
