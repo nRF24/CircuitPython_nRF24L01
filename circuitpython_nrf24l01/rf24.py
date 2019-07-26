@@ -22,7 +22,7 @@
 # THE SOFTWARE.
 """
 `CircuitPython_nRF24L01.rf24.RF24` - A driver class for the nRF24L01(+) radio transceiver
-========================================================================================
+=========================================================================================
 
 CircuitPython port of the nRF24L01 library from Micropython.
 Original work by Damien P. George & Peter Hinch can be found `here <https://github.com/micropython/micropython/tree/master/drivers/nrf24l01>`_
