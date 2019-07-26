@@ -316,7 +316,7 @@ class RF24(SPIDevice):
         :param bool dataSent: specifies wheather to clear the "TX Data Sent" flag.
         :param bool maxRetry: specifies wheather to clear the "Max Re-transmit reached" flag.
         
-        .. note:: Clearing certain flags is necessary for continued operation of radio despite wheather or not the user is taking advantage of the interrupt (IRQ) pin. Directly calling this function without being familiar with the nRF24L01's expected behavior (as outlined in the Specifications Sheet) can cause undesirable behavior. See `Appendix A-B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1047965>`_ for an outline of proper behavior.
+        .. note:: Clearing certain flags is necessary for continued operation of the nRF24L01 despite wheather or not the user is taking advantage of the interrupt (IRQ) pin. Directly calling this function without being familiar with the nRF24L01's expected behavior (as outlined in the Specifications Sheet) can cause undesirable behavior. See `Appendix A-B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1047965>`_ for an outline of proper behavior.
         """
         self._reg_write(STATUS, (RX_DR & (dataReady << 6)) | (TX_DS & (dataSent << 5)) | (MAX_RT & (maxRetry << 4)))
 
@@ -591,11 +591,13 @@ class RF24(SPIDevice):
         :param bool onDataRecv: If this is `True`, then interrupt pin goes active LOW when there is new data to read in the RX FIFO. 
         
         .. note:: Paraphrased from spec sheet:
+            
             The procedure for handling `onDataRecv` interrupt should be: 
-            1) read payload through `_reg_read_bytes()`
-            2) clear `dataReady` status flag
-            3) read FIFO_STATUS register (address `0x17`) to check if there are more payloads available in RX FIFO (bit 0 of FIFO_STATUS register). example: `is_RX_empty = nrf._reg_read(0x17) & 1`
-            4) if there is more data in RX FIFO, repeat from step 1
+            
+            1. read payload through `_reg_read_bytes()`
+            2. clear `dataReady` status flag
+            3. read FIFO_STATUS register (address `0x17`) to check if there are more payloads available in RX FIFO (bit 0 of FIFO_STATUS register). example: `is_RX_empty = nrf._reg_read(0x17) & 1`
+            4. if there is more data in RX FIFO, repeat from step 1
         """
         # capture surrounding flags and set interupt config flags to 0, then insert boolean args from user. Resulting '&' operation is 1 for disable, 0 for enable
         config = (self._reg_read(CONFIG) & 0x0f) | ((MASK_MAX_RT & ~(onMaxARC << 4)) | (MASK_TX_DS & ~(onDataSent << 5)) | (MASK_RX_DR & ~(onDataRecv << 6)))
@@ -646,10 +648,7 @@ class RF24(SPIDevice):
             self._reg_write_bytes(W_ACK_PAYLOAD | pipe_number, ack_payload)
 
     def start_listening(self):
-        """Puts the nRF24L01 into RX mode. Additionally, per `Appendix A of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1047965>`_, this function flushes the RX and TX FIFOs, clears the status flags, and puts radio in powers up mode.
-        
-        .. note:: Proper functionality of the nRF24L01 requires this function to block/wait for a total of at least 5.13 milliseconds.
-        """
+        """Puts the nRF24L01 into RX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this function flushes the RX and TX FIFOs, clears the status flags, and puts nRf24L01 in powers up mode."""
         # ensure radio is in power down or standby-I mode
         self.ce.value = 0
         # power up radio & set radio in RX mode
@@ -669,7 +668,7 @@ class RF24(SPIDevice):
         time.sleep(0.00013) # ensure pulse is > 130 us
 
     def stop_listening(self):
-        """Puts the nRF24L01 into TX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this function flushes the RX and TX FIFOs, clears the status flags, and puts radio in powers down (sleep) mode."""
+        """Puts the nRF24L01 into TX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this function flushes the RX and TX FIFOs, clears the status flags, and puts nRF24L01 in powers down (sleep) mode."""
         # disable comms
         self.ce.value = 0
         self._flush_tx()
@@ -727,7 +726,7 @@ class RF24(SPIDevice):
             - If the `dynamic_payloads` attribute is disabled, then the returned bytearray's length is equal to the user defined `payload_length` attribute (which defaults to 32). 
             - If the `dynamic_payloads` attribute is enabled, then the returned bytearray's length is equal to the payload size in the RX FIFO buffer.
         
-        .. note:: The `dynamic_payloads` attribute should be enabled in order to use ACK payloads.
+        .. note:: The `dynamic_payloads` attribute must be enabled in order to use ACK payloads.
         """
         # buffer size = current payload size + status byte
         curr_pl_size = self.payload_length if not self.dynamic_payloads else self._reg_read(R_RX_PL_WID)
@@ -782,6 +781,7 @@ class RF24(SPIDevice):
             
     def send_fast(self, buf):
         """This non-blocking function (when used as alternative to `send()`) is meant for asynchronous applications. 
+        
         :param bytearray buf: The payload to transmit. This bytearray must have a length greater than 0 to execute transmission.
             - If the `dynamic_payloads` attribute is disabled and this bytearray's length is less than the `payload_length` attribute, then this bytearray is padded with zeros until its length is equal to the `payload_length` attribute.
             - If the `dynamic_payloads` attribute is disabled and this bytearray's length is greater than `payload_length` attribute, then this bytearray's length is truncated to equal the `payload_length` attribute.
