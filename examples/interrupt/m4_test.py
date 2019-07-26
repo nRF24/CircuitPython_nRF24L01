@@ -9,7 +9,7 @@
 
 import time, struct, board, digitalio as dio
 from busio import SPI
-from circuitpython_nrf24l01 import NRF24L01
+from circuitpython_nrf24l01.rf24 import RF24
 
 addresses = (b'1Node', b'2Node')
 # these addresses should be compatible with the GettingStarted.ino sketch included in TRMh20's arduino library 

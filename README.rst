@@ -62,7 +62,7 @@ Pinout
 ======
 .. image:: ../nRF24L01_Pinout.png
 
-The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) that can only be connected to their counterparts on the microcontroller. The other 2 essential pins (CE & CSN) can be connected to any digital output pins. The following pinout is used in the example codes of this repo's example directory.
+The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) that can only be connected to their counterparts on the microcontroller. The other 2 essential pins (CE & CSN) can be connected to any digital output pins. Lastly, the only optional pin on the nRf24L01 GPIOs is the IRQ (interrupt) pin. The following pinout is used in the example codes of this repo's example directory.
 
 +------------+----------------+----------------+
 |  nRF24L01  |  Raspberry Pi  |  ItsyBitsy M4  |
@@ -83,6 +83,8 @@ The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) t
 +------------+----------------+----------------+
 |    IRQ     |    not used    |    not used    |
 +------------+----------------+----------------+
+
+.. tip:: user reports and personal experiences have improved results if there is a capacitor of at least 100 nanofarads connected in parrallel to the VCC and GND pins. There is some references to the use of capacitors in `Chapter 8.3.2 of the nRF24L01+ Specification Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1105319>`_
 
 Usage Example
 =============
