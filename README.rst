@@ -5,9 +5,9 @@ Introduction
     :target: https://circuitpython-nrf24l01.readthedocs.io/
     :alt: Documentation Status
 
-.. image:: https://img.shields.io/discord/327254708534116352.svg
-    :target: https://discord.gg/nBQh6qu
-    :alt: Discord
+.. .. image:: https://img.shields.io/discord/327254708534116352.svg
+..     :target: https://discord.gg/nBQh6qu
+..     :alt: Discord
 
 .. image:: https://travis-ci.com/2bndy5/CircuitPython_nRF24L01.svg?branch=master
     :target: https://travis-ci.com/2bndy5/CircuitPython_nRF24L01
