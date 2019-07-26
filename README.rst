@@ -57,6 +57,117 @@ To install in a virtual environment in your current project:
     source .env/bin/activate
     pip3 install circuitpython-nrf24l01
 
+
+Pinout
+======
+.. image:: https://github.com/2bndy5/Adafruit_CircuitPython_NRF24L01/blob/master/docs/_static/nRF24L01_Pinout.png
+
+The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) that can only be connected to their counterparts on the microcontroller. The other 2 essential pins (CE & CSN) can be connected to any digital output pins. The following pinout is used in the example codes of this repo's example directory.
+
++------------+----------------+----------------+
+|  nRF24L01  |  Raspberry Pi  |  ItsyBitsy M4  |
++============+================+================+
+|    GND     |      GND       |       GND      |
++------------+----------------+----------------+
+|    VCC     |       3V       |      3.3V      |
++------------+----------------+----------------+
+|    CE      |  GPIO8 (CE0)   |       D7       |
++------------+----------------+----------------+
+|    CSN     |     GPIO5      |       D5       |
++------------+----------------+----------------+
+|    SCK     |      SCK       |       SCK      |
++------------+----------------+----------------+
+|    MOSI    |     MOSI       |      MOSI      |
++------------+----------------+----------------+
+|    MISO    |      MISO      |      MISO      |
++------------+----------------+----------------+
+|    IRQ     |    not used    |    not used    |
++------------+----------------+----------------+
+
+Usage Example
+=============
+
+See `examples/` for an example of how to use the library. Notice that there are 2 files in each scenario/folder; one file titled "pi_test.py" for testing on the raspberry pi, and another file titled "m4_test.py" for testing on an adafruit boards with atsamd51. This was developed and tested on both Raspberry Pi and ItsyBitsy M4. Pins have been hard coded in the examples for the corresponding device, so please adjust these accordingly to your circuitpython device if necessary.
+
+To run the simple example, open a python terminal in this repo's example/simple folder and run the following:
+
+.. code-block:: python
+    
+    # if using an adafruit feather, try using "from m4_test import *"
+    >>> from pi_test import * 
+
+        NRF24L01 test module.
+        Run slave() on receiver, and master() on transmitter.
+
+    >>> master()
+    Sending:  0
+    Sending:  1
+
+Firstly import the necessary packages for your application.
+
+.. code-block:: python
+
+    # transmitted packet must be a byte array, thus the need for struct
+    import time, board, struct, digitalio as dio
+    from busio import SPI
+    from adafruit_circuitpython_nrf24l01 import NRF24L01 # this library
+
+Define the nodes' virtual addresses/IDs for use on the radio's data pipes. Also define the SPI pin connections to the radio. Now you're ready to instantiate the NRF24L01 object 
+
+.. note:: A word on pipes vs addresses vs channels.
+
+    You should think of the pipes as RF pathways to a specified address. There are only six pipes on the nRF24L01, thus it can simultaneously talk to a maximum of 6 other nRF24L01 radios. However, you can use any 5 byte long address you can think of (as long as the last byte is unique among simultaneous braodcasting addresses), so you're not limited to just talking to the same 6 radios. Also the radio's channel is not be confused with the radio's pipes. Channel selection is a way of specifying a certain radio frequency. Channel defaults to 76 (like the arduino library), but options range from 0 to 127. The channel can be tweaked to find a less occupied frequency amongst Bluetooth & WiFi ambient signals.
+
+.. warning::
+    The RX pipe's address on the receiving node MUST match the TX pipe's address on the transmitting node. Also the specified channel MUST match on both tranceivers.
+
+.. code-block:: python
+
+    addresses = (b'1Node', b'2Node') # tx, rx node ID's
+
+    ce = dio.DigitalInOut(board.D8) # pin AKA board.CE0
+    cs = dio.DigitalInOut(board.D5)
+    
+    spi = SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO) # create instance of spi port
+    nrf = NRF24L01(spi, cs, ce) # create instance of the radio
+
+To transmit firstly open the TX and RX pipes and set the desired enpoints' addresses, stop listening (puts radio in transmit mode) and send your packet (`buf`).
+
+.. code-block:: python
+
+    def radio_tx():
+        nrf.open_tx_pipe(addresses[0])
+        nrf.open_rx_pipe(1, addresses[1])
+        nrf.stop_listening()
+
+        i = 0
+
+        while True:
+            try:
+                print("Sending:", i)
+                nrf.send(struct.pack('i', i)) # be sure to pack data in byte array
+            except OSError:
+                print("sending failed")
+            time.sleep(1) # send every 1s
+
+To receive this data, again open the TX and RX pipes and set the desired endpoint addresses, then start listening for data. The `nrf.any()` method returns true when there is data ready to be received.
+
+.. code-block:: python
+
+    def radio_rx():
+        nrf.open_tx_pipe(addresses[1])
+        nrf.open_rx_pipe(1, addresses[0])
+        nrf.start_listening()
+
+        while True:
+            if nrf.any():
+                while nrf.any():
+                    buf = nrf.recv()
+                    i = struct.unpack('i', buf) 
+                    # string format 'i' matches a 4 byte iterable object where the payload is stored (maximum is 32 bytes) check out other available string formats: https://docs.python.org/2/library/struct.html#format-characters
+                    print("Received:", i[0]) # prints only the first integer in the byte array (the rest are just padding or overflow in this example).
+                    time.sleep(0.5) # poll every 0.5s for new data
+
 Contributing
 ============
 
