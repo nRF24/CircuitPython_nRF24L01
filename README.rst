@@ -60,7 +60,7 @@ To install in a virtual environment in your current project:
 
 Pinout
 ======
-.. image:: https://github.com/2bndy5/Adafruit_CircuitPython_NRF24L01/blob/master/docs/_static/nRF24L01_Pinout.png
+.. image:: https://github.com/2bndy5/CircuitPython_nRF24L01/blob/master/docs/_static/nRF24L01_Pinout.png
 
 The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) that can only be connected to their counterparts on the microcontroller. The other 2 essential pins (CE & CSN) can be connected to any digital output pins. The following pinout is used in the example codes of this repo's example directory.
 
@@ -110,7 +110,9 @@ Firstly import the necessary packages for your application.
     # transmitted packet must be a byte array, thus the need for struct
     import time, board, struct, digitalio as dio
     from busio import SPI
-    from adafruit_circuitpython_nrf24l01 import NRF24L01 # this library
+    from circuitpython_nrf24l01.rf24 import RF24 
+    # circuitpython_nrf24l01.rf24 is this library
+    # RF24 is the main driver class
 
 Define the nodes' virtual addresses/IDs for use on the radio's data pipes. Also define the SPI pin connections to the radio. Now you're ready to instantiate the NRF24L01 object 
 
@@ -129,13 +131,13 @@ Define the nodes' virtual addresses/IDs for use on the radio's data pipes. Also 
     cs = dio.DigitalInOut(board.D5)
     
     spi = SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO) # create instance of spi port
-    nrf = NRF24L01(spi, cs, ce) # create instance of the radio
+    nrf = RF24(spi, cs, ce) # create instance of the radio
 
 To transmit firstly open the TX and RX pipes and set the desired enpoints' addresses, stop listening (puts radio in transmit mode) and send your packet (`buf`).
 
 .. code-block:: python
 
-    def radio_tx():
+    def master():
         nrf.open_tx_pipe(addresses[0])
         nrf.open_rx_pipe(1, addresses[1])
         nrf.stop_listening()
@@ -145,7 +147,8 @@ To transmit firstly open the TX and RX pipes and set the desired enpoints' addre
         while True:
             try:
                 print("Sending:", i)
-                nrf.send(struct.pack('i', i)) # be sure to pack data in byte array
+                # use struct to pack the data into a bytearray
+                nrf.send(struct.pack('i', i)) 
             except OSError:
                 print("sending failed")
             time.sleep(1) # send every 1s
@@ -154,7 +157,7 @@ To receive this data, again open the TX and RX pipes and set the desired endpoin
 
 .. code-block:: python
 
-    def radio_rx():
+    def slave():
         nrf.open_tx_pipe(addresses[1])
         nrf.open_rx_pipe(1, addresses[0])
         nrf.start_listening()
@@ -163,10 +166,13 @@ To receive this data, again open the TX and RX pipes and set the desired endpoin
             if nrf.any():
                 while nrf.any():
                     buf = nrf.recv()
+                    # use struct to unpack the bytearray into a tuple
+                    # according to the data type format string
                     i = struct.unpack('i', buf) 
-                    # string format 'i' matches a 4 byte iterable object where the payload is stored (maximum is 32 bytes) check out other available string formats: https://docs.python.org/2/library/struct.html#format-characters
-                    print("Received:", i[0]) # prints only the first integer in the byte array (the rest are just padding or overflow in this example).
-                    time.sleep(0.5) # poll every 0.5s for new data
+                    # format string 'i' matches a 4 byte iterable object 
+                    # where the payload is stored (maximum is 32 bytes) 
+                    # check out other available format strings: https://docs.python.org/2/library/struct.html#format-characters
+                    print("Received:", i[0]) # prints the only integer in the resulting tuple.
 
 Contributing
 ============
@@ -195,5 +201,4 @@ Now, once you have the virtual environment activated:
     sphinx-build -E -W -b html . _build/html
 
 This will output the documentation to ``docs/_build/html``. Open the index.html in your browser to
-view them. It will also (due to -W) error out on any warning like Travis will. This is a good way to
-locally verify it will pass.
+view them. It will also (due to -W) error out on any warning like Travis will. This is a good way to locally verify it will pass.
