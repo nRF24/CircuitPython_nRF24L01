@@ -36,17 +36,17 @@ Installing from PyPI
    If the library is not planned for PyPI, remove the entire 'Installing from PyPI' section.
 
 On supported GNU/Linux systems like the Raspberry Pi, you can install the driver locally `from
-PyPI <https://pypi.org/project/adafruit-circuitpython-nrf24l01/>`_. To install for current user:
+PyPI <https://pypi.org/project/circuitpython-nrf24l01/>`_. To install for current user:
 
 .. code-block:: shell
 
-    pip3 install adafruit-circuitpython-nrf24l01
+    pip3 install circuitpython-nrf24l01
 
 To install system-wide (this may be required in some cases):
 
 .. code-block:: shell
 
-    sudo pip3 install adafruit-circuitpython-nrf24l01
+    sudo pip3 install circuitpython-nrf24l01
 
 To install in a virtual environment in your current project:
 
@@ -55,12 +55,7 @@ To install in a virtual environment in your current project:
     mkdir project-name && cd project-name
     python3 -m venv .env
     source .env/bin/activate
-    pip3 install adafruit-circuitpython-nrf24l01
-
-Usage Example
-=============
-
-.. todo:: Add a quick, simple example. It and other examples should live in the examples folder and be included in docs/examples.rst.
+    pip3 install circuitpython-nrf24l01
 
 Contributing
 ============

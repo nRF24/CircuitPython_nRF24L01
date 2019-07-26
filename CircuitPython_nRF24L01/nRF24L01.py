@@ -1,7 +1,7 @@
 # The MIT License (MIT)
 #
 # Copyright (c) 2017 Damien P. George
-# Copyright (c) 2019 Rhys Thomas
+# Copyright (c) 2019 Brendan Doherty
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,18 +21,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """
-`adafruit_circuitpython_nrf24l01` - nRF24L01 radio transceiver
+`circuitpython_nrf24l01` - A driver library for the nRF24L01(+) radio transceiver
 ===================================
 
 CircuitPython port of the nRF24L01 library from Micropython.
 Original work by Damien P. George & Peter Hinch can be found at https://github.com/micropython/micropython/tree/master/drivers/nrf24l01
 Ported to work on the Raspberry Pi and other Circuitpython compatible devices using Adafruit's `busio`, `bus_device.spi_device`, and `digitalio`, modules.
-Modified by Rhys Thomas, Brendan Doherty.
+Modified by Brendan Doherty, Rhys Thomas
 
 * Author(s): Damien P. George, Peter Hinch, Rhys Thomas, Brendan Doherty
 """
 __version__ = "0.0.0-auto.0"
-__repo__ = "https://github.com/2bndy5/Adafruit_CircuitPython_NRF24L01.git"
+__repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import busio, time, struct
 from adafruit_bus_device.spi_device import SPIDevice
 
@@ -97,6 +97,18 @@ FLUSH_RX     = 0xe2 # flush RX FIFO
 NOP          = 0xff # use to read STATUS register
 
 class NRF24L01(SPIDevice):
+    """A driver class for the nRF24L01 transceiver radio. This class aims to be compatible with other devices in the nRF24xxx product line, but officially only supports (through testing) the nRF24L01 and nRF24L01+ devices. This class also inherits from adafruit_bus_device.spi_device, thus that module should be extracted/copied from the Adafruit library and driver bundle (https://github.com/adafruit/Adafruit_CircuitPython_Bundle), or, if using CPython's pip, automatically installed using 'pip install circuitpython-nrf24l01'.
+        
+        :param ~busio.SPI spi: The SPI bus that the nRF24L01 is connected to.
+            This object is meant to be shared amongst other driver classes (like adafruit_mcp3xxx.mcp3008 for example) that use the same SPI bus. Otherwise, multiple devices on the same SPI bus with different spi objects may produce errors or undesirable behavior.
+        :param ~digitalio.DigitalInOut csn: The digital output pin that is connected to the nRF24L01's CSN (Chip Select Not) pin. This is required.
+        :param ~digitalio.DigitalInOut ce: The digital output pin that is connected to the nRF24L01's CE (Chip Enable) pin. This is required.
+        :param int channel This is used to specify a certain frequency that the nRF24L01 uses. This is optional and can be set later using the 'channel' property. Defaults to 76.
+        :param int payload_length: This is the length (in bytes) of a single payload to be transmitted or received. This is optional and ignored if the dynamic_payloads property is set to True. Defaults to the maximum (32).
+        :param int address_length: This is the length (in bytes) of the addresses that are assigned to the data pipes for transmitting/receiving. It is optional and defaults to 5.
+        :param bool dynamic_payloads: This property enables (True) or disables (False) the dynamic payload length feature of the nRF24L01. It is optional and defaults to True.
+        :param bool auto_ack: This property enables (True) or disables (False) the automatic acknowledgment feature of the nRF24L01. It is optional and defaults to True.
+    """
     def __init__(self, spi, csn, ce, channel=76, payload_length=32, address_length=5, dynamic_payloads=True, auto_ack=True, baudrate=10000000, polarity=0, phase=0, extra_clocks=0):
         # set payload length
         self.payload_length = payload_length
@@ -112,7 +124,7 @@ class NRF24L01(SPIDevice):
         # set address width and check for device presence by verifying successful spi read transaction
         self.address_length = address_length
         if self._reg_read(SETUP_AW) != self.address_length - 2:
-            raise OSError("nRF24L01+ Hardware not responding")
+            raise RuntimeError("nRF24L01+ Hardware not responding")
 
         # store the ce pin
         self.ce = ce
@@ -149,9 +161,10 @@ class NRF24L01(SPIDevice):
         self._flush_tx()
 
     def _reg_read(self, reg):
-        """
-        for retrieving one byte of data from the specified register (reg). Useful for getting status byte.\n
-        reg must be an int.
+        """ 
+        A helper function to read a single byte of data from a specified register on the nRF24L01's internal IC. THIS IS NOT MEANT TO BE DIRECTLY CALLED BY END-USERS.
+            :param int reg: The address of the register you wish to read from.
+        Please refer to `Link Chapter 9 of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1090864>`_ for applicable register addresses.
         """
         buf = bytearray(2) # 2 = 1 status byte + 1 byte of returned content
         with self:
@@ -165,9 +178,11 @@ class NRF24L01(SPIDevice):
 
     def _reg_read_bytes(self, reg, buf_len=5):
         """
-        mainly for realtime debug of checking register contents of more than 1 byte. To read the full payload in a FIFO, pass buf_len as 32. NOTE: reading buf_len bytes from FIFO would also remove buf_len bytes from the FIFO.\n
-        reg must be an int.\n
-        buf_len specifies how many bytes to read. Default of 5 is meant to be used for checking pipe addresses. 
+        A helper function to read multiple bytes of data from a specified register on the nRF24L01's internal IC. THIS IS NOT MEANT TO BE DIRECTLY CALLED BY END-USERS.
+            :param int reg: The address of the register you wish to read from.
+            :param int buf_len: the amount of bytes to read from a register specified by `reg`. A default of 5 is meant to be used for checking pipe addresses. 
+                To read the full payload in a FIFO, pass `buf_len` as `32`. NOTE: reading buf_len bytes from FIFO would also remove `buf_len` bytes from the FIFO. There is no bounds checking on this parameter.
+        Please refer to `Link Chapter 9 of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1090864>`_ for applicable register addresses.
         """
         # allow an extra byte for status data
         buf = bytearray(buf_len + 1)
@@ -179,9 +194,11 @@ class NRF24L01(SPIDevice):
 
     def _reg_write_bytes(self, reg, outBuf):
         """
-        for writing more than 1 byte to a multi-byte register. Use this to set payload or address data.\n
-        reg must be an int.\n
-        outBuf must be of a buffer protocol object type (bytearray is most commonly used/expected).
+        A helper function to write multiple bytes of data to a specified register on the nRF24L01's internal IC. THIS IS NOT MEANT TO BE DIRECTLY CALLED BY END-USERS.
+            :param int reg: The address of the register you wish to read from.
+            :param bytearray outBuf: The buffer of bytes to write to a register specified by `reg`. Useful for writing pipe address or TX payload data.
+                NOTE: nRF24L01's internal FIFO buffer stack is 3 levels, meaning you can only write up to 3 payloads (maximum 32 byte length per payload). There is no bounds checking on this parameter.
+        Please refer to `Link Chapter 9 of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1090864>`_ for applicable register addresses.
         """
         outBuf = bytes([0x20 | reg]) + outBuf
         inBuf = bytearray(len(outBuf))
@@ -192,9 +209,10 @@ class NRF24L01(SPIDevice):
 
     def _reg_write(self, reg, value):
         """
-        for writing one byte of data (typical size of a single register).\n
-        reg must be an int.\n
-        value must be an int.
+        A helper function to write a single byte of data to a specified register on the nRF24L01's internal IC. THIS IS NOT MEANT TO BE DIRECTLY CALLED BY END-USERS.
+            :param int reg: The address of the register you wish to read from.
+            :param int value: The one byte content to write to a register specified by `reg`. There is a rigid expectation of bit order & content. There is no bounds checking on this parameter. 
+        Please refer to `Link Chapter 9 of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1090864>`_ for applicable register addresses.
         """
         outBuf = bytes([0x20 | reg, value])
         inBuf = bytearray(len(outBuf))
@@ -205,26 +223,51 @@ class NRF24L01(SPIDevice):
 
     def _flush_rx(self):
         """
-        flush RX FIFO
+        A helper function to the nRF24L01's internal flush RX FIFO buffer. THIS IS NOT MEANT TO BE DIRECTLY CALLED BY END-USERS.
         """
         self._reg_read_bytes(FLUSH_RX)
 
     def _flush_tx(self):
         """
-        flush RX FIFO
+        A helper function to the nRF24L01's internal flush TX FIFO buffer. THIS IS NOT MEANT TO BE DIRECTLY CALLED BY END-USERS.
         """
         self._reg_read_bytes(FLUSH_TX)
 
     @property
     def status(self):
         """
-        a read-only attribute to return the latest status byte from SPI transactions.
+        The latest status byte return from SPI transactions. (read-only)
+        It always returns 1 byte in which each bit represents a certain status flag.
+        - bit 7 (MSB) is not used and should always be 0
+        - bit 6 represents the RX data ready flag
+        - bit 5 represents the TX data sent flag
+        - bit 4 represents the max re-transmit flag
+        - bit 3 through 1 represents the RX pipe number [0,5] that received the available payload in RX FIFO buffer. `111` means RX FIFO buffer is empty.
+        - bit 0 (LSB) represents the TX FIFO buffer full flag
         """
         return self._status
 
     def what_happened(self):
         """
-        This debuggung function aggregates all status related info from the nRF24L01. It returns a dictionary in which each item represents a status related flag. Some flags may be irrelevant depending on nRF24L01's state/condition. NOTE: All data is fetched directly from nRF24L01 for comparison to local copy of attributes and user expectations.
+        This debuggung function aggregates all status related info from the nRF24L01. It returns a dictionary in which each item represents a status related flag or condition. Some flags may be irrelevant depending on nRF24L01's state/condition. The dictionary that is returned contains the following data:
+            - `Data Ready` Is there RX data ready to be sent?
+            - `Data Sent` Has the TX data been sent?
+            - `Packets Lost` Amount of packets lost (transmission failures)
+            - `Packets Re-transmitted` Maximum amount of attempts to re-transmit
+            - `Max Re-transmit` Has the maximum attempts to re-transmit been reached?
+            - `Received Power Detector` True if OTA transmission exceeded -64 dBm
+            - `Re-use TX Payload` Should the radio re-use the last TX payload?
+            - `TX FIFO full` Is the TX FIFO buffer full?
+            - `TX FIFO empty` Is the TX FIFO buffer empty?
+            - `RX FIFO full` Is the RX FIFO buffer full?
+            - `RX FIFO empty` Is the RX FIFO buffer empty?
+            - `Custom ACK payload` Is there an extra payload attached to the acknowledgment packet?
+            - `Automatic Acknowledgment` Is the automatic acknowledgement feature enabled?
+            - `Dynamic Payloads` Is the dynamic payload length feature enabled?
+            - `Primary Mode` The current mode of communication of the nRF24L01 device (RX or TX)
+            - `Power Mode` The power state can be Off, Standby-I, Standby-II, or On.
+            
+        NOTE: All data is fetched directly from nRF24L01 for user comparison to local copy of attributes and user expectations. Meaning, this data reflects only what the nRF24L01 is operating with, not this driver class's attributes.
         """
         watchdog = self._reg_read(OBSERVE_TX)
         config = self._reg_read(CONFIG)
@@ -253,18 +296,21 @@ class NRF24L01(SPIDevice):
 
     def clear_status_flags(self, dataReady=True, dataSent=True, maxRetry=True):
         """
-        This clears the interrupt flags in the status register. Clearing certain flags is necessary for continued operation of radio.\n
-        dataReady (bool) specifies wheather to clear the RX_DR flag.\n
-        dataSent (bool) specifies wheather to clear the TX_DS flag.\n
-        maxRetry (bool) specifies wheather to clear the MAX_RT flag.
+        This clears the interrupt flags in the status register. This functionality is exposed for asychronous applications only.
+            :param bool dataReady: specifies wheather to clear the "RX Data Ready" flag.
+            :param bool dataSent: specifies wheather to clear the "TX Data Sent" flag.
+            :param bool maxRetry: specifies wheather to clear the "Max Re-transmit reached" flag.
+        NOTE: Clearing certain flags is necessary for continued operation of radio despite wheather or not the user is taking advantage of the interrupt (IRQ) pin. Directly calling this function without being familiar with the nRF24L01's expected behavior (as outlined in the Specifications Sheet) can cause undesirable behavior. `Link See Appendix A-B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1047965>`_ for an outline of proper behavior.
         """
         self._reg_write(STATUS, (RX_DR & (dataReady << 6)) | (TX_DS & (dataSent << 5)) | (MAX_RT & (maxRetry << 4)))
 
     @property
     def power(self):
         """
-        This attribute controls the PWR_UP bit in the CONFIG register. Setting this to False basically puts the radio to sleep. No transmissions are executed when sleeping. NOTE: This attribute needs to be True if you want to put radio on standby-I (CE pin is HIGH) or standby-II (CE pin is LOW) modes. In case of either standby modes, transmissions are only executed based on certain criteria (see chapter 6.1.6-Operational modes configuration in the nRF24L01+ specs sheet.\n
-        Input value must be a bool.
+        This `bool` attribute controls the PWR_UP bit in the CONFIG register.
+        - `False` basically puts the radio to sleep. No transmissions are executed when sleeping.
+        - `True` powers up the nRF24L01
+        NOTE: This attribute needs to be `True` if you want to put radio on standby-I (CE pin is HIGH) or standby-II (CE pin is LOW) modes. In case of either standby modes, transmissions are only executed based on certain criteria (see `Link Chapter 6.1.2-7 of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132980>`_).
         """
         return self._power_mode
 
@@ -277,34 +323,41 @@ class NRF24L01(SPIDevice):
         if isOn: # power up takes < 5 ms
             time.sleep(0.005)
         
-
-    # get boolean pertaining to auto acknowledgment
     @property
     def auto_ack(self):
         """
-        Boolean to control enabled automatic acknowledgment packets on all pipes. There is no plan to implement automatic acknowledgment on a per pipe basis, therefore all 6 pipes are treated the same. Enabling dynamic_payloads requires this attribute to be True (automatically handled accordingly). Enabled auto_ack does not require dynamic_payloads to be True (use dynamic_payloads attribute to do that).\n
-        Input value must be a bool.
+        This `bool` attribute controls automatic acknowledgment feature on all nRF24L01's data pipes. NOTE: There is no plan to implement automatic acknowledgment on a per pipe basis, therefore all 6 pipes are treated the same. 
+        - `True` enables automatic acknowledgment packets.
+            Enabling `dynamic_payloads` requires this attribute to be `True` (automatically handled accordingly by `dynamic_payloads`). Enabled `auto_ack` does not require `dynamic_payloads` to be `True`, thus does not automatically enable `dynamic_payloads` (use `dynamic_payloads` attribute to do that). Also the cycle redundancy checking (CRC) is enabled automatically by the nRF24L01 if this automatic acknowledgment feature is enabled (see `crc` attribute).
+        -`False` disables automatic acknowledgment packets.
+            As the `dynamic_payloads` requirement mentioned above, diasabling `auto_ack` also disables `dynamic_payloads` but not `CRC` attributes.
         """
         return self._aa
 
-    # set boolean pertaining to auto acknowledgment
     @auto_ack.setter
     def auto_ack(self, enable):
         assert type(enable) is bool
         self._reg_write(EN_AA, 0x7f if enable else 0)
         self._aa = enable
-        if not enable:
+        if not enable: # we must disable dynamic_payloads
             self.dynamic_payloads = False
+        else: 
+            # radio automatically enables CRC if ACK packets are enabled
+            if self.crc == 0:
+                # if CRC is previously disabled, use default CRC encoding scheme
+                self.crc = 2
 
-    # get boolean pertaining to enabled dynamic payloads
     @property
     def dynamic_payloads(self):
-        """Boolean to control enabled dynamic payloads. Enabling dynamic payloads REQUIRES enabling Auto Acknowledgment on corresponding pipes AND asserting 'enable dynamic payloads' flag of FEATURE register. There is no plan to implement dynamic payloads on a per pipe basis, therefore all 6 pipes are treated the same. Setting this to True will also ensable the aforementioned requisites. However, setting this to False does not disable Auto Acknowledgment feature (use auto_ack asttribute to disable that).\n
-        Input value must be a bool.
+        """
+        This `bool` attribute controls dynamic payload length feature on all nRF24L01's data pipes. NOTE: There is no plan to implement dynamic payload lengths on a per pipe basis, therefore all 6 pipes are treated the same. 
+        - `True` enables nRF24L01's dynamic payload length feature.
+            Enabling dynamic payloads REQUIRES enabling the automatic acknowledgment feature on corresponding data pipes AND asserting 'enable dynamic payloads' flag of FEATURE register (both are automatically handled here). 
+        - `False` disables nRF24L01's dynamic payload length feature.
+            As the `dynamic_payloads` requirement mentioned above, disabling `dynamic_payloads` does not disable `auto_ack` (use `auto_ack` attribute to disable that).
         """
         return self._dyn_pl
 
-    # set boolean pertaining to enabled dynamic payloads
     @dynamic_payloads.setter
     def dynamic_payloads(self, enable):
         assert type(enable) is bool
@@ -319,16 +372,15 @@ class NRF24L01(SPIDevice):
         # save for access via getter property
         self._dyn_pl = enable
 
-    # get auto re-transmit count
     @property
     def arc(self):
         """"
-        nRF24L01's number of attempts to re-transmit TX payload when ACK packet is not received. Default is 3.\n
-        Intput value (int) must be in range [0,15].
+        This `int` attribute specifies the nRF24L01's number of attempts to re-transmit TX payload when acknowledgment packet is not received. The nRF24L01 does not attempt to re-transmit if `auto_ack` attribute is disabled. Default is set 3.
+
+        A valid input value must be in range [0,15]. Otherwise an `AssertionError` exception is thrown.
         """
         return self._arc
     
-    # set auto re-transmit count
     @arc.setter
     def arc(self, count):
         # nRF24L01+ must be in a standby or power down mode before writing to the configuration registers.
@@ -337,17 +389,16 @@ class NRF24L01(SPIDevice):
         # save for access via getter property
         self._arc = count
 
-    # get auto re-transmit delay
     @property
     def ard(self):
         """
-        nRF24L01's delay (in microseconds) between attempts to auto re-transmit TX payload when ACK packet is not received. Default is 1500. NOTE from spec sheet:
-            Please take care when setting this parameter. If the ACK payload is more than 15 bytes in 2 Mbps data rate, the ARD must be 500µS or more. If the ACK payload is more than 5 bytes in 1 Mbps data rate, the ARD must be 500µS or more. In 250kbps data rate (even when the payload is not in ACK) the ARD must be 500µS or more.\n
-        Intput value (int) must be a multiple of 250 in range [250,4000].
+        This `int` attribute specifies the nRF24L01's delay (in microseconds) between attempts to automatically re-transmit the TX payload when an acknowledgement (ACK) packet is not received. During this time, the nRF24L01 is listening for the ACK packet. If the `auto_ack` attribute is disabled, this attribute is not applied. NOTE from spec sheet:
+            Please take care when setting this parameter. If the ACK payload is more than 15 bytes in 2 Mbps data rate, the ARD must be 500µS or more. If the ACK payload is more than 5 bytes in 1 Mbps data rate, the ARD must be 500µS or more. In 250kbps data rate (even when the payload is not in ACK) the ARD must be 500µS or more.
+        See `data_rate` attribute on how to set the data rate of the nRF24L01's transmissions.
+        A valid input value must be a multiple of 250 in range [250,4000]. Otherwise an `AssertionError` exception is thrown. Default is 1500.
         """
         return self._ard
 
-    # set auto re-transmit delay
     @ard.setter
     def ard(self, t):
         # nRF24L01+ must be in a standby or power down mode before writing to the configuration registers.
@@ -357,16 +408,15 @@ class NRF24L01(SPIDevice):
         # save for access via getter property
         self._ard = t
 
-    # get address length attribute
     @property
     def address_length(self):
         """
-        Length of address to be used for RX/TX pipes. \n
-        Input value (int) must be in range [3,5]. Default is 5. NOTE: nRF24L01 uses the LSByte for padding addresses with lengths of less than 5 bytes.
+        This `int` attribute specifies the length (in bytes) of addresses to be used for RX/TX pipes.
+        A valid input value must be in range [3,5]. Otherwise an `AssertionError` exception is thrown. Default is 5. 
+        NOTE: nRF24L01 uses the LSByte for padding addresses with lengths of less than 5 bytes.
         """
         return self._addr_width
 
-    # set address length in bytes. can be 3 - 5 bytes long
     @address_length.setter
     def address_length(self, length):
         # nRF24L01+ must be in a standby or power down mode before writing to the configuration registers.
@@ -379,15 +429,15 @@ class NRF24L01(SPIDevice):
     # get payload length attribute
     @property
     def payload_length(self):
-        """Length of payload (in bytes) that is regaurded, meaning 'how big of a payload should the radio care about?'\n
-        Input value (int) must be in range [0,32]. Default is 32. 
+        """
+        This `int` attribute specifies the length (in bytes) of payload that is regaurded, meaning 'how big of a payload should the radio care about?' If the `dynamic_payloads` attribute is enabled, this attribute has no affect.
+        A valid input value must be in range [0,32]. Otherwise an `AssertionError` exception is thrown. Default is 32. 
             Payloads of less than input value will be truncated. 
-            Payloads of greater than input value will be padded. 
-            Input value of 0 negates radio's transmissions."""
+            Payloads of greater than input value will be padded with zeros. 
+            Input value of 0 negates radio's transmissions.
+        """
         return self._payload_length
 
-    # set payload size for RX/TX FIFOs
-    # NOTE: payloads with size of 0 don't get transmitted/received
     @payload_length.setter
     def payload_length(self, length):
         # max payload size is 32 bytes
@@ -395,21 +445,24 @@ class NRF24L01(SPIDevice):
         # save for access via getter property
         self._payload_length = length
 
-    # get data rate
     @property
     def data_rate(self):
         """
-        nRF24L01's frequency data rate.\n 
-        Valid input value (int) is 1 (1 Mbps), 2 (2 Mbps), or 250 (250 Kbps). Default is 1 Mbps. NOTE 250 Kbps may be buggy on the non-plus models of the nRF24L01 product line.
+        This `int` attribute specifies the nRF24L01's frequency data rate for OTA (over the air) transmissions.
+        A valid input value is: 
+        - `1` sets the frequency data rate to 1 Mbps
+        - `2` sets the frequency data rate to 2 Mbps
+        - `250` sets the frequency data rate to 250 Kbps
+        Any invalid input throws an `AssertionError` exception. Default is 1 Mbps. 
+        NOTE 250 Kbps may be buggy on the non-plus models of the nRF24L01 product line.
         """
         if self._speed == SPEED_1M:
-            return "1 Mbps"
+            return 1
         elif self._speed == SPEED_2M:
-            return "2 Mbps"
+            return 2
         elif self._speed == SPEED_250K:
-            return "250 Kbps"
+            return 250
 
-    # set data rate NOTE 250 Kbps is buggy on nRF24L01 (non plus model), default is 1 Mbps
     @data_rate.setter
     def data_rate(self, speed):
         # nRF24L01+ must be in a standby or power down mode before writing to the configuration registers.
@@ -422,12 +475,15 @@ class NRF24L01(SPIDevice):
         # save for access via getter property
         self._speed = speed
 
-    # get power amplitude level
     @property
     def pa_level(self):
         """
-        nRF24L01's power amplifier level.\n 
-        Valid input value (int) is -18 (-18 dBm), -12 (-12 dBm), -6 (-6 dBm), or 0 (0 dBm). Default is 0 dBm.
+        This `int` aattribute specifies the nRF24L01's power amplitude level (in dBm). A valid input value is:
+        - `-18` sets the nRF24L01's power amplitude to -18 dBm (lowest)
+        - `-12` sets the nRF24L01's power amplitude to -12 dBm
+        - `-6` sets the nRF24L01's power amplitude to -6 dBm
+        - `0` sets the nRF24L01's power amplitude to 0 dBm (highest)
+        Any invalid input throws an `AssertionError` exception. Default is 0 dBm.
         """
         if self._pa == POWER_0:
             return "-18 dBm"
@@ -438,7 +494,6 @@ class NRF24L01(SPIDevice):
         elif self._pa == POWER_3:
             return "0 dBm"
     
-    # set power amplitude level
     @pa_level.setter
     def pa_level(self, power):
         # nRF24L01+ must be in a standby or power down mode before writing to the configuration registers.
@@ -452,19 +507,18 @@ class NRF24L01(SPIDevice):
         # save for access via getter property
         self._pa = power
 
-    # get CRC length in bytes
     @property
     def crc(self):
         """
-        nRF24L01's CRC encoding scheme in terms of bytes. CRC checking is automatically enabled if auto_ack is True.\n
-        Input value (int) is in range [0,2]. Default is 2 bytes.
-            0 = disables CRC encoding scheme.
-            1 = enables CRC encoding scheme using 1 byte.
-            2 = enables CRC encoding scheme using 2 bytes.
+        This `int` attribute specifies the nRF24L01's cycle redundancy checking (CRC) encoding scheme in terms of bytes. A valid input value is in range [0,2]. 
+        - `0` disables CRC
+        - `1` enables CRC encoding scheme using 1 byte
+        - `2` enables CRC encoding scheme using 2 bytes
+        Any invalid input throws an `AssertionError` exception. Default is enabled using 2 bytes.
+        NOTE: The nRF24L01 automatically enables CRC if automatic acknowledgment feature is enabled (see `auto_ack` attribute).
         """
         return self._crc
 
-    # set CRC length in bytes (must be 0, 1 or 2)
     @crc.setter
     def crc(self, length):
         assert 0 <= length <= 2
@@ -481,16 +535,14 @@ class NRF24L01(SPIDevice):
         # save for access via getter property
         self._crc = length
     
-    # set rf channel
     @property
     def channel(self):
         """
-        nRF24L01's radio channel.\n
-        Input value (int) must be in range [0-127]. Default is 76.
+        This `int` attribute specifies the nRF24L01's frequency (MHz).
+        A valid input value must be in range [0-127]. Otherwise an `AssertionError` exception is thrown. Default is 76 (for compatibility with TMRh20's arduino library default).
         """
         return self._channel
 
-    # get rf channel
     @channel.setter
     def channel(self, channel):
         assert 0 <= channel <= 127
@@ -498,26 +550,28 @@ class NRF24L01(SPIDevice):
         # save for access via getter property
         self._channel = channel
 
-    # this is a one-way implementation, meaning users will have no way to directly retrieve these settings. Radio's interrupt pin uses an acive low signal
     def interrupt_config(self, onMaxARC=True, onDataSent=True, onDataRecv=True):
-        """
-        onMaxARC (bool): if this is True, then interrupt pin goes active LOW when maximum attempt to re-transmit packet have been reached\n
-        onDataSent (bool): if this is True, then interrupt pin goes active LOW when payload from TX buffer is successfully transmitted. If auto_ack is enabled, then interrupt pin only goes active LOW when ACK is received.\n
-        onDataRecv (bool): if this is True, then interrupt pin goes active LOW when there is new data to read in the RX FIFO. NOTE from spec sheet:
-            The procedure for handling this interrupt should be: 
-            1) read payload through SPI
-            2) clear RX_DR IRQ
-            3) read FIFO_STATUS to check if there are more payloads available in RX FIFO
-            4) if there are more data in RX FIFO, repeat from step 1
+        """Sets the configuration of the nRF24L01's Interrupt (IRQ) pin. IRQ signal from the nRF24L01 is active LOW. (write-only)
+            :param bool onMaxARC: If this is `True`, then interrupt pin goes active LOW when maximum number of attempts to re-transmit the packet have been reached.
+            :param bool onDataSent: If this is `True`, then interrupt pin goes active LOW when a payload from TX buffer is successfully transmitted. If `auto_ack` attribute is enabled, then interrupt pin only goes active LOW when acknowledgment (ACK) packet is received.
+            :param bool onDataRecv: If this is `True`, then interrupt pin goes active LOW when there is new data to read in the RX FIFO. NOTE Paraphrased from spec sheet:
+                The procedure for handling `onDataRecv` interrupt should be: 
+                1) read payload through `_reg_read_bytes()`
+                2) clear `dataReady` status flag
+                3) read FIFO_STATUS register (address `0x17`) to check if there are more payloads available in RX FIFO (bit 0 of FIFO_STATUS register). example: `is_RX_empty = nrf._reg_read(0x17) & 1`
+                4) if there is more data in RX FIFO, repeat from step 1
         """
         # capture surrounding flags and set interupt config flags to 0, then insert boolean args from user. Resulting '&' operation is 1 for disable, 0 for enable
         config = (self._reg_read(CONFIG) & 0x0f) | ((MASK_MAX_RT & ~(onMaxARC << 4)) | (MASK_TX_DS & ~(onDataSent << 5)) | (MASK_RX_DR & ~(onDataRecv << 6)))
         # save to register
         self._reg_write(CONFIG, config)
 
-
     # address should be a bytes object with the length = self.address_length
     def open_tx_pipe(self, address):
+        """This function is used to open a data pipe for OTA (over the air) TX transactions. If `dynamic_payloads` attribute is `False`, then the `payload_length` attribute is used to specify the length of the payload to be transmitted.
+            :param bytearray address: The virtual address of the receiving nRF24L01. This must have a length equal to the `address_length` attribute (see `address_length` attribute). Otherwise an `AssertionError` exception is thrown.
+        NOTE: There is no option to specify which data pipe to use because the only data pipe that the nRF24L01 uses in TX mode is pipe 0. Additionally, the nRF24L01 uses the same data pipe (pipe 0) for receiving acknowledgement (ACK) packets in TX mode.
+        """
         assert len(address) == self.address_length
         self._reg_write_bytes(RX_ADDR_P0, address)
         self._reg_write_bytes(TX_ADDR, address)
@@ -527,33 +581,34 @@ class NRF24L01(SPIDevice):
     # address should be a bytes object with the length = self.address_length
     # pipe 0 and 1 have 5 byte address
     # pipes 2-5 use same 4 MSBytes as pipe 1, plus 1 extra byte
-    def open_rx_pipe(self, pipe_id, address, ack_payload=None):
-        """
-        setup a data pipe for receiving data from a specified address.\n
-        pipe_id (int) must be in range [0,5].\n
-        address (bytearray) must be a maximum of 5 bytes long. If using a pipe_id greater than 2, then only the LSByte of the address is written (so make LSByte unique among other simultaneously broadcasting addresses).NOTE: MSBytes (address[0:4]) are shared on pipes 2 through 5\n
-        ack_payload (bytearray) is optional and must be 1 to 32 bytes long. The specified payload (if not None) will be used as part of ACK packet during RX mode.
+    def open_rx_pipe(self, pipe_number, address, ack_payload=None):
+        """This function is used to open a specific data pipe for OTA (over the air) RX transactions. If `dynamic_payloads` attribute is `False`, then the `payload_length` attribute is used to specify the length of the payload to be transmitted on the specified data pipe.
+            :param int pipe_number: The data pipe to use for RX transactions. This must be in range [1,5]. Otherwise an `AssertionError` exception is thrown.
+            :param bytearray address: The virtual address of the transmitting nRF24L01. This must have a length equal to the `address_length` attribute (see `address_length` attribute). Otherwise an `AssertionError` exception is thrown. If using a `pipe_number` greater than 2, then only the LSByte of the address is written (so make LSByte unique among other simultaneously broadcasting addresses).
+                NOTE: The nRF24L01 shares the MSBytes (address[0:4]) on data pipes 2 through 5.
+            :param bytearray ack_payload: A payload buffer to be included as part of the automatic acknowledgment (ACK) packet. This optional and must be 1 to 32 bytes long. Otherwise an `AssertionError` exception is thrown. 
+                NOTE: Specifying this parameter has no affect (and isn't saved anywhere) if the `auto_ack` attribute is `False`.
         """
         assert len(address) == self.address_length
-        assert 0 <= pipe_id <= 5
+        assert 0 <= pipe_number <= 5
         assert ack_payload is None or 1 <= len(ack_payload) <= 32
-        # open_tx_pipe() overrides pipe 0 address. Thus start_listening() will re-enforce this address using self.pipe0_read_addr
-        if pipe_id == 0: 
-            # save shadow copy of address if target pipe_id is 0
+        # open_tx_pipe() overrides pipe 0 address. Thus start_listening() will re-enforce this address using self.pipe0_read_addr attribute
+        if pipe_number == 0: 
+            # save shadow copy of address if target pipe_number is 0
             self.pipe0_read_addr = address
-        elif pipe_id < 2: # write entire address if pip_id is 1
-            self._reg_write_bytes(RX_ADDR_P0 + pipe_id, address)
-        else: # only write LSB if pipe_id is not 0 or 1
-            self._reg_write(RX_ADDR_P0 + pipe_id, address[len(address) - 1])
+        elif pipe_number < 2: # write entire address if pip_id is 1
+            self._reg_write_bytes(RX_ADDR_P0 + pipe_number, address)
+        else: # only write LSB if pipe_number is not 0 or 1
+            self._reg_write(RX_ADDR_P0 + pipe_number, address[len(address) - 1])
         if not self.dynamic_payloads: # radio doesn't care about payload_length if dynamic_payloads is enabled
-            self._reg_write(RX_PW_P0 + pipe_id, self.payload_length)
-        self._reg_write(EN_RXADDR, self._reg_read(EN_RXADDR) | (1 << pipe_id))
-        if ack_payload is not None:
-            self._reg_write_bytes(W_ACK_PAYLOAD | pipe_id, ack_payload)
+            self._reg_write(RX_PW_P0 + pipe_number, self.payload_length)
+        self._reg_write(EN_RXADDR, self._reg_read(EN_RXADDR) | (1 << pipe_number))
+        if ack_payload is not None and self.auto_ack:
+            self._reg_write_bytes(W_ACK_PAYLOAD | pipe_number, ack_payload)
 
     def start_listening(self):
-        """
-        This function flushes the RX and TX FIFOs, clears the status flags. This function also puts radio in powers up and RX mode.
+        """Puts the nRF24L01 into RX mode. Additionally, per `Link Appendix A of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1047965>`_, this function flushes the RX and TX FIFOs, clears the status flags, and puts radio in powers up mode.
+            NOTE: Proper functionality of the nRF24L01 requires this function to block for a total of at least 5.13 milliseconds.
         """
         # ensure radio is in power down or standby-I mode
         self.ce.value = 0
@@ -574,8 +629,7 @@ class NRF24L01(SPIDevice):
         time.sleep(0.00013) # ensure pulse is > 130 us
 
     def stop_listening(self):
-        """
-        This function flushes the RX and TX FIFOs, clears the status flags. Before exiting, this function also puts radio in powers down and TX mode.
+        """Puts the nRF24L01 into TX mode. Additionally, per `Link Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this function flushes the RX and TX FIFOs, clears the status flags, and puts radio in powers down (sleep) mode. 
         """
         # disable comms
         self.ce.value = 0
@@ -587,41 +641,35 @@ class NRF24L01(SPIDevice):
         # manipulating local copy of power attribute saves an extra spi transaction because we already needed to access the same register to manipulate RX/TX mode
         self._power_mode = False 
 
-    def available(self, pipe_id=None):
+    def available(self, pipe_number=None):
+        """This function checks if the nRF24L01 has received data in relation to the data pipe that received it.
+            :param int pipe_number: The specific number identifying a data pipe to check for RX data. This parameter is optional and must be in range [0,5]. Otherwise an `AssertionError` exception is thrown.
+        If user does not specify pipe_number, then this function returns the pipe number that contains the RX payload. If user does specify pipe_number, then this function returns `True` if `pipe_number` is equal to the identifying number of the data pipe that received the current (top level) RX payload in the FIFO buffer, else it returns `False`. If there is no payload in RX FIFO, then this function returns `None`.
         """
-        pipe_id (int) is optional and must be in range [0,5].\n
-        If user does not specify pipe_id, then this function returns the pipe number that contains the RX payload.\n
-        If user does specify pipe_id, then this function returns True if pipe_id == RX pipe number else False.\n
-        If there is no payload in RX FIFO, then this function returns None.
-        """
-        assert pipe_id == None or 0 <= pipe_id <= 5 # check bounds on user input
+        assert pipe_number == None or 0 <= pipe_number <= 5 # check bounds on user input
         pipe = (self._reg_read(STATUS) & RX_P_NO) >> 1
         if pipe > 5:
             return None # RX FIFO is empty
-        elif pipe_id is None:
+        elif pipe_number is None:
             # return pipe number if user did not specify a pipe number to test against
             return pipe # base 1 as pipe0 would be same as False
-        elif pipe_id != pipe:
+        elif pipe_number != pipe:
             # return comparison of pipe number and user specified pipe number
             return False
         else: # return True if pipe number matches user input & there is data in RX FIFO 
             return True
 
     def any(self):
-        """
-        This function returns the size (in bytes) of an available RX payload.\n
-        If dynamic payloads are enabled, this function returns True when the RX FIFO is not empty.\n
-        If there is no payload in the RX FIFO, this function returns False.
+        """This function checks if the nRF24L01 has received any data at all, and returns the size (in bytes) of an available RX payload (if any). If `dynamic_payloads` attribute is enabled, this function returns `True` when the RX FIFO buffer is not empty. If there is no payload in the RX FIFO buffer, this function returns `False`.
         """
         if not bool(self._reg_read(FIFO_STATUS) & RX_EMPTY):
             return self._reg_read(R_RX_PL_WID) if not self.dynamic_payloads else True
         else: return False
 
     def recv(self):
-        """
-        This function is used to retrieve the RX payload (as a bytearray), then clears all the status flags. This function is also used in TX mode to aquire the ACK payload (if any). NOTE: dynamic_payloads should be enabled in order to use ACK payloads.\n
-        If dynamic_payloads are enabled, the returned bytearray's length = user defined payload_length (which defaults to 32).\n
-        If dynamic_payloads are disabled, the returned bytearray's length = payload size in the RX FIFO.\n
+        """This function is used to retrieve and return the RX payload data (as a bytearray), then clears all the status flags. This function also serves as a helper function to `read_ack()` in TX mode to aquire the automatic acknowledgement (ACK) payload (if any).
+            NOTE: The `dynamic_payloads` attribute should be enabled in order to use ACK payloads.
+        If the `dynamic_payloads` attribute is disabled, then the returned bytearray's length is equal to the user defined `payload_length` attribute (which defaults to 32). If the `dynamic_payloads` attribute is enabled, then the returned bytearray's length is equal to the payload size in the RX FIFO buffer.
         """
         # buffer size = current payload size + status byte
         curr_pl_size = self.payload_length if not self.dynamic_payloads else self._reg_read(R_RX_PL_WID)
@@ -633,24 +681,23 @@ class NRF24L01(SPIDevice):
         return result
 
     def read_ack(self):
-        """
-        Allows user to read the ACK payload if any. This function can be called from a blocking send() call via read_ack arg in send() or by itself in case of using the less-blocking send_fast() call\n
-        NOTE: this function will do nothing if the status flags are cleared after calling send_fast() and before calling this function. Also, dynamic_payloads should be enabled in order to use ACK payloads.
+        """Allows user to read the automatic acknowledgement (ACK) payload (if any). This function is called from a blocking `send()` call if the `read_ack` parameter in `send()` is passed as `True`. 
+        Alternatively, this function can be called directly in case of using the less-blocking `send_fast()` function call during asychronous applications.
+            WARNING! In the case of asychronous applications, this function will do nothing if the status flags are cleared after calling `send_fast()` and before calling this function. Also, the `dynamic_payloads` attribute should be enabled in order to use ACK payloads.
         """
         if self.any(): # check RX payload for ACK packet
             self.ack = self.recv()
 
     def send(self, buf, read_ack=False, timeout=0.2):
-        """
-        A blocking function to transmit payload until one of the following results is acheived: 
-            Returns 0 if timeout
-            Returns 1 if success
-            Returns 2 if fail
-        buf (bytearray) must have a length greater than 0 to execute transmission.
-            If dynamic_payloads == False and len(buf) less than payload_length, buf is padded with 0s till len(buf) == payload_length
-            If dynamic_payloads == False and len(buf) greater than payload_length, buf is truncated to payload_length.
-        read_ack (bool) specifies wheather or not to save the ACK payload to the ack attribute.\n
-        timeout (float) is an arbitrary number of seconds that is used to keep application from indefinitely hanging in case of radio malfunction. Default is 200 milliseconds. This arg may get depricated in the future.
+        """This blocking function is used to transmit payload until one of the following results is acheived: 
+            - Returns `0` if transmission times out
+            - Returns `1` if transmission succeeds
+            - Returns `2` if transmission fails
+            :param bytearray buf: The payload to transmit. This bytearray must have a length greater than 0 to execute transmission.
+                If the `dynamic_payloads` attribute is disabled and this bytearray's length is less than the `payload_length` attribute, then this bytearray is padded with zeros until its length is equal to the `payload_length` attribute.
+                If the `dynamic_payloads` attribute is disabled and this bytearray's length is greater than `payload_length` attribute, then this bytearray's length is truncated to equal the `payload_length` attribute.
+            :param bool read_ack: A flag to specify wheather or not to save the automatic acknowledgement (ACK) payload to the `ack` attribute.
+            :param float timeout: This an arbitrary number of seconds that is used to keep the application from indefinitely hanging in case of radio malfunction. Default is 200 milliseconds. This parameter may get depricated in the future. It is strongly advised to not alter this parameter AT ALL!
         """
         result = 0
         self.send_fast(buf)
@@ -672,10 +719,14 @@ class NRF24L01(SPIDevice):
         return result
             
     def send_fast(self, buf):
-        """
-        This function (when used without send()) is meant for asynchronous operation. It isn't completely non-blocking as we still need to wait ~5 ms for CSN to settle. A NOTE from the spec sheet:
-            It is important never to keep the nRF24L01+ in TX mode for more than 4ms at a time. If the [auto_ack and dynamic_payloads] features are enabled, nRF24L01+ is never in TX mode longer than 4ms.
-        Conclusion: Use this function at your own risk. If you do, you MUST additionally use either interrupt flags with user defined timer(s) OR enabled dynamic_payloads (auto_ack is enabled with dynamic_payloads) to obey the 4ms rule. If the spec sheet explicitly states this, we have to assume radio damage or misbehavior as a result of disobeying the 4ms rule. Cleverly, TMRh20's arduino library recommends using auto retransmit delay (ARD) to avoid breaking this rule, but we have not verified this strategy.
+        """This non-blocking function (when used as alternative to `send()`) is meant for asynchronous applications. 
+            :param bytearray buf: The payload to transmit. This bytearray must have a length greater than 0 to execute transmission.
+                If the `dynamic_payloads` attribute is disabled and this bytearray's length is less than the `payload_length` attribute, then this bytearray is padded with zeros until its length is equal to the `payload_length` attribute.
+                If the `dynamic_payloads` attribute is disabled and this bytearray's length is greater than `payload_length` attribute, then this bytearray's length is truncated to equal the `payload_length` attribute.
+        This function isn't completely non-blocking as we still need to wait just under 5 ms for the CSN pin to settle (allowing for a clean SPI transaction). Also the nRF24L01 doesn't initiate sending until a mandatory minimum 10 microsecond pulse on the CE pin is acheived, but we have left that wait time to be managed by the user (in cases of asychronous application).
+        Important NOTE paraphrased from the `Link nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1121422>`_:
+            It is important never to keep the nRF24L01+ in TX mode for more than 4 milliseconds at a time. If the [`auto_ack` and `dynamic_payloads`] features are enabled, nRF24L01+ is never in TX mode longer than 4 milliseconds.
+        Conclusion: Use this function at your own risk. If you do, you MUST additionally use either interrupt flags/IRQ pin with user defined timer(s) OR enable the `dynamic_payloads` attribute (the `auto_ack` attribute is enabled with `dynamic_payloads` automatically) to obey the 4 milliseconds rule. If the nRF24L01+ Specifications Sheet explicitly states this, we have to assume radio damage or misbehavior as a result of disobeying the 4 milliseconds rule. Cleverly, `Link TMRh20's arduino library <http://tmrh20.github.io/RF24/classRF24.html>`_ recommends using auto re-transmit delay (the `ard` attribute) to avoid breaking this rule, but we have not verified this strategy as it requires the `auto_ack` attribute to be enabled anyway.
         """
         # pad out or truncate data to fill payload_length if dynamic_payloads == False
         if not self.dynamic_payloads:
