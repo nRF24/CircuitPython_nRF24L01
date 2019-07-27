@@ -567,9 +567,9 @@ class RF24(SPIDevice):
         
         A valid input value is in range [0,2]: 
         
-        - `0` disables CRC
-        - `1` enables CRC encoding scheme using 1 byte
-        - `2` enables CRC encoding scheme using 2 bytes
+        - ``0`` disables CRC
+        - ``1`` enables CRC encoding scheme using 1 byte
+        - ``2`` enables CRC encoding scheme using 2 bytes
         
         Any invalid input throws an `AssertionError` exception. Default is enabled using 2 bytes.
         
@@ -725,7 +725,7 @@ class RF24(SPIDevice):
         
         If user does specify pipe_number:
         
-        :returns: `True` only if the specified pipe_number parameter is equal to the identifying number of the data pipe that received the current (top level) RX payload in the FIFO buffer, otherwise `False`. 
+        :returns: `True` only if the specified ``pipe_number`` parameter is equal to the identifying number of the data pipe that received the current (top level) RX payload in the FIFO buffer, otherwise `False`. 
         
         """
         assert pipe_number is None or 0 <= pipe_number <= 5 # check bounds on user input
