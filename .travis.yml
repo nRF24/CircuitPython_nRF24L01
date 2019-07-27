@@ -43,6 +43,6 @@ install:
 
 script:
   - pylint circuitpython_nrf24l01/*.py
-  - ([[ ! -d "examples" ]] || pylint --disable=missing-docstring,invalid-name,bad-whitespace examples/simple/pi_test.py)
+  # - ([[ ! -d "examples" ]] || pylint --disable=missing-docstring,invalid-name,bad-whitespace examples/simple/pi_test.py)
   - circuitpython-build-bundles --filename_prefix circuitpython-nrf24l01 --library_location .
   - cd docs && sphinx-build -E -W -b html . _build/html && cd ..
