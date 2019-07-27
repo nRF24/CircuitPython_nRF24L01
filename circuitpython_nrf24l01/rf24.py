@@ -27,7 +27,7 @@
 CircuitPython port of the nRF24L01 library from Micropython.
 Original work by Damien P. George & Peter Hinch can be found `here <https://github.com/micropython/micropython/tree/master/drivers/nrf24l01>`_
 
-The Micropython source has been rewritten to work on the Raspberry Pi and other Circuitpython compatible devices using Adafruit's `busio`, `bus_device.spi_device`, and `digitalio`, modules.
+The Micropython source has been rewritten to work on the Raspberry Pi and other Circuitpython compatible devices using Adafruit's `busio`, `adafruit_bus_device.spi_device`, and `digitalio`, modules.
 Modified by Brendan Doherty, Rhys Thomas
 
 * Author(s): Damien P. George, Peter Hinch, Rhys Thomas, Brendan Doherty
