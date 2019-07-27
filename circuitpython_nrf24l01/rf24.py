@@ -272,22 +272,22 @@ class RF24(SPIDevice):
         
         :returns dictionary: A dictionary that contains the data pertaining to the following keys:
 
-        - `Data Ready` Is there RX data ready to be sent?
-        - `Data Sent` Has the TX data been sent?
-        - `Packets Lost` Amount of packets lost (transmission failures)
-        - `Packets Re-transmitted` Maximum amount of attempts to re-transmit
-        - `Max Re-transmit` Has the maximum attempts to re-transmit been reached?
-        - `Received Power Detector` This is `True` only if OTA (over the air) transmission exceeded -64 dBm (not currently implemented by this driver class).
-        - `Re-use TX Payload` Should the nRF24L01 re-use the last TX payload? (not currently implemented by this driver class)
-        - `TX FIFO full` Is the TX FIFO buffer full?
-        - `TX FIFO empty` Is the TX FIFO buffer empty?
-        - `RX FIFO full` Is the RX FIFO buffer full?
-        - `RX FIFO empty` Is the RX FIFO buffer empty?
-        - `Custom ACK payload` Is the nRF24L01 setup to use an extra (user defined) payload attached to the acknowledgment packet?
-        - `Automatic Acknowledgment` Is the automatic acknowledgement feature enabled?
-        - `Dynamic Payloads` Is the dynamic payload length feature enabled?
-        - `Primary Mode` The current mode (RX or TX) of communication of the nRF24L01 device.
-        - `Power Mode` The power state can be Off, Standby-I, Standby-II, or On.
+        - ``Data Ready`` Is there RX data ready to be sent?
+        - ``Data Sent`` Has the TX data been sent?
+        - ``Packets Lost`` Amount of packets lost (transmission failures)
+        - ``Packets Re-transmitted`` Maximum amount of attempts to re-transmit
+        - ``Max Re-transmit`` Has the maximum attempts to re-transmit been reached?
+        - ``Received Power Detector`` This is `True` only if OTA (over the air) transmission exceeded -64 dBm (not currently implemented by this driver class).
+        - ``Re-use TX Payload`` Should the nRF24L01 re-use the last TX payload? (not currently implemented by this driver class)
+        - ``TX FIFO full`` Is the TX FIFO buffer full?
+        - ``TX FIFO empty`` Is the TX FIFO buffer empty?
+        - ``RX FIFO full`` Is the RX FIFO buffer full?
+        - ``RX FIFO empty`` Is the RX FIFO buffer empty?
+        - ``Custom ACK payload`` Is the nRF24L01 setup to use an extra (user defined) payload attached to the acknowledgment packet?
+        - ``Automatic Acknowledgment`` Is the automatic acknowledgement feature enabled?
+        - ``Dynamic Payloads`` Is the dynamic payload length feature enabled?
+        - ``Primary Mode`` The current mode (RX or TX) of communication of the nRF24L01 device.
+        - ``Power Mode`` The power state can be Off, Standby-I, Standby-II, or On.
             
         .. note:: All data is fetched directly from nRF24L01 for user comparison to local copy of attributes and user expectations. Meaning, this data reflects only the information that the nRF24L01 is operating with, not the information stored this driver class's attributes.
         
@@ -490,9 +490,9 @@ class RF24(SPIDevice):
         
         A valid input value is: 
         
-        - `1` sets the frequency data rate to 1 Mbps
-        - `2` sets the frequency data rate to 2 Mbps
-        - `250` sets the frequency data rate to 250 Kbps
+        - ``1`` sets the frequency data rate to 1 Mbps
+        - ``2`` sets the frequency data rate to 2 Mbps
+        - ``250`` sets the frequency data rate to 250 Kbps
         
         Any invalid input throws an `AssertionError` exception. Default is 1 Mbps. 
         
@@ -527,10 +527,10 @@ class RF24(SPIDevice):
         
         A valid input value is:
 
-        - `-18` sets the nRF24L01's power amplitude to -18 dBm (lowest)
-        - `-12` sets the nRF24L01's power amplitude to -12 dBm
-        - `-6` sets the nRF24L01's power amplitude to -6 dBm
-        - `0` sets the nRF24L01's power amplitude to 0 dBm (highest)
+        - ``-18`` sets the nRF24L01's power amplitude to -18 dBm (lowest)
+        - ``-12`` sets the nRF24L01's power amplitude to -12 dBm
+        - ``-6`` sets the nRF24L01's power amplitude to -6 dBm
+        - ``0`` sets the nRF24L01's power amplitude to 0 dBm (highest)
         
         Any invalid input throws an `AssertionError` exception. Default is 0 dBm.
         
