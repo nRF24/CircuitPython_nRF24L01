@@ -121,7 +121,7 @@ class RF24(SPIDevice):
         # init ack storage to None
         self._ack = None
         # init the SPI bus and pins
-        super(NRF24L01, self).__init__(spi, chip_select=csn, baudrate=baudrate, polarity=polarity, phase=phase, extra_clocks=extra_clocks)
+        super(RF24, self).__init__(spi, chip_select=csn, baudrate=baudrate, polarity=polarity, phase=phase, extra_clocks=extra_clocks)
 
         # set address width and check for device presence by verifying successful spi read transaction
         self.address_length = address_length
@@ -509,7 +509,7 @@ class RF24(SPIDevice):
     @data_rate.setter
     def data_rate(self, speed):
         # nRF24L01+ must be in a standby or power down mode before writing to the configuration registers.
-        assert speed == 1 or speed == 2 or speed == 250
+        assert speed in (1, 2, 250)
         if speed == 1: 
             speed = SPEED_1M
         elif speed == 2: 
@@ -547,7 +547,7 @@ class RF24(SPIDevice):
     @pa_level.setter
     def pa_level(self, power):
         # nRF24L01+ must be in a standby or power down mode before writing to the configuration registers.
-        assert power == -18 or power == -12 or power == -6 or power == 0
+        assert power in (-18, -12, -6, 0)
         if power == -18: 
             power = POWER_0
         elif power == -12: 
@@ -805,7 +805,7 @@ class RF24(SPIDevice):
         time.sleep(0.00001) # ensure CE pulse is >= 10 us
         start = time.monotonic()
         self.ce.value = 0
-        while result is 0 and (time.monotonic() - start) < timeout:
+        while result == 0 and (time.monotonic() - start) < timeout:
             # let result be 0 if timeout, 1 if success, or 2 if fail
             if self._reg_read(STATUS) & (TX_DS | MAX_RT): # transmission done
                 # get status flags to detect error
