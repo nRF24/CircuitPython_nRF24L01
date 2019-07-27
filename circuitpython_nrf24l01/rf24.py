@@ -725,7 +725,7 @@ class RF24(SPIDevice):
         
         If user does specify pipe_number:
         
-        :returns: `True` only if `pipe_number` is equal to the identifying number of the data pipe that received the current (top level) RX payload in the FIFO buffer, otherwise `False`. 
+        :returns: `True` only if the specified pipe_number parameter is equal to the identifying number of the data pipe that received the current (top level) RX payload in the FIFO buffer, otherwise `False`. 
         
         """
         assert pipe_number is None or 0 <= pipe_number <= 5 # check bounds on user input
