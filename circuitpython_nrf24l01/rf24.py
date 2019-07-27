@@ -343,7 +343,7 @@ class RF24(SPIDevice):
 
     @power.setter
     def power(self, isOn):
-        assert isinstance(isOn, int)
+        assert isinstance(isOn, (bool, int))
         # capture surrounding flags and set PWR_UP flag according to isOn boolean
         self._reg_write(CONFIG, (self._reg_read(CONFIG) & 0x7d) + (PWR_UP & (isOn << 1)))
         self._power_mode = isOn
@@ -366,7 +366,7 @@ class RF24(SPIDevice):
 
     @auto_ack.setter
     def auto_ack(self, enable):
-        assert isinstance(enable, int)
+        assert isinstance(enable, (bool, int))
         self._reg_write(EN_AA, 0x7f if enable else 0)
         self._aa = enable
         if not enable: # we must disable dynamic_payloads
@@ -393,7 +393,7 @@ class RF24(SPIDevice):
 
     @dynamic_payloads.setter
     def dynamic_payloads(self, enable):
-        assert isinstance(enable, int)
+        assert isinstance(enable, (bool, int))
         # enable automatic acknowledgment packets if dynamic payloads is on else leave as is
         if enable and self.auto_ack != enable:
             self.auto_ack = enable
