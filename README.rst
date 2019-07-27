@@ -9,8 +9,8 @@ Introduction
 ..     :target: https://discord.gg/nBQh6qu
 ..     :alt: Discord
 
-.. image:: https://travis-ci.com/2bndy5/CircuitPython_nRF24L01.svg?branch=master
-    :target: https://travis-ci.com/2bndy5/CircuitPython_nRF24L01
+.. image:: https://travis-ci.org/2bndy5/CircuitPython_nRF24L01.svg?branch=master
+    :target: https://travis-ci.org/2bndy5/CircuitPython_nRF24L01
     :alt: Build Status
 
 Circuitpython driver library for the nRF24L01 transceiver
