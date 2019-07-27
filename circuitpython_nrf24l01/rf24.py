@@ -34,7 +34,7 @@ Modified by Brendan Doherty, Rhys Thomas
 """
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
-import busio, time, struct
+import time
 from adafruit_bus_device.spi_device import SPIDevice
 
 # nRF24L01+ registers
@@ -343,7 +343,7 @@ class RF24(SPIDevice):
 
     @power.setter
     def power(self, isOn):
-        assert type(isOn) is bool
+        assert isinstance(isOn, int)
         # capture surrounding flags and set PWR_UP flag according to isOn boolean
         self._reg_write(CONFIG, (self._reg_read(CONFIG) & 0x7d) + (PWR_UP & (isOn << 1)))
         self._power_mode = isOn
@@ -366,7 +366,7 @@ class RF24(SPIDevice):
 
     @auto_ack.setter
     def auto_ack(self, enable):
-        assert type(enable) is bool
+        assert isinstance(enable, int)
         self._reg_write(EN_AA, 0x7f if enable else 0)
         self._aa = enable
         if not enable: # we must disable dynamic_payloads
@@ -393,7 +393,7 @@ class RF24(SPIDevice):
 
     @dynamic_payloads.setter
     def dynamic_payloads(self, enable):
-        assert type(enable) is bool
+        assert isinstance(enable, int)
         # enable automatic acknowledgment packets if dynamic payloads is on else leave as is
         if enable and self.auto_ack != enable:
             self.auto_ack = enable
@@ -510,9 +510,12 @@ class RF24(SPIDevice):
     def data_rate(self, speed):
         # nRF24L01+ must be in a standby or power down mode before writing to the configuration registers.
         assert speed == 1 or speed == 2 or speed == 250
-        if speed == 1: speed = SPEED_1M
-        elif speed == 2: speed = SPEED_2M
-        elif speed == 250: speed = SPEED_250K
+        if speed == 1: 
+            speed = SPEED_1M
+        elif speed == 2: 
+            speed = SPEED_2M
+        elif speed == 250: 
+            speed = SPEED_250K
         # write new data rate with surrounding flags
         self._reg_write(RF_SETUP, (self._reg_read(RF_SETUP) & 0xd7) | speed)
         # save for access via getter property
@@ -545,10 +548,14 @@ class RF24(SPIDevice):
     def pa_level(self, power):
         # nRF24L01+ must be in a standby or power down mode before writing to the configuration registers.
         assert power == -18 or power == -12 or power == -6 or power == 0
-        if power == -18: power = POWER_0
-        elif power == -12: power = POWER_1
-        elif power == -6: power = POWER_2
-        elif power == 0: power = POWER_3
+        if power == -18: 
+            power = POWER_0
+        elif power == -12: 
+            power = POWER_1
+        elif power == -6: 
+            power = POWER_2
+        elif power == 0: 
+            power = POWER_3
         # write new power amplifier level with surrounding flags
         self._reg_write(RF_SETUP, (self._reg_read(RF_SETUP) & 0xfc) | power)
         # save for access via getter property
@@ -721,7 +728,7 @@ class RF24(SPIDevice):
         :returns: `True` only if `pipe_number` is equal to the identifying number of the data pipe that received the current (top level) RX payload in the FIFO buffer, otherwise `False`. 
         
         """
-        assert pipe_number == None or 0 <= pipe_number <= 5 # check bounds on user input
+        assert pipe_number is None or 0 <= pipe_number <= 5 # check bounds on user input
         pipe = (self._reg_read(STATUS) & RX_P_NO) >> 1
         if pipe > 5:
             return None # RX FIFO is empty
@@ -745,7 +752,7 @@ class RF24(SPIDevice):
         """
         if not bool(self._reg_read(FIFO_STATUS) & RX_EMPTY):
             return self._reg_read(R_RX_PL_WID) if not self.dynamic_payloads else True
-        else: return False
+        return False
 
     def recv(self):
         """This function is used to retrieve, then clears all the status flags. This function also serves as a helper function to `read_ack()` in TX mode to aquire the automatic acknowledgement (ACK) payload (if any).

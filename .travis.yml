@@ -39,10 +39,10 @@ deploy:
 install:
   - pip install -r requirements.txt
   - pip install circuitpython-build-tools Sphinx sphinx-rtd-theme
-  - pip install --force-reinstall pylint==1.9.2
+  - pip install --force-reinstall pylint==2.3.1
 
 script:
-  - pylint circuitpython_nrf24l01/rf24.py
+  - pylint --disable=invalid-name,bad-whitespace,line-too-long,trailing-whitespace,attribute-defined-outside-init circuitpython_nrf24l01/rf24.py
   # - ([[ ! -d "examples" ]] || pylint --disable=missing-docstring,invalid-name,bad-whitespace examples/simple/pi_test.py)
   - circuitpython-build-bundles --filename_prefix circuitpython-nrf24l01 --library_location .
   - cd docs && sphinx-build -E -W -b html . _build/html && cd ..
