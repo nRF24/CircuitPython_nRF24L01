@@ -260,12 +260,30 @@ class RF24(SPIDevice):
 
     @property
     def ack(self):
-        """This attribute contains the payload data that is part of the automatic acknowledgment (ACK) packet. (read-only)
+        """This attribute contains the payload data that is part of the automatic acknowledgment (ACK) packet. You can use this attribute to set a custom ACK payload to be used on a specified pipe number.
+
+        :param tuple ack_pl: This tuple must have the following 2 items in their repective order:
+
+            - The `bytearray` of payload data to be attached to the ACK packet in RX mode. This must have a length in range [1,32] bytes. Otherwise an `AssertionError` exception is thrown.
+            - The `int` identifying data pipe number to be used for transmitting the ACK payload in RX mode. This number must be in range [0,5], otherwise an `AssertionError` exception is thrown. Generally this is the same data pipe set by `open_rx_pipe()`, but it is not limited to that convention.
+
+            .. note:: The `payload_length` attribute has nothing to do with the ACK payload length as enabling the `dynamic_payloads` attribute is required.
+
+        Setting this attribute does NOT change the data stored within it. Instead it only writes the specified payload data to the nRF24L01's TX FIFO buffer in regaurd to the specified data pipe number.
 
         .. important:: To use this attribute properly, the `auto_ack` attribute must be enabled. Additionally, you must specify the `read_ack` parameter as `True` when calling `send()` or, in case of asychronous application, directly call `read_ack()` function after calling `send_fast()` and before calling `clear_status_flags()`. See `read_ack()` for more details. Otherwise, this attribute will always be its initial value of `None`.
 
+        .. note:: As the ACK payload can only be set during RX mode and must be set prior to a transmission, use the ``ack_pl`` parameter of `start_listening()` to set the ACK payload for transmissions upon entering RX mode. Set the ACK payload data using this attribute only after `start_listening()` has been called to ensure the nRF24L01 is in RX mode. It is also worth noting that the nRF24L01 exits RX mode upon calling `stop_listening()`.
+
         """
         return self._ack
+
+    @ack.setter
+    def ack(self, ack_pl):
+        assert 1 <= len(ack_pl[0]) <= 32 and 0 <= ack_pl[1] <= 5
+        if self.auto_ack: # only do something if the auto_ack attribute is enabled
+            self._reg_write_bytes(W_ACK_PAYLOAD | ack_pl[1], ack_pl[0])
+
 
     def what_happened(self):
         """This debuggung function aggregates all status/condition related information from the nRF24L01. Some flags may be irrelevant depending on nRF24L01's state/condition.
@@ -651,21 +669,17 @@ class RF24(SPIDevice):
     # address should be a bytes object with the length = self.address_length
     # pipe 0 and 1 have 5 byte address
     # pipes 2-5 use same 4 MSBytes as pipe 1, plus 1 extra byte
-    def open_rx_pipe(self, pipe_number, address, ack_payload=None):
+    def open_rx_pipe(self, pipe_number, address):
         """This function is used to open a specific data pipe for OTA (over the air) RX transactions. If `dynamic_payloads` attribute is `False`, then the `payload_length` attribute is used to specify the length of the payload to be transmitted on the specified data pipe.
 
         :param int pipe_number: The data pipe to use for RX transactions. This must be in range [1,5]. Otherwise an `AssertionError` exception is thrown.
         :param bytearray address: The virtual address of the transmitting nRF24L01. This must have a length equal to the `address_length` attribute (see `address_length` attribute). Otherwise an `AssertionError` exception is thrown. If using a ``pipe_number`` greater than 2, then only the LSByte of the address is written (so make LSByte unique among other simultaneously broadcasting addresses).
 
             .. note:: The nRF24L01 shares the MSBytes (address[0:4]) on data pipes 2 through 5.
-        :param bytearray ack_payload: A payload buffer to be included as part of the automatic acknowledgment (ACK) packet. This optional and must be 1 to 32 bytes long. Otherwise an `AssertionError` exception is thrown.
-
-            .. note:: Specifying this parameter has no affect (and isn't saved anywhere) if the `auto_ack` attribute is `False`.
 
         """
         assert len(address) == self.address_length
         assert 0 <= pipe_number <= 5
-        assert ack_payload is None or 1 <= len(ack_payload) <= 32
         # open_tx_pipe() overrides pipe 0 address. Thus start_listening() will re-enforce this address using self.pipe0_read_addr attribute
         if pipe_number == 0:
             # save shadow copy of address if target pipe_number is 0
@@ -677,11 +691,23 @@ class RF24(SPIDevice):
         if not self.dynamic_payloads: # radio doesn't care about payload_length if dynamic_payloads is enabled
             self._reg_write(RX_PW_P0 + pipe_number, self.payload_length)
         self._reg_write(EN_RXADDR, self._reg_read(EN_RXADDR) | (1 << pipe_number))
-        if ack_payload is not None and self.auto_ack:
-            self._reg_write_bytes(W_ACK_PAYLOAD | pipe_number, ack_payload)
 
-    def start_listening(self):
-        """Puts the nRF24L01 into RX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this function flushes the RX and TX FIFOs, clears the status flags, and puts nRf24L01 in powers up mode."""
+    def start_listening(self, ack_pl=(None, None)):
+        """Puts the nRF24L01 into RX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this function flushes the RX and TX FIFOs, clears the status flags, and puts nRf24L01 in powers up mode.
+
+        :param tuple ack_pl: This tuple must have the following 2 items in their repective order:
+
+            - The `bytearray` of payload data to be attached to the ACK packet in RX mode. This must have a length in range [1,32] bytes. Otherwise an `AssertionError` exception is thrown.
+            - The `int` identifying data pipe number to be used for transmitting the ACK payload in RX mode. This number must be in range [0,5], otherwise an `AssertionError` exception is thrown. Generally this is the same data pipe set by `open_rx_pipe()`, but it is not limited to that convention.
+
+            .. note:: The `payload_length` attribute has nothing to do with the ACK payload length as enabling the `dynamic_payloads` attribute is required.
+
+            .. note:: Specifying this parameter has no affect (and isn't saved anywhere) if the `auto_ack` attribute is `False`. Use this parameter to prepare an ACK payload for the first received transmission. For any subsequent transmissions, use the `ack` attribute to continue writing ACK payload data to the nRF24L01's FIFO buffer as it is emptied upon successful transmission.
+
+        .. important:: the ``ack_pl`` parameter's payload and pipe number are both required to be specified if there is to be a customized ACK payload transmitted. Otherwise an `AssertionError` exception is thrown.
+
+        """
+        assert (ack_pl[0] is None and ack_pl[1] is None) or (1 <= len(ack_pl[0]) <= 32 and 0 <= ack_pl[1] <= 5)
         # ensure radio is in power down or standby-I mode
         self.ce.value = 0
         # power up radio & set radio in RX mode
@@ -690,6 +716,8 @@ class RF24(SPIDevice):
         self._power_mode = True
         time.sleep(0.005) # mandatory wait time to power on radio
         self.clear_status_flags()
+        if ack_pl[0] is not None and self.auto_ack and ack_pl[1] is not None:
+            self._reg_write_bytes(W_ACK_PAYLOAD | ack_pl[1], ack_pl[0])
         if not self.dynamic_payloads:
             self._reg_write(RX_PW_P0, self.payload_length)
         if self.pipe0_read_addr is not None:

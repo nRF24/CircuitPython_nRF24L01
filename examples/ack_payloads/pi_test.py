@@ -50,18 +50,24 @@ def master():
         time.sleep(1)
 
 def slave():
+    # we must use a tuple to set the ACK payload
+    # data and corresponding pipe number
+    # pipe number options range [0,5]
+    # NOTE ACK payloads need to be in a buffer
+    # protocol object (bytearray)
+    ACK = (b'World', 1)
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(addresses[1])
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 1
-    # pipe number options range [0,5]
-    # here we set the custom ACK payload to be used with the ack_payload parameter
-    # NOTE ACK payloads needs to be in a buffer protocol object (bytearray)
-    nrf.open_rx_pipe(1, addresses[0], ack_payload=b'World')
-    nrf.start_listening() # put radio into RX mode and power up
+    nrf.open_rx_pipe(1, addresses[0])
+    # put radio into RX mode, power it up, and set the first
+    # transmission's ACK payload and pipe number
+    nrf.start_listening(ACK)
 
     while True:
         try:
+            nrf.ack = ACK
             if nrf.any():
                 rx = nrf.recv()
                 print("Received (raw): {}".format(repr(rx)))
