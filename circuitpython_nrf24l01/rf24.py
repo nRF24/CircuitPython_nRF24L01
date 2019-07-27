@@ -248,12 +248,12 @@ class RF24(SPIDevice):
         
         :returns int: 1 byte in which each bit represents a certain status flag.
         
-        * bit 7 (MSB) is not used and should always be 0
-        * bit 6 represents the RX data ready flag
-        * bit 5 represents the TX data sent flag
-        * bit 4 represents the max re-transmit flag
-        * bit 3 through 1 represents the RX pipe number [0,5] that received the available payload in RX FIFO buffer. `111` means RX FIFO buffer is empty.
-        * bit 0 (LSB) represents the TX FIFO buffer full flag
+            * bit 7 (MSB) is not used and should always be 0
+            * bit 6 represents the RX data ready flag
+            * bit 5 represents the TX data sent flag
+            * bit 4 represents the max re-transmit flag
+            * bit 3 through 1 represents the RX pipe number [0,5] that received the available payload in RX FIFO buffer. ``111`` means RX FIFO buffer is empty.
+            * bit 0 (LSB) represents the TX FIFO buffer full flag
         
         """
         return self._status
@@ -270,26 +270,26 @@ class RF24(SPIDevice):
     def what_happened(self):
         """This debuggung function aggregates all status/condition related information from the nRF24L01. Some flags may be irrelevant depending on nRF24L01's state/condition. 
         
-        :returns dictionary: A dictionary that contains the data pertaining to the following keys:
+        :returns: A dictionary that contains the data pertaining to the following keys:
 
-        - ``Data Ready`` Is there RX data ready to be sent?
-        - ``Data Sent`` Has the TX data been sent?
-        - ``Packets Lost`` Amount of packets lost (transmission failures)
-        - ``Packets Re-transmitted`` Maximum amount of attempts to re-transmit
-        - ``Max Re-transmit`` Has the maximum attempts to re-transmit been reached?
-        - ``Received Power Detector`` This is `True` only if OTA (over the air) transmission exceeded -64 dBm (not currently implemented by this driver class).
-        - ``Re-use TX Payload`` Should the nRF24L01 re-use the last TX payload? (not currently implemented by this driver class)
-        - ``TX FIFO full`` Is the TX FIFO buffer full?
-        - ``TX FIFO empty`` Is the TX FIFO buffer empty?
-        - ``RX FIFO full`` Is the RX FIFO buffer full?
-        - ``RX FIFO empty`` Is the RX FIFO buffer empty?
-        - ``Custom ACK payload`` Is the nRF24L01 setup to use an extra (user defined) payload attached to the acknowledgment packet?
-        - ``Automatic Acknowledgment`` Is the automatic acknowledgement feature enabled?
-        - ``Dynamic Payloads`` Is the dynamic payload length feature enabled?
-        - ``Primary Mode`` The current mode (RX or TX) of communication of the nRF24L01 device.
-        - ``Power Mode`` The power state can be Off, Standby-I, Standby-II, or On.
+            - ``Data Ready`` Is there RX data ready to be sent?
+            - ``Data Sent`` Has the TX data been sent?
+            - ``Packets Lost`` Amount of packets lost (transmission failures)
+            - ``Packets Re-transmitted`` Maximum amount of attempts to re-transmit
+            - ``Max Re-transmit`` Has the maximum attempts to re-transmit been reached?
+            - ``Received Power Detector`` This is `True` only if OTA (over the air) transmission exceeded -64 dBm (not currently implemented by this driver class).
+            - ``Re-use TX Payload`` Should the nRF24L01 re-use the last TX payload? (not currently implemented by this driver class)
+            - ``TX FIFO full`` Is the TX FIFO buffer full?
+            - ``TX FIFO empty`` Is the TX FIFO buffer empty?
+            - ``RX FIFO full`` Is the RX FIFO buffer full?
+            - ``RX FIFO empty`` Is the RX FIFO buffer empty?
+            - ``Custom ACK payload`` Is the nRF24L01 setup to use an extra (user defined) payload attached to the acknowledgment packet?
+            - ``Automatic Acknowledgment`` Is the automatic acknowledgement feature enabled?
+            - ``Dynamic Payloads`` Is the dynamic payload length feature enabled?
+            - ``Primary Mode`` The current mode (RX or TX) of communication of the nRF24L01 device.
+            - ``Power Mode`` The power state can be Off, Standby-I, Standby-II, or On.
             
-        .. note:: All data is fetched directly from nRF24L01 for user comparison to local copy of attributes and user expectations. Meaning, this data reflects only the information that the nRF24L01 is operating with, not the information stored this driver class's attributes.
+        .. note:: All data is fetched directly from nRF24L01 for user comparison to local copy of attributes and user expectations. Meaning, this data reflects only the information that the nRF24L01 is operating with, not the information stored in this driver class's attributes.
         
         """
         watchdog = self._reg_read(OBSERVE_TX)
@@ -612,19 +612,20 @@ class RF24(SPIDevice):
 
     def interrupt_config(self, onMaxARC=True, onDataSent=True, onDataRecv=True):
         """Sets the configuration of the nRF24L01's Interrupt (IRQ) pin. IRQ signal from the nRF24L01 is active LOW. (write-only)
+        To fetch the status of these interrupt (IRQ) flags, use the  `status` attribute's bits 4 through 6. 
 
         :param bool onMaxARC: If this is `True`, then interrupt pin goes active LOW when maximum number of attempts to re-transmit the packet have been reached.
         :param bool onDataSent: If this is `True`, then interrupt pin goes active LOW when a payload from TX buffer is successfully transmitted. If `auto_ack` attribute is enabled, then interrupt pin only goes active LOW when acknowledgment (ACK) packet is received.
         :param bool onDataRecv: If this is `True`, then interrupt pin goes active LOW when there is new data to read in the RX FIFO. 
         
-        .. note:: Paraphrased from nRF24L01+ Specification Sheet:
-            
-            The procedure for handling ``onDataRecv`` interrupt should be: 
-            
-            1. read payload through `recv()`
-            2. clear `dataReady` status flag (taken care of by using `recv()` in previous step)
-            3. read FIFO_STATUS register to check if there are more payloads available in RX FIFO buffer. (a call to `any()` will get this result)
-            4. if there is more data in RX FIFO, repeat from step 1
+            .. note:: Paraphrased from nRF24L01+ Specification Sheet:
+                
+                The procedure for handling ``onDataRecv`` interrupt should be: 
+                
+                1. read payload through `recv()`
+                2. clear ``dataReady`` status flag (taken care of by using `recv()` in previous step)
+                3. read FIFO_STATUS register to check if there are more payloads available in RX FIFO buffer. (a call to `any()` will get this result)
+                4. if there is more data in RX FIFO, repeat from step 1
         
         """
         # capture surrounding flags and set interupt config flags to 0, then insert boolean args from user. Resulting '&' operation is 1 for disable, 0 for enable
@@ -654,7 +655,7 @@ class RF24(SPIDevice):
         """This function is used to open a specific data pipe for OTA (over the air) RX transactions. If `dynamic_payloads` attribute is `False`, then the `payload_length` attribute is used to specify the length of the payload to be transmitted on the specified data pipe.
 
         :param int pipe_number: The data pipe to use for RX transactions. This must be in range [1,5]. Otherwise an `AssertionError` exception is thrown.
-        :param bytearray address: The virtual address of the transmitting nRF24L01. This must have a length equal to the `address_length` attribute (see `address_length` attribute). Otherwise an `AssertionError` exception is thrown. If using a `pipe_number` greater than 2, then only the LSByte of the address is written (so make LSByte unique among other simultaneously broadcasting addresses).
+        :param bytearray address: The virtual address of the transmitting nRF24L01. This must have a length equal to the `address_length` attribute (see `address_length` attribute). Otherwise an `AssertionError` exception is thrown. If using a ``pipe_number`` greater than 2, then only the LSByte of the address is written (so make LSByte unique among other simultaneously broadcasting addresses).
             
             .. note:: The nRF24L01 shares the MSBytes (address[0:4]) on data pipes 2 through 5.
         :param bytearray ack_payload: A payload buffer to be included as part of the automatic acknowledgment (ACK) packet. This optional and must be 1 to 32 bytes long. Otherwise an `AssertionError` exception is thrown. 
@@ -787,9 +788,10 @@ class RF24(SPIDevice):
         """This blocking function is used to transmit payload until one of the following results is acheived: 
         
         :returns: 
-            `0` if transmission times out meaning nRF24L01 has malfunctioned.
-            `1` if transmission succeeds.
-            `2` if transmission fails.
+            
+            * ``0`` if transmission times out meaning nRF24L01 has malfunctioned.
+            * ``1`` if transmission succeeds.
+            * ``2`` if transmission fails.
         
         :param bytearray buf: The payload to transmit. This bytearray must have a length greater than 0 to execute transmission.
             
