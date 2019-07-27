@@ -597,7 +597,7 @@ class RF24(SPIDevice):
             1. read payload through `_reg_read_bytes()`
             2. clear `dataReady` status flag
             3. read FIFO_STATUS register (address `0x17`) to check if there are more payloads available in RX FIFO buffer (bit 0 of FIFO_STATUS register).
-               For example: `is_RX_empty = nrf._reg_read(0x17) & 1`
+               For example: ``is_RX_empty = nrf._reg_read(0x17) & 1``
             4. if there is more data in RX FIFO, repeat from step 1
         
         """
@@ -799,6 +799,7 @@ class RF24(SPIDevice):
         It is important never to keep the nRF24L01+ in TX mode for more than 4 milliseconds at a time. If the [`auto_ack` and `dynamic_payloads`] features are enabled, nRF24L01+ is never in TX mode longer than 4 milliseconds.
         
         .. tip:: Use this function at your own risk. If you do, you MUST additionally use either interrupt flags/IRQ pin with user defined timer(s) OR enable the `dynamic_payloads` attribute (the `auto_ack` attribute is enabled with `dynamic_payloads` automatically) to obey the 4 milliseconds rule. If the nRF24L01+ Specifications Sheet explicitly states this, we have to assume radio damage or misbehavior as a result of disobeying the 4 milliseconds rule. Cleverly, `TMRh20's arduino library <http://tmrh20.github.io/RF24/classRF24.html>`_ recommends using auto re-transmit delay (the `ard` attribute) to avoid breaking this rule, but we have not verified this strategy as it requires the `auto_ack` attribute to be enabled anyway.
+        
         """
         # pad out or truncate data to fill payload_length if dynamic_payloads == False
         if not self.dynamic_payloads:
