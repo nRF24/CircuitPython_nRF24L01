@@ -617,14 +617,13 @@ class RF24(SPIDevice):
         :param bool onDataSent: If this is `True`, then interrupt pin goes active LOW when a payload from TX buffer is successfully transmitted. If `auto_ack` attribute is enabled, then interrupt pin only goes active LOW when acknowledgment (ACK) packet is received.
         :param bool onDataRecv: If this is `True`, then interrupt pin goes active LOW when there is new data to read in the RX FIFO. 
         
-        .. note:: Paraphrased from spec sheet:
+        .. note:: Paraphrased from nRF24L01+ Specification Sheet:
             
-            The procedure for handling `onDataRecv` interrupt should be: 
+            The procedure for handling ``onDataRecv`` interrupt should be: 
             
-            1. read payload through `_reg_read_bytes()`
-            2. clear `dataReady` status flag
-            3. read FIFO_STATUS register (address `0x17`) to check if there are more payloads available in RX FIFO buffer (bit 0 of FIFO_STATUS register).
-               For example: ``is_RX_empty = nrf._reg_read(0x17) & 1``
+            1. read payload through `recv()`
+            2. clear `dataReady` status flag (taken care of by using `recv()` in previous step)
+            3. read FIFO_STATUS register to check if there are more payloads available in RX FIFO buffer. (a call to `any()` will get this result)
             4. if there is more data in RX FIFO, repeat from step 1
         
         """
