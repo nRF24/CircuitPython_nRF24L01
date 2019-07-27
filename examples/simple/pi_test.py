@@ -1,7 +1,7 @@
 '''
     Simple example of library usage.
 
-    Master transmits an incrementing integer every second. 
+    Master transmits an incrementing integer every second.
     Slave polls the radio every 0.5s and prints the received value.
 
     This is a simple test to get communications up and running.
@@ -11,7 +11,7 @@ import time, struct, board, digitalio as dio
 from circuitpython_nrf24l01.rf24 import RF24
 
 addresses = (b'1Node', b'2Node')
-# these addresses should be compatible with the GettingStarted.ino sketch included in TRMh20's arduino library 
+# these addresses should be compatible with the GettingStarted.ino sketch included in TRMh20's arduino library
 
 ce = dio.DigitalInOut(board.CE0) # AKA board.D8
 csn = dio.DigitalInOut(board.D5)
@@ -23,15 +23,15 @@ nrf = RF24(spi, csn, ce)
 def master():
     nrf.open_tx_pipe(addresses[0]) # set address of RX node into a TX pipe
     # set address of TX node into an RX pipe. NOTE you MUST specify which pipe number to use for RX, we'll be using pipe 1 (options range [0,5])
-    nrf.open_rx_pipe(1, addresses[1]) 
+    nrf.open_rx_pipe(1, addresses[1])
     nrf.stop_listening() # put radio in TX mode and power down
     i = 0.0 # data to send
 
     while True:
         try:
-            i += 0.01 
+            i += 0.01
             # use struct.pack to packetize your data into a usable payload
-            temp = struct.pack('<d', i) 
+            temp = struct.pack('<d', i)
             # 'd' means a single 8 byte double value. '<' means little endian byte order
             print("Sending: {} as struct: {}".format(i, temp))
             now = time.monotonic() * 1000 # start timer
@@ -42,7 +42,7 @@ def master():
                 print('send() succeessful')
             elif result == 2:
                 print('send() failed')
-        except KeyboardInterrupt: 
+        except KeyboardInterrupt:
             break
         finally:
             # print timer results despite transmission success
@@ -52,7 +52,7 @@ def master():
 def slave():
     nrf.open_tx_pipe(addresses[1]) # set address of RX node into a TX pipe
     # set address of TX node into an RX pipe. NOTE you MUST specify which pipe number to use for RX, we'll be using pipe 1 (options range [0,5])
-    nrf.open_rx_pipe(1, addresses[0]) 
+    nrf.open_rx_pipe(1, addresses[0])
     nrf.start_listening() # put radio into RX mode and power up
 
     while True:
@@ -62,7 +62,7 @@ def slave():
                 temp = struct.unpack('<d', then) # expecting a long int
                 print("Received: {}, Raw: {}".format(temp[0], repr(then)))
             # time.sleep(0.5)
-        except KeyboardInterrupt: 
+        except KeyboardInterrupt:
             break
 
 print('NRF24L01 test module.\nRun slave() on receiver, and master() on transmitter.')

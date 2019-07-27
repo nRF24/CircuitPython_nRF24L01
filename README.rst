@@ -91,9 +91,9 @@ See `examples/` for an example of how to use the library. Notice that there are 
 To run the simple example, open a python terminal in this repo's example/simple folder and run the following:
 
 .. code-block:: python
-    
+
     # if using an adafruit feather, try using "from m4_test import *"
-    >>> from pi_test import * 
+    >>> from pi_test import *
 
         NRF24L01 test module.
         Run slave() on receiver, and master() on transmitter.
@@ -109,11 +109,11 @@ Firstly import the necessary packages for your application.
     # transmitted packet must be a byte array, thus the need for struct
     import time, board, struct, digitalio as dio
     from busio import SPI
-    from circuitpython_nrf24l01.rf24 import RF24 
+    from circuitpython_nrf24l01.rf24 import RF24
     # circuitpython_nrf24l01.rf24 is this library
     # RF24 is the main driver class
 
-Define the nodes' virtual addresses/IDs for use on the radio's data pipes. Also define the SPI pin connections to the radio. Now you're ready to instantiate the NRF24L01 object 
+Define the nodes' virtual addresses/IDs for use on the radio's data pipes. Also define the SPI pin connections to the radio. Now you're ready to instantiate the NRF24L01 object
 
 .. note:: A word on pipes vs addresses vs channels.
 
@@ -128,7 +128,7 @@ Define the nodes' virtual addresses/IDs for use on the radio's data pipes. Also 
 
     ce = dio.DigitalInOut(board.D8) # pin AKA board.CE0
     cs = dio.DigitalInOut(board.D5)
-    
+
     spi = SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO) # create instance of spi port
     nrf = RF24(spi, cs, ce) # create instance of the radio
 
@@ -147,7 +147,7 @@ To transmit firstly open the TX and RX pipes, set the desired enpoints' addresse
             try:
                 print("Sending:", i)
                 # use struct to pack the data into a bytearray
-                nrf.send(struct.pack('i', i)) 
+                nrf.send(struct.pack('i', i))
             except OSError:
                 print("sending failed")
             time.sleep(1) # send every 1s
@@ -167,9 +167,9 @@ To receive this data, again open the TX and RX pipes and set the desired endpoin
                     buf = nrf.recv()
                     # use struct to unpack the bytearray into a tuple
                     # according to the data type format string
-                    i = struct.unpack('i', buf) 
-                    # format string 'i' matches a 4 byte iterable object 
-                    # where the payload is stored (maximum is 32 bytes) 
+                    i = struct.unpack('i', buf)
+                    # format string 'i' matches a 4 byte iterable object
+                    # where the payload is stored (maximum is 32 bytes)
                     # check out other available format strings: https://docs.python.org/2/library/struct.html#format-characters
                     print("Received:", i[0]) # prints the only integer in the resulting tuple.
 
