@@ -271,9 +271,9 @@ class RF24(SPIDevice):
 
         Setting this attribute does NOT change the data stored within it. Instead it only writes the specified payload data to the nRF24L01's TX FIFO buffer in regaurd to the specified data pipe number.
 
-        .. important:: To use this attribute properly, the `auto_ack` attribute must be enabled. Additionally, you must specify the `read_ack` parameter as `True` when calling `send()` or, in case of asychronous application, directly call `read_ack()` function after calling `send_fast()` and before calling `clear_status_flags()`. See `read_ack()` for more details. Otherwise, this attribute will always be its initial value of `None`.
+        .. important:: To use this attribute properly, the `auto_ack` attribute must be enabled. Additionally, if retrieving the ACK payload data, you must specify the `read_ack` parameter as `True` when calling `send()` or, in case of asychronous application, directly call `read_ack()` function after calling `send_fast()` and before calling `clear_status_flags()`. See `read_ack()` for more details. Otherwise, this attribute will always be its initial value of `None`.
 
-        .. note:: As the ACK payload can only be set during RX mode and must be set prior to a transmission, use the ``ack_pl`` parameter of `start_listening()` to set the ACK payload for transmissions upon entering RX mode. Set the ACK payload data using this attribute only after `start_listening()` has been called to ensure the nRF24L01 is in RX mode. It is also worth noting that the nRF24L01 exits RX mode upon calling `stop_listening()`.
+        .. tip:: As the ACK payload can only be set during RX mode and must be set prior to a transmission, use the ``ack_pl`` parameter of `start_listening()` to set the ACK payload for transmissions upon entering RX mode. Set the ACK payload data using this attribute only after `start_listening()` has been called to ensure the nRF24L01 is in RX mode. It is also worth noting that the nRF24L01 exits RX mode upon calling `stop_listening()`.
 
         """
         return self._ack

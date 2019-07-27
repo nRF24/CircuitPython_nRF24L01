@@ -76,5 +76,7 @@ def slave():
         except KeyboardInterrupt:
             break
 
-print("""NRF24L01 test module.\
-    Run slave() on receiver, and master() on transmitter.""")
+print("""\
+    nRF24L01 Simple test.\
+    Run slave() on receiver\
+    Run master() on transmitter.""")
