@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """
-`CircuitPython_nRF24L01.rf24` - RF24
+`circuitpython_nrf24l01.rf24` - RF24
 =========================================================================================
 
 CircuitPython port of the nRF24L01 library from Micropython.
