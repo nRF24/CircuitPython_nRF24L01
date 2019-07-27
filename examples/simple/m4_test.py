@@ -19,7 +19,7 @@ csn = dio.DigitalInOut(board.D5)
 
 spi = board.SPI()
 # we'll be sending a dynamic payload of size 8 bytes (1 double)
-nrf = NRF24L01(spi, csn, ce, payload_length=8) 
+nrf = RF24(spi, csn, ce)
 
 def master():
     nrf.open_tx_pipe(addresses[0]) # set address of RX node into a TX pipe
@@ -32,7 +32,8 @@ def master():
         try:
             i += 0.01 
             # use struct.pack to packetize your data into a usable payload
-            temp = struct.pack('<d', i) # 'd' means a single 8 byte double value. '<' means little endian byte order
+            temp = struct.pack('<d', i) 
+            # 'd' means a single 8 byte double value. '<' means little endian byte order
             print("Sending: {} as struct: {}".format(i, temp))
             now = time.monotonic() * 1000 # start timer
             result = nrf.send(temp)
@@ -62,6 +63,7 @@ def slave():
                 temp = struct.unpack('<d', then) # expecting a long int
                 print("Received: {}, Raw: {}".format(temp[0], repr(then)))
             # time.sleep(0.5)
-        except KeyboardInterrupt: break
+        except KeyboardInterrupt: 
+            break
 
 print('NRF24L01 test module.\nRun slave() on receiver, and master() on transmitter.')
