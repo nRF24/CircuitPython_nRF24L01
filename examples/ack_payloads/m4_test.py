@@ -1,13 +1,12 @@
 '''
-    Simple example of library usage.
+    Templated example of using the library to transmit
+    and retrieve custom automatic acknowledgment payloads.
 
-    Master transmits an incrementing integer every second.
-    Slave polls the radio every 0.5s and prints the received value.
-
-    This is a simple test to get communications up and running.
+    Master transmits a dummy payload every second and prints the ACK payload.
+    Slave prints the received value and sends a dummy ACK payload.
 '''
 
-import time, struct, board, digitalio as dio
+import time, board, digitalio as dio
 from circuitpython_nrf24l01.rf24 import RF24
 
 addresses = (b'1Node', b'2Node')
@@ -17,52 +16,57 @@ ce = dio.DigitalInOut(board.D7)
 csn = dio.DigitalInOut(board.D5)
 
 spi = board.SPI()
-# we'll be sending a dynamic payload of size 8 bytes (1 double)
+# we'll be sending a dynamic payload of size 5 bytes (a 5 character string)
 nrf = RF24(spi, csn, ce)
 
 def master():
     nrf.open_tx_pipe(addresses[0]) # set address of RX node into a TX pipe
-    # set address of TX node into an RX pipe. NOTE you MUST specify which pipe number to use for RX, we'll be using pipe 1 (options range [0,5])
+    # set address of TX node into an RX pipe. NOTE you MUST specify
+    # which pipe number to use for RX, we'll be using pipe 1
+    # pipe number options range [0,5]
     nrf.open_rx_pipe(1, addresses[1])
     nrf.stop_listening() # put radio in TX mode and power down
-    i = 0.0 # data to send
 
     while True:
         try:
-            i += 0.01
-            # use struct.pack to packetize your data into a usable payload
-            temp = struct.pack('<d', i)
-            # 'd' means a single 8 byte double value. '<' means little endian byte order
-            print("Sending: {} as struct: {}".format(i, temp))
-            now = time.monotonic() * 1000 # start timer
-            result = nrf.send(temp)
+            # payloads needs to be in a buffer protocol object (bytearray). Just like the addressess.
+            temp = b'Hello'
+            print("Sending (raw): {}".format(repr(temp)))
+            # to read the ACK payload during TX mode we
+            # pass the parameter read_ack as True.
+            result = nrf.send(temp, read_ack=True)
             if result == 0:
                 print('send() timed out')
             elif result == 1:
-                print('send() succeessful')
+                # print the received ACK that was automatically fetched and saved to nrf's ack attribute
+                print('raw ACK: {}'.format(repr(nrf.ack)))
+                # the ACk payload should also include the default
+                # response data that the nRF24L01 uses despite
+                # a custom set ACK payload.
             elif result == 2:
                 print('send() failed')
         except KeyboardInterrupt:
             break
-        finally:
-            # print timer results despite transmission success
-            print('Transmission took', time.monotonic() * 1000 - now, 'ms')
         time.sleep(1)
 
 def slave():
-    nrf.open_tx_pipe(addresses[1]) # set address of RX node into a TX pipe
-    # set address of TX node into an RX pipe. NOTE you MUST specify which pipe number to use for RX, we'll be using pipe 1 (options range [0,5])
-    nrf.open_rx_pipe(1, addresses[0])
+    # set address of RX node into a TX pipe
+    nrf.open_tx_pipe(addresses[1])
+    # set address of TX node into an RX pipe. NOTE you MUST specify
+    # which pipe number to use for RX, we'll be using pipe 1
+    # pipe number options range [0,5]
+    # here we set the custom ACK payload to be used with the ack_payload parameter
+    # NOTE ACK payloads needs to be in a buffer protocol object (bytearray)
+    nrf.open_rx_pipe(1, addresses[0], ack_payload=b'World')
     nrf.start_listening() # put radio into RX mode and power up
 
     while True:
         try:
             if nrf.any():
-                then = nrf.recv()
-                temp = struct.unpack('<d', then) # expecting a long int
-                print("Received: {}, Raw: {}".format(temp[0], repr(then)))
-            # time.sleep(0.5)
+                rx = nrf.recv()
+                print("Received (raw): {}".format(repr(rx)))
         except KeyboardInterrupt:
             break
 
-print('NRF24L01 test module.\nRun slave() on receiver, and master() on transmitter.')
+print("""NRF24L01 test module.\
+    Run slave() on receiver, and master() on transmitter.""")

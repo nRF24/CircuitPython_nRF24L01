@@ -22,7 +22,7 @@
 # THE SOFTWARE.
 """
 `circuitpython_nrf24l01.rf24` - RF24
-=========================================================================================
+====================================
 
 CircuitPython port of the nRF24L01 library from Micropython.
 Original work by Damien P. George & Peter Hinch can be found `here <https://github.com/micropython/micropython/tree/master/drivers/nrf24l01>`_
