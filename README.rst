@@ -120,7 +120,7 @@ Define the nodes' virtual addresses/IDs for use on the radio's data pipes. Also 
     You should think of the pipes as RF pathways to a specified address. There are only six pipes on the nRF24L01, thus it can simultaneously talk to a maximum of 6 other nRF24L01 radios. However, you can use any 5 byte long address you can think of (as long as the last byte is unique among simultaneous braodcasting addresses), so you're not limited to just talking to the same 6 radios. Also the radio's channel is not be confused with the radio's pipes. Channel selection is a way of specifying a certain radio frequency. Channel defaults to 76 (like the arduino library), but options range from 0 to 127. The channel can be tweaked to find a less occupied frequency amongst Bluetooth & WiFi ambient signals.
 
 .. warning::
-    The RX pipe's address on the receiving node MUST match the TX pipe's address on the transmitting node. Also the specified channel MUST match on both tranceivers.
+    The RX pipe's address on the receiving node MUST match the TX pipe's address on the transmitting node. Also the specified channel MUST match on both endpoint tranceivers.
 
 .. code-block:: python
 
@@ -132,7 +132,7 @@ Define the nodes' virtual addresses/IDs for use on the radio's data pipes. Also 
     spi = SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO) # create instance of spi port
     nrf = RF24(spi, cs, ce) # create instance of the radio
 
-To transmit firstly open the TX and RX pipes and set the desired enpoints' addresses, stop listening (puts radio in transmit mode) and send your packet (`buf`).
+To transmit firstly open the TX and RX pipes, set the desired enpoints' addresses, stop listening (puts radio in transmit mode), and send your payload packed into a bytearray using struct.pack().
 
 .. code-block:: python
 
@@ -152,7 +152,7 @@ To transmit firstly open the TX and RX pipes and set the desired enpoints' addre
                 print("sending failed")
             time.sleep(1) # send every 1s
 
-To receive this data, again open the TX and RX pipes and set the desired endpoint addresses, then start listening for data. The `nrf.any()` method returns true when there is data ready to be received.
+To receive this data, again open the TX and RX pipes and set the desired endpoint addresses, then start listening for data. The ``nrf.any()`` method returns true when there is data ready to be received.
 
 .. code-block:: python
 
