@@ -596,10 +596,9 @@ class RF24(SPIDevice):
             
             1. read payload through `_reg_read_bytes()`
             2. clear `dataReady` status flag
-            3. read FIFO_STATUS register (address `0x17`) to check if there are more payloads available in RX FIFO buffer (bit 0 of FIFO_STATUS register). For example: 
+            3. read FIFO_STATUS register (address `0x17`) to check if there are more payloads available in RX FIFO buffer (bit 0 of FIFO_STATUS register).
             
-                .. code-block:: python
-                ``is_RX_empty = nrf._reg_read(0x17) & 1``
+                For example: ``is_RX_empty = nrf._reg_read(0x17) & 1``
             4. if there is more data in RX FIFO, repeat from step 1
         """
         # capture surrounding flags and set interupt config flags to 0, then insert boolean args from user. Resulting '&' operation is 1 for disable, 0 for enable
