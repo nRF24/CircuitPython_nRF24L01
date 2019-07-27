@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """
-`CircuitPython_nRF24L01.rf24.RF24` - A driver class for the nRF24L01(+) radio transceiver
+`CircuitPython_nRF24L01.rf24` - RF24
 =========================================================================================
 
 CircuitPython port of the nRF24L01 library from Micropython.
