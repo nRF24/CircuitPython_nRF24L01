@@ -28,7 +28,7 @@ nrf = RF24(spi, csn, ce)
 # recommended behavior is to keep in TX mode while sleeping
 nrf.stop_listening() # put the nRF24L01 is in TX and power down modes
 
-def master(count=5):
+def master(count=5): # count = 5 will only transmit 5 packets
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(addresses[0])
     # ensures the nRF24L01 is in TX and power down modes
@@ -56,12 +56,12 @@ def master(count=5):
         print('Transmission took',\
                 time.monotonic() * 1000 - now, 'ms')
         time.sleep(1)
+        i += 0.1
         counter -= 1
 
-def slave(count=5):
-    # since auto-acknowledgments feature is enabled, we need to
-    # specify the address to the RX node on a TX pipe.
-    nrf.open_tx_pipe(addresses[1])
+# running slave to only fetch/receive count number of packets
+# count = 3 will mimic a full RX FIFO behavior via nrf.stop_listening()
+def slave(count=3):
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 1
     # pipe number options range [0,5]

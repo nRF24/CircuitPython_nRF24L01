@@ -57,7 +57,7 @@ nrf.ack = (None, 1)
 # recommended behavior is to keep in TX mode while sleeping
 nrf.stop_listening() # put the nRF24L01 is in TX and power down modes
 
-def master(count=5):
+def master(count=5): # count = 5 will only transmit 5 packets
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(addresses[0])
     # ensures the nRF24L01 is in TX and power down modes
@@ -83,7 +83,9 @@ def master(count=5):
         time.sleep(1)
         counter -= 1
 
-def slave(count=5):
+# running slave to only fetch/receive count number of packets
+# count = 3 will mimic a full RX FIFO behavior via nrf.stop_listening()
+def slave(count=3):
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 1
     nrf.open_rx_pipe(1, addresses[0])
