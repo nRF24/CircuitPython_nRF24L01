@@ -881,7 +881,7 @@ class RF24(SPIDevice):
         .. warning:: In the case of asychronous applications, this function will do nothing if the status flags are cleared after calling `send_fast()` and before calling this function. Also, the `dynamic_payloads` and `auto_ack` attributes must be enabled to use ACK payloads. It is worth noting that enabling the `dynamic_payloads` attribute automatically enables the `auto_ack` attribute.
 
         """
-        if self.available(): # check RX payload for ACK packet
+        if self.any(): # check RX payload for ACK packet
             # directly save ACK payload to the ack internal attribute.
             # `self.ack = x` does not not save anything internally
             self._ack = self.recv()
