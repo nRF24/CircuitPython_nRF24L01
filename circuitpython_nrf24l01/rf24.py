@@ -120,6 +120,7 @@ class RF24(SPIDevice):
         self.pipe0_read_addr = None
         # init the buffer used to store status data from spi transactions
         self._status = bytearray(1)
+        self._config = bytearray(1)
         # init the SPI bus and pins
         super(RF24, self).__init__(spi, chip_select=csn, baudrate=baudrate, polarity=polarity, phase=phase, extra_clocks=extra_clocks)
 
@@ -147,7 +148,7 @@ class RF24(SPIDevice):
         # init custom ack payload feature to off
         self.ack = ack # (None, 1) == nRF24L01's default
         # auto retransmit delay: 1500us (recommended default)
-        self.ard = 1500
+        self._ard = 1500
         # auto retransmit count: 3
         self.arc = 3
         # set rf power amplitude to 0 dBm
@@ -164,7 +165,7 @@ class RF24(SPIDevice):
         self.clear_status_flags()
         # flush buffers
         self.flush_rx()
-        self.flush_tx()
+        self.flush_tx() #<-- we're already powered standby-I mode, throw the CE HIGH to do this;
         # init reuse_tx attribute to nRF24L01 default
         self._reuse_tx = False
         # ensure that "NO_ACK" flag can be written to the TX packet preamble via a special SPI command. This is required to be able to send a single packet without ACK per call to send() or send_fast(). See the respective functions' parameters for more details.
@@ -261,6 +262,22 @@ class RF24(SPIDevice):
     @property
     def status(self):
         """The latest status byte return from SPI transactions. (read-only)
+
+        :returns: 1 byte `int` in which each bit represents a certain status flag.
+
+            * bit 7 (MSB) is not used and will always be 0
+            * bit 6 represents the RX data ready flag
+            * bit 5 represents the TX data sent flag
+            * bit 4 represents the max re-transmit flag
+            * bit 3 through 1 represents the RX pipe number [0,5] that received the available payload in RX FIFO buffer. ``0b111`` means RX FIFO buffer is empty.
+            * bit 0 (LSB) represents the TX FIFO buffer full flag
+
+        """
+        return self._status
+
+    @property
+    def config(self):
+        """The latest config byte return from SPI transactions. (read-only)
 
         :returns: 1 byte `int` in which each bit represents a certain status flag.
 
@@ -483,7 +500,6 @@ class RF24(SPIDevice):
 
     @arc.setter
     def arc(self, count):
-        # nRF24L01+ must be in a standby or power down mode before writing to the configuration registers.
         assert 0 <= count <= 15
         self._reg_write(SETUP_RETR, (self._reg_read(SETUP_RETR) & 0xf0) | count)
         # save for access via getter property
@@ -507,9 +523,11 @@ class RF24(SPIDevice):
     def ard(self, t):
         # nRF24L01+ must be in a standby or power down mode before writing to the configuration registers.
         assert 250 <= t <= 4000 and t % 250 == 0
+        temp = self._reg_read(SETUP_RETR)
         # set new ARD data and current ARC data to register
-        self._reg_write(SETUP_RETR, (int((t-250)/250) << 4) | (self._reg_read(SETUP_RETR) & 15))
-        # save for access via getter property
+        self._reg_write(SETUP_RETR, (int((t-250)/250) << 4) | (temp & 15))
+        # save for access via getter property(s)
+        self._arc = (temp & 15) # since we accessed the same register anyway
         self._ard = t
 
     @property
@@ -787,7 +805,7 @@ class RF24(SPIDevice):
         # power up radio & set radio in RX mode
         self._reg_write(CONFIG, (self._reg_read(CONFIG) & 0xfc) | PWR_UP | PRIM_RX)
         # manipulating local copy of power attribute saves an extra spi transaction because we already needed to access the same register to manipulate RX/TX mode
-        self._power_mode = True
+        self._power_mode = True #  standby-I mode
         time.sleep(0.005) # mandatory wait time to power on radio
         if ack_pl[0] is not None and self.auto_ack and 0 <= ack_pl[1] <= 5:
             self._reg_write_bytes(W_ACK_PAYLOAD | ack_pl[1], ack_pl[0])
@@ -798,14 +816,16 @@ class RF24(SPIDevice):
         # enable radio comms
         self.ce.value = 1 # radio begins listening after CE pulse is > 130 us
         time.sleep(0.00013) # ensure pulse is > 130 us
+        # nRF24L01 has just entered standby-II mode
 
     def stop_listening(self):
         """Puts the nRF24L01 into TX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this function flushes the RX and TX FIFOs, clears the status flags, and puts nRF24L01 in powers down (sleep) mode."""
-        # disable comms
+        # disable comms; going to power standby-I mode
         self.ce.value = 0
-        self.flush_tx()
-        self.flush_rx()
-        self.clear_status_flags()
+        # at least allow the user some time to deal with available data
+        # self.flush_tx()
+        # self.flush_rx()
+        # self.clear_status_flags()
         # power down radio. Also set radio in TX mode as recommended behavior per spec sheet.
         self._reg_write(CONFIG, self._reg_read(CONFIG) & 0xfc)
         # manipulating local copy of power attribute saves an extra spi transaction because we already needed to access the same register to manipulate RX/TX mode
@@ -900,7 +920,8 @@ class RF24(SPIDevice):
 
             - If the `dynamic_payloads` attribute is disabled and this bytearray's length is less than the `payload_length` attribute, then this bytearray is padded with zeros until its length is equal to the `payload_length` attribute.
             - If the `dynamic_payloads` attribute is disabled and this bytearray's length is greater than `payload_length` attribute, then this bytearray's length is truncated to equal the `payload_length` attribute.
-        :param bool read_ack: A flag to specify wheather or not to save the automatic acknowledgement (ACK) payload to the `ack` attribute.
+
+        :param bool read_ack: A flag to specify wheather or not to save the customized automatic acknowledgement (ACK) payload to the `ack` attribute.
         :param bool noACK: Pass this parameter as `True` to tell the nRF24L01 not to wait for an acknowledgment from the receiving nRF24L01. This parameter directly controls a ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about the payload).Therefore, it takes advantage of an nRF24L01 feature specific to individual payloads, and its value is not saved anywhere. You do not need to specify this everytime if the `auto_ack` attribute is `False`.
 
             .. note:: Each transmission is in the form of a packet. This packet contains sections of data around and including the payload. `See Chapter 7.3 in the nRF24L01 Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1136318>`_
@@ -916,10 +937,9 @@ class RF24(SPIDevice):
 
         """
         result = 0
-        self.send_fast(buf, noACK, reUseTX)
+        fifo = self.send_fast(buf, noACK, reUseTX)
         time.sleep(0.00015) # ensure CE pulse is >= 150 us
         start = time.monotonic()
-        self.ce.value = 0
         while result == 0 and (time.monotonic() - start) < timeout:
             # let result be 0 if timeout, 1 if success, or 2 if fail
             if self._reg_read(STATUS) & (TX_DS | MAX_RT): # transmission done
@@ -931,7 +951,7 @@ class RF24(SPIDevice):
             self.read_ack()
         # TX related flags are not cleared by read_ack(), do that now
         self.clear_status_flags(False,True,True)
-        self.power = False
+        self.ce.value = 0 # go to Standby-I power mode (power attribute still == True)
         return result
 
     def send_fast(self, buf=None, noACK=False, reUseTX=False):
@@ -961,7 +981,7 @@ class RF24(SPIDevice):
         """
         # capture snapshot of TX/RX FIFOs' status
         fifo = self._reg_read(FIFO_STATUS)
-        self._reuse_tx = bool(fifo & 0x40)
+        self._reuse_tx = bool(fifo & 0x40) # mark reuse_tx has been triggered
         assert (buf is None and self.reuse_tx) or 0 <= len(buf) <= 32
 
         if reUseTX:
@@ -980,8 +1000,9 @@ class RF24(SPIDevice):
             self._reg_write_bytes(W_TX_PAYLOAD_NOACK, buf)
         # set the data to send properly in the TX FIFO
         self._reg_write_bytes(W_TX_PAYLOAD, buf)
-        # power up radio
-        self.power = True
+        if not self.power:# power up radio if it isn't yet
+            self.power = True
         # enable radio comms so it can send the data by starting the mandatory minimum 10 us pulse on CE. Let send() measure this pulse for blocking reasons
         self.ce.value = 1
         # radio will automatically go to standby-II after transmission while CE is still HIGH only if dynamic_payloads and auto_ack are enabled
+        return fifo
