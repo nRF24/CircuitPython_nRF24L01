@@ -22,9 +22,9 @@ tx = b'Hello'
 # pipe number options range [0,5]
 # NOTE ACK payloads (like regular payloads and addresses)
 # need to be in a buffer protocol object (bytearray)
-ACK = (b'World', 1)
+ACK = (b'World', 0)
 #  note that `0` is always the TX pipe in TX mode
-#  we'll be using
+#  we'll be using pipe 0 to receive ACK packets per the spec sheet
 
 # change these (digital output) pins accordingly
 ce = dio.DigitalInOut(board.D7)
@@ -53,18 +53,16 @@ nrf = RF24(spi, csn, ce, ack=(b'dummy',1))
 # remember the second item always needs to be an int ranging [0,5]
 nrf.ack = (None, 1)
 
-def master():
+# recommended behavior is to keep in TX mode while sleeping
+nrf.stop_listening() # put radio in TX mode and power down
+
+def master(count=5):
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(addresses[0])
-    # since auto-acknowledgments feature is enabled, we need to
-    # set address of TX node into an RX pipe. NOTE you MUST specify
-    # which pipe number to use for RX, we'll be using pipe 1
-    # pipe number options range [0,5]
-    nrf.open_rx_pipe(1, addresses[1])
-    nrf.stop_listening() # put radio in TX mode and power down
+    # ensures the nRF24L01 is in TX and power down modes
+    # nrf.stop_listening()
 
-
-    counter = 5
+    counter = count
     while counter:
         print("Sending (raw): {}".format(repr(tx)))
         # to read the ACK payload during TX mode we
@@ -84,17 +82,16 @@ def master():
         time.sleep(1)
         counter -= 1
 
-def slave():
-    # set address of RX node into a TX pipe
-    nrf.open_tx_pipe(addresses[1])
+def slave(count=5):
     # set address of TX node into an RX pipe. NOTE you MUST specify
-    # which pipe number to use for RX, we'll be using pipe 1
-    nrf.open_rx_pipe(1, addresses[0])
+    # which pipe number to use for RX, we'll be using pipe 0
+    nrf.open_rx_pipe(0, addresses[0])
+
     # put radio into RX mode, power it up, and set the first
     # transmission's ACK payload and pipe number
     nrf.start_listening(ACK)
 
-    counter = 5
+    counter = count
     while counter:
         if nrf.any():
             # print details about the received packet
@@ -106,6 +103,14 @@ def slave():
             nrf.ack = ACK # reload ACK for next response
             # this will listen indefinitely till counter == 0
             counter -= 1
+
+    # recommended behavior is to keep in TX mode while sleeping
+    nrf.stop_listening() # put radio in TX mode and power down
+
+def debugRF24(dumpADDR=False):
+    print('expected status =', bin(nrf.status))
+    for item in nrf.what_happened(dumpADDR).items():
+        print('{} : {}'.format(item[0], item[1]))
 
 print("""\
     nRF24L01 ACK test.\n\

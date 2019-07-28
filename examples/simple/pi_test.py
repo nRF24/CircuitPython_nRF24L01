@@ -25,18 +25,18 @@ spi = board.SPI() # init spi bus object
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(spi, csn, ce)
 
-def master():
+# recommended behavior is to keep in TX mode while sleeping
+nrf.stop_listening() # put the nRF24L01 is in TX and power down modes
+
+def master(count=5):
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(addresses[0])
-    # since auto-acknowledgments feature is enabled, we need to
-    # set address of TX node into an RX pipe. NOTE you MUST specify
-    # which pipe number to use for RX, we'll be using pipe 1
-    # pipe number options range [0,5]
-    nrf.open_rx_pipe(1, addresses[1])
-    nrf.stop_listening() # put radio in TX mode and power down
+    # ensures the nRF24L01 is in TX and power down modes
+    # nrf.stop_listening()
+
     i = 0.0 # init data to send
 
-    counter = 5
+    counter = count
     while counter:
         # use struct.pack to packetize your data
         # into a usable payload
@@ -58,7 +58,7 @@ def master():
         time.sleep(1)
         counter -= 1
 
-def slave():
+def slave(count=5):
     # since auto-acknowledgments feature is enabled, we need to
     # specify the address to the RX node on a TX pipe.
     nrf.open_tx_pipe(addresses[1])
@@ -68,7 +68,7 @@ def slave():
     nrf.open_rx_pipe(1, addresses[0])
     nrf.start_listening() # put radio into RX mode and power up
 
-    counter = 5
+    counter = count
     while counter:
         if nrf.any():
             # print details about the received packet
@@ -84,6 +84,14 @@ def slave():
                     repr(rx)))
             # this will listen indefinitely till counter == 0
             counter -= 1
+
+    # recommended behavior is to keep in TX mode while sleeping
+    nrf.stop_listening() # put the nRF24L01 is in TX and power down modes
+
+def debugRF24(dumpADDR=False):
+    print('expected status =', bin(nrf.status))
+    for item in nrf.what_happened(dumpADDR).items():
+        print('{} : {}'.format(item[0], item[1]))
 
 print("""\
     nRF24L01 Simple test.\n\
