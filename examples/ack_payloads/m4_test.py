@@ -63,26 +63,26 @@ def master():
     nrf.open_rx_pipe(1, addresses[1])
     nrf.stop_listening() # put radio in TX mode and power down
 
-    while True:
-        try:
-            print("Sending (raw): {}".format(repr(tx)))
-            # to read the ACK payload during TX mode we
-            # pass the parameter read_ack as True.
-            result = nrf.send(tx, read_ack=True)
-            if result == 0:
-                print('send() timed out')
-            elif result == 1:
-                # print the received ACK that was automatically
-                # fetched and saved to nrf's ack attribute via send()
-                print('raw ACK: {}'.format(repr(nrf.ack)))
-                # the ACk payload should also include the default
-                # response data that the nRF24L01 uses despite
-                # a custom set ACK payload.
-            elif result == 2:
-                print('send() failed')
-        except KeyboardInterrupt:
-            break
+
+    counter = 5
+    while counter:
+        print("Sending (raw): {}".format(repr(tx)))
+        # to read the ACK payload during TX mode we
+        # pass the parameter read_ack as True.
+        result = nrf.send(tx, read_ack=True)
+        if result == 0:
+            print('send() timed out')
+        elif result == 1:
+            # print the received ACK that was automatically
+            # fetched and saved to nrf's ack attribute via send()
+            print('raw ACK: {}'.format(repr(nrf.ack)))
+            # the ACk payload should also include the default
+            # response data that the nRF24L01 uses despite
+            # a custom set ACK payload.
+        elif result == 2:
+            print('send() failed')
         time.sleep(1)
+        counter -= 1
 
 def slave():
     # set address of RX node into a TX pipe
@@ -90,19 +90,22 @@ def slave():
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 1
     nrf.open_rx_pipe(1, addresses[0])
+    # put radio into RX mode, power it up, and set the first
+    # transmission's ACK payload and pipe number
+    nrf.start_listening(ACK)
 
-    while True:
-        try:
-            if nrf.any():
-                # print details about the received packet
-                print('RX payload size =', nrf.any())
-                print('RX payload on pipe', nrf.available())
-                # retreive the received packet's payload
-                rx = nrf.recv() # clears flags & empties RX FIFO
-                print("Received (raw): {}".format(repr(rx)))
-                nrf.ack = ACK # reload ACK for next response
-        except KeyboardInterrupt:
-            break
+    counter = 5
+    while counter:
+        if nrf.any():
+            # print details about the received packet
+            print('RX payload size =', nrf.any())
+            print('RX payload on pipe', nrf.available())
+            # retreive the received packet's payload
+            rx = nrf.recv() # clears flags & empties RX FIFO
+            print("Received (raw): {}".format(repr(rx)))
+            nrf.ack = ACK # reload ACK for next response
+            # this will listen indefinitely till counter == 0
+            counter -= 1
 
 print("""\
     nRF24L01 ACK test.\n\

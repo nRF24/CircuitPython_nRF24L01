@@ -36,30 +36,27 @@ def master():
     nrf.stop_listening() # put radio in TX mode and power down
     i = 0.0 # init data to send
 
-    while True:
-        try:
-            i += 0.01
-            # use struct.pack to packetize your data
-            # into a usable payload
-            temp = struct.pack('<d', i)
-            # 'd' means a single 8 byte double value.
-            # '<' means little endian byte order
-            print("Sending: {} as struct: {}".format(i, temp))
-            now = time.monotonic() * 1000 # start timer
-            result = nrf.send(temp)
-            if result == 0:
-                print('send() timed out')
-            elif result == 1:
-                print('send() succeessful')
-            elif result == 2:
-                print('send() failed')
-        except KeyboardInterrupt:
-            break
-        finally:
-            # print timer results despite transmission success
-            print('Transmission took',\
-                 time.monotonic() * 1000 - now, 'ms')
+    counter = 5
+    while counter:
+        # use struct.pack to packetize your data
+        # into a usable payload
+        temp = struct.pack('<d', i)
+        # 'd' means a single 8 byte double value.
+        # '<' means little endian byte order
+        print("Sending: {} as struct: {}".format(i, temp))
+        now = time.monotonic() * 1000 # start timer
+        result = nrf.send(temp)
+        if result == 0:
+            print('send() timed out')
+        elif result == 1:
+            print('send() succeessful')
+        elif result == 2:
+            print('send() failed')
+        # print timer results despite transmission success
+        print('Transmission took',\
+                time.monotonic() * 1000 - now, 'ms')
         time.sleep(1)
+        counter -= 1
 
 def slave():
     # since auto-acknowledgments feature is enabled, we need to
@@ -71,22 +68,22 @@ def slave():
     nrf.open_rx_pipe(1, addresses[0])
     nrf.start_listening() # put radio into RX mode and power up
 
-    while True:
-        try:
-            if nrf.any():
-                # print details about the received packet
-                print('RX payload size =', nrf.any())
-                print('RX payload on pipe', nrf.available())
-                # retreive the received packet's payload
-                rx = nrf.recv() # clears flags & empties RX FIFO
-                # expecting a long int, thus the string format '<d'
-                temp = struct.unpack('<d', rx)
-                # print the only item in the resulting tuple from
-                # using `struct.unpack()`
-                print("Received: {}, Raw: {}".format(temp[0],\
-                     repr(rx)))
-        except KeyboardInterrupt:
-            break
+    counter = 5
+    while counter:
+        if nrf.any():
+            # print details about the received packet
+            print('RX payload size =', nrf.any())
+            print('RX payload on pipe', nrf.available())
+            # retreive the received packet's payload
+            rx = nrf.recv() # clears flags & empties RX FIFO
+            # expecting a long int, thus the string format '<d'
+            temp = struct.unpack('<d', rx)
+            # print the only item in the resulting tuple from
+            # using `struct.unpack()`
+            print("Received: {}, Raw: {}".format(temp[0],\
+                    repr(rx)))
+            # this will listen indefinitely till counter == 0
+            counter -= 1
 
 print("""\
     nRF24L01 Simple test.\n\
