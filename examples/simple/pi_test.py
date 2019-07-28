@@ -13,12 +13,16 @@ addresses = (b'1Node', b'2Node')
 # the GettingStarted.ino sketch included in
 # TRMh20's arduino library
 
+# change these (digital output) pins accordingly
 ce = dio.DigitalInOut(board.CE0) # AKA board.D8
 csn = dio.DigitalInOut(board.D5)
 
-spi = board.SPI()
-# we'll be sending a dynamic
-# payload of size 8 bytes (1 double)
+# using board.SPI() automatically selects the MCU's
+# available SPI pins, board.SCK, board.MOSI, board.MISO
+spi = board.SPI() # init spi bus object
+
+# we'll be using the dynamic payload size feature (enabled by default)
+# initialize the nRF24L01 on the spi bus object
 nrf = RF24(spi, csn, ce)
 
 def master():
@@ -76,11 +80,11 @@ def slave():
                 # retreive the received packet's payload
                 rx = nrf.recv() # clears flags & empties RX FIFO
                 # expecting a long int, thus the string format '<d'
-                temp = struct.unpack('<d', then)
+                temp = struct.unpack('<d', rx)
                 # print the only item in the resulting tuple from
                 # using `struct.unpack()`
                 print("Received: {}, Raw: {}".format(temp[0],\
-                     repr(then)))
+                     repr(rx)))
         except KeyboardInterrupt:
             break
 

@@ -111,15 +111,13 @@ class RF24(SPIDevice):
     :param bool auto_ack: This parameter enables or disables the automatic acknowledgment (ACK) feature of the nRF24L01. It is optional and defaults to enabled. This can be changed at any time by using the `auto_ack` attribute
 
     """
-    def __init__(self, spi, csn, ce, channel=76, payload_length=32, address_length=5, dynamic_payloads=True, auto_ack=True, baudrate=10000000, polarity=0, phase=0, extra_clocks=0):
+    def __init__(self, spi, csn, ce, channel=76, payload_length=32, address_length=5, dynamic_payloads=True, auto_ack=True, ack=(None,1), baudrate=10000000, polarity=0, phase=0, extra_clocks=0):
         # set payload length
         self.payload_length = payload_length
         # last address assigned to pipe0 for reading. init to None
         self.pipe0_read_addr = None
         # init the buffer used to store status data from spi transactions
         self._status = bytearray(1)
-        # init ack storage to None
-        self._ack = None
         # init the SPI bus and pins
         super(RF24, self).__init__(spi, chip_select=csn, baudrate=baudrate, polarity=polarity, phase=phase, extra_clocks=extra_clocks)
 
@@ -144,18 +142,22 @@ class RF24(SPIDevice):
         # set dynamic_payloads and automatic acknowledgment packets on all pipes
         self.auto_ack = auto_ack # this needs to be init before dynamic_payloads
         self.dynamic_payloads = dynamic_payloads
-        # auto retransmit delay: 1500us
+        # init custom ack payload feature to off
+        self.ack = ack # (None, 1) == nRF24L01's default
+        # auto retransmit delay: 1500us (recommended default)
         self.ard = 1500
         # auto retransmit count: 3
         self.arc = 3
         # set rf power amplitude to 0 dBm
         self.pa_level = 0
-        # set rf data rate to 1 Mbps
+        # set rf data rate to 1 Mbps (recommended default)
         self.data_rate = 1
         # set channel
         self.channel = channel
         # config interrupt to go LOW when any of the 3 most significant bits in status register are set True. See funcion comments for more detail
-        self.interrupt_config()
+        self.interrupt_config() # (using nRF24L01's default)
+
+        # these just ensures we start with a fresh state
         # clear status flags
         self.clear_status_flags()
         # flush buffers
@@ -264,7 +266,7 @@ class RF24(SPIDevice):
 
         :param tuple ack_pl: This tuple must have the following 2 items in their repective order:
 
-            - The `bytearray` of payload data to be attached to the ACK packet in RX mode. This must have a length in range [1,32] bytes. Otherwise an `AssertionError` exception is thrown.
+            - The `bytearray` of payload data to be attached to the ACK packet in RX mode. This must have a length in range [1,32] bytes. If `None` is passed then the custom ACK payload feature is disabled. Otherwise an `AssertionError` exception is thrown.
             - The `int` identifying data pipe number to be used for transmitting the ACK payload in RX mode. This number must be in range [0,5], otherwise an `AssertionError` exception is thrown. Generally this is the same data pipe set by `open_rx_pipe()`, but it is not limited to that convention.
 
             .. note:: The `payload_length` attribute has nothing to do with the ACK payload length as enabling the `dynamic_payloads` attribute is required.
@@ -280,7 +282,13 @@ class RF24(SPIDevice):
 
     @ack.setter
     def ack(self, ack_pl):
-        assert 1 <= len(ack_pl[0]) <= 32 and 0 <= ack_pl[1] <= 5
+        assert (1 <= len(ack_pl[0]) <= 32 or ack_pl[0] is None) and 0 <= ack_pl[1] <= 5
+        # we need to throw the EN_ACK_PAY flag in the FEATURES register accordingly
+        self._reg_write(FEATURE, (EN_ACK_PAY & (0 if ack_pl[0] is None else EN_ACK_PAY)))
+        # this attribute should also represents the state of the custom ACK payload feeature
+        # the data stored "privately" gets written by a separate trigger (read_ack())
+        if ack_pl[0] is None:
+            self._ack = None # init the attribute
         if self.auto_ack: # only do something if the auto_ack attribute is enabled
             self._reg_write_bytes(W_ACK_PAYLOAD | ack_pl[1], ack_pl[0])
 
