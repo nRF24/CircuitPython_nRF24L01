@@ -46,11 +46,12 @@ nrf = RF24(spi, csn, ce, ack=(b'dummy',1))
 # automatically when you set the attribute to a tuple who's
 # first item is a buffer protocol object (bytearray) of
 # length ranging [1,32]
-# remember the second item always needs to be in range [0,5]
+# remember the second item always needs to be an int ranging [0,5]
 
 # to disable the custom ACK payload feature
 # we need set some dummy data to the `ack` attribute
 # NOTE the first item in the dummy tuple must be `None`
+# remember the second item always needs to be an int ranging [0,5]
 nrf.ack = (None, 1)
 
 def master():
