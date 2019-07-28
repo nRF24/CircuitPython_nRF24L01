@@ -246,13 +246,13 @@ class RF24(SPIDevice):
     def status(self):
         """The latest status byte return from SPI transactions. (read-only)
 
-        :returns int: 1 byte in which each bit represents a certain status flag.
+        :returns: 1 byte `int` in which each bit represents a certain status flag.
 
-            * bit 7 (MSB) is not used and should always be 0
+            * bit 7 (MSB) is not used and will always be 0
             * bit 6 represents the RX data ready flag
             * bit 5 represents the TX data sent flag
             * bit 4 represents the max re-transmit flag
-            * bit 3 through 1 represents the RX pipe number [0,5] that received the available payload in RX FIFO buffer. ``111`` means RX FIFO buffer is empty.
+            * bit 3 through 1 represents the RX pipe number [0,5] that received the available payload in RX FIFO buffer. ``0b111`` means RX FIFO buffer is empty.
             * bit 0 (LSB) represents the TX FIFO buffer full flag
 
         """
@@ -636,7 +636,7 @@ class RF24(SPIDevice):
         :param bool onDataSent: If this is `True`, then interrupt pin goes active LOW when a payload from TX buffer is successfully transmitted. If `auto_ack` attribute is enabled, then interrupt pin only goes active LOW when acknowledgment (ACK) packet is received.
         :param bool onDataRecv: If this is `True`, then interrupt pin goes active LOW when there is new data to read in the RX FIFO.
 
-            .. note:: Paraphrased from nRF24L01+ Specification Sheet:
+            .. tip:: Paraphrased from nRF24L01+ Specification Sheet:
 
                 The procedure for handling ``onDataRecv`` interrupt should be:
 
@@ -758,24 +758,25 @@ class RF24(SPIDevice):
         """
         assert pipe_number is None or 0 <= pipe_number <= 5 # check bounds on user input
         pipe = (self._reg_read(STATUS) & RX_P_NO) >> 1
-        if pipe > 5:
-            return None # RX FIFO is empty
-        elif pipe_number is None:
-            # return pipe number if user did not specify a pipe number to test against
-            return pipe
-        elif pipe_number != pipe:
-            # return comparison of pipe number and user specified pipe number
-            return False
-        else: # return True if pipe number matches user input & there is data in RX FIFO
+        if pipe <= 5: # is there data in RX FIFO?
+            if pipe_number is None:
+                # return pipe number if user did not specify a pipe number to test against
+                return pipe
+            elif pipe_number != pipe:
+                # return comparison of RX pipe number vs user specified pipe number
+                return False
+            # return True if pipe number matches user input & there is data in RX FIFO
             return True
+        return None # RX FIFO is empty
 
     def any(self):
         """This function checks if the nRF24L01 has received any data at all.
 
         :returns:
-            `int` of the size (in bytes) of an available RX payload (if any).
-            `True` when the RX FIFO buffer is not empty and `dynamic_payloads` attribute is enabled.
-            `False` if there is no payload in the RX FIFO buffer.
+
+            - `int` of the size (in bytes) of an available RX payload (if any).
+            - `True` when the RX FIFO buffer is not empty and `dynamic_payloads` attribute is enabled.
+            - `False` if there is no payload in the RX FIFO buffer.
 
         """
         if not bool(self._reg_read(FIFO_STATUS) & RX_EMPTY):
@@ -803,14 +804,17 @@ class RF24(SPIDevice):
         return result
 
     def read_ack(self):
-        """Allows user to read the automatic acknowledgement (ACK) payload (if any). This function is called from a blocking `send()` call if the `read_ack` parameter in `send()` is passed as `True`.
-        Alternatively, this function can be called directly in case of using the less-blocking `send_fast()` function call during asychronous applications.
+        """Allows user to read the automatic acknowledgement (ACK) payload (if any) when nRF24L01 is in TX mode. This function is called from a blocking `send()` call if the ``read_ack`` parameter in `send()` is passed as `True`.
+        Alternatively, this function can be called directly in case of using the non-blocking `send_fast()` function call during asychronous applications.
 
-        .. warning:: In the case of asychronous applications, this function will do nothing if the status flags are cleared after calling `send_fast()` and before calling this function. Also, the `dynamic_payloads` attribute should be enabled in order to use ACK payloads.
+        .. warning:: In the case of asychronous applications, this function will do nothing if the status flags are cleared after calling `send_fast()` and before calling this function. Also, the `dynamic_payloads` and `auto_ack` attributes must be enabled to use ACK payloads. It is worth noting that enabling the `dynamic_payloads` attribute automatically enables the `auto_ack` attribute.
 
         """
-        if self.any(): # check RX payload for ACK packet
+        if self.available(): # check RX payload for ACK packet
+            # directly save ACK payload to the ack internal attribute.
+            # `self.ack = x` does not not save anything internally
             self._ack = self.recv()
+        return self.ack # this is ok as it reads from internal _ack attribute
 
     def send(self, buf, read_ack=False, timeout=0.2):
         """This blocking function is used to transmit payload until one of the following results is acheived:
@@ -863,7 +867,7 @@ class RF24(SPIDevice):
         .. warning:: A note paraphrased from the `nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1121422>`_:
             It is important never to keep the nRF24L01+ in TX mode for more than 4 milliseconds at a time. If the [`auto_ack` and `dynamic_payloads`] features are enabled, nRF24L01+ is never in TX mode longer than 4 milliseconds.
 
-        .. tip:: Use this function at your own risk. If you do, you MUST additionally use either interrupt flags/IRQ pin with user defined timer(s) OR enable the `dynamic_payloads` attribute (the `auto_ack` attribute is enabled with `dynamic_payloads` automatically) to obey the 4 milliseconds rule. If the nRF24L01+ Specifications Sheet explicitly states this, we have to assume radio damage or misbehavior as a result of disobeying the 4 milliseconds rule. Cleverly, `TMRh20's arduino library <http://tmrh20.github.io/RF24/classRF24.html>`_ recommends using auto re-transmit delay (the `ard` attribute) to avoid breaking this rule, but we have not verified this strategy as it requires the `auto_ack` attribute to be enabled anyway.
+        .. tip:: Use this function at your own risk. If you do, you MUST additionally use either interrupt flags/IRQ pin with user defined timer(s) OR enable the `dynamic_payloads` attribute (the `auto_ack` attribute is enabled with `dynamic_payloads` automatically) to obey the 4 milliseconds rule. If the `nRF24L01+ Specifications Sheet explicitly states this <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1121422>`_, we have to assume radio damage or misbehavior as a result of disobeying the 4 milliseconds rule. Cleverly, `TMRh20's arduino library <http://tmrh20.github.io/RF24/classRF24.html>`_ recommends using auto re-transmit delay (the `ard` attribute) to avoid breaking this rule, but we have not verified this strategy as it requires the `auto_ack` attribute to be enabled anyway.
 
         """
         # pad out or truncate data to fill payload_length if dynamic_payloads == False

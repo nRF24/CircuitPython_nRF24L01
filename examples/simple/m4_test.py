@@ -24,12 +24,13 @@ nrf = RF24(spi, csn, ce)
 def master():
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(addresses[0])
+    # since auto-acknowledgments feature is enabled, we need to
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 1
     # pipe number options range [0,5]
     nrf.open_rx_pipe(1, addresses[1])
     nrf.stop_listening() # put radio in TX mode and power down
-    i = 0.0 # data to send
+    i = 0.0 # init data to send
 
     while True:
         try:
@@ -57,7 +58,8 @@ def master():
         time.sleep(1)
 
 def slave():
-    # set address of RX node into a TX pipe
+    # since auto-acknowledgments feature is enabled, we need to
+    # specify the address to the receiving node on a TX pipe.
     nrf.open_tx_pipe(addresses[1])
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 1
@@ -68,15 +70,21 @@ def slave():
     while True:
         try:
             if nrf.any():
-                then = nrf.recv()
+                # print details about the received packet
+                print('RX payload size =', nrf.any())
+                print('RX payload on pipe', nrf.available())
+                # retreive the received packet's payload
+                rx = nrf.recv() # clears flags & empties RX FIFO
                 # expecting a long int, thus the string format '<d'
                 temp = struct.unpack('<d', then)
+                # print the only item in the resulting tuple from
+                # using `struct.unpack()`
                 print("Received: {}, Raw: {}".format(temp[0],\
                      repr(then)))
         except KeyboardInterrupt:
             break
 
 print("""\
-    nRF24L01 Simple test.\
-    Run slave() on receiver\
+    nRF24L01 Simple test.\n\
+    Run slave() on receiver\n\
     Run master() on transmitter.""")
