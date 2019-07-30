@@ -109,12 +109,14 @@ class RF24(SPIDevice):
         self._reg_write(FEATURE, self._features)
 
         # configure registers for which each bit is specific per pipe
+        self._ack = None # init RX ACK payload buffer
         self._auto_ack = int(auto_ack) * 0x3F # <- means all enabled
         self._reg_write(1, self._auto_ack)
         self._open_pipes = 0 # <- means all closed
         self._reg_write(2, self._open_pipes)
 
         # set dynamic_payloads and automatic acknowledgment packets on all pipes
+        self._dyn_pl = self._reg_read(DYNPD)
         self.dynamic_payloads = dynamic_payloads
         # config interrupt to go LOW when any of the 3 most significant bits in status register are set True. See funcion comments for more detail
         self.interrupt_config(irq_DR, irq_DS, irq_DF) # (all True == nRF24L01's default)
@@ -429,7 +431,7 @@ class RF24(SPIDevice):
             "TX FIFO empty": bool(self.fifo & 0x10),
             "RX FIFO full": bool(self.fifo & 2),
             "RX FIFO empty": bool(self.fifo & 1),
-            "Custom ACK Payload": self.ack is not None or (self.features & 2),
+            "Custom ACK Payload": bool(self.ack is not None or (self.features & 2)),
             "Ask no ACK": bool(self.features & 1),
             "Automatic Acknowledgment": bin(self.auto_ack),
             "Dynamic Payloads": bin(self._dyn_pl) if self.dynamic_payloads else False,
@@ -577,7 +579,7 @@ class RF24(SPIDevice):
             # save changes to register(&its Shadow)
             self._features = (self.features & 3) | (enable << 2)
             self._reg_write(FEATURE, self.features)
-            self._dyn_pl = b'0x3F' if enable else b'0'
+            self._dyn_pl = 0x3F if enable else 0
             self._reg_write(DYNPD, self._dyn_pl)
 
     @property
