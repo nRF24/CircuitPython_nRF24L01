@@ -518,7 +518,7 @@ class RF24(SPIDevice):
         - `False` basically puts the nRF24L01 to sleep. No transmissions are executed when sleeping.
         - `True` powers up the nRF24L01
 
-            .. important:: Everytime the nRF24L01 powers up to "Standby-II" mode the TX FIFO buffer automatically emptied unless the `reuse_rx` attribute was triggered via ``reUseTX`` parameter as `True` when calling `send()` or `send_fast()`.
+            .. important:: Everytime the nRF24L01 powers up to "Standby-II" mode the TX FIFO buffer automatically emptied unless the ``reuse_rx`` attribute was triggered via ``reUseTX`` parameter as `True` when calling `send()` or `send_fast()`.
 
         .. note:: This attribute needs to be `True` if you want to put radio on standby-I (CE pin is HIGH) or standby-II (CE pin is LOW) modes. In case of either standby modes, transmissions are only executed based on certain criteria (see `Chapter 6.1.2-7 of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132980>`_).
 
@@ -1044,7 +1044,7 @@ class RF24(SPIDevice):
 
         :param bool reUseTX: `True` prevents the nRF24L01 from automatically removing the TX payload data from the FIFO buffer. This is optional and defaults to `False`
 
-            .. note:: When this parameter is `False`, the nRF24L01 only removes the payload from the TX FIFO buffer after successful transmission. Otherwise use `flush_rx()` to clear anitquated payloads (those that failed to transmit or were intentionally kept in the TX FIFO buffer using this parameter). Applications for using this parameter are geared toward using the same payload to transmit to multiple receiving nRF24L01 devices or possibly a continuous stream of repeating data.
+            .. note:: When this parameter is `False`, the nRF24L01 only removes the payload from the TX FIFO buffer after successful transmission. Otherwise use `flush_tx()` to clear anitquated payloads (those that failed to transmit or were intentionally kept in the TX FIFO buffer using this parameter).
 
         :param bool read_ack: A flag to specify wheather or not to save the customized automatic acknowledgement (ACK) payload to the `ack` attribute.
 
