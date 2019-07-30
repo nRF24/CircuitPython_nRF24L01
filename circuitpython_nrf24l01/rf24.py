@@ -59,9 +59,12 @@ class RF24(SPIDevice):
     :param int address_length: This is the length (in bytes) of the addresses that are assigned to the data pipes for transmitting/receiving. It is optional and defaults to 5. This can be changed at any time by using the `address_length` attribute
     :param bool dynamic_payloads: This parameter enables or disables the dynamic payload length feature of the nRF24L01. It is optional and defaults to enabled. This can be changed at any time by using the `dynamic_payloads` attribute
     :param bool auto_ack: This parameter enables or disables the automatic acknowledgment (ACK) feature of the nRF24L01. It is optional and defaults to enabled. This can be changed at any time by using the `auto_ack` attribute
+    :param bool irq_DR: When "Data is Ready", this configures the interrupt (IRQ) trigger of the nRF24L01's IRQ pin (active low). This parameter is optional and defaults to enabled. This can be changed at any time by using the `interrupt_config()` method.
+    :param bool irq_DS: When "Data is Sent", this configures the interrupt (IRQ) trigger of the nRF24L01's IRQ pin (active low). This parameter is optional and defaults to enabled. This can be changed at any time by using the `interrupt_config()` method.
+    :param bool irq_DF: When "max retry attempts are reached", this configures the interrupt (IRQ) trigger of the nRF24L01's IRQ pin (active low). This parameter is optional and defaults to enabled. This can be changed at any time by using the `interrupt_config()` method.
 
     """
-    def __init__(self, spi, csn, ce, address_length=5, dynamic_payloads=True, channel=76, irq_DR=True, irq_DS=True, irq_DF=True, payload_length=32, baudrate=10000000, polarity=0, phase=0, extra_clocks=0):
+    def __init__(self, spi, csn, ce, channel=76, payload_length=32, address_length=5, dynamic_payloads=True, auto_ack=True, irq_DR=True, irq_DS=True, irq_DF=True):
         # set payload length
         self.payload_length = payload_length
         # last address assigned to pipe0 for reading. init to None
@@ -71,7 +74,7 @@ class RF24(SPIDevice):
         self._config = 0
         self._fifo = 0
         # init the SPI bus and pins
-        super(RF24, self).__init__(spi, chip_select=csn, baudrate=baudrate, polarity=polarity, phase=phase, extra_clocks=extra_clocks)
+        super(RF24, self).__init__(spi, chip_select=csn, baudrate=10000000, polarity=0, phase=0, extra_clocks=0)
 
         # store the ce pin
         self.ce = ce
@@ -103,10 +106,10 @@ class RF24(SPIDevice):
 
         # configure special case flags in the FEATURE register
         self._features = 0x07 # <- enables all :(not default)
-        self._reg_write(FEATURE, self.features)
+        self._reg_write(FEATURE, self._features)
 
         # configure registers for which each bit is specific per pipe
-        self._auto_ack = auto_ack * 0x3F # <- means all enabled
+        self._auto_ack = int(auto_ack) * 0x3F # <- means all enabled
         self._reg_write(1, self._auto_ack)
         self._open_pipes = 0 # <- means all closed
         self._reg_write(2, self._open_pipes)
@@ -788,7 +791,8 @@ class RF24(SPIDevice):
     @channel.setter
     def channel(self, channel):
         assert 0 <= channel <= 127
-        self._channel = self._reg_write(RF_CH, channel) # always wries to reg
+        self._channel = channel
+        self._reg_write(RF_CH, channel) # always wries to reg
 
     def interrupt_config(self, onMaxARC=True, onDataSent=True, onDataRecv=True):
         """Sets the configuration of the nRF24L01's Interrupt (IRQ) pin. IRQ signal from the nRF24L01 is active LOW. (write-only)
@@ -949,7 +953,7 @@ class RF24(SPIDevice):
         assert pipe_number is None or 0 <= pipe_number <= 5 # check bounds on user input
         self._reg_read(0x0)
         self._fifo = self._reg_read(FIFO_STATUS) # take this chance to update both FIFO flags and STATUS flags (STATUS is returned by nRF24L01 on every transaction)
-        pipe = (self.status & RX_P_NO) >> 1
+        pipe = (self.status & 0x0E) >> 1 # 0x0E==RX_P_NO
         if pipe <= 5: # is there data in RX FIFO?
             if pipe_number is None:
                 # return pipe number if user did not specify a pipe number to test against
