@@ -1050,7 +1050,7 @@ class RF24(SPIDevice):
         start = time.monotonic()
         while result == 0 and (time.monotonic() - start) < timeout:
             # let result be 0 if timeout, 1 if success, or 2 if fail
-            self._reg_write(0xFF, b'') # perform Non-operation command to get status byte (should be faster)
+            self._reg_read(0xFF) # perform Non-operation command to get status byte (should be faster)
             if  self.irq_DS or self.irq_DF: # transmission done
                 # get status flags to detect error
                 result = 1 if self.irq_DS else 2
@@ -1107,16 +1107,19 @@ class RF24(SPIDevice):
 
         if reUseTX:  # mark reuse_tx has been triggered
             # payload will get re-used. This command tells the radio not pop TX payload from FIFO on success
-            self._reg_write(0xE3, b'')
-        elif self.reuse_tx and buf is None:
-            # write a no byte payload
-            buf = b''
-        if AskNoACK or not self.auto_ack:
+            self._reg_read(0xE3) # command returns only status byte
+
+        # now handle the payload accordingly
+        if self.reuse_tx and buf is None: # shouldn't execeute on the initial triggering
+            with self: # write no payload
+                pass # this cycles the CSN pin to enable transmission of re-used payload
+        elif AskNoACK or not self.auto_ack:
             # payload doesn't require acknowledgment
-            cmd = 0xB0
-        else:# set the data to send properly in the TX FIFO
-            cmd = 0xA0
-        self._reg_write_bytes(cmd, buf) # write appropriate command with acceptable payload
+            # 0xB0 = W_TX_PAYLOAD_NO ACK
+            self._reg_write_bytes(0xB0, buf) # write appropriate command with payload
+        else:# payload does require acknowledgment
+            # 0xA0 = W_TX_PAYLOAD
+            self._reg_write_bytes(0xA0, buf) # write appropriate command with payload
 
         # enable radio comms so it can send the data by starting the mandatory minimum 10 us pulse on CE. Let send() measure this pulse for blocking reasons
         self.ce.value = 1
