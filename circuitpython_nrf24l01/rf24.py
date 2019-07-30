@@ -38,9 +38,6 @@ import time
 from adafruit_bus_device.spi_device import SPIDevice
 
 # nRF24L01+ registers
-# CONFIG       = 0x00 # command is synonymous with ~NOP
-# EN_AA        = 0x01 # auto-ACK. each bit represent this feature per pipe
-# 0x2    = 0x02 # pipe enable. each bit represent the state feature per pipe
 SETUP_AW     = 0x03 # address width
 RF_CH        = 0x05 # channel
 RF_SETUP     = 0x06 # RF Power Amptlitude & Data Rate
@@ -49,41 +46,9 @@ RX_PW_P0     = 0x11 # RX payload widths on pipes ranging [0,5]:[0x11,0x16]
 FIFO_STATUS  = 0x17 # register containing info on both RX/TX FIFOs + re-use payload flag
 DYNPD	     = 0x1c # dynamic payloads feature. each bit represents this feature per pipe
 FEATURE      = 0x1d # global enablers/disablers for dynamic payloads, auto-ACK, and custom ACK features
-
-# a selective FIFO_STATUS Mnemonic:
-# FIFO_EMPTY = 0x01
-# extending that Mnemonic as a selective (Feature Status/register address/SPI command) Universal Mnemonic e.g. U_NIC = FIFO_EMPTY
-U_NIC = 0x01
-# add more fun with Mnemonics using flags <= 0xF
-# U_NIC == EN_AA or PRIM_RX or EN_DYN_ACK
-# (U_NIC + 0)         == RX is empty?
-# (U_NIC + 1)         == RX is full?
-# (U_NIC + 0) << 4    == TX is empty? or MAX_RT or TX_ADDR
-# (U_NIC + 1) << 4    == TX is full? or TX_DS OR 0x20 OR TX_DS
-# 0X0F - U_NIC        == RX_P_NO
-# 0X0F + U_NIC        == TX is empty? or MAX_RT or TX_ADDR
-# (0x0F + U_NIC) << 1 == TX is full? or TX_DS OR 0x20 OR TX_DS
-# 0xE0 + U_NIC        == FLUSH_TX
-# U_NIC << 6          == RX_DR
-# U_NIC - 1           == POWER_0 (-18 dBm) or CONFIG
-# U_NIC + 1           == POWER_1 (-12 dBm) or PWR_UP or EN_ACK_PAY or 0x2
-# U_NIC << 2          == POWER_2 (-6 dBm)  or 0x4 or EN_DPL or SETUP_RETR
-# (U_NIC << 2) + 2    == POWER_3 (0 dbm)
-# U_NIC << 3          == 0x8 or 0x8 or OBSERVE_TX
-# (U_NIC << 3) + 1    == RPD
-# 0xE0 + U_NIC + 1    == FLUSH_RX
-# 0xE0 + U_NIC + 2    == REUSE_TX_PL
-# R_RX_PL_WID + U_NIC == R_RX_PAYLOAD
-# W_TX_PAYLOAD + U_NIC== W_ACK_PAYLOAD
-# SETUP_AW + (U_NIC << 1) ==
-# constants for instructions
+# nRF24L01 instruction mnemonics
 R_RX_PL_WID  = 0x60 # read RX payload width
-# R_RX_PAYLOAD = 0x61 # read RX payload
 W_TX_PAYLOAD = 0xa0 # write TX payload
-# W_ACK_PAYLOAD= 0xa8 # write ACK payload
-# FLUSH_TX     = 0xe1 # flush TX FIFO
-# FLUSH_RX     = 0xe2 # flush RX FIFO
-# REUSE_TX_PL  = 0xe3 # used per payload to flag/keep the newly written payload in TX FIFO and re-use it for subsequent transmissions until a new payload is written or flush_tx() call
 W_TX_PAYLOAD_NOACK = 0xb0 # used per payload to write an individual payload that doesn't require ACK packet
 
 class RF24(SPIDevice):
@@ -392,7 +357,7 @@ class RF24(SPIDevice):
             self._reg_write_bytes(0xa8 | ack_pl[1], ack_pl[0])
 
     @property
-    def irq_DF(self):
+    def irq_DR(self):
         """A `bool` that represents the "Data Ready" interrupted flag. (read-only)
 
         * `True` represents Data is in the RX FIFO buffer
@@ -424,7 +389,7 @@ class RF24(SPIDevice):
         """
         return self.status & 0x10
 
-    def what_happened(self, dump_addrs=False):
+    def what_happened(self, dump_pipes=False):
         """This debuggung function aggregates all status/condition related information from the nRF24L01. Some flags may be irrelevant depending on nRF24L01's state/condition.
 
         :returns: A dictionary that contains the data pertaining to the following keys:
@@ -446,42 +411,42 @@ class RF24(SPIDevice):
             - ``Dynamic Payloads`` Is the dynamic payload length feature enabled?
             - ``Primary Mode`` The current mode (RX or TX) of communication of the nRF24L01 device.
             - ``Power Mode`` The power state can be Off, Standby-I, Standby-II, or On.
-        :param bool dump_addrs: `True` will append all addresses from the RX nRF24L01's registers of stored addresses. This defaults to `False`. The appended keys will be titled: ``pipe addr on #`` where "#" represent the pipe number.
+        :param bool dump_pipes: `True` will append all addresses from the RX nRF24L01's registers of stored addresses. This defaults to `False`. The appended keys will be titled: ``pipe addr on #`` where "#" represent the pipe number.
 
-        .. note:: All data is fetched directly from nRF24L01 for user comparison to local copy of attributes and user expectations. Meaning, this data reflects only the information that the nRF24L01 is operating with, not the information stored in this driver class's attributes.
+        Remember, we only use `recv()` to read payload data as that transaction will also remove it from the FIFO buffer.
+
+        .. note:: Only some data is fetched directly from nRF24L01. Specifically ``Packets Lost``, ``Retry Count``, ``Recvd Pwr Detect``, and all pipe addresses. These data are not stored inernally on purpose. All other data is computed from memory of last SPI transaction related to that data.
 
         """
-        assert isinstance(dump_addrs, (bool, int))
-        watchdog = self._reg_read(OBSERVE_TX)
-        config = self._reg_read(0x0)
-        # self.fifo = self._reg_read(FIFO_STATUS) save the time
-        features = self._reg_read(FEATURE)
-        autoACK = bool(self._reg_read(EN_AA))
-        dynPL = bool((features & EN_DPL) and (self._reg_read(DYNPD))) and autoACK
+        assert isinstance(dump_pipes, (bool, int))
+        watchdog = self._reg_read(0x08) # OBSERVE_TX register
         result = {
-            "Data Ready": bool(self.status & RX_DR),
-            "Data Sent": bool(self.status & TX_DS),
-            "Packets Lost": (watchdog & 0xf0) >> 4,
-            "Retry Count": watchdog & 0x0f,
-            "Max Retry Hit": bool(self.status & MAX_RT),
-            "Recvd Pwr Detect": bool(self._reg_read(RPD)),
-            "Re-use TX Payload": bool(self.fifo & 0x40),
-            "TX FIFO full": bool(self.status & TX_FULL),
+            "Data Ready": bool(self.irq_DR),
+            "Data Sent": bool(self.irq_DS),
+            "Packets Lost": (watchdog & 0xF0) >> 4,
+            "Retry Count": watchdog & 0x0F,
+            "Max Retry Hit": bool(self.irq_DF),
+            "Recvd Pwr Detect": bool(self._reg_read(0x09)), # RDP register
+            "Re-use TX Payload": bool(self.reuse_tx),
+            "TX FIFO full": bool(self.status & 1),
             "TX FIFO empty": bool(self.fifo & 0x10),
-            "RX FIFO full": bool(self.fifo & 0x02),
-            "RX FIFO empty": bool(self.fifo & 0x01),
-            "Custom ACK Payload": dynPL and bool(features & EN_ACK_PAY),
-            "Ask no ACK": bool(features & EN_DYN_ACK),
-            "Automatic Acknowledgment": autoACK,
-            "Dynamic Payloads": dynPL,
-            "Primary Mode": "RX" if config & 1 else "TX",
-            "Power Mode": ("Standby-II" if self.ce.value else "Standby-I") if config & 2 else "Off"
+            "RX FIFO full": bool(self.fifo & 2),
+            "RX FIFO empty": bool(self.fifo & 1),
+            "Custom ACK Payload": self.ack is not None or (self.features & 2),
+            "Ask no ACK": bool(self.features & 1),
+            "Automatic Acknowledgment": bin(self.auto_ack),
+            "Dynamic Payloads": self.dynamic_payloads,
+            "Primary Mode": "RX" if self.config & 1 else "TX",
+            "Power Mode": ("Standby-II" if self.ce.value else "Standby-I") if self.config & 2 else "Off"
             }
-        if dump_addrs:
+        if dump_pipes:
             for i in range(RX_ADDR_P0, RX_ADDR_P0 + 6):
                 j = i - RX_ADDR_P0
-                isEnabled = "enabled!" if (self._reg_read(0x2) & (1 << j)) else "disabled"
-                result["pipe addr on {} is {}".format(j, isEnabled)] = self._reg_read_bytes(i)
+                # some hidden goodies in memory
+                isOpen = "opened" if (self._open_pipes & (1 << j)) else "closed"
+                isDP = "dynamic" if self._dyn_pl & (1 << j) else " static"
+                # condense to one dictionary entry key and store pipe address as key's value
+                result["Address on {} pipe {} using {} payloads".format(isOpen,j,isDP)] = self._reg_read_bytes(i)
         return result
 
     @property
