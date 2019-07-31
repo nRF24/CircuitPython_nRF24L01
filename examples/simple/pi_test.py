@@ -90,7 +90,6 @@ def slave(count=3):
     nrf.stop_listening() # put the nRF24L01 is in TX and power down modes
 
 def debugRF24(dumpADDR=False):
-    print('expected status =', bin(nrf.status))
     for item in nrf.what_happened(dumpADDR).items():
         print('{} : {}'.format(item[0], item[1]))
 
