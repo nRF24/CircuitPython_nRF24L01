@@ -84,6 +84,7 @@ def slave(count=3):
                     repr(rx)))
             # this will listen indefinitely till counter == 0
             counter -= 1
+        time.sleep(0.25)
 
     # recommended behavior is to keep in TX mode while sleeping
     nrf.stop_listening() # put the nRF24L01 is in TX and power down modes

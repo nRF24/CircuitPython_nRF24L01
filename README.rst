@@ -128,8 +128,8 @@ Here are the features listed directly from the datasheet (refered to as the `nRF
 nRF24L01+ Single Chip 2.4GHz Transceiver
 Preliminary Product Specification v1.0
 
-    Key Features:
-    -------------
+Key Features:
+-------------
 
     * Worldwide 2.4GHz ISM band operation
     * 250kbps, 1Mbps and 2Mbps on air data rates
@@ -151,8 +151,8 @@ Preliminary Product Specification v1.0
     * 5V tolerant inputs
     * Compact 20-pin 4x4mm QFN package
 
-    Applications
-    ------------
+Applications
+------------
 
     * Wireless PC Peripherals
     * Mouse, keyboards and remotes
@@ -168,11 +168,11 @@ Preliminary Product Specification v1.0
     * Asset tracking systems
     * Toys
 
-    Noteworthy Projects using the nRF24L01 (not related to this circuitpython library -- just examples of capability):
+Noteworthy Projects using the nRF24L01 (not related to this circuitpython library -- just examples of capability):
 
-    `A github user, v-i-s-h, has used the nRF24L01 to fake a bluetooth beacon using the TMRh20 arduino library. <https://github.com/v-i-s-h/RF24Beacon>`_
+    * `A github user, v-i-s-h, has used the nRF24L01 to fake a bluetooth beacon using the TMRh20 arduino library. <https://github.com/v-i-s-h/RF24Beacon>`_
 
-    `There is also a way to use this radio via 3 pins instead of the all 5 (uses extra circuit hardware and an attiny85 IC) <https://www.instructables.com/id/NRF24L01-With-ATtiny85-3-Pins/>`_
+    * `There is also a way to use this radio via 3 pins instead of the all 5 (uses extra circuit hardware and an attiny85 IC) <https://www.instructables.com/id/NRF24L01-With-ATtiny85-3-Pins/>`_
 
 .. note:: A word on pipes vs addresses vs channels.
 
