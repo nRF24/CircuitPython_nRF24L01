@@ -15,6 +15,24 @@ Introduction
 
 Circuitpython driver library for the nRF24L01 transceiver
 
+Features currently supported
+----------------------------
+
+    * dynamic payloads (max 32 bytes each)
+    * automatic acknowledgment (ACK)
+    * cycle redundancy checking (up to 2 bytes long)
+    * frequency specification via channel attribute
+
+Features currently untested
+---------------------------
+
+    * configuration of interrupt (IRQ) pin
+    * custom acknowledgment (ACK) payload
+    * "re-use the same payload" feature
+    * flag a single payload for no acknowledgment (ACK)
+    * auto-ACK can be used on a per pipe basis
+    * dynamic payloads feature can be used on a per pipe basis
+    * no implementation for Multiceiver mode
 
 Dependencies
 =============
@@ -83,10 +101,10 @@ The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) t
 
 .. tip:: user reports and personal experiences have improved results if there is a capacitor of at least 100 nanofarads connected in parrallel to the VCC and GND pins. There is some references to the use of capacitors in `Chapter 8.3.2 of the nRF24L01+ Specification Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1105319>`_
 
-Usage Example
-=============
+Using The Examples
+==================
 
-See `examples/` for an example of how to use the library. Notice that there are 2 files in each scenario/folder; one file titled "pi_test.py" for testing on the raspberry pi, and another file titled "m4_test.py" for testing on an adafruit boards with atsamd51. This was developed and tested on both Raspberry Pi and ItsyBitsy M4. Pins have been hard coded in the examples for the corresponding device, so please adjust these accordingly to your circuitpython device if necessary.
+See `examples/` for an certain features of this the library. Notice that there are 2 files in each scenario/folder; one file titled "pi_test.py" for testing on the raspberry pi, and another file titled "m4_test.py" for testing on an adafruit boards with atsamd51. This was developed and tested on both Raspberry Pi and ItsyBitsy M4. Pins have been hard coded in the examples for the corresponding device, so please adjust these accordingly to your circuitpython device if necessary.
 
 To run the simple example, open a python terminal in this repo's example/simple folder and run the following:
 
@@ -102,76 +120,73 @@ To run the simple example, open a python terminal in this repo's example/simple 
     Sending:  0
     Sending:  1
 
-Firstly import the necessary packages for your application.
+About the nRF24L01
+==================
 
-.. code-block:: python
+Here are the features listed directly from the datasheet (refered to as the `nRF24L01+ Specification Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf>`_):
 
-    # transmitted packet must be a byte array, thus the need for struct
-    import time, board, struct, digitalio as dio
-    from busio import SPI
-    from circuitpython_nrf24l01.rf24 import RF24
-    # circuitpython_nrf24l01.rf24 is this library
-    # RF24 is the main driver class
+nRF24L01+ Single Chip 2.4GHz Transceiver
+Preliminary Product Specification v1.0
 
-Define the nodes' virtual addresses/IDs for use on the radio's data pipes. Also define the SPI pin connections to the radio. Now you're ready to instantiate the NRF24L01 object
+    Key Features:
+    -------------
+
+    * Worldwide 2.4GHz ISM band operation
+    * 250kbps, 1Mbps and 2Mbps on air data rates
+    * Ultra low power operation
+    * 11.3mA TX at 0dBm output power
+    * 13.5mA RX at 2Mbps air data rate
+    * 900nA in power down
+    * 26μA in standby-I
+    * On chip voltage regulator
+    * 1.9 to 3.6V supply range
+    * Enhanced ShockBurst™
+    * Automatic packet handling
+    * Auto packet transaction handling
+    * 6 data pipe MultiCeiver™
+    * Drop-in compatibility with nRF24L01
+    * On-air compatible in 250kbps and 1Mbps with nRF2401A, nRF2402, nRF24E1 and nRF24E2
+    * Low cost BOM
+    * ±60ppm 16MHz crystal
+    * 5V tolerant inputs
+    * Compact 20-pin 4x4mm QFN package
+
+    Applications
+    ------------
+
+    * Wireless PC Peripherals
+    * Mouse, keyboards and remotes
+    * 3-in-1 desktop bundles
+    * Advanced Media center remote controls
+    * VoIP headsets
+    * Game controllers
+    * Sports watches and sensors
+    * RF remote controls for consumer electronics
+    * Home and commercial automation
+    * Ultra low power sensor networks
+    * Active RFID
+    * Asset tracking systems
+    * Toys
+
+    Noteworthy Projects using the nRF24L01 (not related to this circuitpython library -- just examples of capability):
+
+    `A github user, v-i-s-h, has used the nRF24L01 to fake a bluetooth beacon using the TMRh20 arduino library. <https://github.com/v-i-s-h/RF24Beacon>`_
+
+    `There is also a way to use this radio via 3 pins instead of the all 5 (uses extra circuit hardware and an attiny85 IC) <https://www.instructables.com/id/NRF24L01-With-ATtiny85-3-Pins/>`_
 
 .. note:: A word on pipes vs addresses vs channels.
 
-    You should think of the pipes as RF pathways to a specified address. There are only six pipes on the nRF24L01, thus it can simultaneously talk to a maximum of 6 other nRF24L01 radios. However, you can use any 5 byte long address you can think of (as long as the last byte is unique among simultaneous braodcasting addresses), so you're not limited to just talking to the same 6 radios. Also the radio's channel is not be confused with the radio's pipes. Channel selection is a way of specifying a certain radio frequency. Channel defaults to 76 (like the arduino library), but options range from 0 to 127. The channel can be tweaked to find a less occupied frequency amongst Bluetooth & WiFi ambient signals.
+    You should think of the pipes as RF pathways to a specified address. There are only six data pipes on the nRF24L01, thus it can simultaneously "talk" to a maximum of 6 other nRF24L01 radios. When assigning addresses to a data pipe, you can use any 5 byte long address you can think of (as long as the last byte is unique among simultaneously broadcasting addresses), so you're not limited to the same 6 radios (more on this when we support "Multiciever" mode). Also the radio's channel is not be confused with the radio's pipes. Channel selection is a way of specifying a certain radio frequency (channel 1 = [2.4 + .001] MHz). Channel defaults to 76 (like the arduino library), but options range from 0 to 125 -- that's 2.4 MHz to 2.525 MHz. The channel can be tweaked to find a less occupied frequency amongst (Bluetooth & WiFi) ambient signals.
 
 .. warning::
     The RX pipe's address on the receiving node MUST match the TX pipe's address on the transmitting node. Also the specified channel MUST match on both endpoint tranceivers.
 
-.. code-block:: python
-
-    addresses = (b'1Node', b'2Node') # tx, rx node ID's
-
-    ce = dio.DigitalInOut(board.D8) # pin AKA board.CE0
-    cs = dio.DigitalInOut(board.D5)
-
-    spi = SPI(board.SCK, MOSI=board.MOSI, MISO=board.MISO) # create instance of spi port
-    nrf = RF24(spi, cs, ce) # create instance of the radio
-
 To transmit firstly open the TX and RX pipes, set the desired enpoints' addresses, stop listening (puts radio in transmit mode), and send your payload packed into a bytearray using struct.pack().
 
-.. code-block:: python
+Where Do I GET 1?
+=================
 
-    def master():
-        nrf.open_tx_pipe(addresses[0])
-        nrf.open_rx_pipe(1, addresses[1])
-        nrf.stop_listening()
-
-        i = 0
-
-        while True:
-            try:
-                print("Sending:", i)
-                # use struct to pack the data into a bytearray
-                nrf.send(struct.pack('i', i))
-            except OSError:
-                print("sending failed")
-            time.sleep(1) # send every 1s
-
-To receive this data, again open the TX and RX pipes and set the desired endpoint addresses, then start listening for data. The ``nrf.any()`` method returns true when there is data ready to be received.
-
-.. code-block:: python
-
-    def slave():
-        nrf.open_tx_pipe(addresses[1])
-        nrf.open_rx_pipe(1, addresses[0])
-        nrf.start_listening()
-
-        while True:
-            if nrf.any():
-                while nrf.any():
-                    buf = nrf.recv()
-                    # use struct to unpack the bytearray into a tuple
-                    # according to the data type format string
-                    i = struct.unpack('i', buf)
-                    # format string 'i' matches a 4 byte iterable object
-                    # where the payload is stored (maximum is 32 bytes)
-                    # check out other available format strings: https://docs.python.org/2/library/struct.html#format-characters
-                    print("Received:", i[0]) # prints the only integer in the resulting tuple.
+See the store links on the sidebar or just google nRF24L01. It is worth noting that you generally don't want to buy just 1 as you need 2 for testing -- 1 to send & 1 to receive and vise versa. This library has been tested on a cheaply bought 10 pack from Amazon.com using a recommended capacitor (>100nF) on the power pins. Don't get lost on Amazon or eBay: there are other wireless transceivers that aren't compatible with this library; the esp8266-01 (also sold in packs) looks very similar to the nRF24L01(+) and could lead to an accidental purchase.
 
 Contributing
 ============

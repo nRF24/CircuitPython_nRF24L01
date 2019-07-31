@@ -36,10 +36,10 @@ spi = board.SPI() # init spi bus object
 
 # we'll be using the dynamic payload size feature (enabled by default)
 # the custom ACK payload feature is disabled by default
-# the custom ACK payload feature can be enabled
-# during instantiation by passing a custom ACK payload
-# to the `ack` the parameter like so:
-nrf = RF24(spi, csn, ce, ack=(b'dummy',1))
+# the custom ACK payload feature cannot be enabled
+# during instantiation due to its singular use nature
+# meaning 1 ACK payload per 1 RX'd payload
+nrf = RF24(spi, csn, ce)
 
 # NOTE the the custom ACK payload feature will be enabled
 # automatically when you set the attribute to a tuple who's
@@ -53,13 +53,13 @@ nrf = RF24(spi, csn, ce, ack=(b'dummy',1))
 # remember the second item always needs to be an int ranging [0,5]
 nrf.ack = (None, 1)
 
-# recommended behavior is to keep in TX mode while sleeping
-nrf.stop_listening() # put radio in TX mode and power down
+# recommended behavior is to keep in TX mode while idle
+nrf.stop_listening() # put radio in TX mode
 
 def master(count=5): # count = 5 will only transmit 5 packets
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(addresses[0])
-    # ensures the nRF24L01 is in TX and power down modes
+    # ensures the nRF24L01 is in TX mode
     # nrf.stop_listening()
 
     counter = count

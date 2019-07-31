@@ -74,7 +74,7 @@ class RF24(SPIDevice):
         self._config = 0
         self._fifo = 0
         # init the SPI bus and pins
-        super(RF24, self).__init__(spi, chip_select=csn, baudrate=10000000, polarity=0, phase=0, extra_clocks=0)
+        super(RF24, self).__init__(spi, chip_select=csn, baudrate=4000000, polarity=0, phase=0, extra_clocks=0)
 
         # store the ce pin
         self.ce = ce
@@ -91,17 +91,18 @@ class RF24(SPIDevice):
         # fetch config and clear status flags (& get fifo flags)
         self.clear_status_flags()
         # NOTE per spec sheet: nRF24L01+ must be in a standby or power down mode before writing to the configuration register ( CONFIG  @ 0x00 )
-        if self.power or self.xx_mode: # if in standby-II/I or RX mode
-            self.power = False # power down
+        # configure IRQs; 0x0C == setup CRC feature (enabled;2 bytes), and trigger both TX & sleep modes
+        self._config = (irq_DR << 6) | (irq_DS << 5) | (irq_DF << 4) | 0x0C
+        self._reg_write(0x0, self.config)
 
         self.channel = channel # always writes value to register
         self.address_length = address_length # always writes value to register
 
         # configure SETUP_RETR register to our defaults
-        self._setup_retr = 0x53 # ard: 1500us (recommended default); arc: 3
-        self._reg_write(SETUP_AW + 1, self._setup_retr)
+        self._setup_retr = 0x53 # 0x53 == ard: 1500us (recommended default); arc: 3
+        self._reg_write(SETUP_AW + 1, self._setup_retr) # SETUP_AW + 1 = SETUP_RETR register
         # configure RF_SETUP register to our defaults
-        self._rf_setup = 0x06 # < -- 0dBm @ 1Mbps
+        self._rf_setup = 0x06 # 0x06 == 0dBm @ 1Mbps (max @ recommended) defaults
         self._reg_write(RF_SETUP, self._rf_setup)
 
         # configure special case flags in the FEATURE register
@@ -118,8 +119,6 @@ class RF24(SPIDevice):
         # set dynamic_payloads and automatic acknowledgment packets on all pipes
         self._dyn_pl = self._reg_read(DYNPD)
         self.dynamic_payloads = dynamic_payloads
-        # config interrupt to go LOW when any of the 3 most significant bits in status register are set True. See funcion comments for more detail
-        self.interrupt_config(irq_DR, irq_DS, irq_DF) # (all True == nRF24L01's default)
 
     def _reg_read(self, reg):
         """A helper function to read a single byte of data from a specified register on the nRF24L01's internal IC. THIS IS NOT MEANT TO BE DIRECTLY CALLED BY END-USERS.
@@ -433,8 +432,8 @@ class RF24(SPIDevice):
             "RX FIFO empty": bool(self.fifo & 1),
             "Custom ACK Payload": bool(self.ack is not None or (self.features & 2)),
             "Ask no ACK": bool(self.features & 1),
-            "Automatic Acknowledgment": bin(self.auto_ack),
-            "Dynamic Payloads": bin(self._dyn_pl) if self.dynamic_payloads else False,
+            "Automatic Acknowledgment": self.auto_ack,
+            "Dynamic Payloads": self._dyn_pl if self.dynamic_payloads else False,
             "Primary Mode": "RX" if self.xx_mode else "TX",
             "Power Mode": ("Standby-II" if self.ce.value else "Standby-I") if self.config & 2 else "Off"
             }
@@ -472,7 +471,7 @@ class RF24(SPIDevice):
         """
         # take this chance to update both FIFO flags and STATUS flags (STATUS is returned by nRF24L01 on every transaction)
         self._fifo = self._reg_read(FIFO_STATUS)
-        if self.status & 0x70 != (dataReady <<6) + (dataSent <<5) + (maxRetry <<4):
+        if self.irq_DR != dataReady and self.irq_DS != dataSent and self.irq_DF != maxRetry:
             self._status = self.status & 0xf | ((dataReady <<6) + (dataSent <<5) + (maxRetry <<4))
             self._reg_write(0x07, self.status) # write only if needed
 
@@ -552,7 +551,7 @@ class RF24(SPIDevice):
         if not self.dynamic_payloads and enable:
             self.dynamic_payloads = enable
         if self.auto_ack != enable:
-            self._auto_ack = b'0x3F' if enable else b'0'
+            self._auto_ack = 0x3F if enable else 0
             self._reg_write(0x01, self._auto_ack)
         # radio automatically enables CRC if ACK packets are enabled
         if enable: # thus let the record show so
@@ -575,6 +574,8 @@ class RF24(SPIDevice):
     @dynamic_payloads.setter
     def dynamic_payloads(self, enable):
         assert isinstance(enable, (bool, int))
+        if self.auto_ack and not enable:
+            self.auto_ack = enable
         if self.dynamic_payloads != enable:# write only if needed
             # save changes to register(&its Shadow)
             self._features = (self.features & 3) | (enable << 2)
@@ -593,12 +594,13 @@ class RF24(SPIDevice):
 
     @arc.setter
     def arc(self, count):
+        # SETUP_AW + 1 = SETUP_RETR register
         assert 0 <= count <= 15
-        self._setup_retr = self._reg_read(0x04) # refresh data
+        self._setup_retr = self._reg_read(SETUP_AW + 1) # refresh data
         if self.arc & 0x0F != count:# write only if needed
             # save changes to register(&its Shadow)
             self._setup_retr = (self.setup_retr & 0xF0) | count
-            self._reg_write(0x04, self._setup_retr)
+            self._reg_write(SETUP_AW + 1, self._setup_retr)
 
     @property
     def ard(self):
@@ -616,15 +618,15 @@ class RF24(SPIDevice):
 
     @ard.setter
     def ard(self, t):
-        # nRF24L01+ must be in a standby or power down mode before writing to the configuration registers.
+        # SETUP_AW + 1 = SETUP_RETR register
         assert 250 <= t <= 4000 and t % 250 == 0
         # save for access via getter property(s)
-        self._setup_retr = self._reg_read(0x04)
+        self._setup_retr = self._reg_read(SETUP_AW + 1)
         # set new ARD data and current ARC data to register
         if self.ard != t:# write only if needed
             # save changes to register(&its Shadow)
             self._setup_retr = (int((t-250)/250) << 4) | (self._setup_retr & 0x0F)
-            self._reg_write(0x04, self._setup_retr)
+            self._reg_write(SETUP_AW + 1, self._setup_retr)
 
     @property
     def address_length(self):
@@ -783,16 +785,18 @@ class RF24(SPIDevice):
 
     @property
     def channel(self):
-        """This `int` attribute specifies the nRF24L01's frequency (MHz).
+        """This `int` attribute specifies the nRF24L01's frequency (in 2400 + `channel` KHz).
 
-        A valid input value must be in range [0-127]. Otherwise an `AssertionError` exception is thrown. Default is 76 (for compatibility with `TMRh20's arduino library <http://tmrh20.github.io/RF24/classRF24.html>`_ default).
+        A valid input value must be in range [0-125] (that means [2.4, 2.525] MHz). Otherwise an `AssertionError` exception is thrown. Default is 76 (for compatibility with `TMRh20's arduino library <http://tmrh20.github.io/RF24/classRF24.html>`_ default).
+
+        .. important:: This attribute must match on both RX & TX nRF24L01 devices during transmissions for success.
 
         """
         return self._channel
 
     @channel.setter
     def channel(self, channel):
-        assert 0 <= channel <= 127
+        assert 0 <= channel <= 125
         self._channel = channel
         self._reg_write(RF_CH, channel) # always wries to reg
 
@@ -815,10 +819,10 @@ class RF24(SPIDevice):
 
         """
         self._config = self._reg_read(0) # refresh data
-        if (self._config & 0x0f) != (onMaxARC << 4) | (onDataSent << 5) | (onDataRecv << 6):
+        if (self.config & 0xF0) != (not onMaxARC << 4) | (not onDataSent << 5) | (not onDataRecv << 6):
             # save to register and update local copy of pwr & RX/TX modes' flags
-            self._config = (self._config & 0x0f) | (onMaxARC << 4) | (onDataSent << 5) | (onDataRecv << 6)
-            self._reg_write(0x0, self._config)
+            self._config = (self.config & 0x0F) | (not onMaxARC << 4) | (not onDataSent << 5) | (not onDataRecv << 6)
+            self._reg_write(0x0, self.config)
 
     # address should be a bytes object with the length = self.address_length
     def open_tx_pipe(self, address):
@@ -852,7 +856,7 @@ class RF24(SPIDevice):
         elif pipe_number < 2: # write the full address for pipe 1
             self._reg_write_bytes(pipe_number + RX_ADDR_P0, b'\xc2' * 5)
         else: # write just LSB for 2 <= pipes >= 5
-            self._reg_write(pipe_number + RX_ADDR_P0, (b'\xc1' + pipe_number) * 5)
+            self._reg_write(pipe_number + RX_ADDR_P0, b'\xc1')
         # disable the specified data pipe if not already
         if self._open_pipes & (1 << pipe_number):
             self._open_pipes = self._open_pipes & ~(1 << pipe_number)
@@ -912,10 +916,11 @@ class RF24(SPIDevice):
             self.ack = ack_pl
             if ack_pl[0] is None: # the custom ACK feature has been disabled
                 self.flush_tx() # flush the TX FIFO buffer
-        if not self.dynamic_payloads:
+        if not self.dynamic_payloads: # dynamic payloads not enabled
+            # need to set payload width to appropriate register
             self._reg_write(RX_PW_P0, self.payload_length)
-        # make sure the last call to open_rx_pipe(0) sticks
-        if self.pipe0_read_addr != self._reg_read_bytes(RX_ADDR_P0):
+        if self.pipe0_read_addr is not None:
+            # make sure the last call to open_rx_pipe(0) sticks if initialized
             self._reg_write_bytes(RX_ADDR_P0, self.pipe0_read_addr)
         # power up radio & set radio in RX mode
         self._config = self.config & 0xFC | 3
@@ -929,7 +934,7 @@ class RF24(SPIDevice):
     def stop_listening(self):
         """Puts the nRF24L01 into TX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this function puts nRF24L01 in powers Standby-I (low current & no transmissions) mode which is ideal for post-transmission work. Remeber to flush your 3-level FIFO buffers when appropriate using `flush_tx()` or `flush_rx()`."""
         # ensure radio is in standby-I mode
-        if self.ce.value:
+        if not self.power and self.ce.value:
             self.ce.value = 0
         # set radio in TX mode as recommended behavior per spec sheet.
         self._config = self.config & ~0x01 # does not put radio to sleep
@@ -983,7 +988,7 @@ class RF24(SPIDevice):
         return False
 
     def recv(self):
-        """This function is used to retrieve, then clears all the status flags. This function also serves as a helper function to `read_ack()` in TX mode to aquire the automatic acknowledgement (ACK) payload (if any).
+        """This function is used to retrieve, then clears all the status flags. This function also serves as a helper function to `read_ack()` in TX mode to aquire any automatic acknowledgement (ACK) payload.  (read-only)
 
         :returns: A `bytearray` of the RX payload data
 

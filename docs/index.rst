@@ -24,7 +24,11 @@ Table of Contents
     :caption: Tutorials
 
 .. toctree::
-    :caption: Related Products
+    :caption: Store Links
+
+    2.4GHz Transceiver IC - nRF24L01+ <https://www.sparkfun.com/products/690>
+    SparkFun Transceiver Breakout - nRF24L01+ <https://www.sparkfun.com/products/691>
+    SparkFun Transceiver Breakout - nRF24L01+ (RP-SMA) <https://www.sparkfun.com/products/705>
 
 .. toctree::
     :caption: Other Links
