@@ -248,7 +248,9 @@ class RF24(SPIDevice):
         :param bool tx: `True` means information returned is about the TX FIFO. `False` means its about the RX FIFO. This parameter defaults to `False` when not specified.
         :param bool empty: `True` tests if specified FIFO is empty. `False` tests if the specified FIFO is full. This parameter defaults to `False` when not specified.
 
-        :returns: A `bool` answer to the question: "Is the [tx, rx]:[`True`, `False`] FIFO [empty, full]:[`False`, `True`]?
+        :returns: A `bool` answer to the question:
+
+            "Is the [tx/rx]:[`True`/`False`] FIFO [empty/full]:[`False`/`True`]?
 
         """
         self._fifo = self._reg_read(FIFO_STATUS) # refresh the data
@@ -816,7 +818,7 @@ class RF24(SPIDevice):
 
     def interrupt_config(self, onMaxARC=True, onDataSent=True, onDataRecv=True):
         """Sets the configuration of the nRF24L01's Interrupt (IRQ) pin. IRQ signal from the nRF24L01 is active LOW. (write-only)
-        To fetch the status of these interrupt (IRQ) flags, use the  `status` attribute's bits 4 through 6.
+        To fetch the status (not config) of these interrupt (IRQ) flags, use the  `irq_DF`, `irq_DS`, `irq_DR` attributes respectively.
 
         :param bool onMaxARC: If this is `True`, then interrupt pin goes active LOW when maximum number of attempts to re-transmit the packet have been reached.
         :param bool onDataSent: If this is `True`, then interrupt pin goes active LOW when a payload from TX buffer is successfully transmitted. If `auto_ack` attribute is enabled, then interrupt pin only goes active LOW when acknowledgment (ACK) packet is received.
@@ -828,7 +830,7 @@ class RF24(SPIDevice):
 
                 1. read payload through `recv()`
                 2. clear ``dataReady`` status flag (taken care of by using `recv()` in previous step)
-                3. read FIFO_STATUS register to check if there are more payloads available in RX FIFO buffer. (a call to `any()` will get this result)
+                3. read FIFO_STATUS register to check if there are more payloads available in RX FIFO buffer. (a call to `any()` or ``fifo(False,True)`` will get this result)
                 4. if there is more data in RX FIFO, repeat from step 1
 
         """
