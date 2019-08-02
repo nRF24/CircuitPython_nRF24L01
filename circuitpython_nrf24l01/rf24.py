@@ -769,7 +769,7 @@ class RF24(SPIDevice):
 
     @property
     def pa_level(self):
-        """This `int` aattribute specifies the nRF24L01's power amplitude level (in dBm).
+        """This `int` attribute specifies the nRF24L01's power amplitude level (in dBm).
 
         A valid input value is:
 
@@ -870,7 +870,7 @@ class RF24(SPIDevice):
 
                 1. read payload through `recv()`
                 2. clear ``dataReady`` status flag (taken care of by using `recv()` in previous step)
-                3. read FIFO_STATUS register to check if there are more payloads available in RX FIFO buffer. (a call to `pipe()`, `any()` or `fifo```(False,True)`` will get this result)
+                3. read FIFO_STATUS register to check if there are more payloads available in RX FIFO buffer. (a call to `pipe()`, `any()` or even ``(False,True)`` as parameters to `fifo()` will get this result)
                 4. if there is more data in RX FIFO, repeat from step 1
 
         """
