@@ -53,6 +53,7 @@ nrf = RF24(spi, csn, ce)
 # remember the second item always needs to be an int ranging [0,5]
 # nrf.ack = (None, 1)
 nrf.ack = (None, -1)
+
 # recommended behavior is to keep in TX mode while idle
 nrf.listen = False # put radio in TX mode
 
