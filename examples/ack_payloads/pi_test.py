@@ -98,9 +98,8 @@ def slave(count=3):
     counter = count
     while counter:
         if nrf.any():
-            # print details about the received packet
-            print('RX payload size =', nrf.any())
-            print('RX payload on pipe', nrf.available())
+            # print details about the received packet (if any)
+            print("Found {} bytes on pipe {}".format(repr(nrf.any()), nrf.pipe()))
             # retreive the received packet's payload
             rx = nrf.recv() # clears flags & empties RX FIFO
             print("Received (raw): {}".format(repr(rx)))
