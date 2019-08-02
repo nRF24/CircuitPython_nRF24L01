@@ -327,21 +327,20 @@ class RF24(SPIDevice):
 
     @ack.setter
     def ack(self, ack):
-        assert (ack[0] is None or 1 <= len(ack[0]) <= 32) and 0 <= ack[1] <= 5
+        assert (ack[0] is None or 1 <= len(ack[0]) <= 32) and ack[1] <= 5
         self.auto_ack = True # ensure auto_ack feature is enabled
         # setting auto_ack feature automatically updated the _features attribute, so
         # we need to throw the EN_ACK_PAY flag in the FEATURES register accordingly on both TX & RX nRF24L01s
-        self._features = (self._features & 5) | (0 if ack[0] is None else 2)
+        self._features = (self._features & 5) | (0 if (ack[0] is None) and (ack[1] >= 0) else 2)
         self._reg_write(FEATURE,  self._features)
         # the setter sets ACK payloads for TX during TX
         # the getter gets ACK payloads from TX captured by a separate trigger (read_ack())
         if ack[0] is not None: # loading
             # only prepare payload if the auto_ack attribute is enabled and ack[0] is not None
-            if len(ack[0]):
-                # 0xA8 | ack[1] == W_ACK_PAYLOAD | pipe_number
-                self._reg_write_bytes(0xA8 | ack[1], ack[0])
-        # else: # disabling
-        #     self._ack = None # init/reset the attribute
+            # 0xA8 | ack[1] == W_ACK_PAYLOAD | pipe_number
+            self._reg_write_bytes(0xA8 | ack[1], ack[0])
+        elif ack[1] < 0:
+            self._ack = None # init/reset the attribute
 
     @property
     def irq_DR(self):

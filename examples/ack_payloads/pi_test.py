@@ -53,7 +53,7 @@ nrf = RF24(spi, csn, ce)
 # NOTE the first item in the dummy tuple must be `None`
 # remember the second item always needs to be an int ranging [0,5]
 # nrf.ack = (None, 1)
-nrf.ack(b'', 0)
+nrf.ack = (None, -1)
 
 # recommended behavior is to keep in TX mode while idle
 nrf.listen = False # put radio in TX mode
