@@ -76,9 +76,9 @@ def slave(count=3):
 
     counter = count
     while counter:
-        # print details about the received packet (if any)
-        print("Found {} bytes on pipe {}".format(int(nrf.any()), nrf.pipe()))
         if nrf.any():
+            # print details about the received packet (if any)
+            print("Found {} bytes on pipe {}".format(repr(nrf.any()), nrf.pipe()))
             # retreive the received packet's payload
             rx = nrf.recv() # clears flags & empties RX FIFO
             # expecting a long int, thus the string format '<d'
