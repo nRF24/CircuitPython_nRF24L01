@@ -450,7 +450,7 @@ class RF24(SPIDevice):
             "Enabled" if self.reuse_tx else "Disabled",
             "Enabled" if self.ack else "Disabled",
             "Allowed" if bool(self._features & 1) else "Disabled",
-            bin(self.auto_ack) if self.auto_ack else 'Disabled',
+            bin(self._auto_ack) if self.auto_ack else 'Disabled',
             bin(self._dyn_pl) if self.dynamic_payloads else 'Disabled',
             "RX" if self.listen else "TX",
             ("Standby-II" if self.ce.value else "Standby-I") if (self._config & 2) else "Off"
@@ -1045,7 +1045,7 @@ class RF24(SPIDevice):
         """
         # buffer size = current payload size (0x60 = R_RX_PL_WID) + status byte
         curr_pl_size = self.payload_length if not self.dynamic_payloads else self._reg_read(0x60)
-        print("returning {} byte of data".format(curr_pl_size))
+        print("returning {} bytes of data".format(curr_pl_size))
         # get the data (0x61 = R_RX_PAYLOAD)
         result = self._reg_read_bytes(0x61, curr_pl_size)
         # clear all status flag for continued RX/TX operations
@@ -1067,7 +1067,7 @@ class RF24(SPIDevice):
         .. tip:: As the ACK payload must be set prior to receiving a transmission. Set the ACK payload data using this function while `listen` attribute is set `True` to ensure the nRF24L01 is in RX mode. It is also worth noting that the nRF24L01 exits RX mode upon changing `listen` to `False`.
 
         """
-        assert 0 < len(buf) <= 32 and 0 <= pipe_number <= 5
+        assert buf is not None and 1 <= len(buf) <= 32 and 0 <= pipe_number <= 5
         if not self.ack:
             self.ack = True
         # only prepare payload if the auto_ack attribute is enabled and ack[0] is not None
@@ -1094,10 +1094,10 @@ class RF24(SPIDevice):
 
         :returns:
 
-            * ``0`` if transmission times out meaning nRF24L01 has malfunctioned.
-            * ``1`` if transmission succeeds.
-            * ``2`` if transmission fails.
-            * If the payload expects a responding custom ACK payload, then the ``buf`` parameter will be changed to contain the response upon successful transmission.
+            * `None` if transmission times out meaning nRF24L01 has malfunctioned.
+            * `False` if transmission fails.
+            * `True` if transmission succeeds.
+            * `bytearray` If the payload expects a responding custom ACK payload, then the response is returned upon successful transmission.
 
         :param bytearray buf: The payload to transmit. This bytearray must have a length greater than 0 to execute transmission.
 
@@ -1135,8 +1135,8 @@ class RF24(SPIDevice):
         # read ack payload (if read_ack == True), clear status flags, then power down
         if self.ack and self.irq_DS:
             # get and save ACK payload to self.ack if user wants it
-            buf = self.read_ack() # save reply in input buffer
-        else:# if TX related flags are not cleared, do that now
+            result = self.read_ack() # save reply in input buffer
+        else:# if status flags are not cleared, do that now
             self.clear_status_flags()
             print("all status flags cleared by send()")
         return result

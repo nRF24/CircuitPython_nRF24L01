@@ -62,16 +62,20 @@ def master(count=5): # count = 5 will only transmit 5 packets
         # to read the ACK payload during TX mode we
         # pass the parameter read_ack as True.
         nrf.ack = True # enable feature before send()
+        now = time.monotonic() * 1000 # start timer
         result = nrf.send(buffer) # becomes the response buffer
-        if result == 0:
+        if result is None:
             print('send() timed out')
-        elif result == 1:
+        elif result == False:
+            print('send() failed')
+        else:
             # print the received ACK that was automatically
             # fetched and saved to "buffer" via send()
-            print('raw ACK: {}'.format(repr(buffer)))
+            print('raw ACK: {}'.format(repr(result)))
             # the ACK payload should now be in buffer
-        elif result == 2:
-            print('send() failed')
+        # print timer results despite transmission success
+        print('Transmission took',\
+                time.monotonic() * 1000 - now, 'ms')
         time.sleep(1)
         counter -= 1
 
@@ -96,7 +100,8 @@ def slave(count=3):
             # this will listen indefinitely till counter == 0
             counter -= 1
             # print details about the received packet (if any)
-            print("Found {} bytes on pipe {}".format(repr(nrf.any()), nrf.pipe()))
+            print("Found {} bytes on pipe {}\
+                ".format(repr(nrf.any()), nrf.pipe()))
             # retreive the received packet's payload
             rx = nrf.recv() # clears flags & empties RX FIFO
             print("Received (raw): {}".format(repr(rx)))
