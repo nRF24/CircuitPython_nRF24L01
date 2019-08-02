@@ -92,7 +92,8 @@ def slave(count=3):
 
     # put radio into RX mode, power it up, and set the first
     # transmission's ACK payload and pipe number
-    nrf.start_listening(ACK)
+    nrf.listen = True
+    nrf.ack = ACK # load 1st ACK payload can hace up to 3
 
     counter = count
     while counter:
