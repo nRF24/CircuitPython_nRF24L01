@@ -24,7 +24,7 @@ def master():
     nrf.open_tx_pipe(addresses[0]) # set address of RX node into a TX pipe
     # set address of TX node into an RX pipe. NOTE you MUST specify which pipe number to use for RX, we'll be using pipe 1 (options range [0,5])
     nrf.open_rx_pipe(1, addresses[1])
-    nrf.stop_listening() # put radio in TX mode and power down
+    nrf.listen = False # put radio in TX mode and power down
     i = 0.0 # data to send
 
     while True:
@@ -53,7 +53,7 @@ def slave():
     nrf.open_tx_pipe(addresses[1]) # set address of RX node into a TX pipe
     # set address of TX node into an RX pipe. NOTE you MUST specify which pipe number to use for RX, we'll be using pipe 1 (options range [0,5])
     nrf.open_rx_pipe(1, addresses[0])
-    nrf.start_listening() # put radio into RX mode and power up
+    nrf.listen = True # put radio into RX mode and power up
 
     while True:
         try:

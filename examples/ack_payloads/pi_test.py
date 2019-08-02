@@ -55,13 +55,13 @@ nrf = RF24(spi, csn, ce)
 nrf.ack = (None, 1)
 
 # recommended behavior is to keep in TX mode while idle
-nrf.stop_listening() # put radio in TX mode
+nrf.listen = False # put radio in TX mode
 
 def master(count=5): # count = 5 will only transmit 5 packets
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(addresses[0])
     # ensures the nRF24L01 is in TX mode
-    # nrf.stop_listening()
+    # nrf.listen = False
 
     counter = count
     while counter:
@@ -84,7 +84,7 @@ def master(count=5): # count = 5 will only transmit 5 packets
         counter -= 1
 
 # running slave to only fetch/receive count number of packets
-# count = 3 will mimic a full RX FIFO behavior via nrf.stop_listening()
+# count = 3 will mimic a full RX FIFO behavior via nrf.listen = False
 def slave(count=3):
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 0
@@ -108,7 +108,7 @@ def slave(count=3):
             counter -= 1
 
     # recommended behavior is to keep in TX mode while sleeping
-    nrf.stop_listening() # put radio in TX mode and power down
+    nrf.listen = False # put radio in TX mode and power down
 
 def debugRF24(dumpADDR=False):
     print('expected status =', bin(nrf.status))

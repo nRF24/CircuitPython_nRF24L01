@@ -26,13 +26,13 @@ spi = board.SPI() # init spi bus object
 nrf = RF24(spi, csn, ce)
 
 # recommended behavior is to keep in TX mode while sleeping
-nrf.stop_listening() # put the nRF24L01 is in TX and power down modes
+nrf.listen = False # put the nRF24L01 is in TX and power down modes
 
 def master(count=5): # count = 5 will only transmit 5 packets
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(addresses[0])
     # ensures the nRF24L01 is in TX and power down modes
-    # nrf.stop_listening()
+    # nrf.listen = False
 
     i = 0.0 # init data to send
 
@@ -60,20 +60,21 @@ def master(count=5): # count = 5 will only transmit 5 packets
         counter -= 1
 
 # running slave to only fetch/receive count number of packets
-# count = 3 will mimic a full RX FIFO behavior via nrf.stop_listening()
+# count = 3 will mimic a full RX FIFO behavior via nrf.listen = False
 def slave(count=3):
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 1
     # pipe number options range [0,5]
     nrf.open_rx_pipe(1, addresses[0])
-    nrf.start_listening() # put radio into RX mode and power up
+    nrf.listen = True # put radio into RX mode and power up
 
     counter = count
     while counter:
+        print("payload in RX FIFO ? {}".format(nrf.any()))
         if nrf.any():
             # print details about the received packet
             print('RX payload size =', nrf.any())
-            print('RX payload on pipe', nrf.available())
+            print('RX payload on pipe', nrf.pipe())
             # retreive the received packet's payload
             rx = nrf.recv() # clears flags & empties RX FIFO
             # expecting a long int, thus the string format '<d'
@@ -87,11 +88,7 @@ def slave(count=3):
         time.sleep(0.25)
 
     # recommended behavior is to keep in TX mode while sleeping
-    nrf.stop_listening() # put the nRF24L01 is in TX and power down modes
-
-def debugRF24(dumpADDR=False):
-    for item in nrf.what_happened(dumpADDR).items():
-        print('{} : {}'.format(item[0], item[1]))
+    nrf.listen = False # put the nRF24L01 is in TX and power down modes
 
 print("""\
     nRF24L01 Simple test.\n\
