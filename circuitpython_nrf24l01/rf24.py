@@ -855,7 +855,6 @@ class RF24(SPIDevice):
         assert len(address) <= self.address_length
         if self.auto_ack:
             self.open_rx_pipe(0, address)
-        print("writting TX address")
         self._reg_write_bytes(0x10, address) # 0x10 = TX_ADDR register
         #let self._open_pipes only reflect RX pipes
 
@@ -874,7 +873,6 @@ class RF24(SPIDevice):
             self._reg_write_bytes(pipe_number + RX_ADDR_P0, b'\xc2' * 5)
         else: # write just LSB for 2 <= pipes >= 5
             self._reg_write(pipe_number + RX_ADDR_P0, pipe_number + 0xc1)
-        print("Closing pipe {}; address reset to factory defaults".format(pipe_number))
         # disable the specified data pipe if not already
         if self._open_pipes & (1 << pipe_number):
             self._open_pipes = self._open_pipes & ~(1 << pipe_number)
@@ -895,20 +893,16 @@ class RF24(SPIDevice):
             if pipe_number == 0:
                 # save shadow copy of address if target pipe_number is 0. This is done to help ensure the proper address is set to pipe 0 via _start_listening() as open_tx_pipe() will modify the address on pipe 0 if auto_ack is enabled during TX mode
                 self.pipe0_read_addr = address
-            print("writting '{}' as address for pipe {}".format(address, pipe_number))
             self._reg_write_bytes(RX_ADDR_P0 + pipe_number, address)
         else:
-            print("writting '{}' byte as address for pipe {}".format(address[len(address) - 1], pipe_number))
             # only write LSB if pipe_number is not 0 or 1.
             self._reg_write(RX_ADDR_P0 + pipe_number, address[len(address) - 1])
         # enable the specified data pipe if not already
         if not (self._open_pipes & (1 << pipe_number)):
-            print("opening pipe {}".format(pipe_number))
             self._open_pipes = self._open_pipes | (1 << pipe_number)
             self._reg_write(2, self._open_pipes)
         if self._dyn_pl & (1 << pipe_number):
             # radio does care about payload_length if dynamic_payloads is enabled.
-            print("Payload length {} has been used to set pipe{}'s RX_PW".format(self.payload_length, pipe_number))
             self._reg_write(RX_PW_P0 + pipe_number, self.payload_length)
 
     def _start_listening(self):
@@ -920,26 +914,22 @@ class RF24(SPIDevice):
         # ensure radio is in power down or standby-I mode
         if self.ce.value:
             self.ce.value = 0
-            print("prep-ing standby-I mode")
 
         # if not self.dynamic_payloads: # dynamic payloads not enabled
         # need to set payload width to appropriate register
         self._reg_write(RX_PW_P0, self.payload_length)
         if self.pipe0_read_addr is not None:
             # make sure the last call to open_rx_pipe(0) sticks if initialized
-            print("pipe0's address has been re-written")
             self._reg_write_bytes(RX_ADDR_P0, self.pipe0_read_addr)
 
         # power up radio & set radio in RX mode
         self._config = self._config & 0xFC | 3
         self._reg_write(0x0, self._config)
         time.sleep(0.001) # mandatory wait time to power up radio
-        print("entering standby-II mode")
 
         # enable radio comms
         self.ce.value = 1 # radio begins listening after CE pulse is > 130 us
         time.sleep(0.001) # ensure pulse is > 130 us
-        print("nRF24L01 is active RX-ing")
         # nRF24L01 has just entered RX standby-II mode
 
     def _stop_listening(self):
@@ -947,11 +937,9 @@ class RF24(SPIDevice):
         # ensure radio is in standby-I mode
         if self.ce.value:
             self.ce.value = 0
-            print("entering standby-I mode")
         # set radio in TX mode as recommended behavior per spec sheet.
         self._config = self._config & ~0x01 # does not put radio to sleep
         self._reg_write(0x0, self._config)
-        print('nRF24L01 is now in TX mode')
         # exits while still in Standby-I (low current & no transmissions)
 
     def fifo(self, tx=False, empty=None):
@@ -1045,12 +1033,10 @@ class RF24(SPIDevice):
         """
         # buffer size = current payload size (0x60 = R_RX_PL_WID) + status byte
         curr_pl_size = self.payload_length if not self.dynamic_payloads else self._reg_read(0x60)
-        print("returning {} bytes of data".format(curr_pl_size))
         # get the data (0x61 = R_RX_PAYLOAD)
         result = self._reg_read_bytes(0x61, curr_pl_size)
         # clear all status flag for continued RX/TX operations
         self.clear_status_flags()
-        print("all status flags cleared by recv()")
         # return all available bytes from payload
         return result
 
@@ -1085,7 +1071,6 @@ class RF24(SPIDevice):
         if self.any(): # check RX payload for ACK packet
             # directly save ACK payload to the ack internal attribute.
             # `self.ack = x` does not not save anything internally
-            print('returning ACK payload')
             return self.recv()
         return None
 
@@ -1128,7 +1113,7 @@ class RF24(SPIDevice):
         while result == 0 and (time.monotonic() - start) < timeout:
             # let result be 0 if timeout, 1 if success, or 2 if fail
             self._reg_write(0xFF) # perform Non-operation command to get status byte (should be faster)
-            print('status: DR={} DS={} DF={}'.format(self.irq_DR, self.irq_DS, self.irq_DF))
+            # print('status: DR={} DS={} DF={}'.format(self.irq_DR, self.irq_DS, self.irq_DF))
             if  self.irq_DS or self.irq_DF: # transmission done
                 # get status flags to detect error
                 result = 1 if self.irq_DS else 2
@@ -1138,7 +1123,6 @@ class RF24(SPIDevice):
             result = self.read_ack() # save reply in input buffer
         else:# if status flags are not cleared, do that now
             self.clear_status_flags()
-            print("all status flags cleared by send()")
         return result
 
     def send_fast(self, buf=None, askNoACK=False, reUseTX=False):

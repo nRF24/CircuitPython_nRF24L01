@@ -46,12 +46,12 @@ def master(count=5): # count = 5 will only transmit 5 packets
         print("Sending: {} as struct: {}".format(i, temp))
         now = time.monotonic() * 1000 # start timer
         result = nrf.send(temp)
-        if result == 0:
+        if result is None:
             print('send() timed out')
-        elif result == 1:
-            print('send() succeessful')
-        elif result == 2:
+        elif result == False:
             print('send() failed')
+        else:
+            print('send() succeessful')
         # print timer results despite transmission success
         print('Transmission took',\
                 time.monotonic() * 1000 - now, 'ms')
