@@ -5,26 +5,10 @@
     Master transmits a dummy payload every second and prints the ACK payload.
     Slave prints the received value and sends a dummy ACK payload.
 '''
+#  we'll be using pipe 0 to receive and transmit ACK packets
 
 import time, board, digitalio as dio
 from circuitpython_nrf24l01.rf24 import RF24
-
-# addresses needs to be in a buffer protocol object (bytearray)
-addresses = (b'1Node', b'2Node')
-# these addresses should be compatible with the GettingStarted.ino
-# sketch included in TRMh20's arduino library
-
-# payloads need to be in a buffer protocol object (bytearray)
-tx = b'Hello'
-
-# we must use a tuple to set the ACK payload
-# data and corresponding pipe number
-# pipe number options range [0,5]
-# NOTE ACK payloads (like regular payloads and addresses)
-# need to be in a buffer protocol object (bytearray)
-ACK = (b'World', 0)
-#  note that `0` is always the TX pipe in TX mode
-#  we'll be using pipe 0 to receive ACK packets per the spec sheet
 
 # change these (digital output) pins accordingly
 ce = dio.DigitalInOut(board.D7)
@@ -36,48 +20,56 @@ spi = board.SPI() # init spi bus object
 
 # we'll be using the dynamic payload size feature (enabled by default)
 # the custom ACK payload feature is disabled by default
-# the custom ACK payload feature cannot be enabled
+# the custom ACK payload feature should not be enabled
 # during instantiation due to its singular use nature
 # meaning 1 ACK payload per 1 RX'd payload
 nrf = RF24(spi, csn, ce)
 
 # NOTE the the custom ACK payload feature will be enabled
-# automatically when you set the attribute to a tuple who's
-# first item is a buffer protocol object (bytearray) of
-# length ranging [1,32]
-# remember the second item always needs to be an int ranging [0,5]
+# automatically when you call load_ack() passing:
+# a buffer protocol object (bytearray) of
+# length ranging [1,32]. And pipe number always needs
+# to be an int ranging [0,5]
 
-# to disable the custom ACK payload feature
-# we need set some dummy data to the ack attribute
-# NOTE the first item in the dummy tuple must be `None`
-# remember the second item always needs to be an int ranging [0,5]
-# nrf.ack = (None, 1)
-nrf.ack = (None, -1)
+# to enable the custom ACK payload feature
+nrf.ack = True # False disables again
 
 # recommended behavior is to keep in TX mode while idle
 nrf.listen = False # put radio in TX mode
+
+# addresses needs to be in a buffer protocol object (bytearray)
+addresses = (b'1Node', b'2Node') # we only use the first
+# these addresses should be compatible with the GettingStarted.ino
+# sketch included in TRMh20's arduino library
+
+# payloads need to be in a buffer protocol object (bytearray)
+tx = b'Hello '
+
+# NOTE ACK payloads (like regular payloads and addresses)
+# need to be in a buffer protocol object (bytearray)
+ACK = b'World '
 
 def master(count=5): # count = 5 will only transmit 5 packets
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(addresses[0])
     # ensures the nRF24L01 is in TX mode
-    # nrf.listen = False
+    nrf.listen = False
 
     counter = count
     while counter:
-        print("Sending (raw): {}".format(repr(tx)))
+        buffer = tx + bytes([counter]) # output buffer
+        print("Sending (raw): {}".format(repr(buffer)))
         # to read the ACK payload during TX mode we
         # pass the parameter read_ack as True.
-        result = nrf.send(tx, read_ack=True)
+        nrf.ack = True # enable feature before send()
+        result = nrf.send(buffer) # becomes the response buffer
         if result == 0:
             print('send() timed out')
         elif result == 1:
             # print the received ACK that was automatically
-            # fetched and saved to nrf's ack attribute via send()
-            print('raw ACK: {}'.format(repr(nrf.ack)))
-            # the ACk payload should also include the default
-            # response data that the nRF24L01 uses despite
-            # a custom set ACK payload.
+            # fetched and saved to "buffer" via send()
+            print('raw ACK: {}'.format(repr(buffer)))
+            # the ACK payload should now be in buffer
         elif result == 2:
             print('send() failed')
         time.sleep(1)
@@ -93,27 +85,26 @@ def slave(count=3):
     # put radio into RX mode, power it up, and set the first
     # transmission's ACK payload and pipe number
     nrf.listen = True
-    nrf.ack = ACK # load 1st ACK payload can hace up to 3
+    buffer = ACK + bytes([count])
+    # we must set the ACK payload data and corresponding
+    # pipe number [0,5]
+    nrf.load_ack(buffer, 0) # load ACK for first response
 
     counter = count
     while counter:
         if nrf.any():
+            # this will listen indefinitely till counter == 0
+            counter -= 1
             # print details about the received packet (if any)
             print("Found {} bytes on pipe {}".format(repr(nrf.any()), nrf.pipe()))
             # retreive the received packet's payload
             rx = nrf.recv() # clears flags & empties RX FIFO
             print("Received (raw): {}".format(repr(rx)))
-            nrf.ack = ACK # reload ACK for next response
-            # this will listen indefinitely till counter == 0
-            counter -= 1
+            buffer = ACK + bytes([count])
+            nrf.load_ack(buffer, 0) # reload ACK for next response
 
     # recommended behavior is to keep in TX mode while sleeping
     nrf.listen = False # put radio in TX mode and power down
-
-def debugRF24(dumpADDR=False):
-    print('expected status =', bin(nrf.status))
-    for item in nrf.what_happened(dumpADDR).items():
-        print('{} : {}'.format(item[0], item[1]))
 
 print("""\
     nRF24L01 ACK test.\n\

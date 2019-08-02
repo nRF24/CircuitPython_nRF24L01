@@ -66,7 +66,7 @@ class RF24(SPIDevice):
     :param bool irq_DF: When "max retry attempts are reached", this configures the interrupt (IRQ) trigger of the nRF24L01's IRQ pin (active low). This parameter is optional and defaults to enabled. This can be changed at any time by using the `interrupt_config()` method.
 
     """
-    def __init__(self, spi, csn, ce, channel=76, payload_length=32, address_length=5, dynamic_payloads=True, auto_ack=True, irq_DR=True, irq_DS=True, irq_DF=True):
+    def __init__(self, spi, csn, ce, channel=76, payload_length=32, address_length=5, ack=False, dynamic_payloads=True, auto_ack=True, irq_DR=True, irq_DS=True, irq_DF=True):
         # set payload length
         self.payload_length = payload_length
         # last address assigned to pipe0 for reading. init to None
@@ -75,6 +75,7 @@ class RF24(SPIDevice):
         self._status = 0
         self._config = 0
         self._fifo = 0
+        self._auto_ack = 0x3F if auto_ack else 0 # save the altered shadow copy
         # init the SPI bus and pins
         super(RF24, self).__init__(spi, chip_select=csn, baudrate=4000000, polarity=0, phase=0, extra_clocks=0)
 
@@ -107,20 +108,14 @@ class RF24(SPIDevice):
         self._rf_setup = 0x06 # 0x06 == 0dBm @ 1Mbps (max @ recommended) defaults
         self._reg_write(RF_SETUP, self._rf_setup)
 
-        # configure special case flags in the FEATURE register
-        self._features = 0x05 # <- enables Dynamic Payloads & auto-ACK. disables custom ACK option
-        self._reg_write(FEATURE, self._features)
-
-        # configure registers for which each bit is specific per pipe
-        self._ack = None # init RX ACK payload buffer
-        self._auto_ack = int(auto_ack) * 0x3F # <- means all enabled
-        self._reg_write(1, self._auto_ack)
         self._open_pipes = 0 # <- means all closed
-        self._reg_write(2, self._open_pipes)
 
-        # set dynamic_payloads and automatic acknowledgment packets on all pipes
+        # manage dynamic_payloads, auto_ack, and ack features
         self._dyn_pl = self._reg_read(DYNPD)
         self.dynamic_payloads = dynamic_payloads
+        self.auto_ack = auto_ack
+        self._reg_write(2, self._open_pipes)
+        self.ack = ack
 
     def _reg_read(self, reg):
         """A helper function to read a single byte of data from a specified register on the nRF24L01's internal IC. THIS IS NOT MEANT TO BE DIRECTLY CALLED BY END-USERS.
@@ -304,43 +299,24 @@ class RF24(SPIDevice):
 
     @property
     def ack(self):
-        """This attribute contains the payload data that is part of the automatic acknowledgment (ACK) packet. You can use this attribute to set a custom ACK payload to be used on a specified pipe number.
+        """This attribute contains the status of the nRF24L01's capability to use custom payloads as part of the automatic acknowledgment (ACK) packet. You can use this attribute to set/check if this specific feature is enabled.
 
-        :param tuple ack: This tuple must have the following 2 items in their repective order:
+        :param bool enable: `True` enables the use of custom ACK payloads appended to receiving transmissions. `False` disables the use of custom ACK payloads
 
-            - The `bytearray` of payload data to be attached to the ACK packet in RX mode. This must have a length in range [1,32] bytes. If `None` is passed then the custom ACK payload feature is disabled and any concurrent ACK payloads in the TX FIFO will remain until transmitted or `flush_tx()`.
-
-                .. tip:: Pass ``(None, 0)`` to disable custom payloads. This will also flush the TX FIFO buffer upon disabling.
-
-            - The `int` identifying data pipe number to be used for transmitting the ACK payload in RX mode. This number must be in range [0,5], otherwise an `AssertionError` exception is thrown.
-
-            .. note:: The `payload_length` attribute has nothing to do with the ACK payload length as enabling the `dynamic_payloads` attribute is required of `auto_ack` which is required for ACK payloads.
-
-        Setting this attribute does NOT change the data stored within it. Instead it only writes the specified payload data to the nRF24L01's TX FIFO buffer in regaurd to the specified data pipe number.
-
-        .. important:: To use this attribute properly, the `auto_ack` attribute must be enabled. Additionally, if retrieving the ACK payload data, you must specify the `read_ack` parameter as `True` when calling `send()` or, in case of asychronous application, directly call `read_ack()` function after calling `send_fast()` and before calling `clear_status_flags()`. See `read_ack()` for more details. Otherwise, this attribute will always be its initial value of `None`.
-
-        .. tip:: As the ACK payload can only be set during RX mode and must be set prior to a transmission. Set the ACK payload data using this attribute only after `listen` attribute is `True` to ensure the nRF24L01 is in RX mode. It is also worth noting that the nRF24L01 exits RX mode upon changing `listen` to `False`.
-
+        .. note:: As `dynamic_payloads` and `auto_ack` attribute are required for this feature to work, they are automatyically enabled as needed. Disabling this feature does not require nor need to disable the `auto_ack` & `dynamic_payloads` attributes (they can work just fine without this).
         """
-        return self._ack
+        return bool((self._features & 2) and self.auto_ack)
 
     @ack.setter
-    def ack(self, ack):
-        assert (ack[0] is None or 1 <= len(ack[0]) <= 32) and ack[1] <= 5
-        self.auto_ack = True # ensure auto_ack feature is enabled
-        # setting auto_ack feature automatically updated the _features attribute, so
+    def ack(self, enable):
+        assert isinstance(enable, (bool,int))
         # we need to throw the EN_ACK_PAY flag in the FEATURES register accordingly on both TX & RX nRF24L01s
-        self._features = (self._features & 5) | (0 if (ack[0] is None) and (ack[1] >= 0) else 2)
-        self._reg_write(FEATURE,  self._features)
-        # the setter sets ACK payloads for TX during TX
-        # the getter gets ACK payloads from TX captured by a separate trigger (read_ack())
-        if ack[0] is not None: # loading
-            # only prepare payload if the auto_ack attribute is enabled and ack[0] is not None
-            # 0xA8 | ack[1] == W_ACK_PAYLOAD | pipe_number
-            self._reg_write_bytes(0xA8 | ack[1], ack[0])
-        elif ack[1] < 0:
-            self._ack = None # init/reset the attribute
+        self._features = self._reg_read(FEATURE) # refresh data here as this doesn't need to be thrown often
+        if self.ack != enable: # if enabling
+            self.auto_ack = True # ensure auto_ack feature is enabled
+            # getting auto_ack feature automatically updated the _features attribute, so
+            self._features = (self._features & 5) | (2 if enable else 0)
+            self._reg_write(FEATURE,  self._features)
 
     @property
     def irq_DR(self):
@@ -472,7 +448,7 @@ class RF24(SPIDevice):
             bool(self._fifo & 2),
             bool(self._fifo & 1),
             "Enabled" if self.reuse_tx else "Disabled",
-            "Enabled" if bool(self._features & 2) else "Disabled",
+            "Enabled" if self.ack else "Disabled",
             "Allowed" if bool(self._features & 1) else "Disabled",
             bin(self.auto_ack) if self.auto_ack else 'Disabled',
             bin(self._dyn_pl) if self.dynamic_payloads else 'Disabled',
@@ -1078,6 +1054,26 @@ class RF24(SPIDevice):
         # return all available bytes from payload
         return result
 
+    def load_ack(self, buf, pipe_number):
+        """This allows user to specify a payload to be allocated into the TX FIFO for use with ACK packets on a specified pipe. (write-only)
+
+        :param bytearray buf: This will be the data attached to an automatic acknowledgment packet on the incoming transmission about the specified ``pipe_number`` parameter. This must have a length in range [1,32] bytes, otherwise an `AssertionError` exception is thrown. Any ACK payloads will remain in the TX FIFO buffer until transmitted or `flush_tx()`.
+        :param int pipe_number: This will be the pipe number to use for deciding which transmissions get a response with the specified ``buf`` parameter's data. This number must be in range [0,5], otherwise an `AssertionError` exception is thrown.
+
+        ..note this function takes advantage of a special feature on the nRF24L01 and needs to be called for every time a customized ACK payload is to be used (not for every automatic ACK packet -- this just appends a payload to the `auto_ack` attribute). These special custom ACK payloads can be disabled by setting the `ack` attribute to `False`. The `ack` & `auto_ack` (with `dynamic_payloads` as well) attributes are also automatically enabled by this function when necessary.
+
+        .. tip:: To retrieving the ACK payload data, you must specify the `read_ack` parameter as `True` when calling `send()` or, in case of asychronous application, directly call `read_ack()` function after calling `send_fast()` and before calling `clear_status_flags()`. See `read_ack()` for more details. Otherwise, this attribute will always be its initial value of `None`.
+
+        .. tip:: As the ACK payload must be set prior to receiving a transmission. Set the ACK payload data using this function while `listen` attribute is set `True` to ensure the nRF24L01 is in RX mode. It is also worth noting that the nRF24L01 exits RX mode upon changing `listen` to `False`.
+
+        """
+        assert 0 < len(buf) <= 32 and 0 <= pipe_number <= 5
+        if not self.ack:
+            self.ack = True
+        # only prepare payload if the auto_ack attribute is enabled and ack[0] is not None
+        # 0xA8 | ack[1] == W_ACK_PAYLOAD | pipe_number
+        self._reg_write_bytes(0xA8 | pipe_number, buf)
+
     def read_ack(self):
         """Allows user to read the automatic acknowledgement (ACK) payload (if any) when nRF24L01 is in TX mode. This function is called from a blocking `send()` call if the ``read_ack`` parameter in `send()` is passed as `True`.
         Alternatively, this function can be called directly in case of using the non-blocking `send_fast()` function call during asychronous applications.
@@ -1089,11 +1085,11 @@ class RF24(SPIDevice):
         if self.any(): # check RX payload for ACK packet
             # directly save ACK payload to the ack internal attribute.
             # `self.ack = x` does not not save anything internally
-            self._ack = self.recv()
             print('returning ACK payload')
-        return self.ack # this is ok as it reads from internal _ack attribute
+            return self.recv()
+        return None
 
-    def send(self, buf=None, AskNoACK=False, reUseTX=False, read_ack=False, timeout=0.2):
+    def send(self, buf=None, askNoACK=False, reUseTX=False, timeout=0.2):
         """This blocking function is used to transmit payload until one of the following results is acheived:
 
         :returns:
@@ -1101,21 +1097,20 @@ class RF24(SPIDevice):
             * ``0`` if transmission times out meaning nRF24L01 has malfunctioned.
             * ``1`` if transmission succeeds.
             * ``2`` if transmission fails.
+            * If the payload expects a responding custom ACK payload, then the ``buf`` parameter will be changed to contain the response upon successful transmission.
 
         :param bytearray buf: The payload to transmit. This bytearray must have a length greater than 0 to execute transmission.
 
             - If the `dynamic_payloads` attribute is disabled and this bytearray's length is less than the `payload_length` attribute, then this bytearray is padded with zeros until its length is equal to the `payload_length` attribute.
             - If the `dynamic_payloads` attribute is disabled and this bytearray's length is greater than `payload_length` attribute, then this bytearray's length is truncated to equal the `payload_length` attribute.
 
-        :param bool AskNoACK: Pass this parameter as `True` to tell the nRF24L01 not to wait for an acknowledgment from the receiving nRF24L01. This parameter directly controls a ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about the payload).Therefore, it takes advantage of an nRF24L01 feature specific to individual payloads, and its value is not saved anywhere. You do not need to specify this everytime if the `auto_ack` attribute is `False`.
+        :param bool askNoACK: Pass this parameter as `True` to tell the nRF24L01 not to wait for an acknowledgment from the receiving nRF24L01. This parameter directly controls a ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about the payload).Therefore, it takes advantage of an nRF24L01 feature specific to individual payloads, and its value is not saved anywhere. You do not need to specify this everytime if the `auto_ack` attribute is `False`.
 
             .. note:: Each transmission is in the form of a packet. This packet contains sections of data around and including the payload. `See Chapter 7.3 in the nRF24L01 Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1136318>`_
 
         :param bool reUseTX: `True` prevents the nRF24L01 from automatically removing the TX payload data from the FIFO buffer. This is optional and defaults to `False`
 
             .. note:: When this parameter is `False`, the nRF24L01 only removes the payload from the TX FIFO buffer after successful transmission. Otherwise use `flush_tx()` to clear anitquated payloads (those that failed to transmit or were intentionally kept in the TX FIFO buffer using this parameter).
-
-        :param bool read_ack: A flag to specify wheather or not to save the customized automatic acknowledgement (ACK) payload to the `ack` attribute.
 
         :param float timeout: This an arbitrary number of seconds that is used to keep the application from indefinitely hanging in case of radio malfunction. Default is 200 milliseconds.
 
@@ -1124,7 +1119,7 @@ class RF24(SPIDevice):
         """
         result = 0
         self.ce.value = 0 # ensure power down/standby-I for proper manipulation of PWR_UP & PRIM_RX bits in CONFIG register
-        self.send_fast(buf, AskNoACK, reUseTX) # init using non-blocking helper
+        self.send_fast(buf, askNoACK, reUseTX) # init using non-blocking helper
         time.sleep(0.001) # ensure CE pulse is >= 10 us
         start = time.monotonic()
         # if pulse is stopped here, the nRF24L01 only handles the top level payload in the FIFO.
@@ -1138,22 +1133,22 @@ class RF24(SPIDevice):
                 # get status flags to detect error
                 result = 1 if self.irq_DS else 2
         # read ack payload (if read_ack == True), clear status flags, then power down
-        if read_ack and self.irq_DS:
+        if self.ack and self.irq_DS:
             # get and save ACK payload to self.ack if user wants it
-            self.read_ack()
+            buf = self.read_ack() # save reply in input buffer
         else:# if TX related flags are not cleared, do that now
             self.clear_status_flags()
             print("all status flags cleared by send()")
         return result
 
-    def send_fast(self, buf=None, AskNoACK=False, reUseTX=False):
+    def send_fast(self, buf=None, askNoACK=False, reUseTX=False):
         """This non-blocking function (when used as alternative to `send()`) is meant for asynchronous applications.
 
         :param bytearray buf: The payload to transmit. This bytearray must have a length greater than 0 to execute transmission.
 
             - If the `dynamic_payloads` attribute is disabled and this bytearray's length is less than the `payload_length` attribute, then this bytearray is padded with zeros until its length is equal to the `payload_length` attribute.
             - If the `dynamic_payloads` attribute is disabled and this bytearray's length is greater than `payload_length` attribute, then this bytearray's length is truncated to equal the `payload_length` attribute.
-        :param bool AskNoACK: Pass this parameter as `True` to tell the nRF24L01 not to wait for an acknowledgment from the receiving nRF24L01. This parameter directly controls a ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about the payload).Therefore, it takes advantage of an nRF24L01 feature specific to individual payloads, and its value is not saved anywhere. You do not need to specify this everytime if the `auto_ack` attribute is `False`.
+        :param bool askNoACK: Pass this parameter as `True` to tell the nRF24L01 not to wait for an acknowledgment from the receiving nRF24L01. This parameter directly controls a ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about the payload).Therefore, it takes advantage of an nRF24L01 feature specific to individual payloads, and its value is not saved anywhere. You do not need to specify this everytime if the `auto_ack` attribute is `False`.
 
             .. note:: Each transmission is in the form of a packet. This packet contains sections of data around and including the payload. `See Chapter 7.3 in the nRF24L01 Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1136318>`_
 
@@ -1203,10 +1198,10 @@ class RF24(SPIDevice):
         print("all status flags cleared by send_fast()")
 
         # now handle the payload accordingly
-        if AskNoACK or not self.auto_ack:
+        if askNoACK or not self.auto_ack:
             # payload doesn't require acknowledgment
             # 0xB0 = W_TX_PAYLOAD_NO_ACK
-            print('payload {} written with AskNoACK'.format(buf))
+            print('payload {} written with askNoACK'.format(buf))
             self._reg_write_bytes(0xB0, buf) # write appropriate command with payload
         else:# payload does require acknowledgment
             # 0xA0 = W_TX_PAYLOAD
