@@ -320,7 +320,7 @@ class RF24(SPIDevice):
 
         .. important:: To use this attribute properly, the `auto_ack` attribute must be enabled. Additionally, if retrieving the ACK payload data, you must specify the `read_ack` parameter as `True` when calling `send()` or, in case of asychronous application, directly call `read_ack()` function after calling `send_fast()` and before calling `clear_status_flags()`. See `read_ack()` for more details. Otherwise, this attribute will always be its initial value of `None`.
 
-        .. tip:: As the ACK payload can only be set during RX mode and must be set prior to a transmission, use the ``ack`` parameter of `_start_listening()` to set the ACK payload for transmissions upon entering RX mode. Set the ACK payload data using this attribute only after `_start_listening()` has been called to ensure the nRF24L01 is in RX mode. It is also worth noting that the nRF24L01 exits RX mode upon calling `_stop_listening()`.
+        .. tip:: As the ACK payload can only be set during RX mode and must be set prior to a transmission. Set the ACK payload data using this attribute only after `listen` attribute is `True` to ensure the nRF24L01 is in RX mode. It is also worth noting that the nRF24L01 exits RX mode upon changing `listen` to `False`.
 
         """
         return self._ack
@@ -935,7 +935,7 @@ class RF24(SPIDevice):
         self._open_pipes = self._reg_read(2) # refresh data
         if pipe_number < 2: # write entire address if pipe_number is 1
             if pipe_number == 0:
-                # save shadow copy of address if target pipe_number is 0. This is done to help ensure the proper address is set to pipe 0 via start_listening() as open_tx_pipe() will modify the address on pipe 0 if auto_ack is enabled during TX mode
+                # save shadow copy of address if target pipe_number is 0. This is done to help ensure the proper address is set to pipe 0 via _start_listening() as open_tx_pipe() will modify the address on pipe 0 if auto_ack is enabled during TX mode
                 self.pipe0_read_addr = address
             print("writting '{}' as address for pipe {}".format(address, pipe_number))
             self._reg_write_bytes(RX_ADDR_P0 + pipe_number, address)
