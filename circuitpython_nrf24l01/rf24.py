@@ -1173,9 +1173,9 @@ class RF24(SPIDevice):
 
             .. note:: Each transmission is in the form of a packet. This packet contains sections of data around and including the payload. `See Chapter 7.3 in the nRF24L01 Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1136318>`_
 
-        :param bool reUseTX: `True` prevents the nRF24L01 from automatically removing the TX payload data from the FIFO buffer. This is optional and defaults to `False`
+        :param bool reUseTX: `True` prevents the nRF24L01 from automatically removing the TX payload data from the FIFO buffer for availability for all subsequent transmissions until a new payload is written using `send_fast()` or `send()` or by  calling `flush_tx()` (any of which will reset this feature/flag to off). This is optional and defaults to `False`
 
-            .. note:: When this parameter is `False`, the nRF24L01 removes the payload from the TX FIFO buffer after successful transmission and every time the nRF24L01 power mode cycles from Standby-II mode (everytime `stop_listening()` is called). Otherwise use `flush_tx()` to clear anitquated payloads (those that failed to transmit or were intentionally kept in the TX FIFO buffer using this parameter).
+            .. note:: When this parameter is `False`, the nRF24L01 removes the payload from the TX FIFO buffer after successful transmission. Otherwise use `flush_tx()` to clear anitquated payloads (those that failed to transmit or were intentionally kept in the TX FIFO buffer using this parameter).
 
         This function isn't completely non-blocking as we still need to wait just under 5 milliseconds for the CSN pin to settle (allowing for a clean SPI transaction).
 
