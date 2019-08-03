@@ -57,7 +57,7 @@ def master(count=5): # count = 5 will only transmit 5 packets
 
     counter = count
     while counter:
-        buffer = tx + bytes([counter]) # output buffer
+        buffer = tx + bytes([counter + 48]) # output buffer
         print("Sending (raw): {}".format(repr(buffer)))
         # to read the ACK payload during TX mode we
         # pass the parameter read_ack as True.
@@ -89,7 +89,7 @@ def slave(count=3):
     # put radio into RX mode, power it up, and set the first
     # transmission's ACK payload and pipe number
     nrf.listen = True
-    buffer = ACK + bytes([count])
+    buffer = ACK + bytes([count + 48])
     # we must set the ACK payload data and corresponding
     # pipe number [0,5]
     nrf.load_ack(buffer, 0) # load ACK for first response
@@ -105,9 +105,9 @@ def slave(count=3):
             # retreive the received packet's payload
             rx = nrf.recv() # clears flags & empties RX FIFO
             print("Received (raw): {}".format(repr(rx)))
-            if counter - 1: # Going again?
+            if counter: # Going again?
                 # build new ACK
-                buffer = ACK + bytes([counter])
+                buffer = ACK + bytes([counter + 48])
                 # load ACK for next response
                 nrf.load_ack(buffer, 0)
 

@@ -954,15 +954,15 @@ class RF24(SPIDevice):
 
             `True` tests if specified FIFO is empty.
             `False` tests if the specified FIFO is full.
-            `None` when not specified, a 2 bit number prepresetning both empty (bit 1) & full (bit 0) flags related to the FIFO specified using the ``tx`` parameter.
+            `None` (when not specified) returns a 2 bit number representing both empty (bit 1) & full (bit 0) flags related to the FIFO specified using the ``tx`` parameter.
 
         :returns:
 
             * A `bool` answer to the question:
 
-                "Is the [tx/rx]:[`True`/`False`] FIFO [empty/full]:[`False`/`True`]?
+                "Is the [tx/rx]:[`True`/`False`] FIFO [empty/full]:[`True`/`False`]?
 
-            * if ``empty`` is not specified: an `int` in range [0,2] in which
+            * if ``empty`` is not specified: an `int` in range [0,2] for which:
 
                 ``1`` means FIFO full
                 ``2`` means FIFO empty
@@ -976,9 +976,9 @@ class RF24(SPIDevice):
         return bool(self._fifo & ((2 - empty) << (4 * tx)))
 
     def pipe(self, pipe_number=None):
-        """This function works like an equivalent to TMRh20's available(). Returns information about the data pipe that received latest payload.
+        """This function works like an equivalent to TMRh20's available() on Arduino. Returns information about the data pipe that received latest payload.
 
-        :param int pipe_number: The specific number identifying a data pipe to check for RX data. This parameter is optional and must be in range [0,5], otherwise an `AssertionError` exception is thrown.
+        :param int pipe_number: The specific number identifying a data pipe to check for RX data. This parameter is optional and must be in range [0,5], if specified otherwise an `AssertionError` exception is thrown.
 
         :returns: `None` if there is no payload in RX FIFO.
 
@@ -1007,6 +1007,7 @@ class RF24(SPIDevice):
 
     def any(self):
         """This function checks if the nRF24L01 has received any data at all. (read-only)
+        Internally, this function uses `pipe()` then reports the payload length (in bytes) -- if there is any.
 
         :returns:
 
@@ -1070,7 +1071,7 @@ class RF24(SPIDevice):
             # directly save ACK payload to the ack internal attribute.
             # `self.ack = x` does not not save anything internally
             return self.recv()
-        return None
+        return b'NO ACK RETURNED'
 
     def send(self, buf=None, askNoACK=False, reUseTX=False, timeout=0.2):
         """This blocking function is used to transmit payload until one of the following results is acheived:

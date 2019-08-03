@@ -34,10 +34,9 @@ def master(count=5): # count = 5 will only transmit 5 packets
     # ensures the nRF24L01 is in TX and power down modes
     # nrf.listen = False
 
-    i = 0.0 # init data to send
-
     counter = count
     while counter:
+        i = counter + counter / 10.0
         # use struct.pack to packetize your data
         # into a usable payload
         temp = struct.pack('<d', i)

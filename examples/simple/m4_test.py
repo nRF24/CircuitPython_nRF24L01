@@ -35,18 +35,16 @@ def master(count=5): # count = 5 will only transmit 5 packets
     # ensures the nRF24L01 is in TX and power down modes
     # nrf.listen = False
 
-    i = 0.0 # init data to send
-
     counter = count
     while counter:
-        i += 0.01
+        i = counter + counter / 10.0
         # use struct.pack to packetize your data
         # into a usable payload
         temp = struct.pack('<d', i)
         # 'd' means a single 8 byte double value.
-        # '<' means little endian byte order
+        # '<' means little endian byte order. this may be optional
         print("Sending: {} as struct: {}".format(i, temp))
-        now = time.monotonic() * 1000 # start timer
+        now = time.monotonic_ns() / 1000000 # start timer
         result = nrf.send(temp)
         if result is None:
             print('send() timed out')
@@ -56,9 +54,8 @@ def master(count=5): # count = 5 will only transmit 5 packets
             print('send() succeessful')
         # print timer results despite transmission success
         print('Transmission took',\
-                time.monotonic() * 1000 - now, 'ms')
+                time.monotonic_ns() / 1000000 - now, 'ms')
         time.sleep(1)
-        i += 0.1
         counter -= 1
 
         # recommended behavior is to keep in TX mode while sleeping

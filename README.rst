@@ -22,17 +22,17 @@ Features currently supported
     * automatic acknowledgment (ACK)
     * cycle redundancy checking (up to 2 bytes long)
     * frequency specification via channel attribute
+    * custom acknowledgment (ACK) payload
+    * flag a single payload for no acknowledgment (ACK)
 
 Features currently untested
 ---------------------------
 
     * configuration of interrupt (IRQ) pin
-    * custom acknowledgment (ACK) payload
     * "re-use the same payload" feature
-    * flag a single payload for no acknowledgment (ACK)
     * auto-ACK can be used on a per pipe basis
     * dynamic payloads feature can be used on a per pipe basis
-    * no implementation for Multiceiver mode
+    * no implementation for Multiceiver mode... yet
 
 Dependencies
 =============

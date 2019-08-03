@@ -1,68 +1,105 @@
 '''
-    Simple example of library usage.
+    Simple example of detecting (and verifying) the IRQ
+    interrupt pin on the nRF24L01
 
-    Master transmits an incrementing integer every second.
-    Slave polls the radio every 0.5s and prints the received value.
-
-    This is a simple test to get communications up and running.
+    Master transmits twice and intentionally fails the third.
+    Slave just acts as a RX node to success w/ aut_ack feature.
 '''
 
 import time, struct, board, digitalio as dio
 from circuitpython_nrf24l01.rf24 import RF24
 
+# addresses needs to be in a buffer protocol object (bytearray)
 addresses = (b'1Node', b'2Node')
-# these addresses should be compatible with the GettingStarted.ino sketch included in TRMh20's arduino library
+# these addresses should be compatible with
+# the GettingStarted.ino sketch included in
+# TRMh20's arduino library
 
+# select your digital input pin to attach to the IRQ pin on the nRF4L01
+# TIP: connect an led + 220ohm (connected in series) to GND from IRQ
+irq = dio.DigitalInOut(board.D4)
+irq.switch_to_input() # make sure its an input object
+# change these (digital output) pins accordingly
 ce = dio.DigitalInOut(board.D7)
 csn = dio.DigitalInOut(board.D5)
 
-spi = board.SPI()
-# we'll be sending a dynamic payload of size 8 bytes (1 double)
+# using board.SPI() automatically selects the MCU's
+# available SPI pins, board.SCK, board.MOSI, board.MISO
+spi = board.SPI() # init spi bus object
+
+# we'll be using the dynamic payload size feature (enabled by default)
+# initialize the nRF24L01 on the spi bus object
 nrf = RF24(spi, csn, ce)
 
-def master():
-    nrf.open_tx_pipe(addresses[0]) # set address of RX node into a TX pipe
-    # set address of TX node into an RX pipe. NOTE you MUST specify which pipe number to use for RX, we'll be using pipe 1 (options range [0,5])
-    nrf.open_rx_pipe(1, addresses[1])
-    nrf.listen = False # put radio in TX mode and power down
-    i = 0.0 # data to send
+# recommended behavior is to keep in TX mode while sleeping
+nrf.listen = False # put the nRF24L01 is in TX and power down modes
 
-    while True:
-        try:
-            i += 0.01
-            # use struct.pack to packetize your data into a usable payload
-            temp = struct.pack('<d', i)
-            # 'd' means a single 8 byte double value. '<' means little endian byte order
-            print("Sending: {} as struct: {}".format(i, temp))
-            now = time.monotonic() * 1000 # start timer
-            result = nrf.send(temp)
-            if result == 0:
-                print('send() timed out')
-            elif result == 1:
-                print('send() succeessful')
-            elif result == 2:
-                print('send() failed')
-        except KeyboardInterrupt:
-            break
-        finally:
-            # print timer results despite transmission success
-            print('Transmission took', time.monotonic() * 1000 - now, 'ms')
+def master(count=5): # count = 5 will only transmit 5 packets
+    # set address of RX node into a TX pipe
+    nrf.open_tx_pipe(addresses[0])
+    # ensures the nRF24L01 is in TX and power down modes
+    # nrf.listen = False
+
+    i = 0.0 # init data to send
+
+    counter = count
+    while counter:
+        i += 0.01
+        # use struct.pack to packetize your data
+        # into a usable payload
+        temp = struct.pack('<d', i)
+        # 'd' means a single 8 byte double value.
+        # '<' means little endian byte order
+        print("Sending: {} as struct: {}".format(i, temp))
+        now = time.monotonic_ns() / 1000000 # start timer
+        result = nrf.send(temp)
+        if result is None:
+            print('send() timed out')
+        elif result == False:
+            print('send() failed')
+        else:
+            print('send() succeessful')
+        # print timer results despite transmission success
+        print('Transmission took',\
+                time.monotonic_ns() / 1000000 - now, 'ms')
         time.sleep(1)
+        i += 0.1
+        counter -= 1
 
-def slave():
-    nrf.open_tx_pipe(addresses[1]) # set address of RX node into a TX pipe
-    # set address of TX node into an RX pipe. NOTE you MUST specify which pipe number to use for RX, we'll be using pipe 1 (options range [0,5])
-    nrf.open_rx_pipe(1, addresses[0])
+        # recommended behavior is to keep in TX mode while sleeping
+        nrf.listen = False # put the nRF24L01 is in TX and power down modes
+
+# running slave to only fetch/receive count number of packets
+# count = 3 will mimic a full RX FIFO behavior via nrf.listen = False
+def slave(count=3):
+    # set address of TX node into an RX pipe. NOTE you MUST specify
+    # which pipe number to use for RX, we'll be using pipe 0
+    # pipe number options range [0,5]
+    # the pipe numbers used during a transition don't have to match
+    nrf.open_rx_pipe(0, addresses[0])
     nrf.listen = True # put radio into RX mode and power up
 
-    while True:
-        try:
-            if nrf.any():
-                then = nrf.recv()
-                temp = struct.unpack('<d', then) # expecting a long int
-                print("Received: {}, Raw: {}".format(temp[0], repr(then)))
-            # time.sleep(0.5)
-        except KeyboardInterrupt:
-            break
+    counter = count
+    while counter:
+        if nrf.any():
+            # print details about the received packet (if any)
+            print("Found {} bytes on pipe {}\
+                ".format(repr(nrf.any()), nrf.pipe()))
+            # retreive the received packet's payload
+            rx = nrf.recv() # clears flags & empties RX FIFO
+            # expecting a long int, thus the string format '<d'
+            temp = struct.unpack('<d', rx)
+            # print the only item in the resulting tuple from
+            # using `struct.unpack()`
+            print("Received: {}, Raw: {}".format(temp[0], repr(rx)))
+            # this will listen indefinitely till counter == 0
+            counter -= 1
+        time.sleep(0.25)
 
-print('NRF24L01 test module.\nRun slave() on receiver, and master() on transmitter.')
+    # recommended behavior is to keep in TX mode while sleeping
+    nrf.listen = False # put the nRF24L01 is in TX and power down modes
+
+print("""\
+    nRF24L01 Simple test.\n\
+    Run slave() on receiver\n\
+    Run master() on transmitter.""")
