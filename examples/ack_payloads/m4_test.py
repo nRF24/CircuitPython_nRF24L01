@@ -105,12 +105,16 @@ def slave(count=3):
             # retreive the received packet's payload
             rx = nrf.recv() # clears flags & empties RX FIFO
             print("Received (raw): {}".format(repr(rx)))
-            nrf.flush_tx() # flush the old ACK payload
-            buffer = ACK + bytes([count]) # build new
-            nrf.load_ack(buffer, 0) # load ACK for next response
+            if counter - 1: # Going again?
+                # build new ACK
+                buffer = ACK + bytes([counter])
+                # load ACK for next response
+                nrf.load_ack(buffer, 0)
 
     # recommended behavior is to keep in TX mode while sleeping
-    nrf.listen = False # put radio in TX mode and power down
+    nrf.listen = False # put radio in TX mode
+    # flush any ACK payload (only in TX mode)
+    nrf.flush_tx()
 
 print("""\
     nRF24L01 ACK test.\n\

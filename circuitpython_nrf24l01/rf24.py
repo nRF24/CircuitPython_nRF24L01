@@ -1067,7 +1067,6 @@ class RF24(SPIDevice):
         .. warning:: In the case of asychronous applications, this function will do nothing if the status flags are cleared after calling `send_fast()` and before calling this function. Also, the `dynamic_payloads` and `auto_ack` attributes must be enabled to use ACK payloads. It is worth noting that enabling the `dynamic_payloads` attribute automatically enables the `auto_ack` attribute.
 
         """
-        print('TX FIFO status:', self.fifo(True))
         if self.any(): # check RX payload for ACK packet
             # directly save ACK payload to the ack internal attribute.
             # `self.ack = x` does not not save anything internally
@@ -1102,7 +1101,7 @@ class RF24(SPIDevice):
             .. warning:: A note from the developer: This parameter may evolve into a "privatized" internal constant, so it is STRONGLY ADVISED TO NOT GET IN THE HABIT OF ALTERING THIS PARAMETER! This driver class is still young, be gentle.
 
         """
-        result = 0
+        result = None
         self.ce.value = 0 # ensure power down/standby-I for proper manipulation of PWR_UP & PRIM_RX bits in CONFIG register
         self.send_fast(buf, askNoACK, reUseTX) # init using non-blocking helper
         time.sleep(0.001) # ensure CE pulse is >= 10 us
@@ -1110,15 +1109,15 @@ class RF24(SPIDevice):
         # if pulse is stopped here, the nRF24L01 only handles the top level payload in the FIFO.
         # hold CE HIGH to continue processing through the rest of the TX FIFO bound to address passed to open_tx_pipe()
         self.ce.value = 0 # go to Standby-I power mode (power attribute still == True)
-        while result == 0 and (time.monotonic() - start) < timeout:
+        while result is None and (time.monotonic() - start) < timeout:
             # let result be 0 if timeout, 1 if success, or 2 if fail
             self._reg_write(0xFF) # perform Non-operation command to get status byte (should be faster)
             # print('status: DR={} DS={} DF={}'.format(self.irq_DR, self.irq_DS, self.irq_DF))
             if  self.irq_DS or self.irq_DF: # transmission done
                 # get status flags to detect error
-                result = 1 if self.irq_DS else 2
+                result = True if self.irq_DS else False
         # read ack payload (if read_ack == True), clear status flags, then power down
-        if self.ack and self.irq_DS:
+        if self.ack and self.irq_DS and not askNoACK:
             # get and save ACK payload to self.ack if user wants it
             result = self.read_ack() # save reply in input buffer
         else:# if status flags are not cleared, do that now
@@ -1174,23 +1173,19 @@ class RF24(SPIDevice):
             # payload will get re-used. This command tells the radio not pop TX payload from FIFO on success
             self._reg_write(0xE3) # command returns only status byte which is always captured
         else: # flush TX FIFO
-            print('TX FIFO flushed by send_fast()')
             self.flush_tx()
 
         # clear data TX related flags
         self.clear_status_flags(False,True,True)
-        print("all status flags cleared by send_fast()")
 
         # now handle the payload accordingly
         if askNoACK or not self.auto_ack:
             # payload doesn't require acknowledgment
             # 0xB0 = W_TX_PAYLOAD_NO_ACK
-            print('payload {} written with askNoACK'.format(buf))
             self._reg_write_bytes(0xB0, buf) # write appropriate command with payload
         else:# payload does require acknowledgment
             # 0xA0 = W_TX_PAYLOAD
             self._reg_write_bytes(0xA0, buf) # write appropriate command with payload
-            print('payload {} written'.format(buf))
         # enable radio comms so it can send the data by starting the mandatory minimum 10 us pulse on CE. Let send() measure this pulse for blocking reasons
         self.ce.value = 1
         # radio will automatically go to standby-II after transmission while CE is still HIGH only if dynamic_payloads and auto_ack are enabled
