@@ -1011,13 +1011,12 @@ class RF24(SPIDevice):
         :returns:
 
             - `int` of the size (in bytes) of an available RX payload (if any).
-            - `True` when the RX FIFO buffer is not empty and `dynamic_payloads` attribute is enabled.
             - `False` if there is no payload in the RX FIFO buffer.
 
         """
         if self.pipe() is not None:
             # 0x60 == R_RX_PL_WID command
-            return self._reg_read(0x60) if not self.dynamic_payloads else True
+            return self._reg_read(0x60)
         return False
 
     def recv(self):
@@ -1116,7 +1115,7 @@ class RF24(SPIDevice):
             if  self.irq_DS or self.irq_DF: # transmission done
                 # get status flags to detect error
                 result = True if self.irq_DS else False
-        # read ack payload (if read_ack == True), clear status flags, then power down
+        # read ack payload clear status flags, then power down
         if self.ack and self.irq_DS and not askNoACK:
             # get and save ACK payload to self.ack if user wants it
             result = self.read_ack() # save reply in input buffer
