@@ -1114,7 +1114,7 @@ class RF24(SPIDevice):
             # print('status: DR={} DS={} DF={}'.format(self.irq_DR, self.irq_DS, self.irq_DF))
             if  self.irq_DS or self.irq_DF: # transmission done
                 # get status flags to detect error
-                result = True if self.irq_DS else False
+                result = bool(self.irq_DS)
         # read ack payload clear status flags, then power down
         if self.ack and self.irq_DS and not askNoACK:
             # get and save ACK payload to self.ack if user wants it
