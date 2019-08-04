@@ -93,10 +93,10 @@ class RF24(SPIDevice):
         else:
             raise ValueError("CRC byte length must be an int equal to 0 (off), 1, or 2")
         # check for device presence by verifying nRF24L01 is in TX + standby-I mode
-        if self._reg_read(CONFIG) & 3 != 2: # if NOT in TX + standby-I mode
+        if self._reg_read(CONFIG) & 3 == 2: # if in TX + standby-I mode
+            self.power = False # power down
+        else:  # hardware presence check NOT passed
             raise RuntimeError("nRF24L01 Hardware not responding")
-        else:  # hardware presence check passed; power down
-            self.power = False
 
         self.flush_tx() # updates the status attribute
         self.clear_status_flags() # writes directly to STATUS register
@@ -788,7 +788,7 @@ class RF24(SPIDevice):
 
         :param int pipe_number: The data pipe to use for RX transactions. This must be in range [0,5]. Otherwise an `AssertionError` exception is thrown.
         """
-        if 0 > pipe_number or pipe_number > 5:
+        if pipe_number < 0 or pipe_number > 5:
             raise ValueError("pipe number must be in range [0,5]")
         self._open_pipes = self._reg_read(EN_RX) # refresh data
         # reset pipe address accordingly
@@ -814,9 +814,9 @@ class RF24(SPIDevice):
             .. note:: The nRF24L01 shares the MSBytes (address[0:4]) on data pipes 2 through 5.
 
         """
-        if 0 > pipe_number or pipe_number > 5:
+        if pipe_number < 0 or pipe_number > 5:
             raise ValueError("pipe number must be in range [0,5]")
-        if 3 > len(address) or len(address) > self.address_length:
+        if len(address) < 3 or len(address) > self.address_length:
             raise ValueError("address must be a buffer protocol object with a byte length of\nat least 3 and no greater than 'address_length' attribute (currently {})".format(self.address_length))
         # write the address
         if pipe_number < 2: # write entire address if pipe_number is 1
@@ -907,7 +907,7 @@ class RF24(SPIDevice):
     def pipe(self, pipe_number=None):
         """This function works like an equivalent to TMRh20's available() on Arduino. Returns information about the data pipe that received latest payload.
 
-        :param int pipe_number: The specific number identifying a data pipe to check for RX data. This parameter is optional and must be in range [0,5], if specified otherwise an `AssertionError` exception is thrown.
+        :param int pipe_number: The specific number identifying a data pipe to check for RX data. This parameter is optional and nRF24L01 expects it to be in range [0,5]. Other numbers will not throw exceptions.
 
         :returns: `None` if there is no payload in RX FIFO.
 
@@ -926,14 +926,11 @@ class RF24(SPIDevice):
             if pipe_number is None:
                 # return pipe number if user did not specify a pipe number to test against
                 return pipe
-            else:
-                if 0 > pipe_number or pipe_number > 5:
-                    raise ValueError("pipe number must be in range [0,5]")
-                elif pipe_number != pipe:
-                    # return comparison of RX pipe number vs user specified pipe number
-                    return False
-                # return True if pipe number matches user input & there is data in RX FIFO
-                return True
+            if pipe_number != pipe:
+                # return comparison of RX pipe number vs user specified pipe number
+                return False
+            # return True if pipe number matches user input & there is data in RX FIFO
+            return True
         return None # RX FIFO is empty
 
     def any(self):
