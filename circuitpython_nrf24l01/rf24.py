@@ -51,7 +51,7 @@ FIFO         = 0x17 # register containing info on both RX/TX FIFOs + re-use payl
 DYNPD	     = 0x1c # dynamic payloads feature. each bit represents this feature per pipe
 FEATURE      = 0x1d # global enablers/disablers for dynamic payloads, auto-ACK, and custom ACK features
 
-class RF24(SPIDevice):
+class RF24(object):
     """A driver class for the nRF24L01 transceiver radio. This class aims to be compatible with other devices in the nRF24xxx product line, but officially only supports (through testing) the nRF24L01 and nRF24L01+ devices. This class also inherits from `adafruit_bus_device.spi_device`, thus that module should be extracted/copied from the `Adafruit library and driver bundle <https://github.com/adafruit/Adafruit_CircuitPython_Bundle>`_, or, if using CPython's pip, automatically installed using ``pip install circuitpython-nrf24l01``.
 
     :param ~busio.SPI spi: The SPI bus that the nRF24L01 is connected to.
@@ -72,7 +72,7 @@ class RF24(SPIDevice):
     """
     def __init__(self, spi, csn, ce, channel=76, payload_length=32, address_length=5, ard=1500, arc=3, crc=2, data_rate=1, pa_level=0, ask_no_ack=False, ack=False, dynamic_payloads=True, auto_ack=True, irq_DR=True, irq_DS=True, irq_DF=True):
         # init the SPI bus and pins
-        super(RF24, self).__init__(spi, chip_select=csn, baudrate=4000000, polarity=0, phase=0, extra_clocks=0)
+        self.spi = SPIDevice(spi, chip_select=csn, baudrate=4000000, polarity=0, phase=0, extra_clocks=0)
         self.payload_length = payload_length # inits internal attribute
         # last address assigned to pipe0 for reading. init to None
         self.pipe0_read_addr = None
@@ -98,28 +98,9 @@ class RF24(SPIDevice):
         else:  # hardware presence check NOT passed
             raise RuntimeError("nRF24L01 Hardware not responding")
 
-        self.flush_tx() # updates the status attribute
-        self.clear_status_flags() # writes directly to STATUS register
-
-        # manage dynamic_payloads, auto_ack, and ack features
-        self._dyn_pl = 0x3F if dynamic_payloads else 0 # 0x3F == enabled on all pipes
-        self._aa = 0x3F if auto_ack else 0 # 0x3F == enabled on all pipes
-        self._features = (dynamic_payloads << 2) | (ack << 1) | ask_no_ack
-        self._reg_write(DYNPD, self._dyn_pl) # dump to DYNPD register
-        self._reg_write(EN_AA, self._aa) # dump to EN_AA register
-        self._reg_write(FEATURE, self._features) # dump to FEATURE register
-
-        # init the _open_pipes attribute (reflects only RX state on each pipe)
-        self._open_pipes = 0 # <- means all pipes closed
-        self._reg_write(EN_RX, self._open_pipes) # dump to EN_RXADDR register
-
-        self.channel = channel # always writes value to RF_CH register
-        self.address_length = address_length # always writes value to SETUP_AW register
-
         # configure SETUP_RETR register
         if 250 <= ard <= 4000 and ard % 250 == 0 and 0 <= arc <= 15:
             self._setup_retr = (int((ard - 250) / 250) << 4) | arc
-            self._reg_write(EN_RX, self._setup_retr) # dump to SETUP_RETR register
         else:
             raise ValueError("automatic re-transmit delay can only be a multiple of 250 in range [250,4000]\nautomatic re-transmit count(/attempts) must in range [0,15]")
 
@@ -128,18 +109,50 @@ class RF24(SPIDevice):
             data_rate = 0 if data_rate == 1 else (8 if data_rate == 2 else 0x20)
             pa_level = (3 - int(pa_level / -6)) * 2
             self._rf_setup = data_rate | pa_level
-            self._reg_write(RF_SETUP, self._rf_setup) # dump to RF_SETUP register
         else:
             raise ValueError("data rate must be one of the following ([M,M,K]bps): 1, 2, 250\npower amplitude must be one of the following (dBm): -18, -12, -6, 0")
 
-    # def __enter__(self):
-    #     self._reg_write(RF_SETUP, self._rf_setup) # dump to RF_SETUP register
-    #     self._reg_write(EN_RX, self._open_pipes) # dump to EN_RXADDR register
-    #     self._reg_write(DYNPD, self._dyn_pl) # dump to DYNPD register
-    #     self._reg_write(EN_AA, self._aa) # dump to EN_AA register
-    #     self._reg_write(FEATURE, self._features) # dump to FEATURE register
-    #     self._reg_write(EN_RX, self._setup_retr) # dump to SETUP_RETR register
-    #     self.clear_status_flags() # writes directly to STATUS register
+        # manage dynamic_payloads, auto_ack, and ack features
+        self._dyn_pl = 0x3F if dynamic_payloads else 0 # 0x3F == enabled on all pipes
+        self._aa = 0x3F if auto_ack else 0 # 0x3F == enabled on all pipes
+        self._features = (dynamic_payloads << 2) | (ack << 1) | ask_no_ack
+
+        # init the last few singleton attribute
+        self._channel = channel # always writes value to RF_CH register
+        self._addr_len = address_length # always writes value to SETUP_AW register
+
+        # init the _open_pipes attribute (reflects only RX state on each pipe)
+        self._open_pipes = 0 # <- means all pipes closed
+
+        self.__enter__() # write to registers & power up
+        # using __enter__ configures all features, all other compatibility-breaking settings,
+        # using __exit__, this flushes all FIFOs, clears status flags, and powers down
+
+    def __enter__(self):
+        self.ce.value = 0 # ensure standby-I mode to write to CONFIG register
+        self._reg_write(CONFIG, self._config | 1) # enable RX mode
+        self.flush_rx() # spec sheet say "used in RX mode"
+        self._reg_write(CONFIG, self._config & 0xC) # power down + TX mode
+        self.flush_tx() # spec sheet say "used in TX mode"
+        self.clear_status_flags() # writes directly to STATUS register
+        self._reg_write(RF_SETUP, self._rf_setup) # dump to RF_SETUP register
+        self._reg_write(EN_RX, self._open_pipes) # dump to EN_RXADDR register
+        self._reg_write(DYNPD, self._dyn_pl) # dump to DYNPD register
+        self._reg_write(EN_AA, self._aa) # dump to EN_AA register
+        self._reg_write(FEATURE, self._features) # dump to FEATURE register
+        self._reg_write(EN_RX, self._setup_retr) # dump to SETUP_RETR register
+        # self.payload_length = self._payload_length
+        self.address_length = self._addr_len # writes directly to SETUP_AW register
+        self.channel = self._channel # writes directly to RF_CH register
+        self.power = True # ready to go
+
+    def __exit__(self):
+        self.ce.value = 0 # ensure standby-I mode to write to CONFIG register
+        self._reg_write(CONFIG, self._config | 1) # enable RX mode
+        self.flush_rx() # spec sheet say "used in RX mode"
+        self._reg_write(CONFIG, self._config & 0xC) # power down + TX mode
+        self.flush_tx() # spec sheet say "used in TX mode"
+        self.clear_status_flags() # writes directly to STATUS register
 
     def _reg_read(self, reg):
         """A helper function to read a single byte of data from a specified register on the nRF24L01's internal IC. THIS IS NOT MEANT TO BE DIRECTLY CALLED BY END-USERS.
@@ -150,12 +163,12 @@ class RF24(SPIDevice):
 
         """
         buf = bytearray(2) # 2 = 1 status byte + 1 byte of returned content
-        with self:
+        with self.spi as spi:
             # according to datasheet we must wait for CSN pin to settle
             # this depends on the capacitor used on the VCC & GND
             # assuming a 100nF (HIGHLY RECOMMENDED) wait time is slightly < 5ms
             time.sleep(0.005) # time for CSN to settle
-            self.spi.readinto(buf, write_value=reg)
+            spi.readinto(buf, write_value=reg)
         self._status = buf[0] # save status byte
         return buf[1] # drop status byte and return the rest
 
@@ -174,9 +187,9 @@ class RF24(SPIDevice):
         """
         # allow an extra byte for status data
         buf = bytearray(buf_len + 1)
-        with self:
+        with self.spi as spi:
             time.sleep(0.005) # time for CSN to settle
-            self.spi.readinto(buf, write_value=reg)
+            spi.readinto(buf, write_value=reg)
         self._status = buf[0] # save status byte
         return buf[1:] # drop status byte and return the rest
 
@@ -192,9 +205,9 @@ class RF24(SPIDevice):
         """
         outBuf = bytes([0x20 | reg]) + outBuf
         inBuf = bytearray(len(outBuf))
-        with self:
+        with self.spi as spi:
             time.sleep(0.005) # time for CSN to settle
-            self.spi.write_readinto(outBuf, inBuf)
+            spi.write_readinto(outBuf, inBuf)
         self._status = inBuf[0] # save status byte
 
     def _reg_write(self, reg, value = None):
@@ -211,9 +224,9 @@ class RF24(SPIDevice):
         else:
             outBuf = bytes([0x20 | reg, value])
         inBuf = bytearray(len(outBuf))
-        with self:
+        with self.spi as spi:
             time.sleep(0.005) # time for CSN to settle
-            self.spi.write_readinto(outBuf, inBuf)
+            spi.write_readinto(outBuf, inBuf)
         self._status = inBuf[0] # save status byte
 
     def flush_rx(self):
@@ -632,6 +645,7 @@ class RF24(SPIDevice):
         # nRF24L01+ must be in a standby or power down mode before writing to the configuration registers.
         if 3 <= length <= 5:
             # address width is saved in 2 bits making range = [3,5]
+            self._addr_len = length
             self._reg_write(SETUP_AW, length - 2)
         else:
             raise ValueError("address length can only be set in range [3,5] bytes")
@@ -763,6 +777,7 @@ class RF24(SPIDevice):
     @channel.setter
     def channel(self, channel):
         if 0 <= channel <= 125:
+            self._channel = channel
             self._reg_write(RF_CH, channel) # always wries to reg
         else:
             raise ValueError("channel acn only be set in range [0,125]")
