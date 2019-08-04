@@ -34,7 +34,7 @@ Modified by Brendan Doherty, Rhys Thomas
 """
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
-import time
+import time, busio
 from adafruit_bus_device.spi_device import SPIDevice
 
 # nRF24L01+ registers
@@ -51,7 +51,7 @@ FIFO         = 0x17 # register containing info on both RX/TX FIFOs + re-use payl
 DYNPD	     = 0x1c # dynamic payloads feature. each bit represents this feature per pipe
 FEATURE      = 0x1d # global enablers/disablers for dynamic payloads, auto-ACK, and custom ACK features
 
-class RF24(object):
+class RF24:
     """A driver class for the nRF24L01 transceiver radio. This class aims to be compatible with other devices in the nRF24xxx product line, but officially only supports (through testing) the nRF24L01 and nRF24L01+ devices. This class also inherits from `adafruit_bus_device.spi_device`, thus that module should be extracted/copied from the `Adafruit library and driver bundle <https://github.com/adafruit/Adafruit_CircuitPython_Bundle>`_, or, if using CPython's pip, automatically installed using ``pip install circuitpython-nrf24l01``.
 
     :param ~busio.SPI spi: The SPI bus that the nRF24L01 is connected to.
@@ -63,14 +63,21 @@ class RF24(object):
     :param int channel: This is used to specify a certain frequency that the nRF24L01 uses. This is optional and can be set later using the 'channel' attribute. Defaults to 76. This can be changed at any time by using the `channel` attribute
     :param int payload_length: This is the length (in bytes) of a single payload to be transmitted or received. This is optional and ignored if the `dynamic_payloads` attribute is enabled. Defaults to the maximum (32). This can be changed at any time by using the `payload_length` attribute
     :param int address_length: This is the length (in bytes) of the addresses that are assigned to the data pipes for transmitting/receiving. It is optional and defaults to 5. This can be changed at any time by using the `address_length` attribute
+    :param int ard: This specifies the automatic re-transmit delay (between attempts to re-transmit). See the `ard` attribute for more details. This parameter must be a multiple of 250 in the range [250,4000]
+    :param int arc: This specifies the automatic re-transmit count (maximum number of attempts to re-transmit). See the `arc` attribute for more details. This parameter must be in the range [0,15]
+    :param int crc: This parameter controls the CRC setting of transmitted packets. Options are ``0`` (off), ``1`` or ``2`` (byte long CRC enabled). See the `crc` attribute for more details.
+    :param int data_rate: This parameter controls the RF data rate setting of transmissions. Options are ``1`` (Mbps), ``2`` (Mbps), or ``250`` (Kbps). See the `data_rate` attribute for more details.
+    :param int pa_level: This parameter controls the RF power amplitude setting of transmissions. Options are ``0`` (dBm), ``-6`` (dBm), ``-12`` (dBm), or ``-18`` (dBm). See the `pa_level` attribute for more details.
     :param bool dynamic_payloads: This parameter enables or disables the dynamic payload length feature of the nRF24L01. It is optional and defaults to enabled. This can be changed at any time by using the `dynamic_payloads` attribute
     :param bool auto_ack: This parameter enables or disables the automatic acknowledgment (ACK) feature of the nRF24L01. It is optional and defaults to enabled. This can be changed at any time by using the `auto_ack` attribute
+    :param bool ask_no_ack: This represents a special flag that has to be thrown to enable a feature specific to individual payloads. This parameter is here for completeness as it is untested feature. Enabling/Disabling this does not affect `auto_ack` attribute.
+    :param bool ack: This represents a special flag that has to be thrown to enable a feature allowing custom response payloads appended to the ACK packets. This parameter should be engaged only during transmissions that make use of this feature. Enabling this does affect `auto_ack` attribute. See the `ack` attribute for more details.
     :param bool irq_DR: When "Data is Ready", this configures the interrupt (IRQ) trigger of the nRF24L01's IRQ pin (active low). This parameter is optional and defaults to enabled. This can be changed at any time by using the `interrupt_config()` method.
     :param bool irq_DS: When "Data is Sent", this configures the interrupt (IRQ) trigger of the nRF24L01's IRQ pin (active low). This parameter is optional and defaults to enabled. This can be changed at any time by using the `interrupt_config()` method.
     :param bool irq_DF: When "max retry attempts are reached", this configures the interrupt (IRQ) trigger of the nRF24L01's IRQ pin (active low). This parameter is optional and defaults to enabled. This can be changed at any time by using the `interrupt_config()` method.
 
     """
-    def __init__(self, spi, csn, ce, channel=76, payload_length=32, address_length=5, ard=1500, arc=3, crc=2, data_rate=1, pa_level=0, ask_no_ack=False, ack=False, dynamic_payloads=True, auto_ack=True, irq_DR=True, irq_DS=True, irq_DF=True):
+    def __init__(self, spi, csn, ce, channel=76, payload_length=32, address_length=5, ard=1500, arc=3, crc=2, data_rate=1, pa_level=0, dynamic_payloads=True, auto_ack=True, ask_no_ack=False, ack=False, irq_DR=True, irq_DS=True, irq_DF=True):
         # init the SPI bus and pins
         self.spi = SPIDevice(spi, chip_select=csn, baudrate=4000000, polarity=0, phase=0, extra_clocks=0)
         self.payload_length = payload_length # inits internal attribute
@@ -124,9 +131,10 @@ class RF24(object):
         # init the _open_pipes attribute (reflects only RX state on each pipe)
         self._open_pipes = 0 # <- means all pipes closed
 
-        self.__enter__() # write to registers & power up
-        # using __enter__ configures all features, all other compatibility-breaking settings,
-        # using __exit__, this flushes all FIFOs, clears status flags, and powers down
+        with self: # write to registers & power up
+            # using __enter__ configures all features, all other compatibility-breaking settings,
+            self._reg_write(0xFF) # a non operation command
+            # using __exit__, this flushes all FIFOs, clears status flags, and powers down
 
     def __enter__(self):
         self.ce.value = 0 # ensure standby-I mode to write to CONFIG register
@@ -145,14 +153,16 @@ class RF24(object):
         self.address_length = self._addr_len # writes directly to SETUP_AW register
         self.channel = self._channel # writes directly to RF_CH register
         self.power = True # ready to go
+        return self
 
-    def __exit__(self):
+    def __exit__(self, *exc):
         self.ce.value = 0 # ensure standby-I mode to write to CONFIG register
         self._reg_write(CONFIG, self._config | 1) # enable RX mode
         self.flush_rx() # spec sheet say "used in RX mode"
         self._reg_write(CONFIG, self._config & 0xC) # power down + TX mode
         self.flush_tx() # spec sheet say "used in TX mode"
         self.clear_status_flags() # writes directly to STATUS register
+        return False
 
     def _reg_read(self, reg):
         """A helper function to read a single byte of data from a specified register on the nRF24L01's internal IC. THIS IS NOT MEANT TO BE DIRECTLY CALLED BY END-USERS.
@@ -1014,7 +1024,7 @@ class RF24(object):
             return self.recv()
         return None
 
-    def send(self, buf=None, askNoACK=False, reUseTX=False, timeout=0.2):
+    def send(self, buf=None, ask_no_ack=False, reUseTX=False, timeout=0.2):
         """This blocking function is used to transmit payload until one of the following results is acheived:
 
         :returns:
@@ -1029,7 +1039,7 @@ class RF24(object):
             - If the `dynamic_payloads` attribute is disabled and this bytearray's length is less than the `payload_length` attribute, then this bytearray is padded with zeros until its length is equal to the `payload_length` attribute.
             - If the `dynamic_payloads` attribute is disabled and this bytearray's length is greater than `payload_length` attribute, then this bytearray's length is truncated to equal the `payload_length` attribute.
 
-        :param bool askNoACK: Pass this parameter as `True` to tell the nRF24L01 not to wait for an acknowledgment from the receiving nRF24L01. This parameter directly controls a ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about the payload).Therefore, it takes advantage of an nRF24L01 feature specific to individual payloads, and its value is not saved anywhere. You do not need to specify this everytime if the `auto_ack` attribute is `False`.
+        :param bool ask_no_ack: Pass this parameter as `True` to tell the nRF24L01 not to wait for an acknowledgment from the receiving nRF24L01. This parameter directly controls a ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about the payload).Therefore, it takes advantage of an nRF24L01 feature specific to individual payloads, and its value is not saved anywhere. You do not need to specify this everytime if the `auto_ack` attribute is `False`.
 
             .. note:: Each transmission is in the form of a packet. This packet contains sections of data around and including the payload. `See Chapter 7.3 in the nRF24L01 Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1136318>`_
 
@@ -1044,7 +1054,7 @@ class RF24(object):
         """
         result = None
         self.ce.value = 0 # ensure power down/standby-I for proper manipulation of PWR_UP & PRIM_RX bits in CONFIG register
-        self.write(buf, askNoACK, reUseTX) # init using non-blocking helper
+        self.write(buf, ask_no_ack, reUseTX) # init using non-blocking helper
         time.sleep(0.001) # ensure CE pulse is >= 10 us
         start = time.monotonic()
         # if pulse is stopped here, the nRF24L01 only handles the top level payload in the FIFO.
@@ -1058,7 +1068,7 @@ class RF24(object):
                 # get status flags to detect error
                 result = bool(self.irq_DS)
         # read ack payload clear status flags, then power down
-        if self.ack and self.irq_DS and not askNoACK:
+        if self.ack and self.irq_DS and not ask_no_ack:
             # get and save ACK payload to self.ack if user wants it
             result = self.read_ack() # save reply in input buffer
             if result is None: # can't return empty handed
@@ -1066,14 +1076,14 @@ class RF24(object):
         self.clear_status_flags(False,True,True) # only TX related IRQ flags
         return result
 
-    def write(self, buf=None, askNoACK=False, reUseTX=False):
+    def write(self, buf=None, ask_no_ack=False, reUseTX=False):
         """This non-blocking function (when used as alternative to `send()`) is meant for asynchronous applications.
 
         :param bytearray buf: The payload to transmit. This bytearray must have a length greater than 0 to execute transmission.
 
             - If the `dynamic_payloads` attribute is disabled and this bytearray's length is less than the `payload_length` attribute, then this bytearray is padded with zeros until its length is equal to the `payload_length` attribute.
             - If the `dynamic_payloads` attribute is disabled and this bytearray's length is greater than `payload_length` attribute, then this bytearray's length is truncated to equal the `payload_length` attribute.
-        :param bool askNoACK: Pass this parameter as `True` to tell the nRF24L01 not to wait for an acknowledgment from the receiving nRF24L01. This parameter directly controls a ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about the payload).Therefore, it takes advantage of an nRF24L01 feature specific to individual payloads, and its value is not saved anywhere. You do not need to specify this everytime if the `auto_ack` attribute is `False`.
+        :param bool ask_no_ack: Pass this parameter as `True` to tell the nRF24L01 not to wait for an acknowledgment from the receiving nRF24L01. This parameter directly controls a ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about the payload).Therefore, it takes advantage of an nRF24L01 feature specific to individual payloads, and its value is not saved anywhere. You do not need to specify this everytime if the `auto_ack` attribute is `False`.
 
             .. note:: Each transmission is in the form of a packet. This packet contains sections of data around and including the payload. `See Chapter 7.3 in the nRF24L01 Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1136318>`_
 
@@ -1122,7 +1132,7 @@ class RF24(object):
         self.clear_status_flags(False,True,True)
 
         # now handle the payload accordingly
-        if askNoACK or not self.auto_ack:
+        if ask_no_ack:
             # payload doesn't require acknowledgment
             # 0xB0 = W_TX_PAYLOAD_NO_ACK
             self._reg_write_bytes(0xB0, buf) # write appropriate command with payload
