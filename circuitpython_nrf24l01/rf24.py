@@ -34,7 +34,7 @@ Modified by Brendan Doherty, Rhys Thomas
 """
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
-import time, busio
+import time
 from adafruit_bus_device.spi_device import SPIDevice
 
 # nRF24L01+ registers
