@@ -22,7 +22,7 @@ Features currently supported
     * automatic acknowledgment (ACK)
     * cycle redundancy checking (up to 2 bytes long)
     * frequency specification via channel attribute
-    * custom acknowledgment (ACK) payload
+    * custom acknowledgment (ACK) payloads allowed and working
     * flag a single payload for no acknowledgment (ACK)
 
 Features currently untested
@@ -30,9 +30,9 @@ Features currently untested
 
     * configuration of interrupt (IRQ) pin
     * "re-use the same payload" feature
-    * auto-ACK can be used on a per pipe basis
-    * dynamic payloads feature can be used on a per pipe basis
-    * no implementation for Multiceiver mode... yet
+    * auto-ACK could be used on a per pipe basis
+    * dynamic payloads feature could be used on a per pipe basis
+    * as of yet, no [intended] implementation for Multiceiver mode (up to 6 TX nRF24L01s "talking" to 1 RX nRF24L01 simultaneously). Although this might be acheived easily using the "automatic re-transmite delay" (ard) and "automatic retry count" (arc) attributes set accordingly (rather high).
 
 Dependencies
 =============
@@ -47,8 +47,6 @@ This is easily achieved by downloading
 
 Installing from PyPI
 =====================
-.. note:: This library is not available on PyPI yet. Install documentation is included
-   as a standard element. Stay tuned for PyPI availability!
 
 On supported GNU/Linux systems like the Raspberry Pi, you can install the driver locally `from
 PyPI <https://pypi.org/project/circuitpython-nrf24l01/>`_. To install for current user:

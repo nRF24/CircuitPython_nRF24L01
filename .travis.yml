@@ -38,7 +38,7 @@ install:
   - pip install --force-reinstall pylint==2.3.1
 
 script:
-  - pylint --disable=invalid-name,bad-whitespace,line-too-long,trailing-whitespace,attribute-defined-outside-init,too-many-instance-attributes,inconsistent-return-statements,no-else-return,too-many-public-methods,too-many-arguments,too-many-lines,too-many-function-args,superfluous-parens,too-many-locals,bad-continuation circuitpython_nrf24l01/*.py
+  - pylint --disable=invalid-name,bad-whitespace,line-too-long,trailing-whitespace,attribute-defined-outside-init,too-many-instance-attributes,inconsistent-return-statements,no-else-return,too-many-public-methods,too-many-arguments,too-many-lines,too-many-function-args,superfluous-parens,too-many-locals,bad-continuation,no-member circuitpython_nrf24l01/*.py
   - ([[ ! -d "examples/*" ]] || pylint --disable=missing-docstring,invalid-name,bad-whitespace,trailing-whitespace,line-too-long,multiple-imports examples/*/*.py)
   - circuitpython-build-bundles --filename_prefix circuitpython-nrf24l01 --library_location circuitpython_nrf24l01
   - cd docs && sphinx-build -E -W -b html . _build/html && cd ..
