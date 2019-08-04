@@ -140,7 +140,7 @@ class RF24(object):
         self._reg_write(DYNPD, self._dyn_pl) # dump to DYNPD register
         self._reg_write(EN_AA, self._aa) # dump to EN_AA register
         self._reg_write(FEATURE, self._features) # dump to FEATURE register
-        self._reg_write(EN_RX, self._setup_retr) # dump to SETUP_RETR register
+        self._reg_write(SETUP_RETR, self._setup_retr) # dump to SETUP_RETR register
         # self.payload_length = self._payload_length
         self.address_length = self._addr_len # writes directly to SETUP_AW register
         self.channel = self._channel # writes directly to RF_CH register
@@ -314,7 +314,8 @@ class RF24(object):
         """
         return bool(self._fifo & 0x40)
 
-    def what_happened(self, dump_pipes=False):
+    @property
+    def wtf(self):
         """This debuggung function aggregates all status/condition related information from the nRF24L01. Some flags may be irrelevant depending on nRF24L01's state/condition.
 
         :prints:
@@ -346,14 +347,13 @@ class RF24(object):
             - ``Primary Mode`` The current mode (RX or TX) of communication of the nRF24L01 device.
             - ``Power Mode`` The power state can be Off, Standby-I, Standby-II, or On.
 
-        :param bool dump_pipes: `True` will append all addresses from the RX nRF24L01's registers of stored addresses. This defaults to `False`. The appended output prints: ``Pipe # (open/closed) bound: address`` where "#" represent the pipe number.
+        The final appended output prints: ``Pipe # (open/closed) bound: address`` where "#" represent the pipe number, address is read directly from the nRF24L01, and the open/closed status is represents to its pipe's RX status.
 
         Remember, we only use `recv()` to read payload data as that transaction will also remove it from the FIFO buffer.
 
         .. note:: Only some data is fetched directly from nRF24L01. Specifically ``Packets Lost``, ``Retry Count``, ``Recvd Pwr Detect``, and all pipe addresses. These data are not stored inernally on purpose. All other data is computed from memory of last SPI transaction related to that data.
 
         """
-        assert isinstance(dump_pipes, (bool, int))
         watchdog = self._reg_read(0x08) # OBSERVE_TX register
         print("""
         Channel___________________{} ~ {} MHz
@@ -409,11 +409,10 @@ class RF24(object):
             "RX" if self.listen else "TX",
             ("Standby-II" if self.ce.value else "Standby-I") if (self._config & 2) else "Off"
             ))
-        if dump_pipes:
-            for i in range(RX_ADDR, RX_ADDR + 6):
-                j = i - RX_ADDR
-                isOpen = " open " if (self._open_pipes & (1 << j)) else "closed"
-                print("Pipe {} ({}) bound: {}".format(j, isOpen, self._reg_read_bytes(i)))
+        for i in range(RX_ADDR, RX_ADDR + 6):
+            j = i - RX_ADDR
+            isOpen = " open " if (self._open_pipes & (1 << j)) else "closed"
+            print("Pipe {} ({}) bound: {}".format(j, isOpen, self._reg_read_bytes(i)))
 
     def clear_status_flags(self, dataReady=True, dataSent=True, maxRetry=True):
         """This clears the interrupt flags in the status register. This functionality is exposed for asychronous applications only.
