@@ -31,6 +31,20 @@ The Micropython source has been rewritten to work on the Raspberry Pi and other 
 Modified by Brendan Doherty, Rhys Thomas
 
 * Author(s): Damien P. George, Peter Hinch, Rhys Thomas, Brendan Doherty
+
+.. important:: The nRF24L01 has 3 key features that are very interdependent of each other. Their priority of dependence is as follows:
+
+    1. `dynamic_payloads` feature allowing either TX/RX nRf24L01 to be able to send/receive payloads with their size written into the payloads' packet. With this disabled, both RX/TX nRF24L01 have to use matching `payload_length` attributes.
+    2. `auto_ack` feature provides transmission verification by imediatedly sending an acknowledgment (ACK) packet in response to freshly received payloads. `auto_ack` requires `dynamic_payloads` to be enabled.
+    3. `ack` feature allows the user to append a payload to the ACK packet, thus instant bi-directional communication. A transmitting ACK payload must be loaded into the nRF24L01's TX FIFO buffer (done using `load_ack()`) BEFORE receiving the payload that is to be acknowledged. Once transmitted, the payload is released from the TX FIFO buffer. This feature obviously requires the `auto_ack` feature enabled.
+
+Remeber that the nRF24L01's FIFO (first-in,first-out) buffer has 3 levels. This means that there can be up to 3 payloads waiting to be read (RX) and up to 3 payloads waiting to be transmit (TX).
+
+With the `auto_ack` feature enabled you get:
+
+    * CRC (cycle redundancy checking) automatically enabled
+    * to change amount of automatic re-transmit attempts the delay time between them. See the `ard` and `arc` attributes.
+
 """
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
@@ -52,15 +66,15 @@ DYNPD	     = 0x1c # dynamic payloads feature. each bit represents this feature p
 FEATURE      = 0x1d # global enablers/disablers for dynamic payloads, auto-ACK, and custom ACK features
 
 class RF24:
-    """A driver class for the nRF24L01 transceiver radio. This class aims to be compatible with other devices in the nRF24xxx product line, but officially only supports (through testing) the nRF24L01 and nRF24L01+ devices. This class also inherits from `adafruit_bus_device.spi_device`, thus that module should be extracted/copied from the `Adafruit library and driver bundle <https://github.com/adafruit/Adafruit_CircuitPython_Bundle>`_, or, if using CPython's pip, automatically installed using ``pip install circuitpython-nrf24l01``.
+    """A driver class for the nRF24L01 transceiver radio. This class aims to be compatible with other devices in the nRF24xxx product line, but officially only supports (through testing) the nRF24L01 and nRF24L01+ devices.
 
     :param ~busio.SPI spi: The SPI bus that the nRF24L01 is connected to.
 
-        ..tip:: This object is meant to be shared amongst other driver classes (like adafruit_mcp3xxx.mcp3008 for example) that use the same SPI bus. Otherwise, multiple devices on the same SPI bus with different spi objects may produce errors or undesirable behavior.
+        .. tip:: This object is meant to be shared amongst other driver classes (like adafruit_mcp3xxx.mcp3008 for example) that use the same SPI bus. Otherwise, multiple devices on the same SPI bus with different spi objects may produce errors or undesirable behavior.
 
     :param ~digitalio.DigitalInOut csn: The digital output pin that is connected to the nRF24L01's CSN (Chip Select Not) pin. This is required.
     :param ~digitalio.DigitalInOut ce: The digital output pin that is connected to the nRF24L01's CE (Chip Enable) pin. This is required.
-    :param int channel: This is used to specify a certain frequency that the nRF24L01 uses. This is optional and can be set later using the 'channel' attribute. Defaults to 76. This can be changed at any time by using the `channel` attribute
+    :param int channel: This is used to specify a certain frequency that the nRF24L01 uses. Defaults to 76 and can be changed at any time by using the `channel` attribute
     :param int payload_length: This is the length (in bytes) of a single payload to be transmitted or received. This is optional and ignored if the `dynamic_payloads` attribute is enabled. Defaults to the maximum (32). This can be changed at any time by using the `payload_length` attribute
     :param int address_length: This is the length (in bytes) of the addresses that are assigned to the data pipes for transmitting/receiving. It is optional and defaults to 5. This can be changed at any time by using the `address_length` attribute
     :param int ard: This specifies the automatic re-transmit delay (between attempts to re-transmit). See the `ard` attribute for more details. This parameter must be a multiple of 250 in the range [250,4000]
@@ -74,10 +88,10 @@ class RF24:
     :param bool ack: This represents a special flag that has to be thrown to enable a feature allowing custom response payloads appended to the ACK packets. This parameter should be engaged only during transmissions that make use of this feature. Enabling this does affect `auto_ack` attribute. See the `ack` attribute for more details.
     :param bool irq_DR: When "Data is Ready", this configures the interrupt (IRQ) trigger of the nRF24L01's IRQ pin (active low). This parameter is optional and defaults to enabled. This can be changed at any time by using the `interrupt_config()` method.
     :param bool irq_DS: When "Data is Sent", this configures the interrupt (IRQ) trigger of the nRF24L01's IRQ pin (active low). This parameter is optional and defaults to enabled. This can be changed at any time by using the `interrupt_config()` method.
-    :param bool irq_DF: When "max retry attempts are reached", this configures the interrupt (IRQ) trigger of the nRF24L01's IRQ pin (active low). This parameter is optional and defaults to enabled. This can be changed at any time by using the `interrupt_config()` method.
+    :param bool irq_DF: When "max retry attempts are reached" (specified by the `arc` attribute), this configures the interrupt (IRQ) trigger of the nRF24L01's IRQ pin (active low). This parameter is optional and defaults to enabled. This can be changed at any time by using the `interrupt_config()` method.
 
     """
-    def __init__(self, spi, csn, ce, channel=76, payload_length=32, address_length=5, ard=1500, arc=3, crc=2, data_rate=1, pa_level=0, dynamic_payloads=True, auto_ack=True, ask_no_ack=False, ack=False, irq_DR=True, irq_DS=True, irq_DF=True):
+    def __init__(self, spi, csn, ce, channel=76, payload_length=32, address_length=5, ard=1500, arc=3, crc=2, data_rate=1, pa_level=0, dynamic_payloads=True, auto_ack=True, ask_no_ack=True, ack=False, irq_DR=True, irq_DS=True, irq_DF=True):
         # init the SPI bus and pins
         self.spi = SPIDevice(spi, chip_select=csn, baudrate=4000000, polarity=0, phase=0, extra_clocks=0)
         self.payload_length = payload_length # inits internal attribute
@@ -132,17 +146,16 @@ class RF24:
         self._open_pipes = 0 # <- means all pipes closed
 
         with self: # write to registers & power up
-            # using __enter__ configures all features, all other compatibility-breaking settings,
-            self._reg_write(0xFF) # a non operation command
-            # using __exit__, this flushes all FIFOs, clears status flags, and powers down
+            # using __enter__ configures all features, all other compatibility-breaking settings
+            self.ce.value = 0 # ensure standby-I mode to write to CONFIG register
+            self._reg_write(CONFIG, self._config | 1) # enable RX mode
+            self.flush_rx() # spec sheet say "used in RX mode"
+            self._reg_write(CONFIG, self._config & 0xC) # power down + TX mode
+            self.flush_tx() # spec sheet say "used in TX mode"
+            self.clear_status_flags() # writes directly to STATUS register
 
     def __enter__(self):
-        self.ce.value = 0 # ensure standby-I mode to write to CONFIG register
-        self._reg_write(CONFIG, self._config | 1) # enable RX mode
-        self.flush_rx() # spec sheet say "used in RX mode"
-        self._reg_write(CONFIG, self._config & 0xC) # power down + TX mode
-        self.flush_tx() # spec sheet say "used in TX mode"
-        self.clear_status_flags() # writes directly to STATUS register
+        """This ensures that the hardware is properly configured for the virtual object used to drive it by dumping all pre-existing register data buffered from configuring the device's features. This also ensures the nRF24L01 is powered up. (write-only)"""
         self._reg_write(RF_SETUP, self._rf_setup) # dump to RF_SETUP register
         self._reg_write(EN_RX, self._open_pipes) # dump to EN_RXADDR register
         self._reg_write(DYNPD, self._dyn_pl) # dump to DYNPD register
@@ -156,12 +169,7 @@ class RF24:
         return self
 
     def __exit__(self, *exc):
-        self.ce.value = 0 # ensure standby-I mode to write to CONFIG register
-        self._reg_write(CONFIG, self._config | 1) # enable RX mode
-        self.flush_rx() # spec sheet say "used in RX mode"
-        self._reg_write(CONFIG, self._config & 0xC) # power down + TX mode
-        self.flush_tx() # spec sheet say "used in TX mode"
-        self.clear_status_flags() # writes directly to STATUS register
+        """this does nothing as the state of the radio should ultimately be up to the user"""
         return False
 
     def _reg_read(self, reg):
@@ -324,9 +332,8 @@ class RF24:
         """
         return bool(self._fifo & 0x40)
 
-    @property
-    def wtf(self):
-        """This debuggung function aggregates all status/condition related information from the nRF24L01. Some flags may be irrelevant depending on nRF24L01's state/condition.
+    def what_happened(self, dump_pipes=False):
+        """This debuggung function aggregates and outputs all status/condition related information from the nRF24L01. Some flags may be irrelevant depending on nRF24L01's state/condition. (read-only)
 
         :prints:
 
@@ -334,22 +341,21 @@ class RF24:
             - ``CRC bytes`` The current setting of the `crc` attribute
             - ``Address length`` The current setting of the `address_length` attribute
             - ``Payload lengths`` The current setting of the `payload_length` attribute
-            - ``Auto-retransmit delay`` The current setting of the `ard` attribute
-            - ``Auto retry set to max`` The current setting of the `arc` attribute
+            - ``Auto retry delay`` The current setting of the `ard` attribute
+            - ``Auto retry attempts`` The current setting of the `arc` attribute
             - ``IRQ - Data Ready`` The current setting of the IRQ pin on "Data Ready" event
             - ``IRQ - Data Sent`` The current setting of the IRQ pin on "Data Sent" event
-            - ``IRQ - Data Fail`` The current setting of the IRQ pin on "Data Fail" event (indicated, if triggered, in this dictionary by the ``Max Retry Hit`` key)
-            - ``Data Ready`` Is there RX data ready to be sent?
+            - ``IRQ - Data Fail`` The current setting of the IRQ pin on "Data Fail" event
+            - ``Data Ready`` Is there RX data ready to be read?
             - ``Data Sent`` Has the TX data been sent?
+            - ``Data Failed`` Has the maximum attempts to re-transmit been reached?
             - ``Packets Lost`` Amount of packets lost (transmission failures)
-            - ``Retry Count`` Maximum amount of attempts to re-transmit during last transmission (resets per payload)
-            - ``Max Retry Hit`` Has the maximum attempts to re-transmit been reached?
-            - ``Recvd Pwr Detect`` This is `True` only if OTA (over the air) transmission exceeded -64 dBm (not currently implemented by this driver class).
-            - ``Re-use TX Payload`` Should the nRF24L01 re-use the last TX payload? (not currently implemented by this driver class)
+            - ``Retry Attempts Made`` Maximum amount of attempts to re-transmit during last transmission (resets per payload)
             - ``TX FIFO full`` Is the TX FIFO buffer full?
             - ``TX FIFO empty`` Is the TX FIFO buffer empty?
             - ``RX FIFO full`` Is the RX FIFO buffer full?
             - ``RX FIFO empty`` Is the RX FIFO buffer empty?
+            - ``Re-use TX Payload`` Should the nRF24L01 re-use the last TX payload? (currently implemented but not tested)
             - ``Custom ACK payload`` Is the nRF24L01 setup to use an extra (user defined) payload attached to the acknowledgment packet?
             - ``Ask no ACK`` Is the nRF24L01 set up to transmit individual packets that don't require acknowledgment?
             - ``Automatic Acknowledgment`` Is the automatic acknowledgement feature enabled?
@@ -357,72 +363,20 @@ class RF24:
             - ``Primary Mode`` The current mode (RX or TX) of communication of the nRF24L01 device.
             - ``Power Mode`` The power state can be Off, Standby-I, Standby-II, or On.
 
-        The final appended output prints: ``Pipe # (open/closed) bound: address`` where "#" represent the pipe number, address is read directly from the nRF24L01, and the open/closed status is represents to its pipe's RX status.
+        :param bool dump_pipes: `True` appends the output and prints: ``Pipe [#] ([open/closed]) bound: [address]`` where "#" represent the pipe number, the "open/closed" status is relative to the pipe's RX status, and "address" is read directly from the nRF24L01 registers. Default is `False` and skips this extra information.
 
         Remember, we only use `recv()` to read payload data as that transaction will also remove it from the FIFO buffer.
 
-        .. note:: Only some data is fetched directly from nRF24L01. Specifically ``Packets Lost``, ``Retry Count``, ``Recvd Pwr Detect``, and all pipe addresses. These data are not stored inernally on purpose. All other data is computed from memory of last SPI transaction related to that data.
+        .. note:: Only some data is fetched directly from nRF24L01. Specifically ``Packets Lost``, ``Retry Attempts Made``, and all pipe addresses. That data is not stored internally on purpose. All other data is computed from memory of last SPI transaction about that data's register.
 
         """
         watchdog = self._reg_read(0x08) # OBSERVE_TX register
-        print("""
-        Channel___________________{} ~ {} MHz
-        CRC bytes_________________{}
-        Address length____________{} bytes
-        Payload lengths___________{} bytes
-        Auto-retransmit delay_____{} microseconds
-        Auto retry attempts_______{} maximum
-        IRQ - Data Ready__________{}
-        IRQ - Data Sent___________{}
-        IRQ - Data Fail___________{}
-        Data Ready________________{}
-        Data Sent_________________{}
-        Max Retry Hit_____________{}
-        Packets Lost______________{} total
-        Retry Attempts Made_______{}
-        Received Power Detector___{}
-        TX FIFO full______________{}
-        TX FIFO empty_____________{}
-        RX FIFO full______________{}
-        RX FIFO empty_____________{}
-        Re-use TX Payload_________{}
-        Custom ACK Payload________{}
-        Ask no ACK________________{}
-        Automatic Acknowledgment__{}
-        Dynamic Payloads__________{}
-        Primary Mode______________{}
-        Power Mode________________{}
-        """.format(self.channel, (self.channel + 2400) / 1000 ,
-            self.crc,
-            self.address_length,
-            self.payload_length,
-            self.ard,
-            self.arc,
-            not bool(self._config & 0x40),
-            not bool(self._config & 0x20),
-            not bool(self._config & 0x10),
-            self.irq_DR,
-            self.irq_DS,
-            self.irq_DF,
-            (watchdog & 0xF0) >> 4,
-            watchdog & 0x0F,
-            "Yes" if bool(self._reg_read(0x09)) else "No", # RDP register
-            bool(self.tx_full),
-            bool(self.fifo(True,True)),
-            bool(self._fifo & 2),
-            bool(self._fifo & 1),
-            "Enabled" if self.reuse_tx else "Disabled",
-            "Enabled" if self.ack else "Disabled",
-            "Allowed" if bool(self._features & 1) else "Disabled",
-            bin(self._aa) if self.auto_ack else 'Disabled',
-            bin(self._dyn_pl) if self.dynamic_payloads else 'Disabled',
-            "RX" if self.listen else "TX",
-            ("Standby-II" if self.ce.value else "Standby-I") if (self._config & 2) else "Off"
-            ))
-        for i in range(RX_ADDR, RX_ADDR + 6):
-            j = i - RX_ADDR
-            isOpen = " open " if (self._open_pipes & (1 << j)) else "closed"
-            print("Pipe {} ({}) bound: {}".format(j, isOpen, self._reg_read_bytes(i)))
+        print("Channel___________________{} ~ {} MHz\nCRC bytes_________________{}\nAddress length____________{} bytes\nPayload lengths___________{} bytes\nAuto retry delay__________{} microseconds\nAuto retry attempts_______{} maximum\nPackets Lost______________{} total\nRetry Attempts Made_______{}\nIRQ - Data Ready______{}    Data Ready________{}\nIRQ - Data Fail_______{}    Data Failed_______{}\nIRQ - Data Sent_______{}    Data Sent_________{}\nTX FIFO full__________{}    TX FIFO empty_____{}\nRX FIFO full__________{}    RX FIFO empty_____{}\nRe-use TX Payload__{}\nAsk no ACK_________{}    Custom ACK Payload___{}\nDynamic Payloads___{}    Auto Acknowledgment__{}\nPrimary Mode_____________{}    Power Mode___________{}".format(self.channel, (self.channel + 2400) / 1000 , self.crc, self.address_length, self.payload_length, self.ard, self.arc, (watchdog & 0xF0) >> 4,  watchdog & 0x0F, "_True" if not bool(self._config & 0x40) else "False", self.irq_DR, "_True" if not bool(self._config & 0x20) else "False", self.irq_DF, "_True" if not bool(self._config & 0x10) else "False", self.irq_DS,  "_True" if bool(self.tx_full) else "False",  bool(self.fifo(True,True)), "_True" if bool(self._fifo & 2) else "False",  bool(self._fifo & 1), "_Enabled" if self.reuse_tx else "Disabled", "_Allowed" if bool(self._features & 1) else "Disabled", "Enabled" if self.ack else "Disabled", "_Enabled" if self.dynamic_payloads else 'Disabled', "Enabled" if self.auto_ack else 'Disabled', "RX" if self.listen else "TX", ("Standby-II" if self.ce.value else "Standby-I") if (self._config & 2) else "Off" ))
+        if dump_pipes:
+            for i in range(RX_ADDR, RX_ADDR + 6):
+                j = i - RX_ADDR
+                isOpen = " open " if (self._open_pipes & (1 << j)) else "closed"
+                print("Pipe {} ({}) bound: {}".format(j, isOpen, self._reg_read_bytes(i)))
 
     def clear_status_flags(self, dataReady=True, dataSent=True, maxRetry=True):
         """This clears the interrupt flags in the status register. This functionality is exposed for asychronous applications only.
@@ -461,35 +415,6 @@ class RF24:
         self._reg_write(CONFIG, self._config)
 
     @property
-    def listen(self):
-        """An attribute to represent the nRF24L01 primary role as a radio.
-
-        Setting this attribute uses the built-in ``_start_listening()`` and ``_stop_listening()`` to control this attribute properly. As handling the transition between various modes involves playing with the `power` attribute and the nRF24L01's CE pin.
-
-        :param bool rx:
-
-            `True` enables RX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this function flushes the RX FIFO, clears the `irq_DR` status flags, and puts nRF24L01 in power up mode. Notice the CE pin should be held HIGH during RX mode
-
-            `False` disables RX mode. As mentioned in above link, this puts nRF24L01's power in Standby-I (CE pin is LOW meaning low current & no transmissions) mode which is ideal for post-transmission work. This attribute doesn't flush the FIFOs, so remember to flush your 3-level FIFO buffers when appropriate using `flush_tx()` or `flush_rx()`. This attribute does not power down the nRF24L01, but will power it up when needed; use `power` attribute set to `False` to put the nRf24L01 to sleep.
-
-        :returns:
-
-                * `True` for RX mode
-                * `False` for TX mode
-
-
-        """
-        return self.power and bool(self._config & 1)
-
-    @listen.setter
-    def listen(self, rx):
-        assert isinstance(rx, (bool,int))
-        if rx:
-            self._start_listening()
-        else:
-            self._stop_listening()
-
-    @property
     def ack(self):
         """This attribute contains the status of the nRF24L01's capability to use custom payloads as part of the automatic acknowledgment (ACK) packet. You can use this attribute to set/check if this specific feature is enabled.
 
@@ -521,7 +446,7 @@ class RF24:
         .. note:: This attribute needs to be `True` if you want to put radio on standby-II (CE pin is HIGH) or standby-I (CE pin is LOW) modes. In case of either standby modes, transmissions are only executed during standby-II using `send()` or ` calling_fast()`. Otherwise OTA listening is done from standby-II using 'listen' attribute (see `Chapter 6.1.2-7 of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132980>`_).
 
         """
-        self._config = self._reg_read(0x0) # refresh data
+        self._config = self._reg_read(CONFIG) # refresh data
         return self._config & 0x2
 
     @power.setter
@@ -791,6 +716,70 @@ class RF24:
         else:
             raise ValueError("channel acn only be set in range [0,125]")
 
+    @property
+    def listen(self):
+        """An attribute to represent the nRF24L01 primary role as a radio.
+
+        Setting this attribute uses the built-in ``_start_listening()`` and ``_stop_listening()`` to control this attribute properly. As handling the transition between various modes involves playing with the `power` attribute and the nRF24L01's CE pin.
+
+        :param bool rx:
+
+            `True` enables RX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this function flushes the RX FIFO, clears the `irq_DR` status flags, and puts nRF24L01 in power up mode. Notice the CE pin should be held HIGH during RX mode
+
+            `False` disables RX mode. As mentioned in above link, this puts nRF24L01's power in Standby-I (CE pin is LOW meaning low current & no transmissions) mode which is ideal for post-transmission work. This attribute doesn't flush the FIFOs, so remember to flush your 3-level FIFO buffers when appropriate using `flush_tx()` or `flush_rx()`. This attribute does not power down the nRF24L01, but will power it up when needed; use `power` attribute set to `False` to put the nRf24L01 to sleep.
+
+        :returns:
+
+                * `True` for RX mode
+                * `False` for TX mode
+
+
+        """
+        return self.power and bool(self._config & 1)
+
+    @listen.setter
+    def listen(self, rx):
+        assert isinstance(rx, (bool,int))
+        if rx:
+            self._start_listening()
+        else:
+            self._stop_listening()
+
+    def _start_listening(self):
+        """Puts the nRF24L01 into RX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this function flushes the RX FIFO, clears the `irq_DR` status flag, and puts nRf24L01 in powers up mode.
+
+        """
+        # ensure radio is in power down or standby-I mode
+        if self.ce.value:
+            self.ce.value = 0
+
+        self._reg_write(RX_PW, self.payload_length)
+        if self.pipe0_read_addr is not None:
+            # make sure the last call to open_rx_pipe(0) sticks if initialized
+            self._reg_write_bytes(RX_ADDR, self.pipe0_read_addr)
+
+        # power up radio & set radio in RX mode
+        self._config = self._config & 0xFC | 3
+        self._reg_write(CONFIG, self._config)
+        time.sleep(0.001) # mandatory wait time to power up radio
+        self.flush_rx() # spec sheet says "used in RX mode"
+        self.clear_status_flags(True, False, False) # only Data Ready flag
+
+        # enable radio comms
+        self.ce.value = 1 # radio begins listening after CE pulse is > 130 us
+        time.sleep(0.001) # ensure pulse is > 130 us
+        # nRF24L01 has just entered RX standby-II mode
+
+    def _stop_listening(self):
+        """Puts the nRF24L01 into TX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this function puts nRF24L01's power in Standby-I (low current & no transmissions) mode which is ideal for post-transmission work. Remember to flush your 3-level FIFO buffers when appropriate using `flush_tx()` or `flush_rx()`."""
+        # ensure radio is in standby-I mode
+        if self.ce.value:
+            self.ce.value = 0
+        # set radio in TX mode as recommended behavior per spec sheet.
+        self._config = self._config & 0xFE # does not put radio to sleep
+        self._reg_write(CONFIG, self._config)
+        # exits while still in Standby-I (low current & no transmissions)
+
     def open_tx_pipe(self, address):
         """This function is used to open a data pipe for OTA (over the air) TX transactions. If `dynamic_payloads` attribute is `False`, then the `payload_length` attribute is used to specify the length of the payload to be transmitted.
 
@@ -860,41 +849,6 @@ class RF24:
             # RX radio doesn't care about payload_length if dynamic_payloads is enabled.
             self._reg_write(RX_PW + pipe_number, self.payload_length)
 
-    def _start_listening(self):
-        """Puts the nRF24L01 into RX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this function flushes the RX FIFO, clears the `irq_DR` status flag, and puts nRf24L01 in powers up mode.
-
-        """
-        # ensure radio is in power down or standby-I mode
-        if self.ce.value:
-            self.ce.value = 0
-
-        self._reg_write(RX_PW, self.payload_length)
-        if self.pipe0_read_addr is not None:
-            # make sure the last call to open_rx_pipe(0) sticks if initialized
-            self._reg_write_bytes(RX_ADDR, self.pipe0_read_addr)
-
-        # power up radio & set radio in RX mode
-        self._config = self._config & 0xFC | 3
-        self._reg_write(CONFIG, self._config)
-        time.sleep(0.001) # mandatory wait time to power up radio
-        self.flush_rx() # spec sheet says "used in RX mode"
-        self.clear_status_flags(True, False, False) # only Data Ready flag
-
-        # enable radio comms
-        self.ce.value = 1 # radio begins listening after CE pulse is > 130 us
-        time.sleep(0.001) # ensure pulse is > 130 us
-        # nRF24L01 has just entered RX standby-II mode
-
-    def _stop_listening(self):
-        """Puts the nRF24L01 into TX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this function puts nRF24L01's power in Standby-I (low current & no transmissions) mode which is ideal for post-transmission work. Remember to flush your 3-level FIFO buffers when appropriate using `flush_tx()` or `flush_rx()`."""
-        # ensure radio is in standby-I mode
-        if self.ce.value:
-            self.ce.value = 0
-        # set radio in TX mode as recommended behavior per spec sheet.
-        self._config = self._config & 0xFE # does not put radio to sleep
-        self._reg_write(CONFIG, self._config)
-        # exits while still in Standby-I (low current & no transmissions)
-
     def fifo(self, tx=False, empty=None):
         """This provides a way to interpret the flags contained in the FIFO_STATUS register. (read-only)
 
@@ -942,6 +896,8 @@ class RF24:
         If user does specify pipe_number:
 
         :returns: `True` only if the specified ``pipe_number`` parameter is equal to the identifying number of the data pipe that received the current (top level) RX payload in the FIFO buffer, otherwise `False`.
+
+        .. note:: As is the nature of "first-in, first-out" (FIFO) buffers, you cannot test a pipe number against any payload other than the one in the top level (first-out).
 
         """
         self._reg_write(0xFF) # perform Non-operation command to get status byte (should be faster)
@@ -997,19 +953,27 @@ class RF24:
         :param bytearray buf: This will be the data attached to an automatic acknowledgment packet on the incoming transmission about the specified ``pipe_number`` parameter. This must have a length in range [1,32] bytes, otherwise an `AssertionError` exception is thrown. Any ACK payloads will remain in the TX FIFO buffer until transmitted or `flush_tx()`.
         :param int pipe_number: This will be the pipe number to use for deciding which transmissions get a response with the specified ``buf`` parameter's data. This number must be in range [0,5], otherwise an `AssertionError` exception is thrown.
 
+        :returns: `True` if payload was successfully loaded onto the TX FIFO buffer. `False` if it wasn't because TX FIFO buffer is full.
+
         ..note this function takes advantage of a special feature on the nRF24L01 and needs to be called for every time a customized ACK payload is to be used (not for every automatic ACK packet -- this just appends a payload to the `auto_ack` attribute). These special custom ACK payloads can be disabled by setting the `ack` attribute to `False`. The `ack` & `auto_ack` (with `dynamic_payloads` as well) attributes are also automatically enabled by this function when necessary.
 
         .. tip:: To retrieving the ACK payload data, you must specify the `read_ack` parameter as `True` when calling `send()` or, in case of asychronous application, directly call `read_ack()` function after calling `write()` and before calling `clear_status_flags()`. See `read_ack()` for more details. Otherwise, this attribute will always be its initial value of `None`.
 
-        .. tip:: As the ACK payload must be set prior to receiving a transmission. Set the ACK payload data using this function while `listen` attribute is set `True` to ensure the nRF24L01 is in RX mode. It is also worth noting that the nRF24L01 exits RX mode upon changing `listen` to `False`.
+        .. tip:: As the ACK payload must be set prior to receiving a transmission. Set the ACK payload data using this function while `listen` attribute is set `True` to ensure the nRF24L01 is in RX mode. It is also worth noting that the nRF24L01 can hold up to 3 ACK payloads pending transmission. Using this function does not over-write existing ACK payloads pending; it only adds to the queue (TX FIFO buffer) if it can.
 
         """
-        assert buf is not None and 1 <= len(buf) <= 32 and 0 <= pipe_number <= 5
+        if pipe_number < 0 or pipe_number > 5:
+            raise ValueError("pipe number must be in range [0,5]")
+        if len(buf) < 3 or len(buf) > 32:
+            raise ValueError("buf must be a buffer protocol object with a byte length of\nat least 1 and no greater than 32")
+        # only prepare payload if the auto_ack attribute is enabled and ack[0] is not None
         if not self.ack:
             self.ack = True
-        # only prepare payload if the auto_ack attribute is enabled and ack[0] is not None
-        # 0xA8 | ack[1] == W_ACK_PAYLOAD | pipe_number
-        self._reg_write_bytes(0xA8 | pipe_number, buf)
+        if not self.tx_full:
+            # 0xA8 | ack[1] == W_ACK_PAYLOAD | pipe_number
+            self._reg_write_bytes(0xA8 | pipe_number, buf)
+            return True # payload was loaded
+        return False # payload wasn't loaded
 
     def read_ack(self):
         """Allows user to read the automatic acknowledgement (ACK) payload (if any) when nRF24L01 is in TX mode. This function is called from a blocking `send()` call if the ``read_ack`` parameter in `send()` is passed as `True`.
@@ -1052,42 +1016,67 @@ class RF24:
             .. warning:: A note from the developer: This parameter may evolve into a "privatized" internal constant, so it is STRONGLY ADVISED TO NOT GET IN THE HABIT OF ALTERING THIS PARAMETER! This driver class is still young, be gentle.
 
         """
-        result = None
         self.ce.value = 0 # ensure power down/standby-I for proper manipulation of PWR_UP & PRIM_RX bits in CONFIG register
-        self.write(buf, ask_no_ack, reUseTX) # init using non-blocking helper
-        time.sleep(0.001) # ensure CE pulse is >= 10 us
-        start = time.monotonic()
-        # if pulse is stopped here, the nRF24L01 only handles the top level payload in the FIFO.
-        # hold CE HIGH to continue processing through the rest of the TX FIFO bound to address passed to open_tx_pipe()
-        self.ce.value = 0 # go to Standby-I power mode (power attribute still == True)
-        while result is None and (time.monotonic() - start) < timeout:
-            # let result be 0 if timeout, 1 if success, or 2 if fail
-            self._reg_write(0xFF) # perform Non-operation command to get status byte (should be faster)
-            # print('status: DR={} DS={} DF={}'.format(self.irq_DR, self.irq_DS, self.irq_DF))
-            if  self.irq_DS or self.irq_DF: # transmission done
-                # get status flags to detect error
-                result = bool(self.irq_DS)
-        # read ack payload clear status flags, then power down
-        if self.ack and self.irq_DS and not ask_no_ack:
-            # get and save ACK payload to self.ack if user wants it
-            result = self.read_ack() # save reply in input buffer
-            if result is None: # can't return empty handed
-                result = b'NO ACK RETURNED'
+        self.flush_tx()
+
+        if isinstance(buf, (list, tuple)): # writing a set of payloads
+            result = [] # return status for each payload
+            index = 0
+            while index < len(buf) or len(result) < len(buf):
+                while not self.tx_full and index < len(buf): # stack FIFO buffer
+                    self.write(buf[index])
+                    # update tx_full attribute via status byte
+                    self._reg_write(0xFF) # perform Non-operation command to get status byte (should be faster)
+                    index += 1
+                # ESB should throw a status flag for every payload transmitted from the FIFO buffer
+                if self.irq_DF:
+                    result.append(False)
+                    self.clear_status_flags(False,False,True) # clears data failed flag only
+                elif self.irq_DS:
+                    if self.ack:
+                        result.append(self.read_ack())
+                    else:
+                        result.append(True)
+                    self.clear_status_flags(False,True,False) # clears data sent flag only
+                else: # no flags need clearing
+                    self._reg_write(0xFF) # perform Non-operation command to get status byte for FIFO refreshment
+        else: # writing a single payload
+            result = None
+            self.write(buf, ask_no_ack, reUseTX) # init using non-blocking helper
+            time.sleep(0.001) # ensure CE pulse is >= 10 us
+            start = time.monotonic()
+            # if pulse is stopped here, the nRF24L01 only handles the top level payload in the FIFO.
+            # hold CE HIGH to continue processing through the rest of the TX FIFO bound for address passed to open_tx_pipe()
+            self.ce.value = 0 # go to Standby-I power mode (power attribute still == True)
+
+            while result is None and (time.monotonic() - start) < timeout:
+                # let result be 0 if timeout, 1 if success, or 2 if fail
+                self._reg_write(0xFF) # perform Non-operation command to get status byte (should be faster)
+                # print('status: DR={} DS={} DF={}'.format(self.irq_DR, self.irq_DS, self.irq_DF))
+                if  self.irq_DS or self.irq_DF: # transmission done
+                    # get status flags to detect error
+                    result = bool(self.irq_DS)
+            # read ack payload clear status flags, then power down
+            if self.ack and self.irq_DS and not ask_no_ack:
+                # get and save ACK payload to self.ack if user wants it
+                result = self.read_ack() # save reply in input buffer
+                if result is None: # can't return empty handed
+                    result = b'NO ACK RETURNED'
         self.clear_status_flags(False,True,True) # only TX related IRQ flags
         return result
 
     def write(self, buf=None, ask_no_ack=False, reUseTX=False):
-        """This non-blocking function (when used as alternative to `send()`) is meant for asynchronous applications.
+        """This non-blocking function (when used as alternative to `send()`) is meant for asynchronous applications. (write-only)
 
-        :param bytearray buf: The payload to transmit. This bytearray must have a length greater than 0 to execute transmission.
+        :param bytearray buf: The payload to transmit. This bytearray must have a length greater than 0 to execute transmission. The maximum size payload that the nRF24L01 can handle is 32 bytes.
 
             - If the `dynamic_payloads` attribute is disabled and this bytearray's length is less than the `payload_length` attribute, then this bytearray is padded with zeros until its length is equal to the `payload_length` attribute.
             - If the `dynamic_payloads` attribute is disabled and this bytearray's length is greater than `payload_length` attribute, then this bytearray's length is truncated to equal the `payload_length` attribute.
-        :param bool ask_no_ack: Pass this parameter as `True` to tell the nRF24L01 not to wait for an acknowledgment from the receiving nRF24L01. This parameter directly controls a ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about the payload).Therefore, it takes advantage of an nRF24L01 feature specific to individual payloads, and its value is not saved anywhere. You do not need to specify this everytime if the `auto_ack` attribute is `False`.
+        :param bool ask_no_ack: Pass this parameter as `True` to tell the nRF24L01 not to wait for an acknowledgment from the receiving nRF24L01. This parameter directly controls a ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about the payload).Therefore, it takes advantage of an nRF24L01 feature specific to individual payloads, and its value is not saved anywhere. You do not need to specify this for every payload if the `auto_ack` attribute is `False`, however this parameter should work despite the `auto_ack` attribute's setting.
 
             .. note:: Each transmission is in the form of a packet. This packet contains sections of data around and including the payload. `See Chapter 7.3 in the nRF24L01 Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1136318>`_
 
-        :param bool reUseTX: `True` prevents the nRF24L01 from automatically removing the TX payload data from the FIFO buffer for availability for all subsequent transmissions until a new payload is written using `write()` or `send()` or by  calling `flush_tx()` (any of which will reset this feature/flag to off). This is optional and defaults to `False`
+        :param bool reUseTX: `True` prevents the nRF24L01 from automatically removing the TX payload data from the FIFO buffer for availability to all subsequent transmissions until a new payload is written using `write()` or `send()` or by  calling `flush_tx()` (any of which will reset this feature/flag to off). This is optional, defaults to `False`, and is highly experimental.
 
             .. note:: When this parameter is `False`, the nRF24L01 removes the payload from the TX FIFO buffer after successful transmission. Otherwise use `flush_tx()` to clear anitquated payloads (those that failed to transmit or were intentionally kept in the TX FIFO buffer using this parameter).
 
@@ -1098,17 +1087,19 @@ class RF24:
         .. warning:: A note paraphrased from the `nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1121422>`_:
             It is important TO NEVER to keep the nRF24L01+ in TX mode for more than 4 milliseconds at a time. If the [`auto_ack` and `dynamic_payloads`] features are enabled, nRF24L01+ is never in TX mode longer than 4 milliseconds.
 
-        .. tip:: Use this function at your own risk. Because of the underlying `"Enhanced ShockBurst Protocol" <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132607>`_, this is often avoided if you enable the `dynamic_payloads` attribute (the `auto_ack` attribute is enabled with `dynamic_payloads` automatically) to obey the 4 milliseconds rule. Alternatively, you MUST additionally use either interrupt flags/IRQ pin with user defined timer(s) to AVOID breaking the 4 millisecond rule. If the `nRF24L01+ Specifications Sheet explicitly states this <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1121422>`_, we have to assume radio damage or misbehavior as a result of disobeying the 4 milliseconds rule. Cleverly, `TMRh20's arduino library <http://tmrh20.github.io/RF24/classRF24.html>`_ recommends using auto re-transmit delay (the `ard` attribute; see also `arc` attribute) to avoid breaking this rule, but we have not verified this strategy.
+        .. tip:: Use this function at your own risk. Because of the underlying `"Enhanced ShockBurst Protocol" <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132607>`_, this is often avoided if you enable the `dynamic_payloads` and `auto_ack` attributes to obey the 4 milliseconds rule. Alternatively, you MUST additionally use either interrupt flags/IRQ pin with user defined timer(s) to AVOID breaking the 4 millisecond rule. If the `nRF24L01+ Specifications Sheet explicitly states this <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1121422>`_, we have to assume radio damage or misbehavior as a result of disobeying the 4 milliseconds rule. Cleverly, `TMRh20's arduino library <http://tmrh20.github.io/RF24/classRF24.html>`_ recommends using auto re-transmit delay (the `ard` attribute; see also `arc` attribute) to avoid breaking this rule, but we have not verified this strategy.
 
         """
         assert (buf is None and self.reuse_tx) or (buf is not None and not self.reuse_tx)
         if buf is not None and len(buf) > 32:
             raise ValueError("payload must have a byte length in range [0,32]")
-        # power up radio if it isn't yet
-        self._config = (self._reg_read(CONFIG) & 0x7c) | 2 # also ensures tx mode
-        self._reg_write(0, self._config)
-        # power up/down takes < 150 us + 4 us
-        time.sleep(0.001)
+        self.clear_status_flags(False,True,True) # only TX related IRQ flags
+
+        if not self.power or (self._config & 1): # ready radio if it isn't yet
+            self._config = (self._reg_read(CONFIG) & 0x7c) | 2 # also ensures tx mode
+            self._reg_write(0, self._config)
+            # power up/down takes < 150 us + 4 us
+            time.sleep(0.001)
 
         # pad out or truncate data to fill payload_length if dynamic_payloads == False
         if not self.dynamic_payloads:
@@ -1120,25 +1111,21 @@ class RF24:
 
         # handle FIFO stuff
         if self.reuse_tx and buf is None: # shouldn't execeute on the initial triggering
-            with self: # write no payload
-                pass # this cycles the CSN pin to enable transmission of re-used payload
-        elif reUseTX:  # mark reuse_tx trigger is thrown
-            # payload will get re-used. This command tells the radio not pop TX payload from FIFO on success
-            self._reg_write(0xE3) # command returns only status byte which is always captured
-        else: # flush TX FIFO
-            self.flush_tx()
+            # write no payload
+            self.ce.value = 0 # this starts to cycles the CE pin to re-enable transmission of re-used payload
+        else:
+            if reUseTX:  # init reuse_tx trigger is thrown
+                # payload will get re-used. This command tells the radio not pop TX payload from FIFO on success
+                self._reg_write(0xE3) # command returns only status byte which is always captured
 
-        # clear data TX related flags
-        self.clear_status_flags(False,True,True)
-
-        # now handle the payload accordingly
-        if ask_no_ack:
-            # payload doesn't require acknowledgment
-            # 0xB0 = W_TX_PAYLOAD_NO_ACK
-            self._reg_write_bytes(0xB0, buf) # write appropriate command with payload
-        else:# payload does require acknowledgment
-            # 0xA0 = W_TX_PAYLOAD
-            self._reg_write_bytes(0xA0, buf) # write appropriate command with payload
+            # now handle the payload accordingly
+            if ask_no_ack:
+                # payload doesn't want acknowledgment
+                # 0xB0 = W_TX_PAYLOAD_NO_ACK; this command works with auto_ack on or off
+                self._reg_write_bytes(0xB0, buf) # write appropriate command with payload
+            else:# payload may require acknowledgment
+                # 0xA0 = W_TX_PAYLOAD; this command works with auto_ack on or off
+                self._reg_write_bytes(0xA0, buf) # write appropriate command with payload
         # enable radio comms so it can send the data by starting the mandatory minimum 10 us pulse on CE. Let send() measure this pulse for blocking reasons
-        self.ce.value = 1
+        self.ce.value = 1 # re-used payloads start with this as well
         # radio will automatically go to standby-II after transmission while CE is still HIGH only if dynamic_payloads and auto_ack are enabled

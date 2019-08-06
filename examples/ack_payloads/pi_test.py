@@ -34,9 +34,6 @@ nrf = RF24(spi, csn, ce)
 # to enable the custom ACK payload feature
 nrf.ack = True # False disables again
 
-# recommended behavior is to keep in TX mode while idle
-nrf.listen = False # put radio in TX mode
-
 # addresses needs to be in a buffer protocol object (bytearray)
 addresses = (b'1Node', b'2Node') # we only use the first
 # these addresses should be compatible with the GettingStarted.ino
@@ -50,10 +47,11 @@ tx = b'Hello '
 ACK = b'World '
 
 def master(count=5): # count = 5 will only transmit 5 packets
+    # recommended behavior is to keep in TX mode while idle
+    nrf.listen = False # put radio in TX mode
+
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(addresses[0])
-    # ensures the nRF24L01 is in TX mode
-    nrf.listen = False
 
     counter = count
     while counter:
@@ -111,12 +109,12 @@ def slave(count=3):
                 # load ACK for next response
                 nrf.load_ack(buffer, 0)
 
-    # recommended behavior is to keep in TX mode while sleeping
+    # recommended behavior is to keep in TX mode while idle
     nrf.listen = False # put radio in TX mode
     # flush any ACK payload (only in TX mode)
     nrf.flush_tx()
 
 print("""\
-    nRF24L01 ACK test.\n\
+    nRF24L01 ACK test\n\
     Run slave() on receiver\n\
-    Run master() on transmitter.""")
+    Run master() on transmitter""")

@@ -32,7 +32,7 @@ Features currently untested
     * "re-use the same payload" feature
     * auto-ACK could be used on a per pipe basis
     * dynamic payloads feature could be used on a per pipe basis
-    * as of yet, no [intended] implementation for Multiceiver mode (up to 6 TX nRF24L01s "talking" to 1 RX nRF24L01 simultaneously). Although this might be acheived easily using the "automatic re-transmite delay" (ard) and "automatic retry count" (arc) attributes set accordingly (rather high).
+    * as of yet, no [intended] implementation for Multiceiver mode (up to 6 TX nRF24L01s "talking" to 1 RX nRF24L01 simultaneously). Although this might be acheived easily using the "automatic retry delay" (ard) and "automatic retry count" (arc) attributes set accordingly (varyingly high).
 
 Dependencies
 =============
@@ -88,11 +88,11 @@ The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) t
 +------------+----------------+----------------+
 |    CSN     |     GPIO5      |       D5       |
 +------------+----------------+----------------+
-|    SCK     |      SCK       |       SCK      |
+|    SCK     | GPIO11 (SCK)   |       SCK      |
 +------------+----------------+----------------+
-|    MOSI    |     MOSI       |      MOSI      |
+|    MOSI    | GPIO10 (MOSI)  |      MOSI      |
 +------------+----------------+----------------+
-|    MISO    |      MISO      |      MISO      |
+|    MISO    | GPIO9 (MISO)   |      MISO      |
 +------------+----------------+----------------+
 |    IRQ     |    not used    |    not used    |
 +------------+----------------+----------------+
@@ -181,10 +181,10 @@ Noteworthy Projects using the nRF24L01 (not related to this circuitpython librar
 
 To transmit firstly open the TX and RX pipes, set the desired enpoints' addresses, stop listening (puts radio in transmit mode), and send your payload packed into a bytearray using struct.pack().
 
-Where Do I GET 1?
+Where Do I get 1?
 =================
 
-See the store links on the sidebar or just google nRF24L01. It is worth noting that you generally don't want to buy just 1 as you need 2 for testing -- 1 to send & 1 to receive and vise versa. This library has been tested on a cheaply bought 10 pack from Amazon.com using a recommended capacitor (>100nF) on the power pins. Don't get lost on Amazon or eBay: there are other wireless transceivers that aren't compatible with this library; the esp8266-01 (also sold in packs) looks very similar to the nRF24L01(+) and could lead to an accidental purchase.
+See the store links on the sidebar or just google "nRF24L01". It is worth noting that you generally don't want to buy just 1 as you need 2 for testing -- 1 to send & 1 to receive and vise versa. This library has been tested on a cheaply bought 10 pack from Amazon.com using a recommended capacitor (>100nF) on the power pins. Don't get lost on Amazon or eBay! There are other wireless transceivers that are NOT compatible with this library. For instance, the esp8266-01 (also sold in packs) is NOT compatible with this library, but looks very similar to the nRF24L01(+) and could lead to an accidental purchase.
 
 Contributing
 ============
