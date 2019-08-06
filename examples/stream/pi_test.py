@@ -27,41 +27,28 @@ nrf = RF24(spi, csn, ce)
 
 # lets create a list of payloads to be streamed to the nRF24L01 running slave()
 buffers = []
-for i in range(32):
+SIZE = 32
+for i in range(SIZE):
     buff = b''
-    for j in range(32):
-        buff += bytes([(j >= 16 + abs(16 - i) or j < 16 - abs(16 - i)) + 48])
+    for j in range(SIZE):
+        buff += bytes([(j >= SIZE / 2 + abs(SIZE / 2 - i) or j < SIZE / 2 - abs(SIZE / 2 - i)) + 48])
     buffers.append(buff)
-del buff
+    del buff
 
-# init buffer for traversing results
-results = []
 
-def master(): # count = 5 will only transmit 5 packets
+def master(count=1): # count = 5 will only transmit 5 packets
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(addresses[0])
     # ensures the nRF24L01 is in TX and power down modes
     nrf.listen = False
 
-    now = time.monotonic_ns() / 1000000 # start timer
-    results = nrf.send(buffers)
+    for _ in range(count):
+        now = time.monotonic() / 1000000 # start timer
+        nrf.send(buffers)
+        print('Transmission took', time.monotonic() / 1000000 - now, 'ms')
 
-    # print timer results despite transmission success
-    print('Transmission took',\
-            time.monotonic_ns() / 1000000 - now, 'ms')
-
-    # for i in range(results):
-    #     print('result {}: {}'.format(i, results[i]))
-        # if results[i] is None:
-        #     print('timed out {}'.format(buffers[i]))
-        # elif results[i] == False:
-        #     print('failed {}'.format(buffers[i]))
-        # else:
-        #     print('succeessful {}'.format(buffers[i]))
-
-# running slave to only fetch/receive count number of packets
-# count = 3 will mimic a full RX FIFO behavior via nrf.listen = False
-def slave(timeout=3):
+# running slave to only fetch/receive & count number of packets
+def slave(timeout=5):
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 0
     # pipe number options range [0,5]
@@ -76,7 +63,7 @@ def slave(timeout=3):
             count += 1
             # retreive the received packet's payload
             rx = nrf.recv() # clears flags & empties RX FIFO
-            print("Received (raw): {} - {}".format(rx, count))
+            print("Received (raw): {} - {}".format(repr(rx), count))
             now = time.monotonic()
 
     # recommended behavior is to keep in TX mode while idle

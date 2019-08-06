@@ -458,7 +458,7 @@ class RF24:
             self._config = (self._config & 0x7d) | (isOn << 1) # doesn't affect TX?RX mode
             self._reg_write(0x0, self._config)
             # power up/down takes < 150 us + 4 us
-            time.sleep(0.001)
+            time.sleep(0.00016)
 
     @property
     def auto_ack(self):
@@ -988,7 +988,7 @@ class RF24:
             return self.recv()
         return None
 
-    def send(self, buf=None, ask_no_ack=False, reUseTX=False, timeout=0.2):
+    def send(self, buf=None, ask_no_ack=False, reUseTX=False):
         """This blocking function is used to transmit payload until one of the following results is acheived:
 
         :returns:
@@ -1011,49 +1011,49 @@ class RF24:
 
             .. note:: When this parameter is `False`, the nRF24L01 only removes the payload from the TX FIFO buffer after successful transmission. Otherwise use `flush_tx()` to clear anitquated payloads (those that failed to transmit or were intentionally kept in the TX FIFO buffer using this parameter).
 
-        :param float timeout: This an arbitrary number of seconds that is used to keep the application from indefinitely hanging in case of radio malfunction. Default is 200 milliseconds.
-
-            .. warning:: A note from the developer: This parameter may evolve into a "privatized" internal constant, so it is STRONGLY ADVISED TO NOT GET IN THE HABIT OF ALTERING THIS PARAMETER! This driver class is still young, be gentle.
-
         """
         self.ce.value = 0 # ensure power down/standby-I for proper manipulation of PWR_UP & PRIM_RX bits in CONFIG register
         self.flush_tx()
-        result = [] # return status for each payload
         if isinstance(buf, (list, tuple)): # writing a set of payloads
+            result = [] # count thrown status flags
             index = 0
-            written = 0
             while index < len(buf) or not self.fifo(True,True):
-                while not self.tx_full and index < len(buf): # stack FIFO buffer
-                    self.write(buf[index])
-                    time.sleep(0.001)
-                    # update tx_full attribute via status byte
-                    self._reg_write(0xFF) # perform Non-operation command to get status byte (should be faster)
-                    index += 1
-                    written += 1
-                print(written, 'in the queue')
+                # using spec sheet calculations:
+                # timeout total = T_upload + 2 * stby2active + T_overAir + T_ack + T_irq
+                # T_upload is done before timeout begins
+                # let 2 * stby2active ~= 2 * 130 = 270 microseconds
+                # let T_ack = T_overAir as the payload size is the only distictive variable between the 2
+                # T_overAir = ( 8 (bits/byte) * (1 byte preamble + address length + payload length + crc length) + 9 bit packet ID ) / RF data rate (in bits/sec) = ota transmission time in seconds
+                # spec shhet says T_irq is (0.0000082 if self.data_rate == 1 else 0.000006)
+                if index < len(buf) and not self.tx_full:
+                    timeout = (1 + (bool(self.auto_ack) and not ask_no_ack)) * (((8 * (1 + self.address_length + len(buf[index]) + self.crc )) + 9) / (self.data_rate * 1000000 if self.data_rate < 250 else 1000)) + 0.00027 + (0.0000082 if self.data_rate == 1 else 0.000006) + (self.ard * self.arc / 1000000)
+                    self.write(buf[index], ask_no_ack)
+                    # print('loading payload', index + 1, 'waiting', timeout, 'seconds')
+                    time.sleep(timeout) # wait for the 250 us timeout built-in to the ESB protocol
+                self._reg_write(0xFF) # perform Non-operation command to get status byte for FIFO & IRQ refreshment
+                index += 1
                 # ESB should throw a status flag for every payload transmitted from the FIFO buffer
+                if self.irq_DF:
+                    result.append(False)
+                elif self.ack:
+                    result.append(self.read_ack())
+                    if result[len(result) - 1] is None:
+                        result[len(result) - 1] = b'NO ACK RETURNED'
+                elif self.irq_DS:
+                    result.append(True)
                 if self.irq_DF or self.irq_DS:
-                    if self.irq_DF:
-                        result.append(False)
-                        print(len(result) - 1, 'appending False')
-                    elif self.ack:
-                        print(len(result) - 1, 'appending bytearray')
-                        result.append(self.read_ack())
-                    else:
-                        print(len(result) - 1, 'appending True')
-                        result.append(True)
                     self.clear_status_flags(False,True,True) # clears data sent flag only
-                else: # no flags need clearing
-                    self._reg_write(0xFF) # perform Non-operation command to get status byte for FIFO refreshment
+                # print(round(index/len(buf)*100,2), '% processed from the queue. results =', len(result))
+            self.ce.value = 0
         else: # writing a single payload
             result = None
             self.write(buf, ask_no_ack, reUseTX) # init using non-blocking helper
-            time.sleep(0.001) # ensure CE pulse is >= 10 us
+            time.sleep(0.000015) # ensure CE pulse is >= 10 us
             start = time.monotonic()
             # if pulse is stopped here, the nRF24L01 only handles the top level payload in the FIFO.
             # hold CE HIGH to continue processing through the rest of the TX FIFO bound for address passed to open_tx_pipe()
             self.ce.value = 0 # go to Standby-I power mode (power attribute still == True)
-
+            timeout = (1 + (bool(self.auto_ack) and not ask_no_ack)) * (((8 * (1 + self.address_length + len(buf) + self.crc )) + 9) / (self.data_rate * 1000000 if self.data_rate < 250 else 1000)) + 0.00027 + (0.0000082 if self.data_rate == 1 else 0.000006) + (self.ard * self.arc / 1000000)
             while result is None and (time.monotonic() - start) < timeout:
                 # let result be 0 if timeout, 1 if success, or 2 if fail
                 self._reg_write(0xFF) # perform Non-operation command to get status byte (should be faster)
@@ -1104,7 +1104,7 @@ class RF24:
             self._config = (self._reg_read(CONFIG) & 0x7c) | 2 # also ensures tx mode
             self._reg_write(0, self._config)
             # power up/down takes < 150 us + 4 us
-            time.sleep(0.001)
+            time.sleep(0.0002)
 
         # pad out or truncate data to fill payload_length if dynamic_payloads == False
         if not self.dynamic_payloads:
@@ -1128,11 +1128,11 @@ class RF24:
                 # payload doesn't want acknowledgment
                 # 0xB0 = W_TX_PAYLOAD_NO_ACK; this command works with auto_ack on or off
                 self._reg_write_bytes(0xB0, buf) # write appropriate command with payload
-                print("payload doesn't want acknowledgment")
+                # print("payload doesn't want acknowledgment")
             else:# payload may require acknowledgment
                 # 0xA0 = W_TX_PAYLOAD; this command works with auto_ack on or off
                 self._reg_write_bytes(0xA0, buf) # write appropriate command with payload
-                print("payload does want acknowledgment")
+                # print("payload does want acknowledgment")
         # enable radio comms so it can send the data by starting the mandatory minimum 10 us pulse on CE. Let send() measure this pulse for blocking reasons
         self.ce.value = 1 # re-used payloads start with this as well
         # radio will automatically go to standby-II after transmission while CE is still HIGH only if dynamic_payloads and auto_ack are enabled
