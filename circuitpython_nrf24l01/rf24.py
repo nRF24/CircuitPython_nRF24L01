@@ -1018,26 +1018,31 @@ class RF24:
         """
         self.ce.value = 0 # ensure power down/standby-I for proper manipulation of PWR_UP & PRIM_RX bits in CONFIG register
         self.flush_tx()
-
+        result = [] # return status for each payload
         if isinstance(buf, (list, tuple)): # writing a set of payloads
-            result = [] # return status for each payload
             index = 0
-            while index < len(buf) or len(result) < len(buf):
+            written = 0
+            while index < len(buf) or not self.fifo(True,True):
                 while not self.tx_full and index < len(buf): # stack FIFO buffer
                     self.write(buf[index])
+                    time.sleep(0.001)
                     # update tx_full attribute via status byte
                     self._reg_write(0xFF) # perform Non-operation command to get status byte (should be faster)
                     index += 1
+                    written += 1
+                print(written, 'in the queue')
                 # ESB should throw a status flag for every payload transmitted from the FIFO buffer
-                if self.irq_DF:
-                    result.append(False)
-                    self.clear_status_flags(False,False,True) # clears data failed flag only
-                elif self.irq_DS:
-                    if self.ack:
+                if self.irq_DF or self.irq_DS:
+                    if self.irq_DF:
+                        result.append(False)
+                        print(len(result) - 1, 'appending False')
+                    elif self.ack:
+                        print(len(result) - 1, 'appending bytearray')
                         result.append(self.read_ack())
                     else:
+                        print(len(result) - 1, 'appending True')
                         result.append(True)
-                    self.clear_status_flags(False,True,False) # clears data sent flag only
+                    self.clear_status_flags(False,True,True) # clears data sent flag only
                 else: # no flags need clearing
                     self._reg_write(0xFF) # perform Non-operation command to get status byte for FIFO refreshment
         else: # writing a single payload
@@ -1062,7 +1067,7 @@ class RF24:
                 result = self.read_ack() # save reply in input buffer
                 if result is None: # can't return empty handed
                     result = b'NO ACK RETURNED'
-        self.clear_status_flags(False,True,True) # only TX related IRQ flags
+            self.clear_status_flags(False,True,True) # only TX related IRQ flags
         return result
 
     def write(self, buf=None, ask_no_ack=False, reUseTX=False):
@@ -1090,7 +1095,7 @@ class RF24:
         .. tip:: Use this function at your own risk. Because of the underlying `"Enhanced ShockBurst Protocol" <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132607>`_, this is often avoided if you enable the `dynamic_payloads` and `auto_ack` attributes to obey the 4 milliseconds rule. Alternatively, you MUST additionally use either interrupt flags/IRQ pin with user defined timer(s) to AVOID breaking the 4 millisecond rule. If the `nRF24L01+ Specifications Sheet explicitly states this <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1121422>`_, we have to assume radio damage or misbehavior as a result of disobeying the 4 milliseconds rule. Cleverly, `TMRh20's arduino library <http://tmrh20.github.io/RF24/classRF24.html>`_ recommends using auto re-transmit delay (the `ard` attribute; see also `arc` attribute) to avoid breaking this rule, but we have not verified this strategy.
 
         """
-        assert (buf is None and self.reuse_tx) or (buf is not None and not self.reuse_tx)
+        # assert (buf is None and self.reuse_tx) or (buf is not None and not self.reuse_tx)
         if buf is not None and len(buf) > 32:
             raise ValueError("payload must have a byte length in range [0,32]")
         self.clear_status_flags(False,True,True) # only TX related IRQ flags
@@ -1113,19 +1118,21 @@ class RF24:
         if self.reuse_tx and buf is None: # shouldn't execeute on the initial triggering
             # write no payload
             self.ce.value = 0 # this starts to cycles the CE pin to re-enable transmission of re-used payload
-        else:
+        elif buf is not None:
             if reUseTX:  # init reuse_tx trigger is thrown
                 # payload will get re-used. This command tells the radio not pop TX payload from FIFO on success
                 self._reg_write(0xE3) # command returns only status byte which is always captured
-
+                print("init reuse_tx trigger is thrown")
             # now handle the payload accordingly
             if ask_no_ack:
                 # payload doesn't want acknowledgment
                 # 0xB0 = W_TX_PAYLOAD_NO_ACK; this command works with auto_ack on or off
                 self._reg_write_bytes(0xB0, buf) # write appropriate command with payload
+                print("payload doesn't want acknowledgment")
             else:# payload may require acknowledgment
                 # 0xA0 = W_TX_PAYLOAD; this command works with auto_ack on or off
                 self._reg_write_bytes(0xA0, buf) # write appropriate command with payload
+                print("payload does want acknowledgment")
         # enable radio comms so it can send the data by starting the mandatory minimum 10 us pulse on CE. Let send() measure this pulse for blocking reasons
         self.ce.value = 1 # re-used payloads start with this as well
         # radio will automatically go to standby-II after transmission while CE is still HIGH only if dynamic_payloads and auto_ack are enabled
