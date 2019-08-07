@@ -41,10 +41,10 @@ def master(timeout=5): # will only wait 5 seconds for slave to respond
     nrf.ce.value = 0 # end 10 us pulse; now in active TX
     while not nrf.irq_DS and not nrf.irq_DF:
         nrf.update() # updates the current status on IRQ flags
-        if nrf.irq_DS and not irq.value:
-            print('interrupt on data sent successful')
-        else:
-            print('IRQ on data sent is not active, check your wiring and call interrupt_config()')
+    if nrf.irq_DS and not irq.value:
+        print('interrupt on data sent successful')
+    else:
+        print('IRQ on data sent is not active, check your wiring and call interrupt_config()')
     nrf.clear_status_flags() # clear all flags for next test
 
     # on data ready test
@@ -71,8 +71,8 @@ def master(timeout=5): # will only wait 5 seconds for slave to respond
     nrf.write(b'dummy') # slave isn't listening anymore
     time.sleep(0.00001) # mandatory 10 microsecond pulse starts transmission
     nrf.ce.value = 0 # end 10 us pulse; now in active TX
-    while not nrf.irq_DS and not nrf.irq_DF:
-        nrf.update() # updates the current status on IRQ flags
+    while not nrf.irq_DS and not nrf.irq_DF:# these attributes don't update themselves
+        nrf.update() # updates the current status on all IRQ flags (irq_DR, irq_DF, irq_DS)
     if nrf.irq_DF and not irq.value:
         print('interrupt on data fail successful')
     else:
@@ -85,7 +85,7 @@ def slave(timeout=10): # will listen for 10 seconds before timming out
     nrf.open_rx_pipe(0,address)
     nrf.listen = 1
     start = time.monotonic()
-    while nrf.any() == False or time.monotonic() - start < timeout:
+    while nrf.any() == False and time.monotonic() - start < timeout:
         pass # nrf.any() also updates the status byte on every call
     if nrf.any():
         print("ping received. sending pong now.")
