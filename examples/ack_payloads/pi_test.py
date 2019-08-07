@@ -35,9 +35,7 @@ nrf = RF24(spi, csn, ce)
 nrf.ack = True # False disables again
 
 # addresses needs to be in a buffer protocol object (bytearray)
-addresses = (b'1Node', b'2Node') # we only use the first
-# these addresses should be compatible with the GettingStarted.ino
-# sketch included in TRMh20's arduino library
+address = b'1Node'
 
 # payloads need to be in a buffer protocol object (bytearray)
 tx = b'Hello '
@@ -51,7 +49,7 @@ def master(count=5): # count = 5 will only transmit 5 packets
     nrf.listen = False # put radio in TX mode
 
     # set address of RX node into a TX pipe
-    nrf.open_tx_pipe(addresses[0])
+    nrf.open_tx_pipe(address)
 
     counter = count
     while counter:
@@ -82,7 +80,7 @@ def master(count=5): # count = 5 will only transmit 5 packets
 def slave(count=3):
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 0
-    nrf.open_rx_pipe(0, addresses[0])
+    nrf.open_rx_pipe(0, address)
 
     # put radio into RX mode, power it up, and set the first
     # transmission's ACK payload and pipe number

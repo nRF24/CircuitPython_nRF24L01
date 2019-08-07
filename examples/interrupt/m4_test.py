@@ -6,7 +6,7 @@
     Slave acts as a ponging RX node to successfully complete the tests on the master.
 '''
 
-import time, struct, board, digitalio as dio
+import time, board, digitalio as dio
 from circuitpython_nrf24l01.rf24 import RF24
 
 # address needs to be in a buffer protocol object (bytearray is preferred)
@@ -30,7 +30,7 @@ nrf.arc = 15 # turn up automatic retries to the max
 
 def master(timeout=5): # count = 5 will only transmit 5 packets
     # set address of RX node into a TX pipe
-    nrf.open_tx_pipe(address[0])
+    nrf.open_tx_pipe(address)
     # ensures the nRF24L01 is in TX mode
     nrf.listen = 0
 
@@ -49,7 +49,7 @@ def master(timeout=5): # count = 5 will only transmit 5 packets
 
     # on data ready test
     nrf.listen = 1
-    nrf.open_rx_pipe(0, address[0])
+    nrf.open_rx_pipe(0, address)
     start = time.monotonic()
     while time.monotonic() - start > timeout: # wait for slave to send
         if nrf.any():
@@ -79,7 +79,7 @@ def master(timeout=5): # count = 5 will only transmit 5 packets
 
 def slave(timeout=10): # will listen for 10 seconds before timming out
     # setup radio to recieve ping
-    nrf.open_rx_pipe(0,address[0])
+    nrf.open_rx_pipe(0,address)
     nrf.listen = 1
     start = time.monotonic()
     while nrf.any() == False and time.monotonic() - start < timeout:
@@ -90,7 +90,7 @@ def slave(timeout=10): # will listen for 10 seconds before timming out
         print('listening timed out, please try again')
     nrf.flush_rx()
     nrf.listen = 0
-    nrf.open_tx_pipe(address[0])
+    nrf.open_tx_pipe(address)
     nrf.send(b'pong') # send a payload to complete the on data ready test
     # we're done on this side
 

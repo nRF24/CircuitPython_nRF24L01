@@ -8,10 +8,7 @@ import time, struct, board, digitalio as dio
 from circuitpython_nrf24l01.rf24 import RF24
 
 # addresses needs to be in a buffer protocol object (bytearray)
-addresses = (b'1Node', b'2Node')
-# these addresses should be compatible with
-# the GettingStarted.ino sketch included in
-# TRMh20's arduino library
+address = b'1Node'
 
 # change these (digital output) pins accordingly
 ce = dio.DigitalInOut(board.D8) # AKA board.CE0
@@ -38,7 +35,7 @@ for i in range(SIZE):
 
 def master(count=1): # count = 5 will only transmit 5 packets
     # set address of RX node into a TX pipe
-    nrf.open_tx_pipe(addresses[0])
+    nrf.open_tx_pipe(address)
     # ensures the nRF24L01 is in TX and power down modes
     nrf.listen = False
 
@@ -53,7 +50,7 @@ def slave(timeout=5):
     # which pipe number to use for RX, we'll be using pipe 0
     # pipe number options range [0,5]
     # the pipe numbers used during a transition don't have to match
-    nrf.open_rx_pipe(0, addresses[0])
+    nrf.open_rx_pipe(0, address)
     nrf.listen = True # put radio into RX mode and power up
 
     count = 0
