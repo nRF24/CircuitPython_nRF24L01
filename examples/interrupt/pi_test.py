@@ -51,16 +51,18 @@ def master(timeout=5): # will only wait 5 seconds for slave to respond
     nrf.listen = 1
     nrf.open_rx_pipe(0, address)
     start = time.monotonic()
-    while time.monotonic() - start > timeout: # wait for slave to send
-        if nrf.any():
-            print('Pong received')
-            if nrf.irq_DR and not irq.value:
-                print('interrupt on data ready successful')
-            else:
-                print('IRQ on data ready is not active, check your wiring and call interrupt_config()')
-            nrf.flush_rx()
-            nrf.clear_status_flags() # clear all flags for next test
-            break
+    while nrf.any() == False or time.monotonic() - start < timeout: # wait for slave to send
+        pass
+    if nrf.any():
+        print('Pong received')
+        if nrf.irq_DR and not irq.value:
+            print('interrupt on data ready successful')
+        else:
+            print('IRQ on data ready is not active, check your wiring and call interrupt_config()')
+        nrf.flush_rx()
+    else:
+        print('pong reception timed out!. make sure to run slave() on the other nRF24L01')
+    nrf.clear_status_flags() # clear all flags for next test
 
     # on data fail test
     nrf.listen = False # put the nRF24L01 is in TX mode
@@ -71,10 +73,10 @@ def master(timeout=5): # will only wait 5 seconds for slave to respond
     nrf.ce.value = 0 # end 10 us pulse; now in active TX
     while not nrf.irq_DS and not nrf.irq_DF:
         nrf.update() # updates the current status on IRQ flags
-        if nrf.irq_DF and not irq.value:
-            print('interrupt on data fail successful')
-        else:
-            print('IRQ on data fail is not active, check your wiring and call interrupt_config()')
+    if nrf.irq_DF and not irq.value:
+        print('interrupt on data fail successful')
+    else:
+        print('IRQ on data fail is not active, check your wiring and call interrupt_config()')
     nrf.clear_status_flags() # clear all flags for next test
 
 
@@ -83,7 +85,7 @@ def slave(timeout=10): # will listen for 10 seconds before timming out
     nrf.open_rx_pipe(0,address)
     nrf.listen = 1
     start = time.monotonic()
-    while nrf.any() == False and time.monotonic() - start < timeout:
+    while nrf.any() == False or time.monotonic() - start < timeout:
         pass # nrf.any() also updates the status byte on every call
     if nrf.any():
         print("ping received. sending pong now.")
