@@ -35,7 +35,7 @@ for i in range(SIZE):
 def master(count=1): # count = 5 will only transmit 5 packets
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(address)
-    # ensures the nRF24L01 is in TX and power down modes
+    # ensures the nRF24L01 is in TX mode
     nrf.listen = False
 
     for _ in range(count):
@@ -63,7 +63,7 @@ def slave(timeout=5):
             now = time.monotonic()
 
     # recommended behavior is to keep in TX mode while idle
-    nrf.listen = False # put the nRF24L01 is in TX and power down modes
+    nrf.listen = False # put the nRF24L01 is in TX mode
 
 print("""\
     nRF24L01 Stream test\n\

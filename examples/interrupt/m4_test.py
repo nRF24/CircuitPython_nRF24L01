@@ -51,7 +51,7 @@ def master(timeout=5): # count = 5 will only transmit 5 packets
     nrf.listen = 1
     nrf.open_rx_pipe(0, address)
     start = time.monotonic()
-    while nrf.any() == False or time.monotonic() - start < timeout: # wait for slave to send
+    while nrf.any() == False and time.monotonic() - start < timeout: # wait for slave to send
         pass
     if nrf.any():
         print('Pong received')

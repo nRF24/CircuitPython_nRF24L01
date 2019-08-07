@@ -18,21 +18,26 @@ Circuitpython driver library for the nRF24L01 transceiver
 Features currently supported
 ----------------------------
 
-    * dynamic payloads (max 32 bytes each)
-    * automatic acknowledgment (ACK)
-    * cycle redundancy checking (up to 2 bytes long)
-    * frequency specification via channel attribute
-    * custom acknowledgment (ACK) payloads allowed and working
-    * flag a single payload for no acknowledgment (ACK)
+* change the addresses' length (can be 3 to 5 bytes long)
+* dynamically sized payloads (max 32 bytes each)
+* automatic responding acknowledgment (ACK) for verifying transmission success
+* custom acknowledgment (ACK) payloads for bi-directional communication
+* flag a single payload for no acknowledgment (ACK) from the receiving nRF24L01
+* "re-use the same payload" feature (for manually re-transmitting failed transmissions that remain in the buffer)
+* multiple payload transmissions with one function call (MUST read documentation on the "send()" function)
+* context manager compatible for switching between different radio configurations with ease using "with" statements
+* configure the interrupt (IRQ) pin to trigger on received, sent, and/or failed transmissions
+* invoke sleep mode (AKA power down mode) for ultra-low current consumption
+* cycle redundancy checking (CRC) up to 2 bytes long
+* adjust the nRF24L01's builtin automatic re-transmit feature's parameters (arc: number of attempts, ard: delay between attempts)
+* adjust the nRF24L01's frequency channel (2.4-2.525 GHz)
+* adjust the nRF24L01's power amplifier level
+* adjust the nRF24L01's RF data rate (250Kbps is buggy due to hardware design, but 1Mbps and 2Mbps are reliable)
 
-Features currently untested
+Features currently unsupported
 ---------------------------
 
-    * configuration of interrupt (IRQ) pin
-    * "re-use the same payload" feature
-    * auto-ACK could be used on a per pipe basis
-    * dynamic payloads feature could be used on a per pipe basis
-    * as of yet, no [intended] implementation for Multiceiver mode (up to 6 TX nRF24L01s "talking" to 1 RX nRF24L01 simultaneously). Although this might be acheived easily using the "automatic retry delay" (ard) and "automatic retry count" (arc) attributes set accordingly (varyingly high).
+* as of yet, no [intended] implementation for Multiceiver mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). Although this might be acheived easily using the "automatic retry delay" (ard) and "automatic retry count" (arc) attributes set accordingly (varyingly high).
 
 Dependencies
 =============
@@ -70,7 +75,6 @@ To install in a virtual environment in your current project:
     source .env/bin/activate
     pip3 install circuitpython-nrf24l01
 
-
 Pinout
 ======
 .. image:: ../nRF24L01_Pinout.png
@@ -94,10 +98,10 @@ The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) t
 +------------+----------------+----------------+
 |    MISO    | GPIO9 (MISO)   |      MISO      |
 +------------+----------------+----------------+
-|    IRQ     |    not used    |    not used    |
+|    IRQ     |     GPIO4      |       D4       |
 +------------+----------------+----------------+
 
-.. tip:: user reports and personal experiences have improved results if there is a capacitor of at least 100 nanofarads connected in parrallel to the VCC and GND pins. There is some references to the use of capacitors in `Chapter 8.3.2 of the nRF24L01+ Specification Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1105319>`_
+.. tip:: User reports and personal experiences have improved results if there is a capacitor of at least 100 nanofarads connected in parrallel to the VCC and GND pins.
 
 Using The Examples
 ==================
@@ -174,7 +178,7 @@ Noteworthy Projects using the nRF24L01 (not related to this circuitpython librar
 
 .. note:: A word on pipes vs addresses vs channels.
 
-    You should think of the pipes as RF pathways to a specified address. There are only six data pipes on the nRF24L01, thus it can simultaneously "talk" to a maximum of 6 other nRF24L01 radios. When assigning addresses to a data pipe, you can use any 5 byte long address you can think of (as long as the last byte is unique among simultaneously broadcasting addresses), so you're not limited to the same 6 radios (more on this when we support "Multiciever" mode). Also the radio's channel is not be confused with the radio's pipes. Channel selection is a way of specifying a certain radio frequency (channel 1 = [2.4 + .001] MHz). Channel defaults to 76 (like the arduino library), but options range from 0 to 125 -- that's 2.4 MHz to 2.525 MHz. The channel can be tweaked to find a less occupied frequency amongst (Bluetooth & WiFi) ambient signals.
+    You should think of the pipes as RF pathways to a specified address. There are only six data pipes on the nRF24L01, thus it can simultaneously "talk" to a maximum of 6 other nRF24L01 radios. When assigning addresses to a data pipe, you can use any 5 byte long address you can think of (as long as the last byte is unique among simultaneously broadcasting addresses), so you're not limited to the same 6 radios (more on this when we support "Multiciever" mode). Also the radio's channel is not be confused with the radio's pipes. Channel selection is a way of specifying a certain radio frequency (channel 1 = [2.4 + .001] GHz). Channel defaults to 76 (like the arduino library), but options range from 0 to 125 -- that's 2.4 GHz to 2.525 GHz. The channel can be tweaked to find a less occupied frequency amongst (Bluetooth & WiFi) ambient signals.
 
 .. warning::
     The RX pipe's address on the receiving node MUST match the TX pipe's address on the transmitting node. Also the specified channel MUST match on both endpoint tranceivers.

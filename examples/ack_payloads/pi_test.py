@@ -109,8 +109,7 @@ def slave(count=3):
 
     # recommended behavior is to keep in TX mode while idle
     nrf.listen = False # put radio in TX mode
-    # flush any ACK payload (only in TX mode)
-    nrf.flush_tx()
+    nrf.flush_tx() # flush any ACK payload
 
 print("""\
     nRF24L01 ACK test\n\

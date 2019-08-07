@@ -51,7 +51,7 @@ def master(timeout=5): # will only wait 5 seconds for slave to respond
     nrf.listen = 1
     nrf.open_rx_pipe(0, address)
     start = time.monotonic()
-    while nrf.any() == False or time.monotonic() - start < timeout: # wait for slave to send
+    while nrf.any() == False and time.monotonic() - start < timeout: # wait for slave to send
         pass
     if nrf.any():
         print('Pong received')

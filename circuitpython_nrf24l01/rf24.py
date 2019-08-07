@@ -34,7 +34,7 @@ Modified by Brendan Doherty, Rhys Thomas
 
 .. important:: The nRF24L01 has 3 key features that are very interdependent of each other. Their priority of dependence is as follows:
 
-    1. `dynamic_payloads` feature allowing either TX/RX nRf24L01 to be able to send/receive payloads with their size written into the payloads' packet. With this disabled, both RX/TX nRF24L01 have to use matching `payload_length` attributes.
+    1. `dynamic_payloads` feature allowing either TX/RX nRf24L01 to be able to send/receive payloads with their size written into the payloads' packet. With this disabled, both RX/TX nRF24L01 must use matching `payload_length` attributes.
     2. `auto_ack` feature provides transmission verification by imediatedly sending an acknowledgment (ACK) packet in response to freshly received payloads. `auto_ack` requires `dynamic_payloads` to be enabled.
     3. `ack` feature allows the user to append a payload to the ACK packet, thus instant bi-directional communication. A transmitting ACK payload must be loaded into the nRF24L01's TX FIFO buffer (done using `load_ack()`) BEFORE receiving the payload that is to be acknowledged. Once transmitted, the payload is released from the TX FIFO buffer. This feature obviously requires the `auto_ack` feature enabled.
 
@@ -43,7 +43,7 @@ Remeber that the nRF24L01's FIFO (first-in,first-out) buffer has 3 levels. This 
 With the `auto_ack` feature enabled you get:
 
     * CRC (cycle redundancy checking) automatically enabled
-    * to change amount of automatic re-transmit attempts the delay time between them. See the `ard` and `arc` attributes.
+    * to change amount of automatic re-transmit attempts and the delay time between them. See the `ard` and `arc` attributes.
 
 """
 __version__ = "0.0.0-auto.0"
@@ -995,7 +995,7 @@ class RF24:
 
             .. warning::  The nRF24L01 will block usage of the TX FIFO buffer upon failed transmissions. Failed transmission's payloads stay in TX FIFO buffer until the MCU calls `flush_tx()` and `clear_status_flags()`. Therefore, this function will discard failed transmissions' payloads when sending a list or tuple of payloads, so it can continue to process through the list/tuple even if any payload fails to be acknowledged.
 
-            .. tip:: It is highly recommended that `auto_ack` attribute is enabled when sending multiple payloads. Test results with the `auto_ack` attribute disabled were very poor (much > 50% received). This same advice applies to the ``ask_no_ack`` parameter (leave it as `False` for multiple payloads).
+            .. tip:: It is highly recommended that `auto_ack` attribute is enabled when sending multiple payloads. Test results with the `auto_ack` attribute disabled were very poor (much < 50% received). This same advice applies to the ``ask_no_ack`` parameter (leave it as `False` for multiple payloads).
 
         :param bool ask_no_ack: Pass this parameter as `True` to tell the nRF24L01 not to wait for an acknowledgment from the receiving nRF24L01. This parameter directly controls a ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about the payload). Therefore, it takes advantage of an nRF24L01 feature specific to individual payloads, and its value is not saved anywhere. You do not need to specify this for every payload if the `auto_ack` attribute is `False`, however this parameter should work despite the `auto_ack` attribute's setting.
 

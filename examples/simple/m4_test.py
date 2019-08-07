@@ -26,7 +26,7 @@ nrf = RF24(spi, csn, ce)
 def master(count=5): # count = 5 will only transmit 5 packets
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(address)
-    # ensures the nRF24L01 is in TX and power down modes
+    # ensures the nRF24L01 is in TX mode
     nrf.listen = False
 
     counter = count
@@ -79,7 +79,7 @@ def slave(count=3):
         time.sleep(0.25)
 
     # recommended behavior is to keep in TX mode while idle
-    nrf.listen = False # put the nRF24L01 is in TX and power down modes
+    nrf.listen = False # put the nRF24L01 is in TX mode
 
 print("""\
     nRF24L01 Simple test\n\
