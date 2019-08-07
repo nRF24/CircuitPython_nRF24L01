@@ -39,7 +39,7 @@ def master(timeout=5): # will only wait 5 seconds for slave to respond
     result = nrf.write(b'ping')
     time.sleep(0.00001) # mandatory 10 microsecond pulse starts transmission
     nrf.ce.value = 0 # end 10 us pulse; now in active TX
-    while not nrf.irq_DS or not nrf.irq_DF:
+    while not nrf.irq_DS and not nrf.irq_DF:
         nrf.update() # updates the current status on IRQ flags
         if nrf.irq_DS and not irq.value:
             print('interrupt on data sent successful')
@@ -69,7 +69,7 @@ def master(timeout=5): # will only wait 5 seconds for slave to respond
     nrf.write(b'dummy') # slave isn't listening anymore
     time.sleep(0.00001) # mandatory 10 microsecond pulse starts transmission
     nrf.ce.value = 0 # end 10 us pulse; now in active TX
-    while not nrf.irq_DS or not nrf.irq_DF:
+    while not nrf.irq_DS and not nrf.irq_DF:
         nrf.update() # updates the current status on IRQ flags
         if nrf.irq_DF and not irq.value:
             print('interrupt on data fail successful')
