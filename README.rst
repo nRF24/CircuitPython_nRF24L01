@@ -35,7 +35,7 @@ Features currently supported
 * adjust the nRF24L01's RF data rate (250Kbps is buggy due to hardware design, but 1Mbps and 2Mbps are reliable)
 
 Features currently unsupported
----------------------------
+-------------------------------
 
 * as of yet, no [intended] implementation for Multiceiver mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). Although this might be acheived easily using the "automatic retry delay" (ard) and "automatic retry count" (arc) attributes set accordingly (varyingly high).
 
