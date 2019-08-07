@@ -889,7 +889,7 @@ class RF24:
         .. note:: As is the nature of "first-in, first-out" (FIFO) buffers, you cannot test a pipe number against any payload other than the one in the top level (first-out).
 
         """
-        self._reg_write(0xFF) # perform Non-operation command to get status byte (should be faster)
+        self.update() # perform Non-operation command to get status byte (should be faster)
         pipe = (self._status & 0x0E) >> 1 # 0x0E==RX_P_NO
         if pipe <= 5: # is there data in RX FIFO?
             if pipe_number is None:
@@ -1036,7 +1036,7 @@ class RF24:
             result = None
             timeout = (1 + (bool(self.auto_ack) and not ask_no_ack)) * (((8 * (1 + self.address_length + len(buf) + self.crc )) + 9) / (self.data_rate * 1000000 if self.data_rate < 250 else 1000)) + 0.00026 + (0.0000082 if self.data_rate == 1 else 0.000006) + (self.ard * self.arc / 1000000)
             while (not self.irq_DS or not self.irq_DF) and (time.monotonic() - start) < timeout:
-                self._reg_write(0xFF) # perform Non-operation command to get status byte (should be faster)
+                self.update() # perform Non-operation command to get status byte (should be faster)
                 # print('status: DR={} DS={} DF={}'.format(self.irq_DR, self.irq_DS, self.irq_DF))
             if self.irq_DS or self.irq_DF: # transmission done
                 # get status flags to detect error
@@ -1073,7 +1073,7 @@ class RF24:
                 # timeout calc assumes 32 byte payload (no way to tell when payload has already been loaded)
                 timeout = (1 + bool(self.auto_ack)) * (((8 * (1 + self.address_length + 32 + self.crc )) + 9) / (self.data_rate * 1000000 if self.data_rate < 250 else 1000)) + 0.00026 + (0.0000082 if self.data_rate == 1 else 0.000006) + (self.ard * self.arc / 1000000)
                 while (not self.irq_DS or not self.irq_DF) and (time.monotonic() - start) < timeout:
-                    self._reg_write(0xFF) # perform Non-operation command to get status byte (should be faster)
+                    self.update() # perform Non-operation command to get status byte (should be faster)
                     # print('status: DR={} DS={} DF={}'.format(self.irq_DR, self.irq_DS, self.irq_DF))
                 if self.irq_DS or self.irq_DF: # transmission done
                     # get status flags to detect error
