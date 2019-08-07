@@ -1051,41 +1051,41 @@ class RF24:
             return result
 
     def resend(self):
-            """Use this function to maunally re-send the current payload in the TX FIFO buffer (if any).
+        """Use this function to maunally re-send the current payload in the TX FIFO buffer (if any).
 
-            .. note:: The nRF24L01 removes a payload from the TX FIFO buffer after successful transmission. Otherwise the failed transmission's payload will remain in the TX FIFO buffer until `flush_tx()` is called to clear anitquated payloads (those that failed to transmit or were intentionally kept in the TX FIFO buffer using this function).
+        .. note:: The nRF24L01 removes a payload from the TX FIFO buffer after successful transmission. Otherwise the failed transmission's payload will remain in the TX FIFO buffer until `flush_tx()` is called to clear anitquated payloads (those that failed to transmit or were intentionally kept in the TX FIFO buffer using this function).
 
-            """
-            if not self.fifo(True,True):  # update _fifo attribute
-                if self._features & 1 == 0: # ensure this optional command is enabled
-                    self._features = self._features & 0xFE | 1 # set EN_DYN_ACK flag high
-                    self._reg_write(FEATURE, self._features)
-                # payload will get re-used. This command tells the radio not pop TX payload from FIFO on success
-                self._reg_write(0xE3) # 0xE3 == REUSE_TX_PL command
-                self._fifo = self._reg_read(FIFO)
-                print("init reuse_tx trigger is thrown")
-                self.ce.value = 0 # this cycles the CE pin to re-enable transmission of re-used payload
-                self.ce.value = 1
-                time.sleep(0.00001) # mandated 10 microsecond pulse
-                # now get result
-                result = None
-                start = time.monotonic()
-                # timeout calc assumes 32 byte payload (no way to tell when payload has already been loaded)
-                timeout = (1 + bool(self.auto_ack)) * (((8 * (1 + self.address_length + 32 + self.crc )) + 9) / (self.data_rate * 1000000 if self.data_rate < 250 else 1000)) + 0.00026 + (0.0000082 if self.data_rate == 1 else 0.000006) + (self.ard * self.arc / 1000000)
-                while (not self.irq_DS or not self.irq_DF) and (time.monotonic() - start) < timeout:
-                    self.update() # perform Non-operation command to get status byte (should be faster)
-                    # print('status: DR={} DS={} DF={}'.format(self.irq_DR, self.irq_DS, self.irq_DF))
-                if self.irq_DS or self.irq_DF: # transmission done
-                    # get status flags to detect error
-                    result = bool(self.irq_DS)
-                # read ack payload clear status flags, then power down
-                if self.ack and self.irq_DS and not ask_no_ack:
-                    # get and save ACK payload to self.ack if user wants it
-                    result = self.read_ack() # save reply in input buffer
-                    if result is None: # can't return empty handed
-                        result = b'NO ACK RETURNED'
-                self.clear_status_flags(False) # only TX related IRQ flags
-                return result
+        """
+        if not self.fifo(True,True):  # update _fifo attribute
+            if self._features & 1 == 0: # ensure this optional command is enabled
+                self._features = self._features & 0xFE | 1 # set EN_DYN_ACK flag high
+                self._reg_write(FEATURE, self._features)
+            # payload will get re-used. This command tells the radio not pop TX payload from FIFO on success
+            self._reg_write(0xE3) # 0xE3 == REUSE_TX_PL command
+            self._fifo = self._reg_read(FIFO)
+            print("init reuse_tx trigger is thrown")
+            self.ce.value = 0 # this cycles the CE pin to re-enable transmission of re-used payload
+            self.ce.value = 1
+            time.sleep(0.00001) # mandated 10 microsecond pulse
+            # now get result
+            result = None
+            start = time.monotonic()
+            # timeout calc assumes 32 byte payload (no way to tell when payload has already been loaded)
+            timeout = (1 + bool(self.auto_ack)) * (((8 * (1 + self.address_length + 32 + self.crc )) + 9) / (self.data_rate * 1000000 if self.data_rate < 250 else 1000)) + 0.00026 + (0.0000082 if self.data_rate == 1 else 0.000006) + (self.ard * self.arc / 1000000)
+            while (not self.irq_DS or not self.irq_DF) and (time.monotonic() - start) < timeout:
+                self.update() # perform Non-operation command to get status byte (should be faster)
+                # print('status: DR={} DS={} DF={}'.format(self.irq_DR, self.irq_DS, self.irq_DF))
+            if self.irq_DS or self.irq_DF: # transmission done
+                # get status flags to detect error
+                result = bool(self.irq_DS)
+            # read ack payload clear status flags, then power down
+            if self.ack and self.irq_DS :
+                # get and save ACK payload to self.ack if user wants it
+                result = self.read_ack() # save reply in input buffer
+                if result is None: # can't return empty handed
+                    result = b'NO ACK RETURNED'
+            self.clear_status_flags(False) # only TX related IRQ flags
+            return result
 
     def write(self, buf=None, ask_no_ack=False):
         """This non-blocking function (when used as alternative to `send()`) is meant for asynchronous applications and can only handle one payload at a time -- no list or tuple of payloads is accepted. (write-only)
