@@ -787,7 +787,7 @@ class RF24:
         if 3 < len(address) <= 5:
             if self.auto_ack:
                 self.open_rx_pipe(0, self._reverse(address))
-            self._reg_write_bytes(0x10, address) # 0x10 = TX_ADDR register
+            self._reg_write_bytes(0x10, self._reverse(address)) # 0x10 = TX_ADDR register
         else:
             raise ValueError("address must be a buffer protocol object with\na byte length of 3, 4, or 5")
         #let self._open_pipes only reflect RX pipes
