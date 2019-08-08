@@ -93,7 +93,7 @@ class RF24:
     """
     def __init__(self, spi, csn, ce, channel=76, payload_length=32, address_length=5, ard=1500, arc=3, crc=2, data_rate=1, pa_level=0, dynamic_payloads=True, auto_ack=True, ask_no_ack=True, ack=False, irq_DR=True, irq_DS=True, irq_DF=True):
         # init the SPI bus and pins
-        self.spi = SPIDevice(spi, chip_select=csn, baudrate=4000000, polarity=0, phase=0, extra_clocks=0)
+        self.spi = SPIDevice(spi, chip_select=csn, baudrate=4000000)
         self.payload_length = payload_length # inits internal attribute
         # last address assigned to pipe0 for reading. init to None
         self.pipe0_read_addr = None
@@ -364,7 +364,7 @@ class RF24:
             for i in range(RX_ADDR, RX_ADDR + 6):
                 j = i - RX_ADDR
                 isOpen = " open " if (self._open_pipes & (1 << j)) else "closed"
-                print("Pipe {} ({}) bound: {}".format(j, isOpen, self._reverse(self._reg_read_bytes(i))))
+                print("Pipe {} ({}) bound: {}".format(j, isOpen, self._reg_read_bytes(i)))
 
     def clear_status_flags(self, dataReady=True, dataSent=True, dataFail=True):
         """This clears the interrupt flags in the status register. This functionality is exposed for asychronous applications only.
@@ -784,13 +784,13 @@ class RF24:
         .. note:: There is no option to specify which data pipe to use because the only data pipe that the nRF24L01 uses in TX mode is pipe 0. Additionally, the nRF24L01 uses the same data pipe (pipe 0) for receiving acknowledgement (ACK) packets in TX mode (when the `auto_ack` attribute is enables).
 
         """
-        if 3 < len(address) <= 5:
+        if len(address) == self.address_length:
             if self.auto_ack:
                 self.open_rx_pipe(0, address)
-            self._reg_write_bytes(0x10, self._reverse(address)) # 0x10 = TX_ADDR register
+            # let self._open_pipes only reflect RX pipes
+            self._reg_write_bytes(0x10, address) # 0x10 = TX_ADDR register
         else:
-            raise ValueError("address must be a buffer protocol object with\na byte length of 3, 4, or 5")
-        #let self._open_pipes only reflect RX pipes
+            raise ValueError("address must be a buffer protocol object with a byte length\nequal to the address_length attribute (currently set to {})".format(self.address_length))
 
     def close_rx_pipe(self, pipe_number):
         """This function is used to close a specific data pipe for OTA (over the air) RX transactions.
@@ -802,8 +802,8 @@ class RF24:
         self._open_pipes = self._reg_read(EN_RX) # refresh data
         # reset pipe address accordingly
         if not pipe_number:
-            # reset pipe 0. NOTE this does not clear the shadow copy, so we also need to do that.
-            self.pipe0_read_addr = b'\xe7' * 5
+            # NOTE this does not clear the shadow copy of address for pipe 0
+            # self.pipe0_read_addr = None
             self._reg_write_bytes(pipe_number + RX_ADDR, b'\xe7' * 5)
         elif pipe_number < 2: # write the full address for pipe 1
             self._reg_write_bytes(pipe_number + RX_ADDR, b'\xc2' * 5)
@@ -818,17 +818,15 @@ class RF24:
         """This function is used to open a specific data pipe for OTA (over the air) RX transactions. If `dynamic_payloads` attribute is `False`, then the `payload_length` attribute is used to specify the length of the payload to be expected on the specified data pipe.
 
         :param int pipe_number: The data pipe to use for RX transactions. This must be in range [0,5]. Otherwise a `ValueError` exception is thrown.
-        :param bytearray address: The virtual address of the receiving nRF24L01. This must have a byte length greater than 2 but less than or equal to the `address_length` attribute (see `address_length` attribute). Otherwise a `ValueError` exception is thrown. If using a ``pipe_number`` greater than 1, then only the LSByte of the address is written (so make LSByte unique among other simultaneously broadcasting addresses).
+        :param bytearray address: The virtual address of the receiving nRF24L01. This must have a byte length equal to the `address_length` attribute (see `address_length` attribute). Otherwise a `ValueError` exception is thrown. If using a ``pipe_number`` greater than 1, then only the LSByte of the address is written (so make LSByte is unique among other simultaneously broadcasting addresses).
 
             .. note:: The nRF24L01 shares the MSBytes (address[0:4]) on data pipes 2 through 5.
 
         """
         if pipe_number < 0 or pipe_number > 5:
             raise ValueError("pipe number must be in range [0,5]")
-        if len(address) < 3 or len(address) > 5:
-            raise ValueError("address must be a buffer protocol object with\na byte length of 3, 4, or 5")
-        # reverse the bytes so they go from LSByte to MSByte
-        address = self._reverse(address)
+        if len(address) != self.address_length:
+            raise ValueError("address must be a buffer protocol object with a byte length\nequal to the address_length attribute (currently set to {})".format(self.address_length))
         # write the address
         if pipe_number < 2: # write entire address if pipe_number is 1
             if pipe_number == 0:
@@ -836,8 +834,8 @@ class RF24:
                 self.pipe0_read_addr = address
             self._reg_write_bytes(RX_ADDR + pipe_number, address)
         else:
-            # only write LSB if pipe_number is not 0 or 1.
-            self._reg_write(RX_ADDR + pipe_number, address[len(address) - 1])
+            # only write LSByte if pipe_number is not 0 or 1.
+            self._reg_write(RX_ADDR + pipe_number, address[0])
         # now manage the pipe
         self._open_pipes = self._reg_read(EN_RX) # refresh data
         # enable the specified data pipe
