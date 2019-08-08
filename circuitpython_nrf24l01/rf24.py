@@ -965,13 +965,13 @@ class RF24:
         """
         if pipe_number < 0 or pipe_number > 5:
             raise ValueError("pipe number must be in range [0,5]")
-        if len(buf) < 1 or len(buf) > 32:
+        if not buf or len(buf) > 32:
             raise ValueError("buf must be a buffer protocol object with a byte length of\nat least 1 and no greater than 32")
         # only prepare payload if the auto_ack attribute is enabled and ack[0] is not None
         if not self.ack:
             self.ack = True
         if not self.tx_full:
-            # 0xA8 | ack[1] == W_ACK_PAYLOAD | pipe_number
+            # 0xA8 = W_ACK_PAYLOAD
             self._reg_write_bytes(0xA8 | pipe_number, buf)
             return True # payload was loaded
         return False # payload wasn't loaded
@@ -1020,7 +1020,7 @@ class RF24:
         if isinstance(buf, (list, tuple)): # writing a set of payloads
             for i, b in enumerate(buf): # check invalid payloads first
                 # this way when we raise a ValueError exception we don't leave the nRF24L01 in a frozen state.
-                if len(b) < 1 or len(b) > 32:
+                if not b or len(b) > 32:
                     raise ValueError("buf (item {} in the list) must be a buffer protocol object with a byte length of\nat least 1 and no greater than 32".format(i))
             index = 0
             while index < len(buf) or not self.fifo(True,True):
@@ -1043,7 +1043,7 @@ class RF24:
                 # print(round(index/len(buf)*100,2), '% processed from the queue.')
             self.ce.value = 0
         else: # writing a single payload
-            if len(buf) < 1 or len(buf) > 32:
+            if not buf or len(buf) > 32:
                 raise ValueError("buf must be a buffer protocol object with a byte length of\nat least 1 and no greater than 32")
             self.write(buf, ask_no_ack) # init using non-blocking helper
             time.sleep(0.00001) # ensure CE pulse is >= 10 us
@@ -1127,7 +1127,7 @@ class RF24:
         .. tip:: Use this function at your own risk. Because of the underlying `"Enhanced ShockBurst Protocol" <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132607>`_, disobeying the 4 milliseconds rule is often avoided if you enable the `dynamic_payloads` and `auto_ack` attributes. Alternatively, you MUST additionally use either interrupt flags/IRQ pin with user defined timer(s) to AVOID breaking the 4 millisecond rule. If the `nRF24L01+ Specifications Sheet explicitly states this <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1121422>`_, we have to assume radio damage or misbehavior as a result of disobeying the 4 milliseconds rule.
 
         """
-        if len(buf) < 1 or len(buf) > 32:
+        if not buf or len(buf) > 32:
             raise ValueError("buf must be a buffer protocol object with a byte length of\nat least 1 and no greater than 32")
         self.clear_status_flags(False) # only TX related IRQ flags
 
