@@ -4,7 +4,7 @@
     Slave stops listening after 3 seconds of no response.
 '''
 
-import time, struct, board, digitalio as dio
+import time, board, digitalio as dio
 from circuitpython_nrf24l01.rf24 import RF24
 
 # addresses needs to be in a buffer protocol object (bytearray)

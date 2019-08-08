@@ -5,7 +5,7 @@
     display settings after changing contexts ( & thus configurations)
 '''
 
-import time, board, digitalio as dio
+import board, digitalio as dio
 from circuitpython_nrf24l01.rf24 import RF24
 
 # addresses needs to be in a buffer protocol object (bytearray)

@@ -62,7 +62,7 @@ def master(count=5): # count = 5 will only transmit 5 packets
         result = nrf.send(buffer) # becomes the response buffer
         if result is None:
             print('send() timed out')
-        elif result == False:
+        elif not result:
             print('send() failed')
         else:
             # print the received ACK that was automatically
