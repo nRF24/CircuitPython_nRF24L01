@@ -687,9 +687,9 @@ class RF24:
 
     @property
     def channel(self):
-        """This `int` attribute specifies the nRF24L01's frequency (in 2400 + `channel` KHz).
+        """This `int` attribute specifies the nRF24L01's frequency (in 2400 + `channel` MHz).
 
-        A valid input value must be in range [0-125] (that means [2.4, 2.525] MHz). Otherwise a `ValueError` exception is thrown. Default is 76 (for compatibility with `TMRh20's arduino library <http://tmrh20.github.io/RF24/classRF24.html>`_ default).
+        A valid input value must be in range [0-125] (that means [2.4, 2.525] GHz). Otherwise a `ValueError` exception is thrown. Default is 76 (for compatibility with `TMRh20's arduino library <http://tmrh20.github.io/RF24/classRF24.html>`_ default).
 
         .. important:: This attribute must match on both RX & TX nRF24L01 devices during transmissions for success.
 
@@ -769,15 +769,8 @@ class RF24:
         time.sleep(0.00016) # mandatedwait for transitioning between modes RX/TX
         # exits while still in Standby-I (low current & no transmissions)
 
-    def _reverse(self, buf):
-        """Reverses the byte order of the bytearray passed as ``buf``. This is meant to appease the SPI byte order used on the arduino when writing addresses"""
-        rev = b''
-        for b in buf:
-            rev = bytes([b]) + rev
-        return rev
-
     def open_tx_pipe(self, address):
-        """This function is used to open a data pipe for OTA (over the air) TX transactions. If `dynamic_payloads` attribute is `False`, then the `payload_length` attribute is used to specify the length of the payload to be transmitted.
+        """This function is used to open a data pipe for OTA (over the air) TX transmissions. If `dynamic_payloads` attribute is `False`, then the `payload_length` attribute is used to specify the length of the payload to be transmitted.
 
         :param bytearray address: The virtual address of the receiving nRF24L01. This must have a length equal to the `address_length` attribute (see `address_length` attribute). Otherwise a `ValueError` exception is thrown.
 
@@ -793,7 +786,7 @@ class RF24:
             raise ValueError("address must be a buffer protocol object with a byte length\nequal to the address_length attribute (currently set to {})".format(self.address_length))
 
     def close_rx_pipe(self, pipe_number):
-        """This function is used to close a specific data pipe for OTA (over the air) RX transactions.
+        """This function is used to close a specific data pipe for OTA (over the air) RX transmissions.
 
         :param int pipe_number: The data pipe to use for RX transactions. This must be in range [0,5]. Otherwise a `ValueError` exception is thrown.
         """
@@ -815,7 +808,7 @@ class RF24:
             self._reg_write(EN_RX, self._open_pipes)
 
     def open_rx_pipe(self, pipe_number, address):
-        """This function is used to open a specific data pipe for OTA (over the air) RX transactions. If `dynamic_payloads` attribute is `False`, then the `payload_length` attribute is used to specify the length of the payload to be expected on the specified data pipe.
+        """This function is used to open a specific data pipe for OTA (over the air) RX transmissions. If `dynamic_payloads` attribute is `False`, then the `payload_length` attribute is used to specify the length of the payload to be expected on the specified data pipe.
 
         :param int pipe_number: The data pipe to use for RX transactions. This must be in range [0,5]. Otherwise a `ValueError` exception is thrown.
         :param bytearray address: The virtual address of the receiving nRF24L01. This must have a byte length equal to the `address_length` attribute (see `address_length` attribute). Otherwise a `ValueError` exception is thrown. If using a ``pipe_number`` greater than 1, then only the LSByte of the address is written (so make LSByte is unique among other simultaneously broadcasting addresses).
