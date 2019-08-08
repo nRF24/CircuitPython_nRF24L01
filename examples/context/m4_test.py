@@ -36,15 +36,15 @@ basicRF = RF24(spi, csn, ce, dynamic_payloads=False, irq_DR=False, irq_DS=False,
 
 # some stuff is not saved/restored by using "with" statements
 # open pipe 5 to demonstrate this
-nrf.open_rx_pipe(5, b'Addr0')
-# only the "0" gets written because it is on a pipe_number > 1
+nrf.open_rx_pipe(5, address)
+# only the first character gets written because it is on a pipe_number > 1
 
 print("\nsettings configured by the nrf object")
 with nrf:
     # display current settings of the nrf object
     nrf.what_happened(True) # True dumps pipe info
 
-print("\nsettings configured by the rf_0 object")
+print("\nsettings configured by the basicRF object")
 with basicRF as nerf: # the "as nerf" is optional
     # display current settings of the basicRF object
     nerf.what_happened(1)
@@ -58,6 +58,6 @@ with basicRF as nerf: # the "as nerf" is optional
 # statements include: power mode (standby or sleep), state of the
 # pipes and their addresses, and primary role (RX/TX mode)
 
-# close all pipes
-for i in range(6):
-    nrf.close_rx_pipe(i)
+# close all pipes because their state remains even if power is lost
+for i in range(6): # addresses also remain despite power loss
+    nrf.close_rx_pipe(i) # resets addresses also

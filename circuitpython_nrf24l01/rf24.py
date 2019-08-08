@@ -364,7 +364,7 @@ class RF24:
             for i in range(RX_ADDR, RX_ADDR + 6):
                 j = i - RX_ADDR
                 isOpen = " open " if (self._open_pipes & (1 << j)) else "closed"
-                print("Pipe {} ({}) bound: {}".format(j, isOpen, self._reg_read_bytes(i)))
+                print("Pipe {} ({}) bound: {}".format(j, isOpen, self._reverse(self._reg_read_bytes(i))))
 
     def clear_status_flags(self, dataReady=True, dataSent=True, dataFail=True):
         """This clears the interrupt flags in the status register. This functionality is exposed for asychronous applications only.
@@ -769,6 +769,13 @@ class RF24:
         time.sleep(0.00016) # mandatedwait for transitioning between modes RX/TX
         # exits while still in Standby-I (low current & no transmissions)
 
+    def _reverse(self, buf):
+        """Reverses the byte order of the bytearray passed as ``buf``. This is meant to appease the SPI byte order used on the arduino when writing addresses"""
+        rev = b''
+        for b in buf:
+            rev = bytes([b]) + rev
+        return rev
+
     def open_tx_pipe(self, address):
         """This function is used to open a data pipe for OTA (over the air) TX transactions. If `dynamic_payloads` attribute is `False`, then the `payload_length` attribute is used to specify the length of the payload to be transmitted.
 
@@ -820,6 +827,8 @@ class RF24:
             raise ValueError("pipe number must be in range [0,5]")
         if len(address) < 3 or len(address) > 5:
             raise ValueError("address must be a buffer protocol object with\na byte length of 3, 4, or 5")
+        # reverse the bytes so they go from LSByte to MSByte
+        address = self._reverse(address)
         # write the address
         if pipe_number < 2: # write entire address if pipe_number is 1
             if pipe_number == 0:
@@ -1009,9 +1018,9 @@ class RF24:
         self.flush_tx()
         self.clear_status_flags(False) # clears data sent flag only
         if isinstance(buf, (list, tuple)): # writing a set of payloads
-            for i in range(len(buf)): # check invalid payloads first
+            for i, b in enumerate(buf): # check invalid payloads first
                 # this way when we raise a ValueError exception we don't leave the nRF24L01 in a frozen state.
-                if len(buf[i]) < 1 or len(buf[i]) > 32:
+                if len(b) < 1 or len(b) > 32:
                     raise ValueError("buf (item {} in the list) must be a buffer protocol object with a byte length of\nat least 1 and no greater than 32".format(i))
             index = 0
             while index < len(buf) or not self.fifo(True,True):
