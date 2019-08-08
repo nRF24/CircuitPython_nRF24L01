@@ -19,19 +19,19 @@ Features currently supported
 ----------------------------
 
 * change the addresses' length (can be 3 to 5 bytes long)
-* dynamically sized payloads (max 32 bytes each)
+* dynamically sized payloads (max 32 bytes each) or statically sized payloads
 * automatic responding acknowledgment (ACK) for verifying transmission success
 * custom acknowledgment (ACK) payloads for bi-directional communication
 * flag a single payload for no acknowledgment (ACK) from the receiving nRF24L01
 * "re-use the same payload" feature (for manually re-transmitting failed transmissions that remain in the buffer)
 * multiple payload transmissions with one function call (MUST read documentation on the "send()" function)
-* context manager compatible for switching between different radio configurations with ease using "with" statements
+* context manager compatible for easily switching between different radio configurations using "with" statements
 * configure the interrupt (IRQ) pin to trigger on received, sent, and/or failed transmissions
 * invoke sleep mode (AKA power down mode) for ultra-low current consumption
 * cycle redundancy checking (CRC) up to 2 bytes long
 * adjust the nRF24L01's builtin automatic re-transmit feature's parameters (arc: number of attempts, ard: delay between attempts)
 * adjust the nRF24L01's frequency channel (2.4-2.525 GHz)
-* adjust the nRF24L01's power amplifier level
+* adjust the nRF24L01's power amplifier level (0, -6, -12, or -18 dBm)
 * adjust the nRF24L01's RF data rate (250Kbps is buggy due to hardware design, but 1Mbps and 2Mbps are reliable)
 
 Features currently unsupported
