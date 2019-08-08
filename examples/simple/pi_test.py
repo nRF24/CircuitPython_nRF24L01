@@ -62,7 +62,8 @@ def slave(count=3):
     nrf.listen = True # put radio into RX mode and power up
 
     counter = count
-    while counter:
+    start = time.monotonic()
+    while counter and (time.monotonic() - start) < (count * 2):
         if nrf.any():
             # print details about the received packet (if any)
             print("Found {} bytes on pipe {}\
@@ -74,7 +75,7 @@ def slave(count=3):
             # print the only item in the resulting tuple from
             # using `struct.unpack()`
             print("Received: {}, Raw: {}".format(buffer[0], repr(rx)))
-
+            start = time.monotonic()
             counter -= 1
             # this will listen indefinitely till counter == 0
         time.sleep(0.25)

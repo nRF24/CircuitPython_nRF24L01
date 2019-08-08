@@ -784,12 +784,12 @@ class RF24:
         .. note:: There is no option to specify which data pipe to use because the only data pipe that the nRF24L01 uses in TX mode is pipe 0. Additionally, the nRF24L01 uses the same data pipe (pipe 0) for receiving acknowledgement (ACK) packets in TX mode (when the `auto_ack` attribute is enables).
 
         """
-        if 3 < len(address) <= self.address_length:
+        if 3 < len(address) <= 5:
             if self.auto_ack:
-                self.open_rx_pipe(0, address)
+                self.open_rx_pipe(0, self._reverse(address))
             self._reg_write_bytes(0x10, address) # 0x10 = TX_ADDR register
         else:
-            raise ValueError("address must be a buffer protocol object with a byte length of\nat least 3 and no greater than 'address_length' attribute (currently {})".format(self.address_length))
+            raise ValueError("address must be a buffer protocol object with\na byte length of 3, 4, or 5")
         #let self._open_pipes only reflect RX pipes
 
     def close_rx_pipe(self, pipe_number):

@@ -91,7 +91,8 @@ def slave(count=3):
     nrf.load_ack(buffer, 0) # load ACK for first response
 
     counter = count
-    while counter:
+    start = time.monotonic()
+    while counter and (time.monotonic() - start) < (count * 2):
         if nrf.any():
             # this will listen indefinitely till counter == 0
             counter -= 1
@@ -101,6 +102,7 @@ def slave(count=3):
             # retreive the received packet's payload
             rx = nrf.recv() # clears flags & empties RX FIFO
             print("Received (raw): {}".format(repr(rx)))
+            start = time.monotonic()
             if counter: # Going again?
                 # build new ACK
                 buffer = ACK + bytes([counter + 48])
