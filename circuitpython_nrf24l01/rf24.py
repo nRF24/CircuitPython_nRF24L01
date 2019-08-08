@@ -919,7 +919,7 @@ class RF24:
             - ``0`` if there is no payload in the RX FIFO buffer.
 
         """
-        if pipe_number < 0 or pipe_number > 5:
+        if pipe_number is not None and (pipe_number < 0 or pipe_number > 5):
             raise ValueError("pipe number must be in range [0,5]")
         if pipe_number is None:
             if self.pipe() is not None:
