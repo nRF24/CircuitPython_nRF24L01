@@ -2,21 +2,17 @@
     Simple example of detecting (and verifying) the IRQ
     interrupt pin on the nRF24L01
 
-    Master transmits twice and intentionally fails the third.
-    Slave just acts as a RX node to success w/ aut_ack feature.
+    Master transmits once, receives once and intentionally fails a transmit.
+    Slave acts as a ponging RX node to successfully complete the tests on the master.
 '''
 
-import time, struct, board, digitalio as dio
+import time, board, digitalio as dio
 from circuitpython_nrf24l01.rf24 import RF24
 
-# addresses needs to be in a buffer protocol object (bytearray)
-addresses = (b'1Node', b'2Node')
-# these addresses should be compatible with
-# the GettingStarted.ino sketch included in
-# TRMh20's arduino library
+# address needs to be in a buffer protocol object (bytearray is preferred)
+address = b'1Node'
 
-# select your digital input pin to attach to the IRQ pin on the nRF4L01
-# TIP: connect an led + 220ohm (connected in series) to GND from IRQ
+# select your digital input pin that's connected to the IRQ pin on the nRF4L01
 irq = dio.DigitalInOut(board.D4)
 irq.switch_to_input() # make sure its an input object
 # change these (digital output) pins accordingly
@@ -30,76 +26,77 @@ spi = board.SPI() # init spi bus object
 # we'll be using the dynamic payload size feature (enabled by default)
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(spi, csn, ce)
+nrf.arc = 15 # turn up automatic retries to the max
 
-# recommended behavior is to keep in TX mode while sleeping
-nrf.listen = False # put the nRF24L01 is in TX and power down modes
-
-def master(count=5): # count = 5 will only transmit 5 packets
+def master(timeout=5): # count = 5 will only transmit 5 packets
     # set address of RX node into a TX pipe
-    nrf.open_tx_pipe(addresses[0])
-    # ensures the nRF24L01 is in TX and power down modes
-    # nrf.listen = False
+    nrf.open_tx_pipe(address)
+    # ensures the nRF24L01 is in TX mode
+    nrf.listen = 0
 
-    i = 0.0 # init data to send
+    # on data sent test
+    print("Pinging: enslaved nRF24L01 without auto_ack")
+    result = nrf.write(b'ping')
+    time.sleep(0.00001) # mandatory 10 microsecond pulse starts transmission
+    nrf.ce.value = 0 # end 10 us pulse; now in active TX
+    while not nrf.irq_DS and not nrf.irq_DF:
+        nrf.update() # updates the current status on IRQ flags
+    if nrf.irq_DS and not irq.value:
+        print('interrupt on data sent successful')
+    else:
+        print('IRQ on data sent is not active, check your wiring and call interrupt_config()')
+    nrf.clear_status_flags() # clear all flags for next test
 
-    counter = count
-    while counter:
-        i += 0.01
-        # use struct.pack to packetize your data
-        # into a usable payload
-        temp = struct.pack('<d', i)
-        # 'd' means a single 8 byte double value.
-        # '<' means little endian byte order
-        print("Sending: {} as struct: {}".format(i, temp))
-        now = time.monotonic_ns() / 1000000 # start timer
-        result = nrf.send(temp)
-        if result is None:
-            print('send() timed out')
-        elif result == False:
-            print('send() failed')
+    # on data ready test
+    nrf.listen = 1
+    nrf.open_rx_pipe(0, address)
+    start = time.monotonic()
+    while nrf.any() == False and time.monotonic() - start < timeout: # wait for slave to send
+        pass
+    if nrf.any():
+        print('Pong received')
+        if nrf.irq_DR and not irq.value:
+            print('interrupt on data ready successful')
         else:
-            print('send() succeessful')
-        # print timer results despite transmission success
-        print('Transmission took',\
-                time.monotonic_ns() / 1000000 - now, 'ms')
-        time.sleep(1)
-        i += 0.1
-        counter -= 1
+            print('IRQ on data ready is not active, check your wiring and call interrupt_config()')
+        nrf.flush_rx()
+    else:
+        print('pong reception timed out!. make sure to run slave() on the other nRF24L01')
+    nrf.clear_status_flags() # clear all flags for next test
 
-        # recommended behavior is to keep in TX mode while sleeping
-        nrf.listen = False # put the nRF24L01 is in TX and power down modes
+    # on data fail test
+    nrf.listen = False # put the nRF24L01 is in TX mode
+    # the writing pipe should still be open since we didn't call close_tx_pipe()
+    nrf.flush_tx() # just in case the previous "on data sent" test failed
+    nrf.write(b'dummy') # slave isn't listening anymore
+    time.sleep(0.00001) # mandatory 10 microsecond pulse starts transmission
+    nrf.ce.value = 0 # end 10 us pulse; now in active TX
+    while not nrf.irq_DS and not nrf.irq_DF:# these attributes don't update themselves
+        nrf.update() # updates the current status on all IRQ flags (irq_DR, irq_DF, irq_DS)
+    if nrf.irq_DF and not irq.value:
+        print('interrupt on data fail successful')
+    else:
+        print('IRQ on data fail is not active, check your wiring and call interrupt_config()')
+    nrf.clear_status_flags() # clear all flags for next test
 
-# running slave to only fetch/receive count number of packets
-# count = 3 will mimic a full RX FIFO behavior via nrf.listen = False
-def slave(count=3):
-    # set address of TX node into an RX pipe. NOTE you MUST specify
-    # which pipe number to use for RX, we'll be using pipe 0
-    # pipe number options range [0,5]
-    # the pipe numbers used during a transition don't have to match
-    nrf.open_rx_pipe(0, addresses[0])
-    nrf.listen = True # put radio into RX mode and power up
-
-    counter = count
-    while counter:
-        if nrf.any():
-            # print details about the received packet (if any)
-            print("Found {} bytes on pipe {}\
-                ".format(repr(nrf.any()), nrf.pipe()))
-            # retreive the received packet's payload
-            rx = nrf.recv() # clears flags & empties RX FIFO
-            # expecting a long int, thus the string format '<d'
-            temp = struct.unpack('<d', rx)
-            # print the only item in the resulting tuple from
-            # using `struct.unpack()`
-            print("Received: {}, Raw: {}".format(temp[0], repr(rx)))
-            # this will listen indefinitely till counter == 0
-            counter -= 1
-        time.sleep(0.25)
-
-    # recommended behavior is to keep in TX mode while sleeping
-    nrf.listen = False # put the nRF24L01 is in TX and power down modes
+def slave(timeout=10): # will listen for 10 seconds before timming out
+    # setup radio to recieve ping
+    nrf.open_rx_pipe(0,address)
+    nrf.listen = 1
+    start = time.monotonic()
+    while nrf.any() == False and time.monotonic() - start < timeout:
+        pass # nrf.any() also updates the status byte on every call
+    if nrf.any():
+        print("ping received. sending pong now.")
+    else:
+        print('listening timed out, please try again')
+    nrf.flush_rx()
+    nrf.listen = 0
+    nrf.open_tx_pipe(address)
+    nrf.send(b'pong') # send a payload to complete the on data ready test
+    # we're done on this side
 
 print("""\
-    nRF24L01 Simple test.\n\
-    Run slave() on receiver\n\
-    Run master() on transmitter.""")
+    nRF24L01 Interrupt test\n\
+    Run master() to run IRQ pin tests\n\
+    Run slave() on the non-testing nRF24L01 to complete the test successfully""")
