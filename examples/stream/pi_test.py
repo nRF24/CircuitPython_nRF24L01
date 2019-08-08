@@ -40,9 +40,9 @@ def master(count=1): # count = 5 will only transmit 5 packets
     nrf.listen = False
 
     for _ in range(count):
-        now = time.monotonic() / 1000000 # start timer
+        now = time.monotonic() * 1000 # start timer
         nrf.send(buffers)
-        print('Transmission took', time.monotonic() / 1000000 - now, 'ms')
+        print('Transmission took', time.monotonic() * 1000 - now, 'ms')
 
 # running slave to only fetch/receive & count number of packets
 def slave(timeout=5):

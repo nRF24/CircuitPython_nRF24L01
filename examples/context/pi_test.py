@@ -34,13 +34,17 @@ nrf = RF24(spi, csn, ce, ack=True)
 # address length is set to 3 bytes
 basicRF = RF24(spi, csn, ce, dynamic_payloads=False, irq_DR=False, irq_DS=False, channel=2, crc=1, data_rate=250, payload_length=8, address_length=3, ard=1000, arc=15)
 
-# some stuff is not saved/restored by using "with" statements
-# open pipe 5 to demonstrate this
-nrf.open_rx_pipe(5, address)
-# only the first character gets written because it is on a pipe_number > 1
 
 print("\nsettings configured by the nrf object")
 with nrf:
+    # some stuff is not saved/restored by using "with" statements
+    # open pipe 5 to demonstrate this
+    nrf.open_rx_pipe(5, address) # NOTE we do this inside the "with" block
+    # only the first character gets written because it is on a pipe_number > 1
+    # NOTE if opening pipes outside of the "with" block, you may encounter
+    # conflicts in the differences between address_length attributes.
+    # the address_length attribute must equal the length of addresses
+
     # display current setting of the nrf object
     nrf.what_happened(True) # True dumps pipe info
 
