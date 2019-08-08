@@ -70,7 +70,7 @@ class RF24:
 
     :param ~busio.SPI spi: The object for the SPI bus that the nRF24L01 is connected to.
 
-        .. tip:: This object is meant to be shared amongst other driver classes (like `adafruit_mcp3xxx.mcp3008` for example) that use the same SPI bus. Otherwise, multiple devices on the same SPI bus with different spi objects may produce errors or undesirable behavior.
+        .. tip:: This object is meant to be shared amongst other driver classes (like adafruit_mcp3xxx.mcp3008 for example) that use the same SPI bus. Otherwise, multiple devices on the same SPI bus with different spi objects may produce errors or undesirable behavior.
 
     :param ~digitalio.DigitalInOut csn: The digital output pin that is connected to the nRF24L01's CSN (Chip Select Not) pin. This is required.
     :param ~digitalio.DigitalInOut ce: The digital output pin that is connected to the nRF24L01's CE (Chip Enable) pin. This is required.
