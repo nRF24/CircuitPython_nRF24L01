@@ -16,7 +16,7 @@ Table of Contents
 
 .. toctree::
     :caption: API Reference
-    :maxdepth: 3
+    :maxdepth: 5
 
     api
 

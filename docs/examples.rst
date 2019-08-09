@@ -27,3 +27,21 @@ This is a test to show how to use nRF24L01's interrupt pin.
 .. literalinclude:: ../examples/interrupt/pi_test.py
     :caption: examples/interrupt/pi_test.py
     :linenos:
+
+Stream Example
+---------------
+
+This is a test to show how to use the send() to transmit multiple payloads.
+
+.. literalinclude:: ../examples/stream/pi_test.py
+    :caption: examples/stream/pi_test.py
+    :linenos:
+
+Context Example
+---------------
+
+This is a test to show how to use "with" statements to manage multiple different nRF24L01 configurations on 1 transceiver.
+
+.. literalinclude:: ../examples/context/pi_test.py
+    :caption: examples/context/pi_test.py
+    :linenos:

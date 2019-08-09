@@ -26,7 +26,7 @@ Features currently supported
 * "re-use the same payload" feature (for manually re-transmitting failed transmissions that remain in the buffer)
 * multiple payload transmissions with one function call (MUST read documentation on the "send()" function)
 * context manager compatible for easily switching between different radio configurations using "with" statements
-* configure the interrupt (IRQ) pin to trigger on received, sent, and/or failed transmissions
+* configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or failed transmissions (these 3 flags control the 1 IRQ pin). There's also virtual representations of these interrupt flags available (see "irq_DR", "irq_DS", "irq_DF" attributes)
 * invoke sleep mode (AKA power down mode) for ultra-low current consumption
 * cycle redundancy checking (CRC) up to 2 bytes long
 * adjust the nRF24L01's builtin automatic re-transmit feature's parameters (arc: number of attempts, ard: delay between attempts)
@@ -38,6 +38,7 @@ Features currently unsupported
 -------------------------------
 
 * as of yet, no [intended] implementation for Multiceiver mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). Although this might be acheived easily using the "automatic retry delay" (ard) and "automatic retry count" (arc) attributes set accordingly (varyingly high).
+* for reason(s) unknown, a nRF24L01 driven by this library will not "talk" to a nRF24L01 on an Arduino driven by the `TMRh20 RF24 library <http://tmrh20.github.io/RF24/>`_. There is no problems when a nRF24L01 driven by this library "talks" to another nRF24L01 that's also driven by this library. `Other Arduino-based nRF24L01 libraries are available <https://playground.arduino.cc/InterfacingWithHardware/Nrf24L01/>`_, but they have not been tested to communicate with this CircuitPython-nRF24L01 library.
 
 Dependencies
 =============
@@ -173,17 +174,7 @@ Applications
 Noteworthy Projects using the nRF24L01 (not related to this circuitpython library -- just examples of capability):
 
     * `A github user, v-i-s-h, has used the nRF24L01 to fake a bluetooth beacon using the TMRh20 arduino library. <https://github.com/v-i-s-h/RF24Beacon>`_
-
-    * `There is also a way to use this radio via 3 pins instead of the all 5 (uses extra circuit hardware and an attiny85 IC) <https://www.instructables.com/id/NRF24L01-With-ATtiny85-3-Pins/>`_
-
-.. note:: A word on pipes vs addresses vs channels.
-
-    You should think of the pipes as RF pathways to a specified address. There are only six data pipes on the nRF24L01, thus it can simultaneously "talk" to a maximum of 6 other nRF24L01 radios. When assigning addresses to a data pipe, you can use any 5 byte long address you can think of (as long as the last byte is unique among simultaneously broadcasting addresses), so you're not limited to the same 6 radios (more on this when we support "Multiciever" mode). Also the radio's channel is not be confused with the radio's pipes. Channel selection is a way of specifying a certain radio frequency (channel 1 = [2.4 + .001] GHz). Channel defaults to 76 (like the arduino library), but options range from 0 to 125 -- that's 2.4 GHz to 2.525 GHz. The channel can be tweaked to find a less occupied frequency amongst (Bluetooth & WiFi) ambient signals.
-
-.. warning::
-    The RX pipe's address on the receiving node MUST match the TX pipe's address on the transmitting node. Also the specified channel MUST match on both endpoint tranceivers.
-
-To transmit firstly open the TX and RX pipes, set the desired enpoints' addresses, stop listening (puts radio in transmit mode), and send your payload packed into a bytearray using struct.pack().
+    * `There's also a bog post by Nerd Ralph demonstrating how to use the nRF24L01 via 2 pins (uses custom bitbanging SPI functions and an external circuit involving a resistor and a capacitor) <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.html>`_
 
 Where Do I get 1?
 =================
