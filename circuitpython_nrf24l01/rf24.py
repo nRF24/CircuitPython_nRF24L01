@@ -989,36 +989,42 @@ class RF24:
         self.flush_tx()
         self.clear_status_flags(False) # clears TX related flags only
         if isinstance(buf, (list, tuple)): # writing a set of payloads
+            result = []
             for i, b in enumerate(buf): # check invalid payloads first
-                # this way when we raise a ValueError exception we don't leave the nRF24L01 in a frozen state.
+                # this way when we raise a ValueError exception we don't leave the nRF24L01 in an unknown frozen state.
                 if not b or len(b) > 32:
                     raise ValueError("buf (item {} in the list/tuple) must be a buffer protocol object with a byte length of\nat least 1 and no greater than 32".format(i))
-            index = 0
-            while index <= len(buf):
-                if self.irq_DF: # needed for continued transmission
-                    print('\t\tpayload failed. flushing TX FIFO')
-                    self.flush_tx() # discard failed payloads in the name of progress
+            for b in buf:
+                # using spec sheet calculations:
+                # timeout total = T_upload + 2 * stby2active + T_overAir + T_ack + T_irq
+                # T_upload = payload length (in bits) / spi data rate (bits per second = baudrate / bits per byte)
+                # T_upload is finished before timeout begins
+                # T_download == T_upload, however RX devices spi settings must match TX's for accurate calc
+                # let 2 * stby2active (in µs) ~= (2 + 1 if getting ack else 0) * 130
+                # let T_ack = T_overAir as the payload size is the only distictive variable between the 2
+                # T_overAir = ( 8 (bits/byte) * (1 byte preamble + address length + payload length + crc length) + 9 bit packet ID ) / RF data rate (in bits/sec) = OTA transmission time in seconds
+                # spec sheet says T_irq is (0.0000082 if self.data_rate == 1 else 0.000006) seconds
+                timeout = (1 + (bool(self.auto_ack) and not ask_no_ack)) * (((8 * (1 + self._addr_len + len(b) + (max(0, ((self._config & 12) >> 2) - 1)))) + 9) / (((2000000 if self._rf_setup & 0x28 == 8 else 250000) if self._rf_setup & 0x28 else 1000000) / 8)) + ((2 + (bool(self.auto_ack) and not ask_no_ack)) * 0.00013) + (0.0000082 if not self._rf_setup & 0x28 else 0.000006) + ((((self._setup_retr & 0xf0) >> 4) * 250 + 380) * (self._setup_retr & 0x0f) / 1000000) + (len(b) * 64 / self.spi.baudrate)
+                self.write(b, ask_no_ack)
+                time.sleep(timeout) # wait for the ESB protocol to finish (or at least attempt)
+                self.update() # update status flags
+                if self.irq_DF: # need to clear for continuing transmissions
+                    for i in range(2):# retry twice at most -- this seemed adaquate during testing
+                        if not self.resend(): # clears flags upon entering and exiting
+                            if i: # the last try
+                                self.flush_tx() # discard failed payloads in the name of progress
+                                result.append(False)
+                        else: # resend succeeded
+                            if self.ack: # is there a custom ACK payload?
+                                result.append(self.read_ack())
+                            else:
+                                result.append(True)
+                            break
+                elif self.irq_DS:
+                    result.append(True)
                     self.clear_status_flags(False) # clears TX related flags only
-                if self.irq_DS:
-                    print('\t\tpayload succeeded. moving on')
-                    # using spec sheet calculations:
-                    # timeout total = T_upload + 2 * stby2active + T_overAir + T_ack + T_irq
-                    # T_upload = payload length (in bits) / spi data rate (bits per second = baudrate / bits per byte)
-                    # T_upload is finished before timeout begins
-                    # T_download == T_upload, however RX devices spi settings must match for accurate calc
-                    # let 2 * stby2active (in µs) ~= (2 + 1 if getting ack else 0) * 130
-                    # let T_ack = T_overAir as the payload size is the only distictive variable between the 2
-                    # T_overAir = ( 8 (bits/byte) * (1 byte preamble + address length + payload length + crc length) + 9 bit packet ID ) / RF data rate (in bits/sec) = OTA transmission time in seconds
-                    # spec sheet says T_irq is (0.0000082 if self.data_rate == 1 else 0.000006) seconds
-                if index < len(buf):
-                    timeout = (1 + (bool(self.auto_ack) and not ask_no_ack)) * (((8 * (1 + self._addr_len + len(buf[index]) + (max(0, ((self._config & 12) >> 2) - 1)))) + 9) / (((2000000 if self._rf_setup & 0x28 == 8 else 250000) if self._rf_setup & 0x28 else 1000000) / 8)) + ((2 + (bool(self.auto_ack) and not ask_no_ack)) * 0.00013) + (0.0000082 if not self._rf_setup & 0x28 else 0.000006) + ((((self._setup_retr & 0xf0) >> 4) * 250 + 380) * (self._setup_retr & 0x0f) / 1000000) + (len(buf[index]) * 128 / self.spi.baudrate)
-                    self.write(buf[index], ask_no_ack)
-                    print('loading payload', index + 1, 'waiting', timeout, 'seconds')
-                    time.sleep(timeout) # wait for the ESB protocol to finish (or at least attempt)
-                index += 1
-                self.update()
-                # print(round(index/len(buf)*100,2), '% processed from the queue.')
             self.ce.value = 0
+            return result
         else: # writing a single payload
             if not buf or len(buf) > 32:
                 raise ValueError("buf must be a buffer protocol object with a byte length of\nat least 1 and no greater than 32")
@@ -1032,8 +1038,8 @@ class RF24:
             # now wait till the nRF24L01 has determined the result or timeout (based on calcs from spec sheet)
             result = None
             # T_upload is done before timeout begins (after payload write action AKA upload)
-            timeout = (1 + (bool(self.auto_ack) and not ask_no_ack)) * (((8 * (1 + self._addr_len + len(buf) + (max(0, ((self._config & 12) >> 2) - 1)))) + 9) / ((2000000 if self._rf_setup & 0x28 == 8 else 250000) if self._rf_setup & 0x28 else 1000000)) + 0.00026 + (0.0000082 if not self._rf_setup & 0x28 else 0.000006) + ((((self._setup_retr & 0xf0) >> 4) * 250 + 250) * (self._setup_retr & 0x0f) / 1000000)
-            while (not self.irq_DS or not self.irq_DF) and (time.monotonic() - start) < timeout:
+            timeout = (1 + (bool(self.auto_ack) and not ask_no_ack)) * (((8 * (1 + self._addr_len + len(buf) + (max(0, ((self._config & 12) >> 2) - 1)))) + 9) / (((2000000 if self._rf_setup & 0x28 == 8 else 250000) if self._rf_setup & 0x28 else 1000000) / 8)) + ((2 + (bool(self.auto_ack) and not ask_no_ack)) * 0.00013) + (0.0000082 if not self._rf_setup & 0x28 else 0.000006) + ((((self._setup_retr & 0xf0) >> 4) * 250 + 380) * (self._setup_retr & 0x0f) / 1000000)
+            while not self.irq_DS and not self.irq_DF and (time.monotonic() - start) < timeout:
                 self.update() # perform Non-operation command to get status byte (should be faster)
                 # print('status: DR={} DS={} DF={}'.format(self.irq_DR, self.irq_DS, self.irq_DF))
             if self.irq_DS or self.irq_DF: # transmission done
@@ -1056,8 +1062,10 @@ class RF24:
 
         """
         if not self.fifo(True,True):  # also updates _fifo attribute
+            if self.irq_DF or self.irq_DS: # check and clear flags
+                self.clear_status_flags(False) # clears TX related flags only
             result = None
-            if self._features & 1 == 0: # ensure this optional command is enabled
+            if self._features & 1 == 0: # ensure REUSE_TX_PL optional command is allowed
                 self._features = self._features & 0xFE | 1 # set EN_DYN_ACK flag high
                 self._reg_write(FEATURE, self._features)
             # payload will get re-used. This command tells the radio not pop TX payload from FIFO on success
@@ -1069,10 +1077,9 @@ class RF24:
             self.ce.value = 0 # only send one payload
             start = time.monotonic()
             # timeout calc assumes 32 byte payload (no way to tell when payload has already been loaded)
-            timeout = (1 + bool(self.auto_ack)) * (((8 * (1 + self._addr_len + len(buf) + (max(0, ((self._config & 12) >> 2) - 1)))) + 9) / ((2000000 if self._rf_setup & 0x28 == 8 else 250000) if self._rf_setup & 0x28 else 1000000)) + 0.00026 + (0.0000082 if not self._rf_setup & 0x28 else 0.000006) + ((((self._setup_retr & 0xf0) >> 4) * 250 + 250) * (self._setup_retr & 0x0f) / 1000000)
-            while (not self.irq_DS or not self.irq_DF) and (time.monotonic() - start) < timeout:
+            timeout = (1 + bool(self.auto_ack)) * (((8 * (1 + self._addr_len + 32 + (max(0, ((self._config & 12) >> 2) - 1)))) + 9) / (((2000000 if self._rf_setup & 0x28 == 8 else 250000) if self._rf_setup & 0x28 else 1000000) / 8)) + ((2 + bool(self.auto_ack)) * 0.00013) + (0.0000082 if not self._rf_setup & 0x28 else 0.000006) + ((((self._setup_retr & 0xf0) >> 4) * 250 + 380) * (self._setup_retr & 0x0f) / 1000000)
+            while not self.irq_DS and not self.irq_DF and (time.monotonic() - start) < timeout:
                 self.update() # perform Non-operation command to get status byte (should be faster)
-                # print('status: DR={} DS={} DF={}'.format(self.irq_DR, self.irq_DS, self.irq_DF))
             if self.irq_DS or self.irq_DF: # transmission done
                 # get status flags to detect error
                 result = bool(self.irq_DS)
@@ -1116,7 +1123,7 @@ class RF24:
             self._config = (self._reg_read(CONFIG) & 0x7c) | 2 # also ensures tx mode
             self._reg_write(0, self._config)
             # power up/down takes < 150 µs + 4 µs
-            time.sleep(0.0002)
+            time.sleep(0.00016)
 
         # pad out or truncate data to fill payload_length if dynamic_payloads == False
         if not self.dynamic_payloads:
