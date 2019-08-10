@@ -21,7 +21,8 @@ extensions = [
 # digitalio, micropython and busio. List the modules you use. Without it, the
 # autodoc module docs will fail to generate with a warning.
 autodoc_mock_imports = ["digitalio", "busio"]
-
+autodoc_member_order = 'bysource'
+html_show_sourcelink = True
 
 intersphinx_mapping = {'python': ('https://docs.python.org/3.4', None),'BusDevice': ('https://circuitpython.readthedocs.io/projects/busdevice/en/latest/', None),'CircuitPython': ('https://circuitpython.readthedocs.io/en/latest/', None)}
 
@@ -109,7 +110,7 @@ html_static_path = ['_static']
 html_favicon = '_static/favicon.ico'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Nrf24l01Librarydoc'
+htmlhelp_basename = 'nRF24L01Librarydoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -155,6 +156,6 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'nRF24L01Library', u' nRF24L01 Library Documentation',
-     author, 'nRF24L01Library', 'One line description of project.',
-     'Miscellaneous'),
+     author, 'nRF24L01Library', 'nRF24L01 on CircuitPython devices.',
+     'Wireless'),
 ]
