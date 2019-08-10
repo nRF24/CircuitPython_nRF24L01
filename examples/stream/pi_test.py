@@ -24,7 +24,7 @@ nrf = RF24(spi, csn, ce)
 
 # lets create a list of payloads to be streamed to the nRF24L01 running slave()
 buffers = []
-SIZE = 32
+SIZE = 32 # we'll use SIZE for the number of payloads in the list and the payloads' length
 for i in range(SIZE):
     buff = b''
     for j in range(SIZE):
@@ -39,10 +39,15 @@ def master(count=1): # count = 5 will only transmit 5 packets
     # ensures the nRF24L01 is in TX mode
     nrf.listen = False
 
+    success_percentage = 0
     for _ in range(count):
         now = time.monotonic() * 1000 # start timer
-        nrf.send(buffers)
+        result = nrf.send(buffers)
         print('Transmission took', time.monotonic() * 1000 - now, 'ms')
+        for r in result:
+            success_percentage += 1 if r else 0
+    success_percentage /= SIZE * count
+    print('successfully sent', success_percentage * 100, '%')
 
 # running slave to only fetch/receive & count number of packets
 def slave(timeout=5):

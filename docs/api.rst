@@ -5,4 +5,4 @@
 .. use this format as the module name: "adafruit_foo.foo"
 
 .. automodule:: circuitpython_nrf24l01.rf24
-   :members:
+    :members:
