@@ -41,7 +41,7 @@ Original research was done by Dmitry Grinberg and his write-up (including C sour
 
 """
 import time, math
-from circuitpython_nrf24l01.rf24 import RF24
+from ..rf24 import RF24
 
 def _swap_bits(orig):
     """this is broken"""
