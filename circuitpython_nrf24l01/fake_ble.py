@@ -52,8 +52,8 @@ def _swap_bits(orig):
     for every_half_byte in range(int(orig / 16) + bool(orig % 16)):
         for bit in range(4): # take on 1 bit at a time
             mask >>= 1
-            # invert_shift = max_shift - (bit + every_half_byte * 3)
-            reverse |= bool(orig & mask)
+            invert_shift = max_shift - (bit + every_half_byte * 3)
+            reverse |= bool(orig & mask) << invert_shift
     return reverse # we're done here
 
 def _make_CRC(data):
@@ -78,7 +78,7 @@ def _make_CRC(data):
                     dst[1] ^= 0x06
 
     """
-    pass
+    return data
 
 
 class FakeBLE(RF24):
