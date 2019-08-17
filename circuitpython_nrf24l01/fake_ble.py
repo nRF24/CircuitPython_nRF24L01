@@ -26,7 +26,7 @@ circuitpython_nrf24l01.fake_ble - FakeBLE
 
 This module uses the RF24 module to make the nRF24L01 imitate a Bluetooth-Low-Emissions (BLE) beacon. A BLE beacon can send (referred to as advertise) data to any BLE compatible device (ie smart devices with Bluetooth 4.0 or later) that is listening.
 
-Original research was done by Dmitry Grinberg and his write-up (including C source code) can be found `here <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_  As this technique can prove invaluable in certain project designs, the code here is simply ported to work on CircuitPython.
+Original research was done by `Dmitry Grinberg and his write-up (including C source code) can be found here <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_  As this technique can prove invaluable in certain project designs, the code here is simply ported to work on CircuitPython.
 
 .. important:: Because the nRF24L01 wasn't designed for BLE advertising, it has some limitations that helps to be aware of.
 
@@ -40,46 +40,81 @@ Original research was done by Dmitry Grinberg and his write-up (including C sour
     8. both the "on data sent" & "on data ready" events control the interrupt (IRQ) pin; the other event, "on data fail", is ignored because it will never get thrown with "auto_ack" off. However the interrupt settings can be modified AFTER instantiation
 
 """
-import time, math
-from ..rf24 import RF24
+import time
+from .rf24 import RF24
 
 def _swap_bits(orig):
-    """this is broken"""
+    """reverse bit order into LSbit to MSBit"""
     reverse = 0
-    # start from MSBit of MSByte; go to LSBit of LSByte
-    max_shift = ((math.floor(orig / 16) + bool(orig % 16)) * 3)
-    mask = 1 << max_shift
-    for every_half_byte in range(int(orig / 16) + bool(orig % 16)):
-        for bit in range(4): # take on 1 bit at a time
-            mask >>= 1
-            invert_shift = max_shift - (bit + every_half_byte * 3)
-            reverse |= bool(orig & mask) << invert_shift
+    while orig:
+        reverse <<= 1
+        reverse |= orig & 1
+        orig >>= 1
     return reverse # we're done here
 
+def _reverse_bits(orig):
+    r = b''
+    for byte in list(orig):
+        r += bytes([_swap_bits(byte)])
+    return r
+
 def _make_CRC(data):
-    """use this to create the 3 byte-long CRC data. returns a bytearray
+    """use this to create the 3 byte-long CRC data. returns a bytearray"""
+    # uint8_t v, t, d;
+    # while( len-- ) {
+    #     d = *data++;
+    #     for( v = 0; v < 8; v++, d >>= 1 ) {
+    #         t = dst[0] >> 7;
+    #         dst[0] <<= 1;
+    #         if( dst[1] & 0x80 ) {
+    #             dst[0] |= 1;
+    #         }
+    #         dst[1] <<= 1;
+    #         if( dst[2] & 0x80 ) {
+    #             dst[1] |= 1;
+    #         }
+    #         dst[2] <<= 1;
+    #         if( t != (d&1) ) {
+    #             dst[2] ^= 0x5B;
+    #             dst[1] ^= 0x06;
+    dst = [0x55, 0x55, 0x55]
+    for d in list(data):
+        for _ in range(8):
+            t = dst[0] >> 7
+            dst[0] <<= 1
+            if(dst[1] & 0x80):
+                dst[0] |= 1
+            dst[1] <<= 1
+            if(dst[2] & 0x80):
+                dst[1] |= 1
+            dst[2] <<= 1
+            if(t != (d & 1)):
+                dst[2] ^= 0x5B
+                dst[1] ^= 0x06
+            d >>= 1
+    return dst
 
-    .. code::
-        original_func(data, len, dst):
-        v, t, d
-        while(len--):
-            d = *data++
-            for(v = 0; v < 8; v++, d >>= 1):
-                t = dst[0] >> 7
-                dst[0] <<= 1
-                if(dst[1] & 0x80):
-                    dst[0] |= 1
-                dst[1] <<= 1
-                if(dst[2] & 0x80):
-                    dst[1] |= 1
-                dst[2] <<= 1
-                if(t != (d & 1)):
-                    dst[2] ^= 0x5B
-                    dst[1] ^= 0x06
-
-    """
-    return data
-
+def _ble_whitening(data, whiten_coef):
+    """for "whiten"ing the BLE packet data according to expected parameters"""
+    # uint8_t  m;
+    # while(len--){
+    #     for(m = 1; m; m <<= 1){
+    #         if(whitenCoeff & 0x80){
+    #             whitenCoeff ^= 0x11;
+    #             (*data) ^= m;
+    #         }
+    #         whitenCoeff <<= 1;
+    #     }
+    #     data++;
+    result = b''
+    for d in list(data): # for every byte
+        for i in range(8):
+            if whiten_coef & 0x80:
+                whiten_coef ^= 0x11
+                d ^= 1 << i
+            whiten_coef <<= 1
+        result += bytes([d])
+    return result
 
 class FakeBLE(RF24):
     """Per the limitations of this technique, only power amplifier level is available for configuration when advertising BLE data.
@@ -90,11 +125,33 @@ class FakeBLE(RF24):
 
     :param ~digitalio.DigitalInOut csn: The digital output pin that is connected to the nRF24L01's CSN (Chip Select Not) pin. This is required.
     :param ~digitalio.DigitalInOut ce: The digital output pin that is connected to the nRF24L01's CE (Chip Enable) pin. This is required.
+    :param bytearray name: This will be the nRF24L01-emulated BLE device's broadcasted name. This is option and defaults to `None` to allow for larger paylaods because the name's byte length borrows from the same buffer space that the payload data occupies. See `name` attribute for more details.
     :param int pa_level: This parameter controls the RF power amplifier setting of transmissions. Options are ``0`` (dBm), ``-6`` (dBm), ``-12`` (dBm), or ``-18`` (dBm). This can be changed at any time by using the `pa_level` attribute.
 
     """
-    def __init__(self, spi, csn, ce, pa_level=0):
+    def __init__(self, spi, csn, ce, name=None, pa_level=0):
         super(FakeBLE, self).__init__(spi, csn, ce, pa_level=pa_level, crc=0, dynamic_payloads=False, arc=0, address_length=4, ask_no_ack=False, irq_DF=False)
+        self._chan = 0
+        self.name = name
+
+    @property
+    def name(self):
+        """Represents the emulated BLE device name during braodcasts. must be a buffer protocol object (`bytearray`) , and can be any length (less than 14) of UTF-8 freindly characters.
+
+        .. note:: the BLE device's name will occupy the same space as your TX data. While space is limited to 32 bytes on the nRF24L01, actual usable BLE TX data = 16 - (name length  + 2). The other 16 bytes available on the nRF24L01 TX FIFO buffer are reserved for the [arbitrary] MAC address and other BLE related stuff.
+        """
+        return self._ble_name[2:] if self._ble_name is not None else None
+
+    @name.setter
+    def name(self, n):
+        if n is not None and 1 <= len(n) <= 12: # max defined by 1 byte payload data requisite
+            self._ble_name = bytes([len(n) + 1]) + b'\x08' + n
+        else:
+            self._ble_name = None # name will not be advertised
+
+    def _chan_hop(self):
+        self._chan = (self._chan + 1) if (self._chan + 1) < 3 else 0
+        self.channel = 26 if self._chan == 1 else (80 if self._chan == 2 else 2)
 
     def send(self, buf):
         """This blocking function is used to transmit payload.
@@ -106,66 +163,53 @@ class FakeBLE(RF24):
             - If the `dynamic_payloads` attribute is disabled and this bytearray's length is less than the `payload_length` attribute, then this bytearray is padded with zeros until its length is equal to the `payload_length` attribute.
             - If the `dynamic_payloads` attribute is disabled and this bytearray's length is greater than `payload_length` attribute, then this bytearray's length is truncated to equal the `payload_length` attribute.
 
-
+        .. note:: If the name of the emulated BLE device is also to be braodcast, then the 'name' attribute should be set prior to calling `send()`
         """
         self.ce.value = 0 # ensure power down/standby-I for proper manipulation of PWR_UP & PRIM_RX bits in CONFIG register
         self.flush_tx()
         self.clear_status_flags(False) # clears TX related flags only
-        if not buf or len(buf) > 20:
-            raise ValueError("buf must be a buffer protocol object with a byte length of\nat least 1 and no greater than 20")
+        # max payload_length = 32 - 14(header, MAC, & CRC) - 2(container header) - 3(BLE flags) = 13 - (BLE name length + 2 if any)
+        if not buf or len(buf) > (13 - (len(self._ble_name) if self._ble_name is not None else 0)):
+            raise ValueError("buf must be a buffer protocol object with a byte length of\nat least 1 and no greater than 13 - {} = {}".format((len(self._ble_name) if self._ble_name is not None else 0), 13 - (len(self._ble_name) if self._ble_name is not None else 0)))
 
-        # TODO implement proper packet manipulation here
+        # BLE payload = 1 byte[header] + 1 byte[payload length] + 6 byte[MAC address] + containers + 3 byte[CRC]
+        # header == PDU type, given MAC address is random/arbitrary; type == 0x42 for Android or 0x40 for iPhone
+        # containers = 1 byte[length] + 1 byte[type] + data; the 1 byte about container's length excludes only itself
 
-        self.write(buf) # init using non-blocking helper
+        payload = b'\x42' # init payload buffer with header type byte
+
+        # payload length excludes the header, itself, and crc lengths
+        payload += bytes([len(buff) + 3 (len(self._ble_name) if self._ble_name is not None else 0)])
+        payload += b'\x11\x22\x33\x44\x55\x66' # a bogus MAC address
+        # payload will have at least 2 containers: 3 bytes of flags (required for BLE discoverable), & at least (1+2) byte of data
+        payload += b'\x02\x01\x06' # BLE flags for discoverability and non-pairable etc
+        # payload will also have to fit the optional BLE device name as a seperate container ([name length + 2] bytes)
+        if self._ble_name is not None:
+            payload += self._ble_name
+        payload += (bytes([len(buf) + 1]) + b'\xFF' + buf) # append the data container
+        # crc is generated from b'\x55\x55\x55' about everything except itself
+        payload += _reverse_bits(_make_CRC(payload))
+        self._chan_hop() # cycle to next BLE channel per specs
+        # the whiten_coef value we need is the BLE channel (37,38, or 39) left shifted one
+        whiten_coef = 37 + self._chan
+        whiten_coef = _swap_bits(whiten_coef) | 2
+        self.write(_reverse_bits(_ble_whitening(payload, whiten_coef))) # init using non-blocking helper
         time.sleep(0.00001) # ensure CE pulse is >= 10 µs
         # pulse is stopped here; the nRF24L01 only handles the top level payload in the FIFO.
         self.ce.value = 0 # go to Standby-I power mode (power attribute still == True)
 
         # T_upload is done before timeout begins (after payload write action AKA upload)
-        timeout = (1 + bool(self.auto_ack)) * (((8 * (1 + self._addr_len + len(buf) + (max(0, ((self._config & 12) >> 2) - 1)))) + 9) / (((2000000 if self._rf_setup & 0x28 == 8 else 250000) if self._rf_setup & 0x28 else 1000000) / 8)) + ((2 + bool(self.auto_ack)) * 0.00013) + (0.0000082 if not self._rf_setup & 0x28 else 0.000006) + ((((self._setup_retr & 0xf0) >> 4) * 250 + 380) * (self._setup_retr & 0x0f) / 1000000)
+        timeout = (((8 * (5 + len(payload))) + 9) / 125000) + 0.0002682
         start = time.monotonic()
         while not self.irq_DS and (time.monotonic() - start) < timeout:
             self.update() # perform Non-operation command to get status byte (should be faster)
             # print('status: DR={} DS={} DF={}'.format(self.irq_DR, self.irq_DS, self.irq_DF))
         self.clear_status_flags(False) # only TX related IRQ flags
 
-    def write(self, buf=None):
-        """This non-blocking function (when used as alternative to `send()`) is meant for asynchronous applications and can only handle one payload at a time as it is a helper function to `send()`.
-
-        :param bytearray buf: The payload to transmit. This bytearray must have a length greater than 0 and less than 32 bytes, otherwise a `ValueError` exception is thrown.
-
-            - If the `dynamic_payloads` attribute is disabled and this bytearray's length is less than the `payload_length` attribute, then this bytearray is padded with zeros until its length is equal to the `payload_length` attribute.
-            - If the `dynamic_payloads` attribute is disabled and this bytearray's length is greater than `payload_length` attribute, then this bytearray's length is truncated to equal the `payload_length` attribute.
-
-        This function isn't completely non-blocking as we still need to wait just under 5 ms for the CSN pin to settle (allowing a clean SPI transaction).
-
-        .. note:: The nRF24L01 doesn't initiate sending until a mandatory minimum 10 µs pulse on the CE pin is acheived. That pulse is initiated before this function exits. However, we have left that 10 µs wait time to be managed by the MCU in cases of asychronous application, or it is managed by using `send()` instead of this function. If the CE pin remains HIGH for longer than 10 µs, then the nRF24L01 will continue to transmit all payloads found in the TX FIFO buffer.
-
-        .. warning:: A note paraphrased from the `nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1121422>`_:
-
-            It is important to NEVER to keep the nRF24L01+ in TX mode for more than 4 ms at a time. If the [`auto_ack` and `dynamic_payloads`] features are enabled, nRF24L01+ is never in TX mode longer than 4 ms.
-
-        .. tip:: Use this function at your own risk. Because of the underlying `"Enhanced ShockBurst Protocol" <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132607>`_, disobeying the 4 ms rule is easily avoided if you enable the `dynamic_payloads` and `auto_ack` attributes. Alternatively, you MUST use interrupt flags/IRQ pin with user defined timer(s) to AVOID breaking the 4 ms rule. If the `nRF24L01+ Specifications Sheet explicitly states this <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1121422>`_, we have to assume radio damage or misbehavior as a result of disobeying the 4 ms rule. See also `table 18 in the nRF24L01 specification sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1123001>`_ for calculating necessary transmission time (these calculations are used in the `send()` function).
-
-        """
-        if not buf or len(buf) > 20:
-            raise ValueError("buf must be a buffer protocol object with a byte length of\nat least 1 and no greater than 20")
-
-        if not self.power or (super(FakeBLE, self)._config & 1): # ready radio if it isn't yet
-            super(FakeBLE, self)._config = (self._reg_read(0) & 0x7c) | 2 # also ensures tx mode
-            self._reg_write(0, super(FakeBLE, self)._config)
-            # power up/down takes < 150 µs + 4 µs
-            time.sleep(0.00016)
-
-        # now upload the payload accordingly
-        # 0xA0 = W_TX_PAYLOAD; this command works with auto_ack on or off
-        self._reg_write_bytes(0xA0, buf) # write appropriate command with payload
-
-        # enable radio comms so it can send the data by starting the mandatory minimum 10 µs pulse on CE. Let send() measure this pulse for blocking reasons
-        self.ce.value = 1 # re-used payloads start with this as well
-        # radio will automatically go to standby-II after transmission while CE is still HIGH only if dynamic_payloads and auto_ack are enabled
-
     # Altering all the following settings is disabled
+    def open_tx_pipe(self):
+        super(FakeBLE, self).open_tx_pipe(_reverse_bits(b'\x8E\x89\xBE\xD6')) # proper address for BLE advertisments
+
     @address_length.setter
     def address_length(self, t):
         super(FakeBLE, self).address_length = (4 + t * 0)
