@@ -41,7 +41,7 @@ Original research was done by `Dmitry Grinberg and his write-up (including C sou
 
 """
 import time
-from .rf24 import RF24
+from circuitpython_nrf24l01.rf24 import RF24
 
 def _swap_bits(orig):
     """reverse bit order into LSbit to MSBit"""
@@ -179,7 +179,7 @@ class FakeBLE(RF24):
         payload = b'\x42' # init payload buffer with header type byte
 
         # payload length excludes the header, itself, and crc lengths
-        payload += bytes([len(buf) + 3 (len(self._ble_name) if self._ble_name is not None else 0)])
+        payload += bytes([len(buf) + 3 + (len(self._ble_name) if self._ble_name is not None else 0)])
         payload += b'\x11\x22\x33\x44\x55\x66' # a bogus MAC address
         # payload will have at least 2 containers: 3 bytes of flags (required for BLE discoverable), & at least (1+2) byte of data
         payload += b'\x02\x01\x06' # BLE flags for discoverability and non-pairable etc
@@ -210,35 +210,35 @@ class FakeBLE(RF24):
     def open_tx_pipe(self):
         super(FakeBLE, self).open_tx_pipe(_reverse_bits(b'\x8E\x89\xBE\xD6')) # proper address for BLE advertisments
 
-    @address_length.setter
-    def address_length(self, t):
-        super(FakeBLE, self).address_length = (4 + t * 0)
+    # @address_length.setter
+    # def address_length(self, t):
+    #     super(FakeBLE, self).address_length = (4 + t * 0)
 
-    @listen.setter
-    def listen(self, rx):
-        if self.listening or rx:
-            self._stop_listening()
+    # @listen.setter
+    # def listen(self, rx):
+    #     if self.listening or rx:
+    #         self._stop_listening()
 
-    @data_rate.setter
-    def data_rate(self, t):
-        super(FakeBLE, self).data_rate = (1 + t * 0)
+    # @data_rate.setter
+    # def data_rate(self, t):
+    #     super(FakeBLE, self).data_rate = (1 + t * 0)
 
-    @dynamic_payloads.setter
-    def dynamic_payloads(self, t):
-        super(FakeBLE, self).dynamic_payloads = (False & t)
+    # @dynamic_payloads.setter
+    # def dynamic_payloads(self, t):
+    #     super(FakeBLE, self).dynamic_payloads = (False & t)
 
-    @auto_ack.setter
-    def auto_ack(self, t):
-        super(FakeBLE, self).auto_ack = (False & t)
+    # @auto_ack.setter
+    # def auto_ack(self, t):
+    #     super(FakeBLE, self).auto_ack = (False & t)
 
-    @ack.setter
-    def ack(self, t):
-        super(FakeBLE, self).ack = (False & t)
+    # @ack.setter
+    # def ack(self, t):
+    #     super(FakeBLE, self).ack = (False & t)
 
-    @crc.setter
-    def crc(self, t):
-        super(FakeBLE, self).crc = (0 * t)
+    # @crc.setter
+    # def crc(self, t):
+    #     super(FakeBLE, self).crc = (0 * t)
 
-    @arc.setter
-    def arc(self, t):
-        super(FakeBLE, self).arc = (t * 0)
+    # @arc.setter
+    # def arc(self, t):
+    #     super(FakeBLE, self).arc = (t * 0)
