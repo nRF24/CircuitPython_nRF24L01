@@ -179,7 +179,7 @@ class FakeBLE(RF24):
         payload = b'\x42' # init payload buffer with header type byte
 
         # payload length excludes the header, itself, and crc lengths
-        payload += bytes([len(buff) + 3 (len(self._ble_name) if self._ble_name is not None else 0)])
+        payload += bytes([len(buf) + 3 (len(self._ble_name) if self._ble_name is not None else 0)])
         payload += b'\x11\x22\x33\x44\x55\x66' # a bogus MAC address
         # payload will have at least 2 containers: 3 bytes of flags (required for BLE discoverable), & at least (1+2) byte of data
         payload += b'\x02\x01\x06' # BLE flags for discoverability and non-pairable etc
