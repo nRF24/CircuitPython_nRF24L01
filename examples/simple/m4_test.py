@@ -43,7 +43,7 @@ def master(count=5): # count = 5 will only transmit 5 packets
         elif not result:
             print('send() failed')
         else:
-            print('send() succeessful')
+            print('send() successful')
         # print timer results despite transmission success
         print('Transmission took',\
                 time.monotonic_ns() / 1000000 - now, 'ms')

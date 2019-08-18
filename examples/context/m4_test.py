@@ -39,7 +39,7 @@ with nrf:
     # some stuff is not saved/restored by using "with" statements
     # open pipe 5 to demonstrate this
     nrf.open_rx_pipe(5, address) # NOTE we do this inside the "with" block
-    # only the first character gets written because it is on a pipe_number > 1
+    # only the last character gets written because it is on a pipe_number > 1
     # NOTE if opening pipes outside of the "with" block, you may encounter
     # conflicts in the differences between address_length attributes.
     # the address_length attribute must equal the length of addresses
@@ -62,5 +62,6 @@ with basicRF as nerf: # the "as nerf" is optional
 # pipes and their addresses, and primary role (RX/TX mode)
 
 # close all pipes because their state remains even if power is lost
-for i in range(6): # addresses also remain despite power loss
-    nrf.close_rx_pipe(i) # resets addresses also
+with nrf: # addresses also remain despite power loss
+    for i in range(6):
+        nrf.close_rx_pipe(i) # resets addresses also

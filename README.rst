@@ -115,13 +115,20 @@ To run the simple example, open a python terminal in this repo's example/simple 
 
     # if using an adafruit feather, try using "from m4_test import *"
     >>> from pi_test import *
+        nRF24L01 Simple test\n\
+        Run slave() on receiver\n\
+        Run master() on transmitter
+    >>> master(3)
+    Sending: 3 as struct: b'\x03\x00\x00\x00'
+    send() succeessful
+    Transmission took 86.0 ms
+    Sending: 2 as struct: b'\x02\x00\x00\x00'
+    send() succeessful
+    Transmission took 109.0 ms
+    Sending: 1 as struct: b'\x01\x00\x00\x00'
+    send() succeessful
+    Transmission took 109.0 ms
 
-        NRF24L01 test module.
-        Run slave() on receiver, and master() on transmitter.
-
-    >>> master()
-    Sending:  0
-    Sending:  1
 
 About the nRF24L01
 ==================
@@ -173,7 +180,7 @@ Applications
 
 Future Project Ideas/Additions using the nRF24L01 (not currently supported by this circuitpython library):
 
-    * `There's also a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3 pins  <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.html>`_ (uses custom bitbanging SPI functions and an external circuit involving a resistor and a capacitor)
+    * `There's a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3 pins  <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.html>`_ (uses custom bitbanging SPI functions and an external circuit involving a resistor and a capacitor)
     * network linking layer, maybe something like `TMRh29's RF24Network <http://tmrh20.github.io/RF24Network/>`_
 
 Where Do I get 1?
