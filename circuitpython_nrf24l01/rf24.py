@@ -1085,7 +1085,7 @@ class RF24:
     def flush_rx(self):
         """An helper function to flush the nRF24L01's internal RX FIFO buffer. (write-only)
 
-        ..note:: The nRF24L01 RX FIFO is 3 level stack that holds payload data. This means that there can be up to 3 received payloads (of maximum length equal to 32 bytes) waiting to be read (and popped from the stack) by `recv()`. This function clears all 3 levels.
+        .. note:: The nRF24L01 RX FIFO is 3 level stack that holds payload data. This means that there can be up to 3 received payloads (each of a maximum length equal to 32 bytes) waiting to be read (and popped from the stack) by `recv()` or `read_ack()`. This function clears all 3 levels.
 
         """
         self._reg_write(0xE2)
@@ -1093,7 +1093,7 @@ class RF24:
     def flush_tx(self):
         """An helper function to flush the nRF24L01's internal TX FIFO buffer. (write-only)
 
-        ..note:: The nRF24L01 TX FIFO is 3 level stack that holds payload data. This means that there can be up to 3 payloads (of maximum length equal to 32 bytes) waiting to be transmitted by `send()` or `write()`. This function clears all 3 levels. It is worth noting that the payload data is only popped from the TX FIFO stack upon successful transmission and the ``reUseTX`` parameter in send() & write() is passed as `False` (that parameter's default value).
+        .. note:: The nRF24L01 TX FIFO is 3 level stack that holds payload data. This means that there can be up to 3 payloads (each of a maximum length equal to 32 bytes) waiting to be transmitted by `send()`, `resend()` or `write()`. This function clears all 3 levels. It is worth noting that the payload data is only popped from the TX FIFO stack upon successful transmission.
 
         """
         self._reg_write(0xE1)
