@@ -18,9 +18,9 @@ rf2ble.name = b'RFtest'
 def master(count=15):
     rf2ble.open_tx_pipe() # endure the tx pip is properly addressed
     for i in range(count): # advertise data this many times
+        if (count - i) % 5 == 0 or (count - i) < 5:
+            print(count - i, 'advertisment{}left to go!'.format('s ' if count - i - 1 else ' '))
         # pack into bytearray using struct.pack()
         rf2ble.send(struct.pack('i', count)) # 'i' = 4 byte integer
         # channel is automatically managed by send() per BLE specs
         time.sleep(1) # wait till next broadcast
-        if (count - i) % 5 == 0 or (count - i) < 5:
-            print(count - i, 'advertisments left to go!')

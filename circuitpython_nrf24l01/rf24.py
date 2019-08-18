@@ -660,7 +660,7 @@ class RF24:
 
         """
         watchdog = self._reg_read(8) # 8 == OBSERVE_TX register
-        print("Channel___________________{} ~ {} MHz\nCRC bytes_________________{}\nAddress length____________{} bytes\nPayload lengths___________{} bytes\nAuto retry delay__________{} microseconds\nAuto retry attempts_______{} maximum\nPackets Lost______________{} total\nRetry Attempts Made_______{}\nIRQ - Data Ready______{}    Data Ready___________{}\nIRQ - Data Fail_______{}    Data Failed__________{}\nIRQ - Data Sent_______{}    Data Sent____________{}\nTX FIFO full__________{}    TX FIFO empty________{}\nRX FIFO full__________{}    RX FIFO empty________{}\nAsk no ACK_________{}    Custom ACK Payload___{}\nDynamic Payloads___{}    Auto Acknowledgment__{}\nPrimary Mode_____________{}    Power Mode___________{}".format(self.channel, (self.channel + 2400) / 1000 , self.crc, self.address_length, self.payload_length, self.ard, self.arc, (watchdog & 0xF0) >> 4,  watchdog & 0x0F, "_True" if not bool(self._config & 0x40) else "False", self.irq_DR, "_True" if not bool(self._config & 0x20) else "False", self.irq_DF, "_True" if not bool(self._config & 0x10) else "False", self.irq_DS,  "_True" if bool(self.tx_full) else "False",  bool(self.fifo(True,True)), "_True" if bool(self._fifo & 2) else "False",  bool(self._fifo & 1), "_Allowed" if bool(self._features & 1) else "Disabled", "Enabled" if self.ack else "Disabled", "_Enabled" if self.dynamic_payloads else 'Disabled', "Enabled" if self.auto_ack else 'Disabled', "RX" if self.listen else "TX", ("Standby-II" if self.ce.value else "Standby-I") if (self._config & 2) else "Off" ))
+        print("Channel___________________{} ~ {} GHz\nCRC bytes_________________{}\nAddress length____________{} bytes\nPayload lengths___________{} bytes\nAuto retry delay__________{} microseconds\nAuto retry attempts_______{} maximum\nPackets Lost______________{} total\nRetry Attempts Made_______{}\nIRQ - Data Ready______{}    Data Ready___________{}\nIRQ - Data Fail_______{}    Data Failed__________{}\nIRQ - Data Sent_______{}    Data Sent____________{}\nTX FIFO full__________{}    TX FIFO empty________{}\nRX FIFO full__________{}    RX FIFO empty________{}\nAsk no ACK_________{}    Custom ACK Payload___{}\nDynamic Payloads___{}    Auto Acknowledgment__{}\nPrimary Mode_____________{}    Power Mode___________{}".format(self.channel, (self.channel + 2400) / 1000 , self.crc, self.address_length, self.payload_length, self.ard, self.arc, (watchdog & 0xF0) >> 4,  watchdog & 0x0F, "_True" if not bool(self._config & 0x40) else "False", self.irq_DR, "_True" if not bool(self._config & 0x20) else "False", self.irq_DF, "_True" if not bool(self._config & 0x10) else "False", self.irq_DS,  "_True" if bool(self.tx_full) else "False",  bool(self.fifo(True,True)), "_True" if bool(self._fifo & 2) else "False",  bool(self._fifo & 1), "_Allowed" if bool(self._features & 1) else "Disabled", "Enabled" if self.ack else "Disabled", "_Enabled" if self.dynamic_payloads else 'Disabled', "Enabled" if self.auto_ack else 'Disabled', "RX" if self.listen else "TX", ("Standby-II" if self.ce.value else "Standby-I") if (self._config & 2) else "Off" ))
         if dump_pipes:
             for i in range(RX_ADDR, RX_ADDR + 6):
                 j = i - RX_ADDR
@@ -709,11 +709,11 @@ class RF24:
     @payload_length.setter
     def payload_length(self, length):
         # max payload size is 32 bytes
-        if not length or length >= 32:
+        if not length or length <= 32:
             # save for access via getter property
             self._payload_length = length
         else:
-            raise ValueError("payload length can only be set in range [1,32] bytes")
+            raise ValueError("{}: payload length can only be set in range [1,32] bytes".format(length))
 
     @property
     def auto_ack(self):

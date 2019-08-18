@@ -171,10 +171,10 @@ Applications
     * Asset tracking systems
     * Toys
 
-Noteworthy Projects using the nRF24L01 (not related to this circuitpython library -- just examples of capability):
+Future Project Ideas/Additions using the nRF24L01 (not currently supported by this circuitpython library):
 
-    * `A github user, v-i-s-h, has used the nRF24L01 to fake a bluetooth beacon using the TMRh20 arduino library. <https://github.com/v-i-s-h/RF24Beacon>`_
-    * `There's also a bog post by Nerd Ralph demonstrating how to use the nRF24L01 via 2 pins (uses custom bitbanging SPI functions and an external circuit involving a resistor and a capacitor) <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.html>`_
+    * `There's also a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3 pins  <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.html>`_(uses custom bitbanging SPI functions and an external circuit involving a resistor and a capacitor)
+    * network linking layer, maybe something like `TMRh29's RF24Network <http://tmrh20.github.io/RF24Network/>`_
 
 Where Do I get 1?
 =================

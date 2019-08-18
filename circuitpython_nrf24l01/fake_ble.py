@@ -44,17 +44,18 @@ import time
 from circuitpython_nrf24l01.rf24 import RF24
 
 def _swap_bits(orig):
-    """reverse bit order into LSbit to MSBit"""
+    """reverses the bit order into LSbit to MSBit"""
     reverse = 0
-    while orig:
+    for i in range(8):
         reverse <<= 1
         reverse |= orig & 1
         orig >>= 1
     return reverse # we're done here
 
 def _reverse_bits(orig):
+    """reverses the bit order into LSbit to MSBit without touching the byte order"""
     r = b''
-    for byte in list(orig):
+    for byte in orig:
         r += bytes([_swap_bits(byte)])
     return r
 
@@ -77,17 +78,17 @@ def _make_CRC(data):
     #         if( t != (d&1) ) {
     #             dst[2] ^= 0x5B;
     #             dst[1] ^= 0x06;
-    dst = [0x55, 0x55, 0x55]
-    for d in list(data):
+    dst = bytearray(b'\x55\x55\x55')
+    for d in data:
         for _ in range(8):
             t = dst[0] >> 7
-            dst[0] <<= 1
+            dst[0] = (dst[0] << 1) & 0xFF
             if(dst[1] & 0x80):
                 dst[0] |= 1
-            dst[1] <<= 1
+            dst[1] = (dst[1] << 1) & 0xFF
             if(dst[2] & 0x80):
                 dst[1] |= 1
-            dst[2] <<= 1
+            dst[2] = (dst[2] << 1) & 0xFF
             if(t != (d & 1)):
                 dst[2] ^= 0x5B
                 dst[1] ^= 0x06
@@ -107,7 +108,7 @@ def _ble_whitening(data, whiten_coef):
     #     }
     #     data++;
     result = b''
-    for d in list(data): # for every byte
+    for d in data: # for every byte
         for i in range(8):
             if whiten_coef & 0x80:
                 whiten_coef ^= 0x11
@@ -178,8 +179,10 @@ class FakeBLE(RF24):
 
         payload = b'\x42' # init payload buffer with header type byte
 
+        # to avoid padding when dynamic_payloads is disabled, set payload_length attribute
+        self.payload_length = len(buf) + 16 + (len(self._ble_name) if self._ble_name is not None else 0)
         # payload length excludes the header, itself, and crc lengths
-        payload += bytes([len(buf) + 3 + (len(self._ble_name) if self._ble_name is not None else 0)])
+        payload += bytes([self.payload_length - 5])
         payload += b'\x11\x22\x33\x44\x55\x66' # a bogus MAC address
         # payload will have at least 2 containers: 3 bytes of flags (required for BLE discoverable), & at least (1+2) byte of data
         payload += b'\x02\x01\x06' # BLE flags for discoverability and non-pairable etc
@@ -188,11 +191,13 @@ class FakeBLE(RF24):
             payload += self._ble_name
         payload += (bytes([len(buf) + 1]) + b'\xFF' + buf) # append the data container
         # crc is generated from b'\x55\x55\x55' about everything except itself
-        payload += _reverse_bits(_make_CRC(payload))
+        payload += _make_CRC(payload)
         self._chan_hop() # cycle to next BLE channel per specs
         # the whiten_coef value we need is the BLE channel (37,38, or 39) left shifted one
         whiten_coef = 37 + self._chan
         whiten_coef = _swap_bits(whiten_coef) | 2
+
+        print('transmitting {} as {}'.format(payload, _reverse_bits(_ble_whitening(payload, whiten_coef))))
         self.write(_reverse_bits(_ble_whitening(payload, whiten_coef))) # init using non-blocking helper
         time.sleep(0.00001) # ensure CE pulse is >= 10 µs
         # pulse is stopped here; the nRF24L01 only handles the top level payload in the FIFO.
