@@ -35,8 +35,8 @@ Modified by Brendan Doherty, Rhys Thomas
 
 .. important:: The nRF24L01 has 3 key features that are very interdependent of each other. Their priority of dependence is as follows:
 
-    1. `dynamic_payloads` feature allowing either TX/RX nRf24L01 to be able to send/receive payloads with their size written into the payloads' packet. With this disabled, both RX/TX nRF24L01 must use matching `payload_length` attributes.
-    2. `auto_ack` feature provides transmission verification by imediatedly sending an acknowledgment (ACK) packet in response to freshly received payloads. `auto_ack` requires `dynamic_payloads` to be enabled.
+    1. `dynamic_payloads` feature allowing either TX/RX nRF24L01 to be able to send/receive payloads with their size written into the payloads' packet. With this disabled, both RX/TX nRF24L01 must use matching `payload_length` attributes.
+    2. `auto_ack` feature provides transmission verification by using the RX nRF24L01 to automatically and imediatedly send an acknowledgment (ACK) packet in response to freshly received payloads. `auto_ack` requires `dynamic_payloads` to be enabled.
     3. `ack` feature allows the MCU to append a payload to the ACK packet, thus instant bi-directional communication. A transmitting ACK payload must be loaded into the nRF24L01's TX FIFO buffer (done using `load_ack()`) BEFORE receiving the payload that is to be acknowledged. Once transmitted, the payload is released from the TX FIFO buffer. This feature obviously requires the `auto_ack` feature enabled.
 
 Remeber that the nRF24L01's FIFO (first-in,first-out) buffer has 3 levels. This means that there can be up to 3 payloads waiting to be read (RX) and up to 3 payloads waiting to be transmit (TX).
@@ -837,7 +837,7 @@ class RF24:
     def channel(self, channel):
         if 0 <= channel <= 125:
             self._channel = channel
-            self._reg_write(RF_CH, channel) # always wries to reg
+            self._reg_write(RF_CH, channel) # always wrties to reg
         else:
             raise ValueError("channel acn only be set in range [0,125]")
 
@@ -872,7 +872,7 @@ class RF24:
 
     @property
     def power(self):
-        """This `bool` attribute controls the power state of the nRf24L01. This is exposed for asynchronous applications and user preference.
+        """This `bool` attribute controls the power state of the nRF24L01. This is exposed for asynchronous applications and user preference.
 
         - `False` basically puts the nRF24L01 to sleep (AKA power down mode) with ultra-low current consumption. No transmissions are executed when sleeping, but the nRF24L01 can still be accessed through SPI. Upon instantiation, this driver class power downs the nRF24L01 until the MCU invokes transmissions. This driver class doesn't power down the nRF24L01 after RX/TX transmissions are complete (avoiding the required power up/down wait time), that preference is left to the user.
         - `True` powers up the nRF24L01. This is the first step towards entering RX/TX modes (see also `listen` attribute). Powering up is automatically handled by the `listen` attribute as well as the `send()` and `write()` functions.
