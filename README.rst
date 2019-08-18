@@ -183,7 +183,7 @@ Future Project Ideas/Additions using the nRF24L01 (not currently supported by th
     * `There's a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3 pins  <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.html>`_ (uses custom bitbanging SPI functions and an external circuit involving a resistor and a capacitor)
     * network linking layer, maybe something like `TMRh29's RF24Network <http://tmrh20.github.io/RF24Network/>`_
 
-Where Do I get 1?
+Where do I get 1?
 =================
 
 See the store links on the sidebar or just google "nRF24L01". It is worth noting that you generally don't want to buy just 1 as you need 2 for testing -- 1 to send & 1 to receive and vise versa. This library has been tested on a cheaply bought 10 pack from Amazon.com using a recommended capacitor (>100nF) on the power pins. Don't get lost on Amazon or eBay! There are other wireless transceivers that are NOT compatible with this library. For instance, the esp8266-01 (also sold in packs) is NOT compatible with this library, but looks very similar to the nRF24L01(+) and could lead to an accidental purchase.
