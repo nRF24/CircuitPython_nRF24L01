@@ -1083,7 +1083,7 @@ class RF24:
         # radio will automatically go to standby-II after transmission while CE is still HIGH only if dynamic_payloads and auto_ack are enabled
 
     def flush_rx(self):
-        """An helper function to flush the nRF24L01's internal RX FIFO buffer. (write-only)
+        """A helper function to flush the nRF24L01's internal RX FIFO buffer. (write-only)
 
         .. note:: The nRF24L01 RX FIFO is 3 level stack that holds payload data. This means that there can be up to 3 received payloads (each of a maximum length equal to 32 bytes) waiting to be read (and popped from the stack) by `recv()` or `read_ack()`. This function clears all 3 levels.
 
@@ -1091,7 +1091,7 @@ class RF24:
         self._reg_write(0xE2)
 
     def flush_tx(self):
-        """An helper function to flush the nRF24L01's internal TX FIFO buffer. (write-only)
+        """A helper function to flush the nRF24L01's internal TX FIFO buffer. (write-only)
 
         .. note:: The nRF24L01 TX FIFO is 3 level stack that holds payload data. This means that there can be up to 3 payloads (each of a maximum length equal to 32 bytes) waiting to be transmitted by `send()`, `resend()` or `write()`. This function clears all 3 levels. It is worth noting that the payload data is only popped from the TX FIFO stack upon successful transmission.
 
