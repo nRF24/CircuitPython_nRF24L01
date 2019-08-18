@@ -181,7 +181,7 @@ Applications
 Future Project Ideas/Additions using the nRF24L01 (not currently supported by this circuitpython library):
 
     * `There's a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3 pins  <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.html>`_ (uses custom bitbanging SPI functions and an external circuit involving a resistor and a capacitor)
-    * network linking layer, maybe something like `TMRh29's RF24Network <http://tmrh20.github.io/RF24Network/>`_
+    * network linking layer, maybe something like `TMRh20's RF24Network <http://tmrh20.github.io/RF24Network/>`_
 
 Where do I get 1?
 =================
