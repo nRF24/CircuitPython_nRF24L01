@@ -46,7 +46,7 @@ from circuitpython_nrf24l01.rf24 import RF24
 def _swap_bits(orig):
     """reverses the bit order into LSbit to MSBit"""
     reverse = 0
-    for i in range(8):
+    for _ in range(8):
         reverse <<= 1
         reverse |= orig & 1
         orig >>= 1
