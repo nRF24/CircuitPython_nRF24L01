@@ -14,6 +14,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
     'sphinx.ext.todo',
+    'sphinx.ext.viewcode',
 ]
 
 # TODO: Please Read!
@@ -22,7 +23,6 @@ extensions = [
 # autodoc module docs will fail to generate with a warning.
 autodoc_mock_imports = ["digitalio", "busio"]
 autodoc_member_order = 'bysource'
-html_show_sourcelink = True
 
 intersphinx_mapping = {'python': ('https://docs.python.org/3.4', None),'BusDevice': ('https://circuitpython.readthedocs.io/projects/busdevice/en/latest/', None),'CircuitPython': ('https://circuitpython.readthedocs.io/en/latest/', None)}
 
@@ -110,7 +110,9 @@ html_static_path = ['_static']
 html_favicon = '_static/favicon.ico'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'nRF24L01Librarydoc'
+htmlhelp_basename = 'nRF24L01_Library_doc'
+# html_copy_source = True
+# html_show_sourcelink = True
 
 # -- Options for LaTeX output ---------------------------------------------
 
