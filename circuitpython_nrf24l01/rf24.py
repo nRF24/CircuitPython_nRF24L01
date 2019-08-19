@@ -62,7 +62,7 @@ With the `auto_ack` feature enabled you get:
     * custom `ack` payloads
     * `crc`
 
-    In fact the only attributes that aren't required to match on both endpoint trasceivers would be the `pa_level`, `arc`, & `ard` attributes. The ``ask_no_ack`` feature can be used despite the settings/features configuration (see `send()` & `write()` function parameters for more details).
+    In fact the only attributes that aren't required to match on both endpoint trasceivers would be the pipe number, `pa_level`, `arc`, & `ard` attributes. The ``ask_no_ack`` feature can be used despite the settings/features configuration (see `send()` & `write()` function parameters for more details).
 """
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
@@ -288,7 +288,7 @@ class RF24:
 
         :param bytearray address: The virtual address of the receiving nRF24L01. This must have a length equal to the `address_length` attribute (see `address_length` attribute). Otherwise a `ValueError` exception is thrown. The address specified here must match the address set to one of the RX data pipes of the receiving nRF24L01.
 
-        .. note:: There is no option to specify which data pipe to use because the only data pipe that the nRF24L01 uses in TX mode is pipe 0. Additionally, the nRF24L01 uses the same data pipe (pipe 0) for receiving acknowledgement (ACK) packets in TX mode when the `auto_ack` attribute is enabled.
+        .. note:: There is no option to specify which data pipe to use because the nRF24L01 only uses data pipe 0 in TX mode. Additionally, the nRF24L01 uses the same data pipe (pipe 0) for receiving acknowledgement (ACK) packets in TX mode when the `auto_ack` attribute is enabled.
 
         """
         if len(address) == self.address_length:
@@ -321,12 +321,12 @@ class RF24:
             self._reg_write(EN_RX, self._open_pipes)
 
     def open_rx_pipe(self, pipe_number, address):
-        """This function is used to open a specific data pipe for OTA (over the air) RX transmissions. If `dynamic_payloads` attribute is `False`, then the `payload_length` attribute is used to specify the expected length of the payload on the specified data pipe (handled when the `listen` attribute changes to `True`).
+        """This function is used to open a specific data pipe for OTA (over the air) RX transmissions. If `dynamic_payloads` attribute is `False`, then the `payload_length` attribute is used to specify the expected length of the RX payload on the specified data pipe (handled when the `listen` attribute changes from `False` to `True`).
 
         :param int pipe_number: The data pipe to use for RX transactions. This must be in range [0,5]. Otherwise a `ValueError` exception is thrown.
         :param bytearray address: The virtual address of the receiving nRF24L01. This must have a byte length equal to the `address_length` attribute (see `address_length` attribute). Otherwise a `ValueError` exception is thrown. If using a ``pipe_number`` greater than 1, then only the LSByte of the address is written, so make sure LSByte (last character) is unique among other simultaneously receiving addresses).
 
-        .. note:: The nRF24L01 shares the MSBytes (address[0:4]) on data pipes 2 through 5.
+        .. note:: The nRF24L01 shares the addresses' MSBytes (address[0:4]) on data pipes 2 through 5.
 
         """
         if pipe_number < 0 or pipe_number > 5:
@@ -349,9 +349,7 @@ class RF24:
         # enable the specified data pipe
         self._open_pipes = self._open_pipes | (1 << pipe_number)
         self._reg_write(EN_RX, self._open_pipes)
-        if not bool(self._dyn_pl & (1 << pipe_number)):
-            # RX radio doesn't care about payload_length if dynamic_payloads is enabled.
-            self._reg_write(RX_PW + pipe_number, self.payload_length)
+        # payload_length is handled in _start_listening()
 
     @property
     def listen(self):
@@ -361,7 +359,7 @@ class RF24:
 
         A valid input value is a `bool` in which:
 
-            `True` enables RX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this function flushes the RX FIFO, clears the `irq_DR` status flag, and puts nRF24L01 in power up mode. Notice the CE pin is be held HIGH during RX mode.
+            `True` enables RX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this attribute flushes the RX FIFO, clears the `irq_DR` status flag, and puts nRF24L01 in power up mode. Notice the CE pin is be held HIGH during RX mode.
 
             `False` disables RX mode. As mentioned in above link, this puts nRF24L01's power in Standby-I (CE pin is LOW meaning low current & no transmissions) mode which is ideal for post-reception work. Disabing RX mode doesn't flush the RX/TX FIFO buffers, so remember to flush your 3-level FIFO buffers when appropriate using `flush_tx()` or `flush_rx()` (see also the `recv()` function).
 
@@ -386,8 +384,8 @@ class RF24:
             self._open_pipes = self._reg_read(EN_RX) # refresh data
             for i in range(6):
                 # write payload_length to all open pipes using the RX_PW_Px registers
-                if self._open_pipes & (1 << i):
-                    self._reg_write(RX_PW + i, self.payload_length)
+                if self._open_pipes & (1 << i): # is pipe open?
+                    self._reg_write(RX_PW + i, self.payload_length) # write accordingly
 
         if self.pipe0_read_addr is not None:
             # make sure the last call to open_rx_pipe(0) sticks if initialized
