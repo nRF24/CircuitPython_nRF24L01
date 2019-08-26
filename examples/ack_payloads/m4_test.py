@@ -8,7 +8,7 @@
 #  we'll be using pipe 0 to receive and transmit ACK packets
 
 import time, board, digitalio as dio
-from circuitpython_nrf24l01.rf24 import RF24
+from circuitpython_nrf24l01 import RF24
 
 # change these (digital output) pins accordingly
 ce = dio.DigitalInOut(board.D7)

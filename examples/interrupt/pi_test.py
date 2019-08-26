@@ -7,7 +7,7 @@
 '''
 
 import time, board, digitalio as dio
-from circuitpython_nrf24l01.rf24 import RF24
+from circuitpython_nrf24l01 import RF24
 
 # address needs to be in a buffer protocol object (bytearray is preferred)
 address = b'1Node'
