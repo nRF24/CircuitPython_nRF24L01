@@ -128,6 +128,7 @@ To run the simple example, open a python terminal in this repo's example/simple 
     Sending: 1 as struct: b'\x01\x00\x00\x00'
     send() succeessful
     Transmission took 109.0 ms
+    # transmissions from a circuitpython device took 32 to 64 ms
 
 
 About the nRF24L01
