@@ -115,8 +115,8 @@ To run the simple example, open a python terminal in this repo's example/simple 
 
     # if using an adafruit feather, try using "from m4_test import *"
     >>> from pi_test import *
-        nRF24L01 Simple test\n\
-        Run slave() on receiver\n\
+        nRF24L01 Simple test
+        Run slave() on receiver
         Run master() on transmitter
     >>> master(3)
     Sending: 3 as struct: b'\x03\x00\x00\x00'
