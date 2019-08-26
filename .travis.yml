@@ -35,7 +35,7 @@ deploy:
 install:
   - pip install -r requirements.txt
   - pip install circuitpython-build-tools Sphinx sphinx-rtd-theme
-  - pip install --force-reinstall pylint==2.3.1
+  - pip install --force-reinstall pylint==1.9.2
 
 script:
   - pylint --disable=invalid-name,bad-whitespace,line-too-long,trailing-whitespace,attribute-defined-outside-init,too-many-instance-attributes,inconsistent-return-statements,no-else-return,too-many-public-methods,too-many-arguments,too-many-lines,too-many-function-args,superfluous-parens,too-many-locals,bad-continuation,no-member,no-self-use,too-many-branches,too-many-nested-blocks,multiple-imports circuitpython_nrf24l01.py

@@ -22,7 +22,7 @@
 # THE SOFTWARE.
 """
 ========================================
-circuitpython_nrf24l01 - RF24
+circuitpython_nrf24l01
 ========================================
 
 CircuitPython port of the nRF24L01 library from Micropython.
