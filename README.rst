@@ -9,6 +9,10 @@ Introduction
 ..     :target: https://discord.gg/nBQh6qu
 ..     :alt: Discord
 
+.. image:: https://img.shields.io/pypi/v/circuitpython-nrf24l01.svg
+    :alt: latest version on PyPI
+    :target: https://pypi.python.org/pypi/circuitpython-nrf24l01
+
 .. image:: https://travis-ci.org/2bndy5/CircuitPython_nRF24L01.svg?branch=master
     :target: https://travis-ci.org/2bndy5/CircuitPython_nRF24L01
     :alt: Build Status
