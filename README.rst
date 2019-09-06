@@ -5,17 +5,18 @@ Introduction
     :target: https://circuitpython-nrf24l01.readthedocs.io/
     :alt: Documentation Status
 
-.. .. image:: https://img.shields.io/discord/327254708534116352.svg
-..     :target: https://discord.gg/nBQh6qu
-..     :alt: Discord
+.. image:: https://travis-ci.org/2bndy5/CircuitPython_nRF24L01.svg?branch=master
+    :target: https://travis-ci.org/2bndy5/CircuitPython_nRF24L01
+    :alt: Build Status
 
 .. image:: https://img.shields.io/pypi/v/circuitpython-nrf24l01.svg
     :alt: latest version on PyPI
     :target: https://pypi.python.org/pypi/circuitpython-nrf24l01
 
-.. image:: https://travis-ci.org/2bndy5/CircuitPython_nRF24L01.svg?branch=master
-    :target: https://travis-ci.org/2bndy5/CircuitPython_nRF24L01
-    :alt: Build Status
+.. image:: https://pepy.tech/badge/circuitpython-nrf24l01
+    :alt: Total PyPI downloads
+    :target: https://pepy.tech/project/circuitpython-nrf24l01
+
 
 Circuitpython driver library for the nRF24L01 transceiver
 
