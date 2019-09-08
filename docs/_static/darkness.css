@@ -93,8 +93,6 @@
 .rst-content table.field-list thead {
  color:#fcfcfc;
  text-align:center;
- vertical-align:bottom;
- white-space:nowrap;
  background-color: #1a4228;
 }
 
@@ -176,75 +174,32 @@
 
 /* -------------------------------------general page styling-------------------------------------------- */
 body {
- font-family:"Lato","proxima-nova","Helvetica Neue",Arial,sans-serif;
- font-weight:normal;
  color:#fcfcfc;
- min-height:100%;
- overflow-x:hidden;
- background:#edf0f2
 }
 
 .btn {
- display:inline-block;
- border-radius:2px;
- line-height:normal;
- white-space:nowrap;
- text-align:center;
- cursor:pointer;
- font-size:100%;
- padding:6px 12px 8px 12px;
  color:#fff;
  border: 1px solid rgba(246, 235, 4, 0.15);
  background-color:#27AE60;
- text-decoration:none;
- font-weight:normal;
- font-family:"Lato","proxima-nova","Helvetica Neue",Arial,sans-serif;
  box-shadow:0px 1px 2px -1px rgba(2, 183, 17, 0.74) inset,0px -2px 0px 0px rgb(2, 183, 38) inset;
- outline-none:false;
- vertical-align:middle;
- *display:inline;
- zoom:1;
- -webkit-user-drag:none;
- -webkit-user-select:none;
- -moz-user-select:none;
- -ms-user-select:none;
- user-select:none;
- -webkit-transition:all .1s linear;
- -moz-transition:all .1s linear;
- transition:all .1s linear
 }
 
 .btn-neutral {
- background-color:#02cd7f !important;
+ background-color:#86cbcd !important;
  color:#fbfbfb !important;
 }
 
 .wy-nav-content-wrap {
- margin-left:300px;
  background:#242424;
- min-height:100%
 }
 
 /* -------------------------------------sidebar sections------------------------------------------------ */
 .wy-side-nav-search {
- display:block;
- width:300px;
- padding:.809em;
- margin-bottom:.809em;
- z-index:200;
  background-color:#006B09;
- text-align:center;
- padding:.809em;
- display:block;
  color:#fcfcfc;
- margin-bottom:.809em
 }
 
 .wy-side-nav-search input[type=text] {
- width:100%;
- border-radius:50px;
- padding:6px 12px;
- border-color:#2472a4;
  background: #313131;
  color: #fcfcfc;
 }
@@ -252,27 +207,11 @@ body {
 .wy-menu-vertical li.on a,
 .wy-menu-vertical li.current>a {
  color:#fcfcfc;
- padding:.4045em 1.618em;
- font-weight:bold;
- position:relative;
  background:#242424;
- border:none;
- padding-left:1.618em -4px
 }
 
 .wy-nav-side {
- position:fixed;
- top:0;
- bottom:0;
- left:0;
- padding-bottom:2em;
- width:300px;
- overflow-x:hidden;
- overflow-y:hidden;
- min-height:100%;
- color:#9b9b9b;
  background:#172353;
- z-index:200
 }
 
 .wy-menu-vertical li.on a:hover,
@@ -286,25 +225,16 @@ body {
 }
 
 .wy-side-nav-search>div.version {
- margin-top:-.4045em;
- margin-bottom:.809em;
- font-weight:normal;
  color:rgba(255, 255, 255, 0.69);
 }
 
 .wy-menu-vertical header,
 .wy-menu-vertical p.caption {
  color:#43df96;
- height:32px;
- display:inline-block;
- line-height:32px;
- padding:0 1.618em;
- margin:12px 0 0 0;
- display:block;
- font-weight:bold;
- text-transform:uppercase;
- font-size:85%;
- white-space:nowrap
+}
+
+.wy-nav-top {
+ background:#006B09;
 }
 
 /* -----------------------------------------API sections-------------------------------------- */
@@ -333,12 +263,7 @@ code, .rst-content tt, .rst-content code {
   color: #fff;
 }
 
-
-/* darkness.css | file:///C:/Users/ytreh/Documents/GitHub/CircuitPython_nRF24L01/docs/_build/html/_static/darkness.css */
-
 .rst-content dl:not(.docutils) dl dt {
-  /* background: #494949; */
-  /* color: #ffffff94; */
   background: #343434;
   color: #e5df8e;
 }
