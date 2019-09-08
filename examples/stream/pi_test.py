@@ -33,7 +33,7 @@ for i in range(SIZE):
     del buff
 
 
-def master(count=1): # count = 5 will only transmit 5 packets
+def master(count=1): # count = 5 will transmit the list 5 times
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(address)
     # ensures the nRF24L01 is in TX mode
