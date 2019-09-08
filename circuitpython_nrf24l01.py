@@ -84,7 +84,7 @@ DYNPD = 0x1c  # dynamic payloads feature. each bit represents this feature per p
 FEATURE = 0x1d  # global enablers/disablers for dynamic payloads, auto-ACK, and custom ACK features
 
 class RF24:
-    """A driver class for the nRF24L01 transceiver radio. This class aims to be compatible with other devices in the nRF24xxx product line, but officially only supports (through testing) the nRF24L01 and nRF24L01+ devices.
+    """A driver class for the nRF24L01(+) transceiver radios. This class aims to be compatible with other devices in the nRF24xxx product line that implement the Nordic proprietary Enhanced ShockBurst Protocol (and/or the legacy ShockBurst Protocol), but officially only supports (through testing) the nRF24L01 and nRF24L01+ devices.
 
     :param ~busio.SPI spi: The object for the SPI bus that the nRF24L01 is connected to.
 
