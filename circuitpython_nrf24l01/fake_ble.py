@@ -43,6 +43,8 @@ Original research was done by `Dmitry Grinberg and his write-up (including C sou
 import time
 from circuitpython_nrf24l01.rf24 import RF24
 
+# pylint: disable=arguments-differ
+
 def _swap_bits(orig):
     """reverses the bit order into LSbit to MSBit"""
     reverse = 0
@@ -59,41 +61,19 @@ def _reverse_bits(orig):
         r += bytes([_swap_bits(byte)])
     return r
 
-def _make_CRC(data):
+def _make_crc(data):
     """use this to create the 3 byte-long CRC data. returns a bytearray"""
-    # uint8_t v, t, d;
-    # while( len-- ) {
-    #     d = *data++;
-    #     for( v = 0; v < 8; v++, d >>= 1 ) {
-    #         t = dst[0] >> 7;
-    #         dst[0] <<= 1;
-    #         if( dst[1] & 0x80 ) {
-    #             dst[0] |= 1;
-    #         }
-    #         dst[1] <<= 1;
-    #         if( dst[2] & 0x80 ) {
-    #             dst[1] |= 1;
-    #         }
-    #         dst[2] <<= 1;
-    #         if( t != (d&1) ) {
-    #             dst[2] ^= 0x5B;
-    #             dst[1] ^= 0x06;
-    dst = bytearray(b'\x55\x55\x55')
-    for d in data:
+    # this function was taken from source code https://github.com/adafruit/Adafruit_CircuitPython_SGP30/blob/d209c7c76f941dc60b24d85fdef177b5fb2e9943/adafruit_sgp30.py#L177
+    # zlib or binascii modules would be ideal alternatives on the raspberry pi, but MicroPython & CircuitPython don't have the crc32() included in the uzlib or ubinascii modules.
+    crc = 0xFF
+    for byte in data:
+        crc ^= byte
         for _ in range(8):
-            t = dst[0] >> 7
-            dst[0] = (dst[0] << 1) & 0xFF
-            if(dst[1] & 0x80):
-                dst[0] |= 1
-            dst[1] = (dst[1] << 1) & 0xFF
-            if(dst[2] & 0x80):
-                dst[1] |= 1
-            dst[2] = (dst[2] << 1) & 0xFF
-            if(t != (d & 1)):
-                dst[2] ^= 0x5B
-                dst[1] ^= 0x06
-            d >>= 1
-    return dst
+            if crc & 0x80:
+                crc = (crc << 1) ^ 0x31
+            else:
+                crc <<= 1
+    return crc & 0xFF
 
 def _ble_whitening(data, whiten_coef):
     """for "whiten"ing the BLE packet data according to expected parameters"""
@@ -108,13 +88,13 @@ def _ble_whitening(data, whiten_coef):
     #     }
     #     data++;
     result = b''
-    for d in data: # for every byte
+    for byte in data: # for every byte
         for i in range(8):
             if whiten_coef & 0x80:
                 whiten_coef ^= 0x11
-                d ^= 1 << i
+                byte ^= 1 << i
             whiten_coef <<= 1
-        result += bytes([d])
+        result += bytes([byte])
     return result
 
 class FakeBLE(RF24):
@@ -130,10 +110,12 @@ class FakeBLE(RF24):
     :param int pa_level: This parameter controls the RF power amplifier setting of transmissions. Options are ``0`` (dBm), ``-6`` (dBm), ``-12`` (dBm), or ``-18`` (dBm). This can be changed at any time by using the `pa_level` attribute.
 
     """
-    def __init__(self, spi, csn, ce, name=None, pa_level=0):
-        super(FakeBLE, self).__init__(spi, csn, ce, pa_level=pa_level, crc=0, dynamic_payloads=False, arc=0, address_length=4, ask_no_ack=False, irq_DF=False)
+    def __init__(self, spi, csn, ce, name=None, pa_level=False, irq_DR=False, irq_DS=True):
+        super(FakeBLE, self).__init__(spi, csn, ce, pa_level=pa_level, crc=0, dynamic_payloads=False, arc=0, address_length=4, ask_no_ack=False, irq_DF=False, irq_DR=irq_DR, irq_DS=irq_DS)
         self._chan = 0
+        self._ble_name = None
         self.name = name
+
 
     @property
     def name(self):
@@ -145,12 +127,27 @@ class FakeBLE(RF24):
 
     @name.setter
     def name(self, n):
+        """The broadcasted BLE name of the nRF24L01. This is not required. In fact, setting this attribute will subtract from the available payload length (in bytes).
+
+            * payload_length has maximum of 19 bytes when NOT broadcasting a name for itself.
+            * payload_length has a maximum of (17 - length of name) bytes when broadcasting a name for itself.
+
+        """
         if n is not None and 1 <= len(n) <= 12: # max defined by 1 byte payload data requisite
             self._ble_name = bytes([len(n) + 1]) + b'\x08' + n
         else:
             self._ble_name = None # name will not be advertised
 
     def _chan_hop(self):
+        """BLE protocol specs mandate the BLE device cyle through the following 3 channels:
+
+            - nRF channel 2  == BLE channel 37
+            - nRF channel 26 == BLE channel 38
+            - nRF channel 80 == BLE channel 39
+
+        .. note:: then BLE channel number is different from the nRF channel number.
+
+        """
         self._chan = (self._chan + 1) if (self._chan + 1) < 3 else 0
         self.channel = 26 if self._chan == 1 else (80 if self._chan == 2 else 2)
 
@@ -177,7 +174,7 @@ class FakeBLE(RF24):
         # header == PDU type, given MAC address is random/arbitrary; type == 0x42 for Android or 0x40 for iPhone
         # containers = 1 byte[length] + 1 byte[type] + data; the 1 byte about container's length excludes only itself
 
-        payload = b'\x42' # init payload buffer with header type byte
+        payload = b'\x42' # init a temp payload buffer with header type byte
 
         # to avoid padding when dynamic_payloads is disabled, set payload_length attribute
         self.payload_length = len(buf) + 16 + (len(self._ble_name) if self._ble_name is not None else 0)
@@ -191,7 +188,7 @@ class FakeBLE(RF24):
             payload += self._ble_name
         payload += (bytes([len(buf) + 1]) + b'\xFF' + buf) # append the data container
         # crc is generated from b'\x55\x55\x55' about everything except itself
-        payload += _make_CRC(payload)
+        payload += _make_crc(payload)
         self._chan_hop() # cycle to next BLE channel per specs
         # the whiten_coef value we need is the BLE channel (37,38, or 39) left shifted one
         whiten_coef = 37 + self._chan
@@ -215,35 +212,35 @@ class FakeBLE(RF24):
     def open_tx_pipe(self):
         super(FakeBLE, self).open_tx_pipe(_reverse_bits(b'\x8E\x89\xBE\xD6')) # proper address for BLE advertisments
 
-    # @address_length.setter
-    # def address_length(self, t):
-    #     super(FakeBLE, self).address_length = (4 + t * 0)
+    @address_length.setter
+    def address_length(self, t):
+        super(FakeBLE, self).address_length = (4 + t * 0)
 
-    # @listen.setter
-    # def listen(self, rx):
-    #     if self.listening or rx:
-    #         self._stop_listening()
+    @listen.setter
+    def listen(self, rx):
+        if self.listen or rx:
+            self._stop_listening()
 
-    # @data_rate.setter
-    # def data_rate(self, t):
-    #     super(FakeBLE, self).data_rate = (1 + t * 0)
+    @data_rate.setter
+    def data_rate(self, t):
+        super(FakeBLE, self).data_rate = (1 + t * 0)
 
-    # @dynamic_payloads.setter
-    # def dynamic_payloads(self, t):
-    #     super(FakeBLE, self).dynamic_payloads = (False & t)
+    @dynamic_payloads.setter
+    def dynamic_payloads(self, t):
+        super(FakeBLE, self).dynamic_payloads = (False & t)
 
-    # @auto_ack.setter
-    # def auto_ack(self, t):
-    #     super(FakeBLE, self).auto_ack = (False & t)
+    @auto_ack.setter
+    def auto_ack(self, t):
+        super(FakeBLE, self).auto_ack = (False & t)
 
-    # @ack.setter
-    # def ack(self, t):
-    #     super(FakeBLE, self).ack = (False & t)
+    @ack.setter
+    def ack(self, t):
+        super(FakeBLE, self).ack = (False & t)
 
-    # @crc.setter
-    # def crc(self, t):
-    #     super(FakeBLE, self).crc = (0 * t)
+    @crc.setter
+    def crc(self, t):
+        super(FakeBLE, self).crc = (0 * t)
 
-    # @arc.setter
-    # def arc(self, t):
-    #     super(FakeBLE, self).arc = (t * 0)
+    @arc.setter
+    def arc(self, t):
+        super(FakeBLE, self).arc = (t * 0)
