@@ -177,19 +177,7 @@ body {
  color:#fcfcfc;
 }
 
-.btn {
- color:#fff;
- border: 1px solid rgba(246, 235, 4, 0.15);
- background-color:#27AE60;
- box-shadow:0px 1px 2px -1px rgba(2, 183, 17, 0.74) inset,0px -2px 0px 0px rgb(2, 183, 38) inset;
-}
-
-.btn-neutral {
- background-color:#86cbcd !important;
- color:#fbfbfb !important;
-}
-
-.wy-nav-content-wrap {
+.wy-nav-content-wrap, .wy-nav-content {
  background:#242424;
 }
 
