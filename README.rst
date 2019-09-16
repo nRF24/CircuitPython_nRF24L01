@@ -29,12 +29,12 @@ Features currently supported
 * custom acknowledgment (ACK) payloads for bi-directional communication
 * flag a single payload for no acknowledgment (ACK) from the receiving nRF24L01
 * "re-use the same payload" feature (for manually re-transmitting failed transmissions that remain in the buffer)
-* multiple payload transmissions with one function call (MUST read documentation on the "send()" function)
+* multiple payload transmissions with one function call (MUST read documentation on the :py:meth:`~circuitpython_nrf24l01.RF24.send` function)
 * context manager compatible for easily switching between different radio configurations using "with" statements
-* configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or failed transmissions (these 3 flags control the 1 IRQ pin). There's also virtual representations of these interrupt flags available (see "irq_DR", "irq_DS", "irq_DF" attributes)
+* configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or failed transmissions (these 3 flags control the 1 IRQ pin). There's also virtual representations of these interrupt flags available (see :py:attr:`~circuitpython_nrf24l01.RF24.irq_DR`, :py:attr:`~circuitpython_nrf24l01.RF24.irq_DS`, :py:attr:`~circuitpython_nrf24l01.RF24.irq_DF` attributes)
 * invoke sleep mode (AKA power down mode) for ultra-low current consumption
 * cyclic redundancy checking (CRC) up to 2 bytes long
-* adjust the nRF24L01's builtin automatic re-transmit feature's parameters (arc: number of attempts, ard: delay between attempts)
+* adjust the nRF24L01's builtin automatic re-transmit feature's parameters (:py:attr:`~circuitpython_nrf24l01.RF24.arc`: number of attempts, :py:attr:`~circuitpython_nrf24l01.RF24.ard`: delay between attempts)
 * adjust the nRF24L01's frequency channel (2.4-2.525 GHz)
 * adjust the nRF24L01's power amplifier level (0, -6, -12, or -18 dBm)
 * adjust the nRF24L01's RF data rate (250Kbps is buggy due to hardware design, but 1Mbps and 2Mbps are reliable)
@@ -42,7 +42,7 @@ Features currently supported
 Features currently unsupported
 -------------------------------
 
-* as of yet, no [intended] implementation for Multiceiver mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). Although this might be acheived easily using the "automatic retry delay" (ard) and "automatic retry count" (arc) attributes set accordingly (varyingly high).
+* as of yet, no [intended] implementation for Multiceiver mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). Although this might be acheived easily using the "automatic retry delay" (:py:attr:`~circuitpython_nrf24l01.RF24.ard`) and "automatic retry count" (:py:attr:`~circuitpython_nrf24l01.RF24.arc`) attributes set accordingly (varyingly high).
 * for reason(s) unknown, a nRF24L01 driven by this library will not "talk" to a nRF24L01 on an Arduino driven by the `TMRh20 RF24 library <http://tmrh20.github.io/RF24/>`_. There is no problems when a nRF24L01 driven by this library "talks" to another nRF24L01 that's also driven by this library. `Other Arduino-based nRF24L01 libraries are available <https://playground.arduino.cc/InterfacingWithHardware/Nrf24L01/>`_, but they have not been tested to communicate with this CircuitPython-nRF24L01 library.
 
 Dependencies
@@ -184,7 +184,7 @@ Applications
 
 Future Project Ideas/Additions using the nRF24L01 (not currently supported by this circuitpython library):
 
-    * `There's a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3 pins  <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.html>`_ (uses custom bitbanging SPI functions and an external circuit involving a resistor and a capacitor)
+    * `There's a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3 pins <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.html>`_ (uses custom bitbanging SPI functions and an external circuit involving a resistor and a capacitor)
     * network linking layer, maybe something like `TMRh20's RF24Network <http://tmrh20.github.io/RF24Network/>`_
     * add a fake BLE module for sending BLE beacon advertisments from the nRF24L01 as outlined by `Dmitry Grinberg in his write-up (including C source code) <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_. We've started developing this, but fell short of success in `the BLEfake branch of this library's repository <https://github.com/2bndy5/CircuitPython_nRF24L01/tree/BLEfake>`_
 
@@ -198,7 +198,7 @@ Contributing
 
 Contributions are welcome! Please read our `Code of Conduct
 <https://github.com/2bndy5/CircuitPython_nRF24L01/blob/master/CODE_OF_CONDUCT.md>`_
-before contributing to help this project stay welcoming. To contribute, all you need to do is fork `this repository <https://github.com/2bndy5/CircuitPython_nRF24L01.git>`_, develop your idea(s) and submit a pull request when stable. To initiate a discussion of idea(s), you need only open an issue on the aforementioned repository (doesn't have to be a bug report) or email 2bndy5@gmail.com directly (no spam please).
+before contributing to help this project stay welcoming. To contribute, all you need to do is fork `this repository <https://github.com/2bndy5/CircuitPython_nRF24L01.git>`_, develop your idea(s) and submit a pull request when stable. To initiate a discussion of idea(s), you need only open an issue on the aforementioned repository (doesn't have to be a bug report).
 
 Sphinx documentation
 -----------------------
