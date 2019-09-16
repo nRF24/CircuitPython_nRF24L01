@@ -240,7 +240,8 @@ body {
 }
 
 .rst-content tt.literal, .rst-content tt.literal, .rst-content code.literal {
-  color: #0D7803;
+  color: #16FF00;
+  border-color: #303030;
 }
 
 code, .rst-content tt, .rst-content code {
