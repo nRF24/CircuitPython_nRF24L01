@@ -113,7 +113,7 @@ The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) t
 Using The Examples
 ==================
 
-See `examples/` for an certain features of this the library. Notice that there are 2 files in each scenario/folder; one file titled "pi_test.py" for testing on the raspberry pi, and another file titled "m4_test.py" for testing on an adafruit boards with atsamd51. This was developed and tested on both Raspberry Pi and ItsyBitsy M4. Pins have been hard coded in the examples for the corresponding device, so please adjust these accordingly to your circuitpython device if necessary.
+See `examples <examples/>`_ for testing certain features of this the library. Notice that there are 2 files in each scenario/folder; one file titled "pi_test.py" for testing on the raspberry pi, and another file titled "m4_test.py" for testing on an adafruit boards with atsamd51. This was developed and tested on both Raspberry Pi and ItsyBitsy M4. Pins have been hard coded in the examples for the corresponding device, so please adjust these accordingly to your circuitpython device if necessary.
 
 To run the simple example, open a python terminal in this repo's example/simple folder and run the following:
 
