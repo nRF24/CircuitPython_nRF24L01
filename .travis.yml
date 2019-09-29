@@ -34,7 +34,7 @@ deploy:
 
 install:
   - pip install -r requirements.txt
-  - pip install circuitpython-build-tools Sphinx sphinx-rtd-theme
+  - pip install circuitpython-build-tools==1.3.0 Sphinx sphinx-rtd-theme
   - pip install --force-reinstall pylint==1.9.2
 
 script:
