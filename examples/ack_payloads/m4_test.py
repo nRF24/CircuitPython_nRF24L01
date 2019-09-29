@@ -7,7 +7,9 @@
 '''
 #  we'll be using pipe 0 to receive and transmit ACK packets
 
-import time, board, digitalio as dio
+import time
+import board
+import digitalio as dio
 from circuitpython_nrf24l01 import RF24
 
 # change these (digital output) pins accordingly
@@ -16,7 +18,7 @@ csn = dio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
 # available SPI pins, board.SCK, board.MOSI, board.MISO
-spi = board.SPI() # init spi bus object
+spi = board.SPI()  # init spi bus object
 
 # we'll be using the dynamic payload size feature (enabled by default)
 # the custom ACK payload feature is disabled by default
@@ -32,7 +34,7 @@ nrf = RF24(spi, csn, ce)
 # to be an int ranging [0,5]
 
 # to enable the custom ACK payload feature
-nrf.ack = True # False disables again
+nrf.ack = True  # False disables again
 
 # addresses needs to be in a buffer protocol object (bytearray)
 address = b'1Node'
@@ -44,22 +46,23 @@ tx = b'Hello '
 # need to be in a buffer protocol object (bytearray)
 ACK = b'World '
 
-def master(count=5): # count = 5 will only transmit 5 packets
+
+def master(count=5):  # count = 5 will only transmit 5 packets
     # recommended behavior is to keep in TX mode while idle
-    nrf.listen = False # put radio in TX mode
+    nrf.listen = False  # put radio in TX mode
 
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(address)
 
     counter = count
     while counter:
-        buffer = tx + bytes([counter + 48]) # output buffer
+        buffer = tx + bytes([counter + 48])  # output buffer
         print("Sending (raw): {}".format(repr(buffer)))
         # to read the ACK payload during TX mode we
         # pass the parameter read_ack as True.
-        nrf.ack = True # enable feature before send()
-        now = time.monotonic_ns() / 1000000 # start timer
-        result = nrf.send(buffer) # becomes the response buffer
+        nrf.ack = True  # enable feature before send()
+        now = time.monotonic_ns() / 1000000  # start timer
+        result = nrf.send(buffer)  # becomes the response buffer
         if result is None:
             print('send() timed out')
         elif not result:
@@ -70,13 +73,15 @@ def master(count=5): # count = 5 will only transmit 5 packets
             print('raw ACK: {}'.format(repr(result)))
             # the ACK payload should now be in buffer
         # print timer results despite transmission success
-        print('Transmission took',\
-                time.monotonic_ns() / 1000000 - now, 'ms')
+        print('Transmission took',
+              time.monotonic_ns() / 1000000 - now, 'ms')
         time.sleep(1)
         counter -= 1
 
 # running slave to only fetch/receive count number of packets
 # count = 3 will mimic a full RX FIFO behavior via nrf.listen = False
+
+
 def slave(count=3):
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 0
@@ -88,7 +93,7 @@ def slave(count=3):
     buffer = ACK + bytes([count + 48])
     # we must set the ACK payload data and corresponding
     # pipe number [0,5]
-    nrf.load_ack(buffer, 0) # load ACK for first response
+    nrf.load_ack(buffer, 0)  # load ACK for first response
 
     counter = count
     start = time.monotonic()
@@ -100,18 +105,19 @@ def slave(count=3):
             print("Found {} bytes on pipe {}\
                 ".format(repr(nrf.any()), nrf.pipe()))
             # retreive the received packet's payload
-            rx = nrf.recv() # clears flags & empties RX FIFO
+            rx = nrf.recv()  # clears flags & empties RX FIFO
             print("Received (raw): {}".format(repr(rx)))
             start = time.monotonic()
-            if counter: # Going again?
+            if counter:  # Going again?
                 # build new ACK
                 buffer = ACK + bytes([counter + 48])
                 # load ACK for next response
                 nrf.load_ack(buffer, 0)
 
     # recommended behavior is to keep in TX mode while idle
-    nrf.listen = False # put radio in TX mode
-    nrf.flush_tx() # flush any ACK payload
+    nrf.listen = False  # put radio in TX mode
+    nrf.flush_tx()  # flush any ACK payload
+
 
 print("""\
     nRF24L01 ACK test\n\
