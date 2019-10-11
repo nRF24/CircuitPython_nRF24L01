@@ -914,7 +914,8 @@ class RF24:
         watchdog = self._reg_read(8)  # 8 == OBSERVE_TX register
         pwr = (
             'Standby-II' if self.ce.value else 'Standby-I') if (self._config & 2) else 'Off'
-        print("Channel___________________{} ~ {} GHz".format(self.channel, (self.channel + 2400) / 1000))
+        print("Channel___________________{} ~ {} GHz".format(
+            self.channel, (self.channel + 2400) / 1000))
         print("CRC bytes_________________{}".format(self.crc))
         print("Address length____________{} bytes".format(self.address_length))
         print("Payload lengths___________{} bytes".format(self.payload_length))
@@ -933,9 +934,11 @@ class RF24:
         print("RX FIFO full__________{}    RX FIFO empty________{}".format(
             '_True' if bool(self._fifo & 2) else 'False', bool(self._fifo & 1)))
         print("Ask no ACK_________{}    Custom ACK Payload___{}".format(
-            '_Allowed' if bool(self._features & 1) else 'Disabled', 'Enabled' if self.ack else 'Disabled'))
+            '_Allowed' if bool(self._features & 1) else 'Disabled',
+            'Enabled' if self.ack else 'Disabled'))
         print("Dynamic Payloads___{}    Auto Acknowledgment__{}".format(
-            '_Enabled' if self.dynamic_payloads else 'Disabled', 'Enabled' if self.auto_ack else 'Disabled'))
+            '_Enabled' if self.dynamic_payloads else 'Disabled',
+            'Enabled' if self.auto_ack else 'Disabled'))
         print("Primary Mode_____________{}    Power Mode___________{}".format(
             'RX' if self.listen else 'TX', pwr))
         if dump_pipes:
