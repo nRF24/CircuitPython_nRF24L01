@@ -405,7 +405,7 @@ class RF24:
         else:
             raise ValueError("address must be a buffer protocol object with a byte length\nequal "
                              "to the address_length attribute (currently set to"
-                             f" {self.address_length})")
+                             " {})".format(self.address_length))
 
     def close_rx_pipe(self, pipe_number):
         """This function is used to close a specific data pipe for OTA (over the air) RX
@@ -455,7 +455,7 @@ class RF24:
         if len(address) != self.address_length:
             raise ValueError("address must be a buffer protocol object with a byte length\nequal "
                              "to the address_length attribute (currently set to "
-                             f"{self.address_length})")
+                             "{})".format(self.address_length))
 
         # write the address
         if pipe_number < 2:  # write entire address if pipe_number is 0 or 1
@@ -674,9 +674,9 @@ class RF24:
                 # this way when we raise a ValueError exception we don't leave the nRF24L01 in an
                 # unknown frozen state.
                 if not b or len(b) > 32:
-                    raise ValueError(f"buf (item {i} in the list/tuple) must be a buffer protocol"
-                                     " object with a byte length of\nat least 1 and no greater "
-                                     "than 32")
+                    raise ValueError("buf (item {} in the list/tuple) must be a"
+                                     " buffer protocol object with a byte length of\nat least 1 "
+                                     "and no greater than 32".format(i))
             for b in buf:
                 # using spec sheet calculations:
                 # timeout total = T_upload + 2 * stby2active + T_overAir + T_ack + T_irq
@@ -914,37 +914,36 @@ class RF24:
         watchdog = self._reg_read(8)  # 8 == OBSERVE_TX register
         pwr = (
             'Standby-II' if self.ce.value else 'Standby-I') if (self._config & 2) else 'Off'
-        print(f"Channel___________________{self.channel} ~ {(self.channel + 2400) / 1000} GHz"
-              f"\nCRC bytes_________________{self.crc}"
-              f"\nAddress length____________{self.address_length} bytes"
-              f"\nPayload lengths___________{self.payload_length} bytes"
-              f"\nAuto retry delay__________{self.ard} microseconds"
-              f"\nAuto retry attempts_______{self.arc} maximum"
-              f"\nPackets Lost______________{(watchdog & 0xF0) >> 4} total"
-              f"\nRetry Attempts Made_______{watchdog & 0x0F}"
-              f"\nIRQ - Data Ready______{'_True' if not bool(self._config & 0x40) else 'False'}"
-              f"    Data Ready___________{self.irq_DR}"
-              f"\nIRQ - Data Fail_______{'_True' if not bool(self._config & 0x20) else 'False'}"
-              f"    Data Failed__________{self.irq_DF}"
-              f"\nIRQ - Data Sent_______{'_True' if not bool(self._config & 0x10) else 'False'}"
-              f"    Data Sent____________{self.irq_DS}"
-              f"\nTX FIFO full__________{'_True' if bool(self.tx_full) else 'False'}"
-              f"    TX FIFO empty________{ bool(self.fifo(True,True))}"
-              f"\nRX FIFO full__________{'_True' if bool(self._fifo & 2) else 'False'}"
-              f"    RX FIFO empty________{bool(self._fifo & 1)}"
-              f"\nAsk no ACK_________{'_Allowed' if bool(self._features & 1) else 'Disabled'}"
-              f"    Custom ACK Payload___{'Enabled' if self.ack else 'Disabled'}"
-              f"\nDynamic Payloads___{'_Enabled' if self.dynamic_payloads else 'Disabled'}"
-              f"    Auto Acknowledgment__{'Enabled' if self.auto_ack else 'Disabled'}"
-              f"\nPrimary Mode_____________{'RX' if self.listen else 'TX'}"
-              "    Power Mode___________"
-              f"{pwr}")
+        print("Channel___________________{} ~ {} GHz".format(self.channel, (self.channel + 2400) / 1000))
+        print("CRC bytes_________________{}".format(self.crc))
+        print("Address length____________{} bytes".format(self.address_length))
+        print("Payload lengths___________{} bytes".format(self.payload_length))
+        print("Auto retry delay__________{} microseconds".format(self.ard))
+        print("Auto retry attempts_______{} maximum".format(self.arc))
+        print("Packets Lost______________{} total".format((watchdog & 0xF0) >> 4))
+        print("Retry Attempts Made_______{}".format(watchdog & 0x0F))
+        print("IRQ - Data Ready______{}    Data Ready___________{}".format(
+            '_True' if not bool(self._config & 0x40) else 'False', self.irq_DR))
+        print("IRQ - Data Fail_______{}    Data Failed__________{}".format(
+            '_True' if not bool(self._config & 0x20) else 'False', self.irq_DF))
+        print("IRQ - Data Sent_______{}    Data Sent____________{}".format(
+            '_True' if not bool(self._config & 0x10) else 'False', self.irq_DS))
+        print("TX FIFO full__________{}    TX FIFO empty________{}".format(
+            '_True' if bool(self.tx_full) else 'False', bool(self.fifo(True, True))))
+        print("RX FIFO full__________{}    RX FIFO empty________{}".format(
+            '_True' if bool(self._fifo & 2) else 'False', bool(self._fifo & 1)))
+        print("Ask no ACK_________{}    Custom ACK Payload___{}".format(
+            '_Allowed' if bool(self._features & 1) else 'Disabled', 'Enabled' if self.ack else 'Disabled'))
+        print("Dynamic Payloads___{}    Auto Acknowledgment__{}".format(
+            '_Enabled' if self.dynamic_payloads else 'Disabled', 'Enabled' if self.auto_ack else 'Disabled'))
+        print("Primary Mode_____________{}    Power Mode___________{}".format(
+            'RX' if self.listen else 'TX', pwr))
         if dump_pipes:
             for i in range(RX_ADDR, RX_ADDR + 6):
                 j = i - RX_ADDR
                 is_open = " open " if (
                     self._open_pipes & (1 << j)) else "closed"
-                print(f"Pipe {j} ({is_open}) bound: {self._reg_read_bytes(i)}")
+                print("Pipe {} ({}) bound: {}".format(j, is_open, self._reg_read_bytes(i)))
 
     @property
     def dynamic_payloads(self):
@@ -1001,7 +1000,7 @@ class RF24:
             self._payload_length = length
         else:
             raise ValueError(
-                f"{length}: payload length can only be set in range [1,32] bytes")
+                "{}: payload length can only be set in range [1,32] bytes".format(length))
 
     @property
     def auto_ack(self):
