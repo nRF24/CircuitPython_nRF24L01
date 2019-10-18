@@ -536,7 +536,7 @@ class RF24:
         packet -- only when the `ack` attribute is enabled.
 
         :returns: A `bytearray` of the RX payload data
-            
+
             - If the `dynamic_payloads` attribute is disabled, then the returned bytearray's length
               is equal to the user defined `payload_length` attribute (which defaults to 32).
             - If the `dynamic_payloads` attribute is enabled, then the returned bytearray's length
