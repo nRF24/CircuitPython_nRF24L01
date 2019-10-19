@@ -95,7 +95,7 @@ The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) t
 +------------+----------------+----------------+
 |    VCC     |       3V       |      3.3V      |
 +------------+----------------+----------------+
-|    CE      |  GPIO8 (CE0)   |       D7       |
+|    CE      |  GPIO9 (CE1)   |       D9       |
 +------------+----------------+----------------+
 |    CSN     |     GPIO5      |       D5       |
 +------------+----------------+----------------+
@@ -113,14 +113,13 @@ The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) t
 Using The Examples
 ==================
 
-See `examples <https://circuitpython-nrf24l01.readthedocs.io/en/latest/examples.html>`_ for testing certain features of this the library. Notice that there are 2 files in each scenario/folder; one file titled "pi_test.py" for testing on the raspberry pi, and another file titled "m4_test.py" for testing on an adafruit boards with atsamd51. This was developed and tested on both Raspberry Pi and ItsyBitsy M4. Pins have been hard coded in the examples for the corresponding device, so please adjust these accordingly to your circuitpython device if necessary.
+See `examples <https://circuitpython-nrf24l01.readthedocs.io/en/latest/examples.html>`_ for testing certain features of this the library. The examples were developed and tested on both Raspberry Pi and ItsyBitsy M4. Pins have been hard coded in the examples for the corresponding device, so please adjust these accordingly to your circuitpython device if necessary.
 
-To run the simple example, open a python terminal in this repo's example/simple folder and run the following:
+To run the simple example, navigate to this repository's "examples" folder in the terminal. If you're working with a CircuitPython device (not a Raspberry Pi), copy the file named "nrf24l01_simple_test.py" from this repository's "examples" folder to the root directory of your CircuitPython device's CIRCUITPY drive. Now you're ready to open a python REPR and run the following commands:
 
 .. code-block:: python
 
-    # if using an adafruit feather, try using "from m4_test import *"
-    >>> from pi_test import *
+    >>> from nrf24l01_simple_test import *
         nRF24L01 Simple test
         Run slave() on receiver
         Run master() on transmitter
@@ -134,7 +133,8 @@ To run the simple example, open a python terminal in this repo's example/simple 
     Sending: 1 as struct: b'\x01\x00\x00\x00'
     send() succeessful
     Transmission took 109.0 ms
-    # transmissions from a circuitpython device took 32 to 64 ms
+    # these results were observed from a test on the Raspberry Pi 3
+    # transmissions from a CircuitPython device took 32 to 64 ms
 
 
 About the nRF24L01
