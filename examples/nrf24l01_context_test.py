@@ -1,9 +1,8 @@
-'''
-    Simple example of library usage in context.
-
-    This will not transmit anything, but rather
-    display settings after changing contexts ( & thus configurations)
-'''
+"""
+Simple example of library usage in context.
+This will not transmit anything, but rather
+display settings after changing contexts ( & thus configurations)
+"""
 
 import board
 import digitalio as dio

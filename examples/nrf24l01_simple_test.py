@@ -1,9 +1,8 @@
-'''
-    Simple example of library usage.
-
-    Master transmits an incrementing double every second.
-    Slave polls the radio and prints the received value.
-'''
+"""
+Simple example of library usage.
+master() transmits an incrementing double every second.
+slave() polls the radio and prints the received value.
+"""
 
 import time
 import struct

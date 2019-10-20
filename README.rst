@@ -20,6 +20,15 @@ Introduction
 
 Circuitpython driver library for the nRF24L01 transceiver
 
+CircuitPython port of the nRF24L01 library from Micropython.
+Original work by Damien P. George & Peter Hinch can be found `here
+<https://github.com/micropython/micropython/tree/master/drivers/nrf24l01>`_
+
+The Micropython source has been rewritten to expose all the nRF24L01's features and for
+compatibilty with the Raspberry Pi and other Circuitpython compatible devices. Modified by Brendan Doherty, Rhys Thomas
+
+* Author(s): Damien P. George, Peter Hinch, Rhys Thomas, Brendan Doherty
+
 Features currently supported
 ----------------------------
 
@@ -29,7 +38,7 @@ Features currently supported
 * custom acknowledgment (ACK) payloads for bi-directional communication
 * flag a single payload for no acknowledgment (ACK) from the receiving nRF24L01
 * "re-use the same payload" feature (for manually re-transmitting failed transmissions that remain in the buffer)
-* multiple payload transmissions with one function call (MUST read documentation on the :py:meth:`~circuitpython_nrf24l01.RF24.send` function)
+* multiple payload transmissions with one function call (MUST read documentation on the :py:meth:`~circuitpython_nrf24l01.RF24.send()` function)
 * context manager compatible for easily switching between different radio configurations using "with" statements
 * configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or failed transmissions (these 3 flags control the 1 IRQ pin). There's also virtual representations of these interrupt flags available (see :py:attr:`~circuitpython_nrf24l01.RF24.irq_DR`, :py:attr:`~circuitpython_nrf24l01.RF24.irq_DS`, :py:attr:`~circuitpython_nrf24l01.RF24.irq_DF` attributes)
 * invoke sleep mode (AKA power down mode) for ultra-low current consumption

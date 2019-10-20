@@ -1,10 +1,9 @@
-'''
-    Templated example of using the library to transmit
-    and retrieve custom automatic acknowledgment payloads.
-
-    Master transmits a dummy payload every second and prints the ACK payload.
-    Slave prints the received value and sends a dummy ACK payload.
-'''
+"""
+Templated example of using the library to transmit
+and retrieve custom automatic acknowledgment payloads.
+master() transmits a dummy payload every second and prints the ACK payload.
+slave() prints the received value and sends a dummy ACK payload.
+"""
 #  we'll be using pipe 0 to receive and transmit ACK packets
 
 import time

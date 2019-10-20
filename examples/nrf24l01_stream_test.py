@@ -1,8 +1,8 @@
-'''
-    Example of library usage for streaming multiple payloads.
-    Master transmits an payloads until FIFO is empty.
-    Slave stops listening after 3 seconds of no response.
-'''
+"""
+Example of library usage for streaming multiple payloads.
+master() transmits an payloads until FIFO is empty.
+slave() stops listening after 3 seconds of no response.
+"""
 
 import time
 import board

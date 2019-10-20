@@ -52,13 +52,14 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords='adafruit blinka circuitpython micropython nrf24l01 nRF24L01+ raspberry pi driver radio transceiver',
+    keywords='adafruit blinka circuitpython micropython nrf24l01 nRF24L01+'
+             ' raspberry pi driver radio transceiver',
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
     # TODO: IF LIBRARY FILES ARE A PACKAGE FOLDER,
     #       CHANGE `py_modules=['...']` TO `packages=['...']`
-    py_modules=['circuitpython_nrf24l01'],
+    packages=['circuitpython_nrf24l01'],
 
     # Specifiy your homepage URL for your project here
     url=repo,

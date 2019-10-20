@@ -1,10 +1,10 @@
-'''
-    Simple example of detecting (and verifying) the IRQ
-    interrupt pin on the nRF24L01
+"""
+Simple example of detecting (and verifying) the IRQ
+interrupt pin on the nRF24L01
 
-    Master transmits once, receives once and intentionally fails a transmit.
-    Slave acts as a ponging RX node to successfully complete the tests on the master.
-'''
+master() transmits once, receives once and intentionally fails a transmit.
+slave() acts as a ponging RX node to successfully complete the tests on the master.
+"""
 
 import time
 import board

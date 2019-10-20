@@ -20,22 +20,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-# pylint: disable=too-many-lines,line-too-long,unexpected-line-ending-format,invalid-name
+# pylint: disable=too-many-lines,line-too-long,invalid-name
 """
-========================================
-circuitpython_nrf24l01
-========================================
-
-CircuitPython port of the nRF24L01 library from Micropython.
-Original work by Damien P. George & Peter Hinch can be found `here
-<https://github.com/micropython/micropython/tree/master/drivers/nrf24l01>`_
-
-The Micropython source has been rewritten to expose all the nRF24L01's features and for
-compatibilty with the Raspberry Pi and other Circuitpython compatible devices using Adafruit's
-`busio`, `adafruit_bus_device.spi_device`, and `digitalio`, modules.
-Modified by Brendan Doherty, Rhys Thomas
-
-* Author(s): Damien P. George, Peter Hinch, Rhys Thomas, Brendan Doherty
+RF24 class
+------------
 
 .. important:: The nRF24L01 has 3 key features that are very interdependent of each other. Their
     priority of dependence is as follows:
@@ -93,25 +81,25 @@ With the `auto_ack` feature enabled you get:
     In fact the only attributes that aren't required to match on both endpoint transceivers would
     be the identifying data pipe number (passed to `open_rx_pipe()`), `pa_level`, `arc`, &
     `ard` attributes. The ``ask_no_ack`` feature can be used despite the settings/features
-    configuration (see `send()` & `write()` function parameters for more details).
+    configuration (see :meth:`~circuitpython_nrf24l01.rf24.RF24.send` & `write()` function
+    parameters for more details).
 """
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from adafruit_bus_device.spi_device import SPIDevice
-# nRF24L01+ registers
-CONFIG = 0x00  # register for configuring IRQ, CRC, PWR & RX/TX roles
-EN_AA = 0x01  # register for auto-ACK feature. each bit represents this feature per pipe
-EN_RX = 0x02  # register to open/close pipes. each bit represents this feature per pipe
-SETUP_AW = 0x03  # address width register
-SETUP_RETR = 0x04  # auto-retry count and delay register
-RF_CH = 0x05  # channel register
-RF_SETUP = 0x06  # RF Power Amptlitude & Data Rate
-RX_ADDR = 0x0a  # RX pipe addresses rangeing [0,5]:[0xA:0xF]
-RX_PW = 0x11  # RX payload widths on pipes ranging [0,5]:[0x11,0x16]
-FIFO = 0x17  # register containing info on both RX/TX FIFOs + re-use payload flag
-DYNPD = 0x1c  # dynamic payloads feature. each bit represents this feature per pipe
-FEATURE = 0x1d  # global enablers/disablers for dynamic payloads, auto-ACK, and custom ACK features
+from .registers import (CONFIG,
+                        EN_AA,
+                        EN_RX,
+                        SETUP_AW,
+                        SETUP_RETR,
+                        RF_CH,
+                        RF_SETUP,
+                        RX_ADDR,
+                        RX_PW,
+                        FIFO,
+                        DYNPD,
+                        FEATURE)
 
 class RF24:
     """A driver class for the nRF24L01(+) transceiver radios. This class aims to be compatible with
