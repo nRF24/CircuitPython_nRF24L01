@@ -282,6 +282,7 @@ class RF24:
     def __exit__(self, *exc):
         return False
 
+    # pylint: disable=no-member
     def _reg_read(self, reg):
         buf = bytearray(2)  # 2 = 1 status byte + 1 byte of returned content
         with self.spi as spi:
@@ -317,7 +318,7 @@ class RF24:
             time.sleep(0.005)  # time for CSN to settle
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]  # save status byte
-
+    # pylint: enable=no-member
 
     @property
     def address_length(self):

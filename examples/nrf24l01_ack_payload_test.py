@@ -1,11 +1,7 @@
 """
-Templated example of using the library to transmit
+Simple example of using the library to transmit
 and retrieve custom automatic acknowledgment payloads.
-master() transmits a dummy payload every second and prints the ACK payload.
-slave() prints the received value and sends a dummy ACK payload.
 """
-#  we'll be using pipe 0 to receive and transmit ACK packets
-
 import time
 import board
 import digitalio as dio
@@ -45,8 +41,8 @@ tx = b'Hello '
 # need to be in a buffer protocol object (bytearray)
 ACK = b'World '
 
-
 def master(count=5):  # count = 5 will only transmit 5 packets
+    """Transmits a dummy payload every second and prints the ACK payload"""
     # recommended behavior is to keep in TX mode while idle
     nrf.listen = False  # put radio in TX mode
 
@@ -77,11 +73,8 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         time.sleep(1)
         counter -= 1
 
-# running slave to only fetch/receive count number of packets
-# count = 3 will mimic a full RX FIFO behavior via nrf.listen = False
-
-
 def slave(count=3):
+    """Prints the received value and sends a dummy ACK payload"""
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 0
     nrf.open_rx_pipe(0, address)

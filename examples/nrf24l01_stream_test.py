@@ -1,9 +1,6 @@
 """
 Example of library usage for streaming multiple payloads.
-master() transmits an payloads until FIFO is empty.
-slave() stops listening after 3 seconds of no response.
 """
-
 import time
 import board
 import digitalio as dio
@@ -35,8 +32,8 @@ for i in range(SIZE):
     buffers.append(buff)
     del buff
 
-
 def master(count=1):  # count = 5 will transmit the list 5 times
+    """Transmits a massive buffer of payloads"""
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(address)
     # ensures the nRF24L01 is in TX mode
@@ -52,10 +49,8 @@ def master(count=1):  # count = 5 will transmit the list 5 times
     success_percentage /= SIZE * count
     print('successfully sent', success_percentage * 100, '%')
 
-# running slave to only fetch/receive & count number of packets
-
-
 def slave(timeout=5):
+    """Stops listening after timeout with no response"""
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 0
     # pipe number options range [0,5]
@@ -75,7 +70,6 @@ def slave(timeout=5):
 
     # recommended behavior is to keep in TX mode while idle
     nrf.listen = False  # put the nRF24L01 is in TX mode
-
 
 print("""\
     nRF24L01 Stream test\n\

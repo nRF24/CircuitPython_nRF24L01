@@ -1,6 +1,5 @@
 """
 This example of using the nRF24L01 as a 'fake' Buetooth Beacon
-master() sends out an advertisement once a second (default 15 secs)
 """
 import time
 import struct
@@ -22,8 +21,8 @@ nrf = FakeBLE(spi, csn, ce, name=b'nRF24')
 # this can be changed at any time using the attribute
 nrf.name = b'RFtest'
 
-
 def master(count=15):
+    """Sends out an advertisement once a second (default 15 secs)"""
     with nrf as ble:
         ble.open_tx_pipe()  # endure the tx pip is properly addressed
         for i in range(count):  # advertise data this many times

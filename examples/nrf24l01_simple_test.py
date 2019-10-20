@@ -1,9 +1,6 @@
 """
 Simple example of library usage.
-master() transmits an incrementing double every second.
-slave() polls the radio and prints the received value.
 """
-
 import time
 import struct
 import board
@@ -25,8 +22,8 @@ spi = board.SPI()  # init spi bus object
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(spi, csn, ce)
 
-
 def master(count=5):  # count = 5 will only transmit 5 packets
+    """Transmits an incrementing integer every second"""
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(address)
     # ensures the nRF24L01 is in TX mode
@@ -54,11 +51,8 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         time.sleep(1)
         counter -= 1
 
-# running slave to only fetch/receive count number of packets
-# count = 3 will mimic a full RX FIFO behavior via nrf.listen = False
-
-
 def slave(count=3):
+    """Polls the radio and prints the received value"""
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 0
     # pipe number options range [0,5]
@@ -87,7 +81,6 @@ def slave(count=3):
 
     # recommended behavior is to keep in TX mode while idle
     nrf.listen = False  # put the nRF24L01 is in TX mode
-
 
 print("""\
     nRF24L01 Simple test.\n\
