@@ -38,7 +38,7 @@ install:
   - pip install --force-reinstall pylint==1.9.2
 
 script:
-  - pylint --disable=invalid-name,line-too-long,too-many-instance-attributes,too-many-public-methods,too-many-arguments,too-many-lines,too-many-function-args,too-many-locals,too-many-branches,too-many-nested-blocks,no-member,inconsistent-return-statements circuitpython_nrf24l01/*.py
-  - ([[ ! -d "examples" ]] || pylint --disable=missing-docstring,missing-function-docstring,invalid-name,line-too-long,multiple-imports,unexpected-line-ending-format,no-member examples/*.py)
+  - pylint --disable=invalid-name,too-many-instance-attributes,too-many-public-methods,too-many-arguments,too-many-function-args,too-many-locals,too-many-branches,too-many-nested-blocks,inconsistent-return-statements circuitpython_nrf24l01/*.py
+  - ([[ ! -d "examples" ]] || pylint --disable=missing-function-docstring,invalid-name examples/*.py)
   - circuitpython-build-bundles --library_location . --filename_prefix circuitpython-nrf24l01
   - cd docs && sphinx-build -E -W -b html . _build/html && cd ..
