@@ -21,9 +21,6 @@ Table of Contents
     api
 
 .. toctree::
-    :caption: Tutorials
-
-.. toctree::
     :caption: Store Links
 
     2.4GHz Transceiver IC - nRF24L01+ <https://www.sparkfun.com/products/690>

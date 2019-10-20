@@ -11,6 +11,7 @@ from codecs import open
 from os import path
 
 here = path.abspath(path.dirname(__file__))
+repo = 'https://github.com/2bndy5/CircuitPython_nRF24L01'
 
 # Get the long description from the README file
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
@@ -25,9 +26,6 @@ setup(
     description='Circuitpython driver library for the nRF24L01 transceiver',
     long_description=long_description,
     long_description_content_type='text/x-rst',
-
-    # The project's main homepage.
-    url='https://github.com/2bndy5/CircuitPython_nRF24L01',
 
     # Author details
     author='Brendan Doherty',
@@ -54,11 +52,20 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords='adafruit blinka circuitpython micropython nrf24l01 nRF24L01+',
+    keywords='adafruit blinka circuitpython micropython nrf24l01 nRF24L01+ raspberry pi driver radio transceiver',
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
     # TODO: IF LIBRARY FILES ARE A PACKAGE FOLDER,
     #       CHANGE `py_modules=['...']` TO `packages=['...']`
-    packages=['circuitpython_nrf24l01'],
+    py_modules=['circuitpython_nrf24l01'],
+
+    # Specifiy your homepage URL for your project here
+    url=repo,
+
+    # Extra links for the sidebar on pypi
+    project_urls={
+        'Documentation': 'http://circuitpython-nrf24l01.rtfd.io',
+    },
+    download_url='{}/releases'.format(repo),
 )

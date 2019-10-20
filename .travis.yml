@@ -35,10 +35,10 @@ deploy:
 install:
   - pip install -r requirements.txt
   - pip install circuitpython-build-tools Sphinx sphinx-rtd-theme
-  - pip install --force-reinstall pylint==2.3.1
+  - pip install --force-reinstall pylint==1.9.2
 
 script:
-  - pylint --disable=invalid-name,bad-whitespace,line-too-long,trailing-whitespace,attribute-defined-outside-init,too-many-instance-attributes,inconsistent-return-statements,no-else-return,too-many-public-methods,too-many-arguments,too-many-lines,too-many-function-args,superfluous-parens,too-many-locals,bad-continuation,no-member,no-self-use,too-many-branches,too-many-nested-blocks,multiple-imports,arguments-differ circuitpython_nrf24l01/*.py
-  - ([[ ! -d "examples" ]] || pylint --disable=missing-docstring,invalid-name,bad-whitespace,trailing-whitespace,line-too-long,multiple-imports,no-member,unexpected-line-ending-format examples/*/*.py)
-  - circuitpython-build-bundles --library_location . --package_folder_prefix circuitpython_ --filename_prefix circuitpython_nrf24l01
+  - pylint --disable=invalid-name,line-too-long,too-many-instance-attributes,too-many-public-methods,too-many-arguments,too-many-lines,too-many-function-args,too-many-locals,too-many-branches,too-many-nested-blocks,no-member,inconsistent-return-statements circuitpython_nrf24l01.py
+  - ([[ ! -d "examples" ]] || pylint --disable=missing-docstring,missing-function-docstring,invalid-name,line-too-long,multiple-imports,unexpected-line-ending-format,no-member examples/*.py)
+  - circuitpython-build-bundles --library_location . --filename_prefix circuitpython-nrf24l01
   - cd docs && sphinx-build -E -W -b html . _build/html && cd ..

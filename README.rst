@@ -5,13 +5,18 @@ Introduction
     :target: https://circuitpython-nrf24l01.readthedocs.io/
     :alt: Documentation Status
 
-.. .. image:: https://img.shields.io/discord/327254708534116352.svg
-..     :target: https://discord.gg/nBQh6qu
-..     :alt: Discord
-
 .. image:: https://travis-ci.org/2bndy5/CircuitPython_nRF24L01.svg?branch=master
     :target: https://travis-ci.org/2bndy5/CircuitPython_nRF24L01
     :alt: Build Status
+
+.. image:: https://img.shields.io/pypi/v/circuitpython-nrf24l01.svg
+    :alt: latest version on PyPI
+    :target: https://pypi.python.org/pypi/circuitpython-nrf24l01
+
+.. image:: https://pepy.tech/badge/circuitpython-nrf24l01
+    :alt: Total PyPI downloads
+    :target: https://pepy.tech/project/circuitpython-nrf24l01
+
 
 Circuitpython driver library for the nRF24L01 transceiver
 
@@ -24,12 +29,12 @@ Features currently supported
 * custom acknowledgment (ACK) payloads for bi-directional communication
 * flag a single payload for no acknowledgment (ACK) from the receiving nRF24L01
 * "re-use the same payload" feature (for manually re-transmitting failed transmissions that remain in the buffer)
-* multiple payload transmissions with one function call (MUST read documentation on the "send()" function)
+* multiple payload transmissions with one function call (MUST read documentation on the :py:meth:`~circuitpython_nrf24l01.RF24.send` function)
 * context manager compatible for easily switching between different radio configurations using "with" statements
-* configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or failed transmissions (these 3 flags control the 1 IRQ pin). There's also virtual representations of these interrupt flags available (see "irq_DR", "irq_DS", "irq_DF" attributes)
+* configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or failed transmissions (these 3 flags control the 1 IRQ pin). There's also virtual representations of these interrupt flags available (see :py:attr:`~circuitpython_nrf24l01.RF24.irq_DR`, :py:attr:`~circuitpython_nrf24l01.RF24.irq_DS`, :py:attr:`~circuitpython_nrf24l01.RF24.irq_DF` attributes)
 * invoke sleep mode (AKA power down mode) for ultra-low current consumption
-* cycle redundancy checking (CRC) up to 2 bytes long
-* adjust the nRF24L01's builtin automatic re-transmit feature's parameters (arc: number of attempts, ard: delay between attempts)
+* cyclic redundancy checking (CRC) up to 2 bytes long
+* adjust the nRF24L01's builtin automatic re-transmit feature's parameters (:py:attr:`~circuitpython_nrf24l01.RF24.arc`: number of attempts, :py:attr:`~circuitpython_nrf24l01.RF24.ard`: delay between attempts)
 * adjust the nRF24L01's frequency channel (2.4-2.525 GHz)
 * adjust the nRF24L01's power amplifier level (0, -6, -12, or -18 dBm)
 * adjust the nRF24L01's RF data rate (250Kbps is buggy due to hardware design, but 1Mbps and 2Mbps are reliable)
@@ -37,7 +42,7 @@ Features currently supported
 Features currently unsupported
 -------------------------------
 
-* as of yet, no [intended] implementation for Multiceiver mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). Although this might be acheived easily using the "automatic retry delay" (ard) and "automatic retry count" (arc) attributes set accordingly (varyingly high).
+* as of yet, no [intended] implementation for Multiceiver mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). Although this might be acheived easily using the "automatic retry delay" (:py:attr:`~circuitpython_nrf24l01.RF24.ard`) and "automatic retry count" (:py:attr:`~circuitpython_nrf24l01.RF24.arc`) attributes set accordingly (varyingly high).
 * for reason(s) unknown, a nRF24L01 driven by this library will not "talk" to a nRF24L01 on an Arduino driven by the `TMRh20 RF24 library <http://tmrh20.github.io/RF24/>`_. There is no problems when a nRF24L01 driven by this library "talks" to another nRF24L01 that's also driven by this library. `Other Arduino-based nRF24L01 libraries are available <https://playground.arduino.cc/InterfacingWithHardware/Nrf24L01/>`_, but they have not been tested to communicate with this CircuitPython-nRF24L01 library.
 
 Dependencies
@@ -81,7 +86,7 @@ Pinout
 .. image:: https://lastminuteengineers.com/wp-content/uploads/2018/07/Pinout-nRF24L01-Wireless-Transceiver-Module.png
     :target: https://lastminuteengineers.com/nrf24l01-arduino-wireless-communication/#nrf24l01-transceiver-module-pinout
 
-The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) that can only be connected to their counterparts on the MCU (microcontroller unit). The other 2 essential pins (CE & CSN) can be connected to any digital output pins. Lastly, the only optional pin on the nRf24L01 GPIOs is the IRQ (interrupt; a digital output that's active when low) pin and is only connected to the MCU via a digital input pin during the interrupt example. The following pinout is used in the example codes of this repo's example directory.
+The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) that can only be connected to their counterparts on the MCU (microcontroller unit). The other 2 essential pins (CE & CSN) can be connected to any digital output pins. Lastly, the only optional pin on the nRf24L01 GPIOs is the IRQ (interrupt; a digital output that's active when low) pin and is only connected to the MCU via a digital input pin during the interrupt example. The following pinout is used in the example codes of this library's `example directory <https://github.com/2bndy5/CircuitPython_nRF24L01/tree/master/examples>`_.
 
 +------------+----------------+----------------+
 |  nRF24L01  |  Raspberry Pi  |  ItsyBitsy M4  |
@@ -90,7 +95,7 @@ The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) t
 +------------+----------------+----------------+
 |    VCC     |       3V       |      3.3V      |
 +------------+----------------+----------------+
-|    CE      |  GPIO8 (CE0)   |       D7       |
+|    CE      |  GPIO9 (CE1)   |       D9       |
 +------------+----------------+----------------+
 |    CSN     |     GPIO5      |       D5       |
 +------------+----------------+----------------+
@@ -103,34 +108,39 @@ The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) t
 |    IRQ     |     GPIO4      |       D4       |
 +------------+----------------+----------------+
 
-.. tip:: User reports and personal experiences have improved results if there is a capacitor of at least 100 nanofarads connected in parrallel to the VCC and GND pins.
+.. tip:: User reports and personal experiences have improved results if there is a capacitor of 100 mirofarads [+ another optional 0.1 microfarads capacitor for added stability] connected in parrallel to the VCC and GND pins.
 
 Using The Examples
 ==================
 
-See `examples/` for an certain features of this the library. Notice that there are 2 files in each scenario/folder; one file titled "pi_test.py" for testing on the raspberry pi, and another file titled "m4_test.py" for testing on an adafruit boards with atsamd51. This was developed and tested on both Raspberry Pi and ItsyBitsy M4. Pins have been hard coded in the examples for the corresponding device, so please adjust these accordingly to your circuitpython device if necessary.
+See `examples <https://circuitpython-nrf24l01.readthedocs.io/en/latest/examples.html>`_ for testing certain features of this the library. The examples were developed and tested on both Raspberry Pi and ItsyBitsy M4. Pins have been hard coded in the examples for the corresponding device, so please adjust these accordingly to your circuitpython device if necessary.
 
-To run the simple example, open a python terminal in this repo's example/simple folder and run the following:
+To run the simple example, navigate to this repository's "examples" folder in the terminal. If you're working with a CircuitPython device (not a Raspberry Pi), copy the file named "nrf24l01_simple_test.py" from this repository's "examples" folder to the root directory of your CircuitPython device's CIRCUITPY drive. Now you're ready to open a python REPR and run the following commands:
 
 .. code-block:: python
 
-    # if using an adafruit feather, try using "from m4_test import *"
-    >>> from pi_test import *
+    >>> from nrf24l01_simple_test import *
+        nRF24L01 Simple test
+        Run slave() on receiver
+        Run master() on transmitter
+    >>> master(3)
+    Sending: 3 as struct: b'\x03\x00\x00\x00'
+    send() succeessful
+    Transmission took 86.0 ms
+    Sending: 2 as struct: b'\x02\x00\x00\x00'
+    send() succeessful
+    Transmission took 109.0 ms
+    Sending: 1 as struct: b'\x01\x00\x00\x00'
+    send() succeessful
+    Transmission took 109.0 ms
+    # these results were observed from a test on the Raspberry Pi 3
+    # transmissions from a CircuitPython device took 32 to 64 ms
 
-        NRF24L01 test module.
-        Run slave() on receiver, and master() on transmitter.
-
-    >>> master()
-    Sending:  0
-    Sending:  1
 
 About the nRF24L01
 ==================
 
-Here are the features listed directly from the datasheet (refered to as the `nRF24L01+ Specification Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf>`_):
-
-nRF24L01+ Single Chip 2.4GHz Transceiver
-Preliminary Product Specification v1.0
+Here are the features listed directly from the datasheet (referenced here in the documentation as the `nRF24L01+ Specification Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf>`_):
 
 Key Features:
 -------------
@@ -174,26 +184,27 @@ Applications
 
 Future Project Ideas/Additions using the nRF24L01 (not currently supported by this circuitpython library):
 
-    * `There's also a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3 pins  <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.html>`_ (uses custom bitbanging SPI functions and an external circuit involving a resistor and a capacitor)
-    * network linking layer, maybe something like `TMRh29's RF24Network <http://tmrh20.github.io/RF24Network/>`_
+    * `There's a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3 pins <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.html>`_ (uses custom bitbanging SPI functions and an external circuit involving a resistor and a capacitor)
+    * network linking layer, maybe something like `TMRh20's RF24Network <http://tmrh20.github.io/RF24Network/>`_
+    * add a fake BLE module for sending BLE beacon advertisments from the nRF24L01 as outlined by `Dmitry Grinberg in his write-up (including C source code) <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_. We've started developing this, but fell short of success in `the BLEfake branch of this library's repository <https://github.com/2bndy5/CircuitPython_nRF24L01/tree/BLEfake>`_
 
-Where Do I get 1?
+Where do I get 1?
 =================
 
-See the store links on the sidebar or just google "nRF24L01". It is worth noting that you generally don't want to buy just 1 as you need 2 for testing -- 1 to send & 1 to receive and vise versa. This library has been tested on a cheaply bought 10 pack from Amazon.com using a recommended capacitor (>100nF) on the power pins. Don't get lost on Amazon or eBay! There are other wireless transceivers that are NOT compatible with this library. For instance, the esp8266-01 (also sold in packs) is NOT compatible with this library, but looks very similar to the nRF24L01(+) and could lead to an accidental purchase.
+See the store links on the sidebar or just google "nRF24L01". It is worth noting that you generally don't want to buy just 1 as you need 2 for testing -- 1 to send & 1 to receive and vise versa. This library has been tested on a cheaply bought 10 pack from Amazon.com using a highly recommended capacitor (100 µF) on the power pins. Don't get lost on Amazon or eBay! There are other wireless transceivers that are NOT compatible with this library. For instance, the esp8266-01 (also sold in packs) is NOT compatible with this library, but looks very similar to the nRF24L01(+) and could lead to an accidental purchase.
 
 Contributing
 ============
 
 Contributions are welcome! Please read our `Code of Conduct
 <https://github.com/2bndy5/CircuitPython_nRF24L01/blob/master/CODE_OF_CONDUCT.md>`_
-before contributing to help this project stay welcoming.
+before contributing to help this project stay welcoming. To contribute, all you need to do is fork `this repository <https://github.com/2bndy5/CircuitPython_nRF24L01.git>`_, develop your idea(s) and submit a pull request when stable. To initiate a discussion of idea(s), you need only open an issue on the aforementioned repository (doesn't have to be a bug report).
 
 Sphinx documentation
 -----------------------
 
 Sphinx is used to build the documentation based on rST files and comments in the code. First,
-install dependencies (feel free to reuse the virtual environment from above):
+install dependencies (feel free to reuse the virtual environment from `above <https://circuitpython-nrf24l01.readthedocs.io/en/latest/#installing-from-pypi>`_):
 
 .. code-block:: shell
 
@@ -209,4 +220,4 @@ Now, once you have the virtual environment activated:
     sphinx-build -E -W -b html . _build/html
 
 This will output the documentation to ``docs/_build/html``. Open the index.html in your browser to
-view them. It will also (due to -W) error out on any warning like Travis will. This is a good way to locally verify it will pass.
+view them. It will also (due to -W) error out on any warning like Travis CI does. This is a good way to locally verify it will pass.

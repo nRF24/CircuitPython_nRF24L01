@@ -10,4 +10,4 @@ bundles
 .eggs
 dist
 **/*.egg-info
-.vscode/settings.json
+.vscode
