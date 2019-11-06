@@ -22,74 +22,13 @@
 # THE SOFTWARE.
 # pylint: disable=too-many-lines,invalid-name
 """
-RF24 class
-==============
-
-.. important:: The nRF24L01 has 3 key features that are very interdependent of each other. Their
-    priority of dependence is as follows:
-
-    1. `dynamic_payloads` feature allowing either TX/RX nRF24L01 to be able to send/receive
-       payloads with their size written into the payloads' packet. With this disabled, both RX/TX
-       nRF24L01 must use matching `payload_length` attributes.
-    2. `auto_ack` feature provides transmission verification by using the RX nRF24L01 to
-       automatically and imediatedly send an acknowledgment (ACK) packet in response to freshly
-       received payloads. `auto_ack` requires `dynamic_payloads` to be enabled.
-    3. `ack` feature allows the MCU to append a payload to the ACK packet, thus instant
-       bi-directional communication. A transmitting ACK payload must be loaded into the nRF24L01's
-       TX FIFO buffer (done using `load_ack()`) BEFORE receiving the payload that is to be
-       acknowledged. Once transmitted, the payload is released from the TX FIFO buffer. This
-       feature obviously requires the `auto_ack` feature enabled.
-
-Remeber that the nRF24L01's FIFO (first-in,first-out) buffer has 3 levels. This means that there
-can be up to 3 payloads waiting to be read (RX) and up to 3 payloads waiting to be transmit (TX).
-
-With the `auto_ack` feature enabled you get:
-
-    * cycle redundancy checking (`crc`) automatically enabled
-    * to change amount of automatic re-transmit attempts and the delay time between them. See the
-      `arc` and `ard` attributes.
-
-.. note:: A word on pipes vs addresses vs channels.
-
-    You should think of the data pipes as a vehicle that you (the payload) get into. Continuing the
-    analogy, the specified address is not the address of an nRF24L01 radio, rather it is more
-    like a route that connects the endpoints. There are only six data pipes on the nRF24L01,
-    thus it can simultaneously listen to a maximum of 6 other nRF24L01 radios (can only talk to
-    1 at a time). When assigning addresses to a data pipe, you can use any 5 byte long address
-    you can think of (as long as the last byte is unique among simultaneously broadcasting
-    addresses), so you're not limited to communicating to the same 6 radios (more on this when
-    we support "Multiciever" mode). Also the radio's channel is not be confused with the
-    radio's pipes. Channel selection is a way of specifying a certain radio frequency
-    (frequency = [2400 + channel] MHz). Channel defaults to 76 (like the arduino library), but
-    options range from 0 to 125 -- that's 2.4 GHz to 2.525 GHz. The channel can be tweaked to
-    find a less occupied frequency amongst (Bluetooth & WiFi) ambient signals.
-
-.. warning:: For successful transmissions, most of the endpoint trasceivers' settings/features must
-    match. These settings/features include:
-
-    * The RX pipe's address on the receiving nRF24L01 MUST match the TX pipe's address on the
-      transmitting nRF24L01
-    * `address_length`
-    * `channel`
-    * `data_rate`
-    * `dynamic_payloads`
-    * `payload_length` only when `dynamic_payloads` is disabled
-    * `auto_ack`
-    * custom `ack` payloads
-    * `crc`
-
-    In fact the only attributes that aren't required to match on both endpoint transceivers would
-    be the identifying data pipe number (passed to `open_rx_pipe()`), `pa_level`, `arc`, &
-    `ard` attributes. The ``ask_no_ack`` feature can be used despite the settings/features
-    configuration (see :meth:`~circuitpython_nrf24l01.rf24.RF24.send` & `write()` function
-    parameters for more details).
+rf24 module containing the base class RF24
 """
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from adafruit_bus_device.spi_device import SPIDevice
 from .registers import REGISTERS as REG
-
 
 class RF24:
     """A driver class for the nRF24L01(+) transceiver radios. This class aims to be compatible with
@@ -156,7 +95,6 @@ class RF24:
         represents transmission failure. Defaults to enabled. This can be changed at any time by
         using the `interrupt_config()` function.
     """
-
     def __init__(self, spi, csn, ce,
                  channel=76,
                  payload_length=32,
@@ -343,11 +281,14 @@ class RF24:
         .. note:: There is no option to specify which data pipe to use because the nRF24L01 only
             uses data pipe 0 in TX mode. Additionally, the nRF24L01 uses the same data pipe (pipe
             0) for receiving acknowledgement (ACK) packets in TX mode when the `auto_ack` attribute
-            is enabled.
+            is enabled. Thus, RX pipe 0 is appropriated with the TX address (specified here) when
+            `auto_ack` is set to `True`.
         """
         if len(address) == self.address_length:
+            # if auto_ack == True, then use this TX address as the RX address for ACK
             if self.auto_ack:
-                self.open_rx_pipe(0, address)
+                # settings need to match on both transceivers: dynamic_payloads and payload_length
+                self._reg_write_bytes(REG['RX_ADDR'], address) # using pipe 0
             # let self._open_pipes only reflect RX pipes
             self._reg_write_bytes(0x10, address)  # 0x10 = TX_ADDR register
         else:
@@ -355,24 +296,27 @@ class RF24:
                              "to the address_length attribute (currently set to"
                              " {})".format(self.address_length))
 
-    def close_rx_pipe(self, pipe_number):
-        """This function is used to close a specific data pipe for OTA (over the air) RX
+    def close_rx_pipe(self, pipe_number, reset=True):
+        """This function is used to close a specific data pipe from OTA (over the air) RX
         transmissions.
 
         :param int pipe_number: The data pipe to use for RX transactions. This must be in range
             [0,5]. Otherwise a `ValueError` exception is thrown.
+        :param bool reset: `True` resets the address for the specified ``pipe_number`` to the
+            factory address (different for each pipe). `False` leaves the address on the specified
+            ``pipe_number`` alone. Be aware that the addresses will remain despite loss of power.
         """
         if pipe_number < 0 or pipe_number > 5:
             raise ValueError("pipe number must be in range [0,5]")
         self._open_pipes = self._reg_read(REG['EN_RX'])  # refresh data
-        # reset pipe address accordingly
-        if not pipe_number:
-            # NOTE this does not clear the shadow copy (pipe0_read_addr) of address for pipe 0
-            self._reg_write_bytes(pipe_number + REG['RX_ADDR'], b'\xe7' * 5)
-        elif pipe_number < 2:  # write the full address for pipe 1
-            self._reg_write_bytes(pipe_number + REG['RX_ADDR'], b'\xc2' * 5)
-        else:  # write just LSB for 2 <= pipes >= 5
-            self._reg_write(pipe_number + REG['RX_ADDR'], pipe_number + 0xc1)
+        if reset:# reset pipe address accordingly
+            if not pipe_number:
+                # NOTE this does not clear the shadow copy (pipe0_read_addr) of address for pipe 0
+                self._reg_write_bytes(pipe_number + REG['RX_ADDR'], b'\xe7' * 5)
+            elif pipe_number < 2:  # write the full address for pipe 1
+                self._reg_write_bytes(pipe_number + REG['RX_ADDR'], b'\xc2' * 5)
+            else:  # write just LSB for 2 <= pipes >= 5
+                self._reg_write(pipe_number + REG['RX_ADDR'], pipe_number + 0xc1)
         # disable the specified data pipe if not already
         if self._open_pipes & (1 << pipe_number):
             self._open_pipes = self._open_pipes & ~(1 << pipe_number)
@@ -382,18 +326,18 @@ class RF24:
         """This function is used to open a specific data pipe for OTA (over the air) RX
         transmissions. If `dynamic_payloads` attribute is `False`, then the `payload_length`
         attribute is used to specify the expected length of the RX payload on the specified data
-        pipe (handled when the `listen` attribute changes from `False` to `True`).
+        pipe.
 
         :param int pipe_number: The data pipe to use for RX transactions. This must be in range
             [0,5]. Otherwise a `ValueError` exception is thrown.
-        :param bytearray address: The virtual address of the receiving nRF24L01. This must have a
-            byte length equal to the `address_length` attribute (see `address_length` attribute).
-            Otherwise a `ValueError` exception is thrown. If using a ``pipe_number`` greater than 1
-            , then only the LSByte of the address is written, so make sure LSByte (last character)
-            is unique among other simultaneously receiving addresses).
+        :param bytearray address: The virtual address to the receiving nRF24L01. This must have a
+            byte length equal to the `address_length` attribute. Otherwise a `ValueError`
+            exception is thrown. If using a ``pipe_number`` greater than 1, then only the MSByte
+            of the address is written, so make sure MSByte (first character) is unique among other
+            simultaneously receiving addresses).
 
-        .. note:: The nRF24L01 shares the addresses' MSBytes (address[0:4]) on data pipes 2 through
-            5.
+        .. note:: The nRF24L01 shares the addresses' LSBytes (address[1:5]) on data pipes 2 through
+            5. These shared LSBytes are determined by the address set to pipe 1.
         """
         if pipe_number < 0 or pipe_number > 5:
             raise ValueError("pipe number must be in range [0,5]")
@@ -412,15 +356,18 @@ class RF24:
                 self.pipe0_read_addr = address
             self._reg_write_bytes(REG['RX_ADDR'] + pipe_number, address)
         else:
-            # only write LSByte if pipe_number is not 0 or 1
-            self._reg_write(REG['RX_ADDR'] + pipe_number, address[len(address) - 1])
+            # only write MSByte if pipe_number is not 0 or 1
+            self._reg_write(REG['RX_ADDR'] + pipe_number, address[0])
 
         # now manage the pipe
         self._open_pipes = self._reg_read(REG['EN_RX'])  # refresh data
         # enable the specified data pipe
         self._open_pipes = self._open_pipes | (1 << pipe_number)
         self._reg_write(REG['EN_RX'], self._open_pipes)
-        # payload_length is handled in _start_listening()
+
+        # now adjust payload_length accordingly despite dynamic_payload setting
+        # radio only uses this info in RX mode when dynamic_payloads == True
+        self._reg_write(REG['RX_PW'] + pipe_number, self.payload_length)
 
     @property
     def listen(self):
@@ -461,14 +408,6 @@ class RF24:
         if self.ce.value:
             self.ce.value = 0
 
-        if not self.dynamic_payloads:  # using static payload lengths
-            self._open_pipes = self._reg_read(REG['EN_RX'])  # refresh data
-            for i in range(6):
-                # write payload_length to all open pipes using the RX_PW_Px registers
-                if self._open_pipes & (1 << i):  # is pipe open?
-                    # write accordingly
-                    self._reg_write(REG['RX_PW'] + i, self.payload_length)
-
         if self.pipe0_read_addr is not None:
             # make sure the last call to open_rx_pipe(0) sticks if initialized
             self._reg_write_bytes(REG['RX_ADDR'], self.pipe0_read_addr)
@@ -476,7 +415,7 @@ class RF24:
         # power up radio & set radio in RX mode
         self._config = self._config & 0xFC | 3
         self._reg_write(REG['CONFIG'], self._config)
-        time.sleep(0.00015)  # mandatory wait time to power up radio
+        time.sleep(0.00015) # mandatory wait time to power up radio or switch modes (RX/TX)
         self.flush_rx()  # spec sheet says "used in RX mode"
         self.clear_status_flags(True, False, False)  # only Data Ready flag
 
@@ -525,7 +464,7 @@ class RF24:
 
         .. tip:: Call the `any()` function before calling `recv()` to verify that there is data to
             fetch. If there's no data to fetch, then the nRF24L01 returns bogus data and should not
-            regaurded as a valid payload.
+            regarded as a valid payload.
         """
         # buffer size = current payload size (0x60 = R_RX_PL_WID) + status byte
         curr_pl_size = self.payload_length if not self.dynamic_payloads else self._reg_read(
@@ -852,10 +791,11 @@ class RF24:
             registers. Default is `False` and skips this extra information.
         """
         watchdog = self._reg_read(8)  # 8 == OBSERVE_TX register
-        pwr = (
-            'Standby-II' if self.ce.value else 'Standby-I') if (self._config & 2) else 'Off'
         print("Channel___________________{} ~ {} GHz".format(
             self.channel, (self.channel + 2400) / 1000))
+        print("RF Data Rate______________{} {}".format(
+            self.data_rate, "Mbps" if self.data_rate != 250 else "Kbps"))
+        print("RF Power Amplifier________{} dbm".format(self.pa_level))
         print("CRC bytes_________________{}".format(self.crc))
         print("Address length____________{} bytes".format(self.address_length))
         print("Payload lengths___________{} bytes".format(self.payload_length))
@@ -880,14 +820,20 @@ class RF24:
             '_Enabled' if self.dynamic_payloads else 'Disabled',
             'Enabled' if self.auto_ack else 'Disabled'))
         print("Primary Mode_____________{}    Power Mode___________{}".format(
-            'RX' if self.listen else 'TX', pwr))
+            'RX' if self.listen else 'TX',
+            ('Standby-II' if self.ce.value else 'Standby-I') if self._config & 2 else 'Off'))
         if dump_pipes:
+            shared_bytes = b''
             for i in range(REG['RX_ADDR'], REG['RX_ADDR'] + 6):
                 j = i - REG['RX_ADDR']
-                is_open = " open " if (
-                    self._open_pipes & (1 << j)) else "closed"
-                print("Pipe {} ({}) bound: {}".format(
-                    j, is_open, self._reg_read_bytes(i)))
+                is_open = "( open )" if (
+                    self._open_pipes & (1 << j)) else "(closed)"
+                if j <= 1: # print full address
+                    shared_bytes = self._reg_read_bytes(i)
+                    print("Pipe", j, is_open, "bound:", shared_bytes)
+                else: # print shared bytes + unique byte = actual address used by radio
+                    specific_address = bytearray([self._reg_read(i)]) + shared_bytes[1:]
+                    print("Pipe", j, is_open, "bound:", specific_address)
 
     @property
     def dynamic_payloads(self):
@@ -918,7 +864,7 @@ class RF24:
 
     @property
     def payload_length(self):
-        """This `int` attribute specifies the length (in bytes) of payload that is regaurded,
+        """This `int` attribute specifies the length (in bytes) of payload that is regarded,
         meaning "how big of a payload should the radio care about?" If the `dynamic_payloads`
         attribute is enabled, this attribute has no affect. When `dynamic_payloads` is disabled,
         this attribute is used to specify the payload length when entering RX mode.

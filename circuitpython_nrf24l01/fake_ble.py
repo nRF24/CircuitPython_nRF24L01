@@ -20,9 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """
-FakeBLE class
----------------
-
 This module uses the RF24 module to make the nRF24L01 imitate a Bluetooth-Low-Emissions (BLE)
 beacon. A BLE beacon can send (referred to as advertise) data to any BLE compatible device
 (ie smart devices with Bluetooth 4.0 or later) that is listening.

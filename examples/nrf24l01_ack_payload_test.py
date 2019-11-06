@@ -8,7 +8,7 @@ import digitalio as dio
 from circuitpython_nrf24l01 import RF24
 
 # change these (digital output) pins accordingly
-ce = dio.DigitalInOut(board.D9)  # AKA board.CE1 on the rasberry pi
+ce = dio.DigitalInOut(board.D4)
 csn = dio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's

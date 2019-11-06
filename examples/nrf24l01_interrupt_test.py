@@ -14,7 +14,7 @@ address = b'1Node'
 irq = dio.DigitalInOut(board.D4)
 irq.switch_to_input()  # make sure its an input object
 # change these (digital output) pins accordingly
-ce = dio.DigitalInOut(board.D9)  # AKA board.CE1 on the rasberry pi
+ce = dio.DigitalInOut(board.D4)
 csn = dio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
