@@ -290,6 +290,7 @@ class RF24:
                 self._reg_write_bytes(REG['RX_ADDR'], address) # using pipe 0
                 self._open_pipes = self._open_pipes | 1 # open pipe 0 for RX-ing ACK
                 self._reg_write(REG['EN_RX'], self._open_pipes)
+                self._reg_write(REG['RX_PW'], self.payload_length) # set expected payload_length
             self._reg_write_bytes(REG['TX_ADDR'], address)
         else:
             raise ValueError("address must be a buffer protocol object with a byte length\nequal "
