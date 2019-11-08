@@ -106,11 +106,3 @@ Advanced API
     .. automethod:: flush_tx
     .. automethod:: fifo
     .. automethod:: pipe
-
-Fake BLE API
-============
-
-.. automodule:: circuitpython_nrf24l01.fake_ble
-    :members:
-    :show-inheritance:
-    :exclude-members: listen, open_tx_pipe, address_length, data_rate, dynamic_payloads, auto_ack, ack, crc, arc
