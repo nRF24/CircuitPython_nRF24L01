@@ -9,7 +9,7 @@
 RF24 class
 ==============
 
-.. important:: The nRF24L01 has 3 key features that are very interdependent of each other. Their
+.. important:: The nRF24L01 has 3 key features that can be interdependent of each other. Their
     priority of dependence is as follows:
 
     1. `dynamic_payloads` feature allowing either TX/RX nRF24L01 to be able to send/receive
@@ -17,12 +17,12 @@ RF24 class
        nRF24L01 must use matching `payload_length` attributes.
     2. `auto_ack` feature provides transmission verification by using the RX nRF24L01 to
        automatically and imediatedly send an acknowledgment (ACK) packet in response to freshly
-       received payloads. `auto_ack` requires `dynamic_payloads` to be enabled.
+       received payloads. `auto_ack` does not require `dynamic_payloads` to be enabled.
     3. `ack` feature allows the MCU to append a payload to the ACK packet, thus instant
        bi-directional communication. A transmitting ACK payload must be loaded into the nRF24L01's
        TX FIFO buffer (done using `load_ack()`) BEFORE receiving the payload that is to be
        acknowledged. Once transmitted, the payload is released from the TX FIFO buffer. This
-       feature obviously requires the `auto_ack` feature enabled.
+       feature requires the `auto_ack` and `dynamic_payloads` features enabled.
 
 Remeber that the nRF24L01's FIFO (first-in,first-out) buffer has 3 levels. This means that there
 can be up to 3 payloads waiting to be read (RX) and up to 3 payloads waiting to be transmit (TX).

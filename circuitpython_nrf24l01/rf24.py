@@ -854,11 +854,10 @@ class RF24:
     def dynamic_payloads(self):
         """This `bool` attribute controls the nRF24L01's dynamic payload length feature.
 
-        - `True` enables nRF24L01's dynamic payload length feature. Enabling the `auto_ack`
-          attribute also enables `dynamic_payloads` as it is required. The `payload_length`
+        - `True` enables nRF24L01's dynamic payload length feature. The `payload_length`
           attribute is ignored when this feature is enabled.
-        - `False` disables nRF24L01's dynamic payload length feature. Disabling the
-          `dynamic_payloads` also disables `auto_ack` (see also the `auto_ack` attribute).
+        - `False` disables nRF24L01's dynamic payload length feature. Be sure to adjust
+          the `payload_length` attribute accordingly when `dynamic_payloads` feature is disabled.
         """
         return bool(self._dyn_pl and (self._features & 4))
 
@@ -907,12 +906,10 @@ class RF24:
     def auto_ack(self):
         """This `bool` attribute controls the nRF24L01's automatic acknowledgment feature.
 
-        - `True` enables automatic acknowledgment packets. Enabling the `auto_ack` attribute also
-          enables `dynamic_payloads` as it is required. Also the CRC (cyclic redundancy checking)
+        - `True` enables automatic acknowledgment packets. The CRC (cyclic redundancy checking)
           is enabled automatically by the nRF24L01 if the `auto_ack` attribute is enabled (see also
-          `dynamic_payloads` and `crc` attributes).
-        - `False` disables automatic acknowledgment packets. Disabling the `auto_ack` also disables
-          `dynamic_payloads` (see also the `dynamic_payloads` attribute). The `crc` attribute will
+          `crc` attribute).
+        - `False` disables automatic acknowledgment packets. The `crc` attribute will
           remain unaffected (remains enabled) when disabling the `auto_ack` attribute.
         """
         return self._aa
