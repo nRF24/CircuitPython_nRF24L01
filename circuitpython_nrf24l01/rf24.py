@@ -166,8 +166,7 @@ class RF24:
 
         # manage dynamic_payloads, auto_ack, and ack features
         self._dyn_pl = 0x3F if dynamic_payloads else 0  # 0x3F == enabled on all pipes
-        # 0x3F == enabled on all pipes
-        self._aa = 0x3F if auto_ack and dynamic_payloads else 0
+        self._aa = 0x3F if auto_ack else 0 # 0x3F == enabled on all pipes
         self._features = (dynamic_payloads << 2) | ((ack if auto_ack and dynamic_payloads
                                                      else False) << 1) | ask_no_ack
 
@@ -289,8 +288,9 @@ class RF24:
             if self.auto_ack:
                 # settings need to match on both transceivers: dynamic_payloads and payload_length
                 self._reg_write_bytes(REG['RX_ADDR'], address) # using pipe 0
-            # let self._open_pipes only reflect RX pipes
-            self._reg_write_bytes(0x10, address)  # 0x10 = TX_ADDR register
+                self._open_pipes = self._open_pipes | 1 # open pipe 0 for RX-ing ACK
+                self._reg_write(REG['EN_RX'], self._open_pipes)
+            self._reg_write_bytes(REG['TX_ADDR'], address)
         else:
             raise ValueError("address must be a buffer protocol object with a byte length\nequal "
                              "to the address_length attribute (currently set to"
@@ -398,7 +398,7 @@ class RF24:
     @listen.setter
     def listen(self, is_rx):
         assert isinstance(is_rx, (bool, int))
-        if is_rx:
+        if self.listen != is_rx:
             self._start_listening()
         else:
             self._stop_listening()
@@ -585,7 +585,7 @@ class RF24:
                     (len(b) * 64 / self.spi.baudrate)
                 self.write(b, ask_no_ack)
                 # wait for the ESB protocol to finish (or at least attempt)
-                time.sleep(timeout)
+                time.sleep(timeout) # TODO could do this better
                 self.update()  # update status flags
                 if self.irq_DF:  # need to clear for continuing transmissions
                     # retry twice at most -- this seemed adaquate during testing
@@ -609,9 +609,12 @@ class RF24:
         if not buf or len(buf) > 32:
             raise ValueError("buf must be a buffer protocol object with a byte length of"
                              "\nat least 1 and no greater than 32")
+        result = None
+        # T_upload is done before timeout begins (after payload write action AKA upload)
+        timeout = pl_coef * (((8 * (len(buf) + pl_len)) + 9) /
+                             bitrate) + stby2active + t_irq + t_retry
         self.write(buf, ask_no_ack)  # init using non-blocking helper
         time.sleep(0.00001)  # ensure CE pulse is >= 10 µs
-        start = time.monotonic()
         # if pulse is stopped here, the nRF24L01 only handles the top level payload in the FIFO.
         # hold CE HIGH to continue processing through the rest of the TX FIFO bound for the
         # address passed to open_tx_pipe()
@@ -620,21 +623,18 @@ class RF24:
 
         # now wait till the nRF24L01 has determined the result or timeout (based on calcs
         # from spec sheet)
-        result = None
-        # T_upload is done before timeout begins (after payload write action AKA upload)
-        timeout = pl_coef * (((8 * (len(buf) + pl_len)) + 9) /
-                             bitrate) + stby2active + t_irq + t_retry
+        start = time.monotonic()
         while not self.irq_DS and not self.irq_DF and (time.monotonic() - start) < timeout:
             self.update()  # perform Non-operation command to get status byte (should be faster)
             # print('status: DR={} DS={} DF={}'.format(self.irq_DR, self.irq_DS, self.irq_DF))
         if self.irq_DS or self.irq_DF:  # transmission done
             # get status flags to detect error
-            result = bool(self.irq_DS)
+            result = self.irq_DS if self.auto_ack else not self.irq_DF
 
         # read ack payload clear status flags, then power down
         if self.ack and self.irq_DS and not ask_no_ack:
             # get and save ACK payload to self.ack if user wants it
-            result = self.read_ack()  # save reply in input buffer
+            result = self.read_ack()  # save RX'd ACK payload to result
             if result is None:  # can't return empty handed
                 result = b'NO ACK RETURNED'
         self.clear_status_flags(False)  # only TX related IRQ flags
@@ -758,37 +758,48 @@ class RF24:
         :prints:
 
             - ``Channel`` The current setting of the `channel` attribute
+            - ``RF Data Rate`` The current setting of the RF `data_rate` attribute.
+            - ``RF Power Amplifier`` The current setting of the `pa_level` attribute.
             - ``CRC bytes`` The current setting of the `crc` attribute
             - ``Address length`` The current setting of the `address_length` attribute
             - ``Payload lengths`` The current setting of the `payload_length` attribute
             - ``Auto retry delay`` The current setting of the `ard` attribute
             - ``Auto retry attempts`` The current setting of the `arc` attribute
-            - ``Packets Lost`` Amount of packets lost (transmission failures)
+            - ``Packets Lost`` Total amount of packets lost (transmission failures)
             - ``Retry Attempts Made`` Maximum amount of attempts to re-transmit during last
               transmission (resets per payload)
             - ``IRQ - Data Ready`` The current setting of the IRQ pin on "Data Ready" event
             - ``IRQ - Data Sent`` The current setting of the IRQ pin on "Data Sent" event
             - ``IRQ - Data Fail`` The current setting of the IRQ pin on "Data Fail" event
             - ``Data Ready`` Is there RX data ready to be read?
-            - ``Data Sent`` Has the TX data been sent?
+              (state of the `irq_DR` flag)
+            - ``Data Sent`` Has the TX data been sent? (state of the `irq_DS` flag)
             - ``Data Failed`` Has the maximum attempts to re-transmit been reached?
-            - ``TX FIFO full`` Is the TX FIFO buffer full?
+              (state of the `irq_DF` flag)
+            - ``TX FIFO full`` Is the TX FIFO buffer full? (state of the `tx_full` flag)
             - ``TX FIFO empty`` Is the TX FIFO buffer empty?
             - ``RX FIFO full`` Is the RX FIFO buffer full?
             - ``RX FIFO empty`` Is the RX FIFO buffer empty?
             - ``Custom ACK payload`` Is the nRF24L01 setup to use an extra (user defined) payload
-              attached to the acknowledgment packet?
-            - ``Ask no ACK`` Is the nRF24L01 set up to transmit individual packets that don't
+              attached to the acknowledgment packet? (state of the `ack` attribute)
+            - ``Ask no ACK`` Is the nRF24L01 setup to transmit individual packets that don't
               require acknowledgment?
-            - ``Automatic Acknowledgment`` Is the automatic acknowledgement feature enabled?
-            - ``Dynamic Payloads`` Is the dynamic payload length feature enabled?
+            - ``Automatic Acknowledgment`` Is the `auto_ack` attribute enabled?
+            - ``Dynamic Payloads`` Is the `dynamic_payloads` attribute enabled?
             - ``Primary Mode`` The current mode (RX or TX) of communication of the nRF24L01 device.
             - ``Power Mode`` The power state can be Off, Standby-I, Standby-II, or On.
 
-        :param bool dump_pipes: `True` appends the output and prints: ``Pipe [#] ([open/closed])
-            bound: [address]`` where "#" represent the pipe number, the "open/closed" status is
-            relative to the pipe's RX status, and "address" is read directly from the nRF24L01
-            registers. Default is `False` and skips this extra information.
+        :param bool dump_pipes: `True` appends the output and prints:
+
+            * the current address used for TX transmissions
+            * ``Pipe [#] ([open/closed]) bound: [address]`` where ``#`` represent the pipe number,
+              the ``open/closed`` status is relative to the pipe's RX status, and ``address`` is
+              read directly from the nRF24L01 registers.
+            * if the pipe is open, then the output also prints ``expecting [X] byte static
+              payloads`` where ``X`` is the `payload_length` (in bytes) the pipe is setup to
+              receive when `dynamic_payloads` is disabled.
+
+            Default is `False` and skips this extra information.
         """
         watchdog = self._reg_read(8)  # 8 == OBSERVE_TX register
         print("Channel___________________{} ~ {} GHz".format(
@@ -824,16 +835,19 @@ class RF24:
             ('Standby-II' if self.ce.value else 'Standby-I') if self._config & 2 else 'Off'))
         if dump_pipes:
             shared_bytes = b''
+            print('TX address____________', self._reg_read_bytes(REG['TX_ADDR']))
             for i in range(REG['RX_ADDR'], REG['RX_ADDR'] + 6):
                 j = i - REG['RX_ADDR']
-                is_open = "( open )" if (
-                    self._open_pipes & (1 << j)) else "(closed)"
+                payload_width = self._reg_read(REG['RX_PW'] + j)
+                is_open = "( open )" if self._open_pipes & (1 << j) else "(closed)"
                 if j <= 1: # print full address
                     shared_bytes = self._reg_read_bytes(i)
                     print("Pipe", j, is_open, "bound:", shared_bytes)
                 else: # print shared bytes + unique byte = actual address used by radio
                     specific_address = bytearray([self._reg_read(i)]) + shared_bytes[1:]
                     print("Pipe", j, is_open, "bound:", specific_address)
+                if self._open_pipes & (1 << j):
+                    print('\t\texpecting', payload_width, 'byte static payloads')
 
     @property
     def dynamic_payloads(self):
@@ -851,8 +865,6 @@ class RF24:
     def dynamic_payloads(self, enable):
         assert isinstance(enable, (bool, int))
         self._features = self._reg_read(REG['FEATURE'])  # refresh data
-        if self.auto_ack and not enable:  # disabling and auto_ack is still on
-            self.auto_ack = enable  # disable auto_ack as this is required for it
         # save changes to registers(& their shadows)
         if self._features & 4 != enable:  # if not already
             # throw a specific global flag for enabling dynamic payloads
@@ -902,14 +914,11 @@ class RF24:
           `dynamic_payloads` (see also the `dynamic_payloads` attribute). The `crc` attribute will
           remain unaffected (remains enabled) when disabling the `auto_ack` attribute.
         """
-        return self._aa and self.dynamic_payloads
+        return self._aa
 
     @auto_ack.setter
     def auto_ack(self, enable):
         assert isinstance(enable, (bool, int))
-        # this feature requires dynamic payloads enabled; check for that now
-        if not self.dynamic_payloads and enable:  # if dynamic_payloads is off and this is enabling
-            self.dynamic_payloads = enable  # enable dynamic_payloads
         # the following 0x3F == enabled auto_ack on all pipes
         self._aa = 0x3F if enable else 0
         self._reg_write(REG['EN_AA'], self._aa)  # 1 == EN_AA register for ACK feature
@@ -928,19 +937,22 @@ class RF24:
           the `auto_ack` and `dynamic_payloads` attributes (they work just fine without this
           feature).
         """
-        return bool((self._features & 2) and self.auto_ack)
+        return bool((self._features & 2) and self.auto_ack and self.dynamic_payloads)
 
     @ack.setter
     def ack(self, enable):
         assert isinstance(enable, (bool, int))
         # we need to throw the EN_ACK_PAY flag in the FEATURES register accordingly on both
         # TX & RX nRF24L01s
-        if self.ack != enable:  # if enabling
+        if self.ack != enable: # if enabling
             self.auto_ack = True  # ensure auto_ack feature is enabled
+            # dynamic_payloads required for custom ACK payloads
+            self._dyn_pl = 0x3F
+            self._reg_write(REG['DYNPD'], self._dyn_pl)
         else:
             # setting auto_ack feature automatically updated the _features attribute, so
             self._features = self._reg_read(REG['FEATURE'])  # refresh data here
-        self._features = (self._features & 5) | (2 if enable else 0)
+        self._features = (self._features & 5) | (6 if enable else 0)
         self._reg_write(REG['FEATURE'], self._features)
 
     def load_ack(self, buf, pipe_number):
@@ -1110,13 +1122,13 @@ class RF24:
             .pdf#G1132980>`_). After using `send()` or setting `listen` to `False`, the nRF24L01
             is left in Standby-I mode (see also notes on the `write()` function).
         """
-        self._config = self._reg_read(REG['CONFIG'])  # refresh data
         return bool(self._config & 2)
 
     @power.setter
     def power(self, is_on):
         assert isinstance(is_on, (bool, int))
         # capture surrounding flags and set PWR_UP flag according to is_on boolean
+        self._config = self._reg_read(REG['CONFIG'])  # refresh data
         if self.power != is_on:
             # only write changes
             self._config = (self._config & 0x7d) | (

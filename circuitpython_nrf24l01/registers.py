@@ -12,5 +12,6 @@ REGISTERS = {
     'RX_PW'      : 0x11,# RX payload widths on pipes ranging [0,5]:[0x11,0x16]
     'FIFO'       : 0x17,# register containing info on both RX/TX FIFOs + re-use payload flag
     'DYNPD'      : 0x1c,# dynamic payloads feature. Each bit represents this feature per pipe
-    'FEATURE'    : 0x1d # global toggles for dynamic payloads, auto-ACK, and custom ACK features
+    'FEATURE'    : 0x1d,# global toggles for dynamic payloads, auto-ACK, and custom ACK features
+    'TX_ADDR'    : 0x10 # Address that is used for TX transmissions
 }
