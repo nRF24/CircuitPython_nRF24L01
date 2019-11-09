@@ -49,9 +49,8 @@ def master(count=5):  # count = 5 will only transmit 5 packets
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(address)
 
-    counter = count
-    while counter:
-        buffer = tx + bytes([counter + 48])  # output buffer
+    while count:
+        buffer = tx + bytes([count + 48])  # output buffer
         print("Sending (raw): {}".format(repr(buffer)))
         # to read the ACK payload during TX mode we
         # pass the parameter read_ack as True.
@@ -71,7 +70,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         print('Transmission took',
               time.monotonic() * 1000 - now, 'ms')
         time.sleep(1)
-        counter -= 1
+        count -= 1
 
 def slave(count=3):
     """Prints the received value and sends a dummy ACK payload"""
@@ -87,12 +86,11 @@ def slave(count=3):
     # pipe number [0,5]
     nrf.load_ack(buffer, 0)  # load ACK for first response
 
-    counter = count
     start = time.monotonic()
-    while counter and (time.monotonic() - start) < (count * 2):
+    while count and (time.monotonic() - start) < (count * 2):
         if nrf.any():
-            # this will listen indefinitely till counter == 0
-            counter -= 1
+            # this will listen indefinitely till count == 0
+            count -= 1
             # print details about the received packet (if any)
             print("Found {} bytes on pipe {}\
                 ".format(repr(nrf.any()), nrf.pipe()))
@@ -100,9 +98,9 @@ def slave(count=3):
             rx = nrf.recv()  # clears flags & empties RX FIFO
             print("Received (raw): {}".format(repr(rx)))
             start = time.monotonic()
-            if counter:  # Going again?
+            if count:  # Going again?
                 # build new ACK
-                buffer = ACK + bytes([counter + 48])
+                buffer = ACK + bytes([count + 48])
                 # load ACK for next response
                 nrf.load_ack(buffer, 0)
 

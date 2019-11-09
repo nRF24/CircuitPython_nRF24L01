@@ -20,7 +20,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-# pylint: disable=too-many-lines,invalid-name
 """
 rf24 module containing the base class RF24
 """
@@ -133,13 +132,13 @@ class RF24:
         self._fifo = 0
         self._status = 0
         # init shadow copy of RX addresses for all pipes
-        self._pipes = [None, None, None, None, None, None]
+        self._pipes = [b'', b'', 0, 0, 0, 0]
         for i in range(6): # set all pipe's RX addresses to reset value
             if i < 2:
                 if not i:
-                    self._pipes[i] = b'\xe7' * 5
+                    self._pipes[i] = b'\xe7' * address_length
                 else:
-                    self._pipes[i] = b'\xc2' * 5
+                    self._pipes[i] = b'\xc2' * address_length
             else:
                 self._pipes[i] = 0xc1 + i
         self._tx_address = self._pipes[0] # shadow copy of the TX_ADDR
@@ -243,16 +242,6 @@ class RF24:
         return self
 
     def __exit__(self, *exc):
-        # capture pipe addresses
-        for i in range(6):
-            if i < 2:
-                self._pipes[i] = self._reg_read_bytes(RX_ADDR + i)
-            else:
-                self._pipes[i] = self._reg_read(RX_ADDR + i)
-            self._payload_widths[i] = self._reg_read(RX_PW + i)
-        # capture tx_address
-        self._tx_address = self._reg_read_bytes(TX_ADDR)
-        self._open_pipes = self._reg_read(EN_RX)
         return False
 
     # pylint: disable=no-member
@@ -340,6 +329,7 @@ class RF24:
                 self._reg_write(EN_RX, self._open_pipes)
                 self._payload_widths[0] = self.payload_length
                 self._reg_write(RX_PW, self.payload_length) # set expected payload_length
+                self._pipes[0] = address # update the context as well
             self._tx_address = address
             self._reg_write_bytes(TX_ADDR, address)
         else:
@@ -364,10 +354,13 @@ class RF24:
             if not pipe_number:
                 # NOTE this does not clear the shadow copy (pipe0_read_addr) of address for pipe 0
                 self._reg_write_bytes(pipe_number + RX_ADDR, b'\xe7' * 5)
-            elif pipe_number < 2:  # write the full address for pipe 1
+                self._pipes[pipe_number] = b'\xe7' * 5
+            elif pipe_number == 1:  # write the full address for pipe 1
                 self._reg_write_bytes(pipe_number + RX_ADDR, b'\xc2' * 5)
-            else:  # write just LSB for 2 <= pipes >= 5
+                self._pipes[pipe_number] = b'\xc2' * 5
+            else:  # write just MSB for 2 <= pipes <= 5
                 self._reg_write(pipe_number + RX_ADDR, pipe_number + 0xc1)
+                self._pipes[pipe_number] = pipe_number + 0xc1
         # disable the specified data pipe if not already
         if self._open_pipes & (1 << pipe_number):
             self._open_pipes = self._open_pipes & ~(1 << pipe_number)
@@ -421,6 +414,7 @@ class RF24:
         # now adjust payload_length accordingly despite dynamic_payload setting
         # radio only uses this info in RX mode when dynamic_payloads == True
         self._reg_write(RX_PW + pipe_number, self.payload_length)
+        self._payload_widths[pipe_number] = self.payload_length
 
     @property
     def listen(self):
@@ -464,6 +458,7 @@ class RF24:
         if self._pipe0_read_addr is not None:
             # make sure the last call to open_rx_pipe(0) sticks if initialized
             self._reg_write_bytes(RX_ADDR, self._pipe0_read_addr)
+            self._pipes[0] = self._pipe0_read_addr # update the context as well
 
         # power up radio & set radio in RX mode
         self._config = self._config & 0xFC | 3
@@ -887,20 +882,16 @@ class RF24:
             'RX' if self.listen else 'TX',
             ('Standby-II' if self.ce.value else 'Standby-I') if self._config & 2 else 'Off'))
         if dump_pipes:
-            shared_bytes = b''
-            print('TX address____________', self._reg_read_bytes(TX_ADDR))
-            for i in range(RX_ADDR, RX_ADDR + 6):
-                j = i - RX_ADDR
-                payload_width = self._reg_read(RX_PW + j)
-                is_open = "( open )" if self._open_pipes & (1 << j) else "(closed)"
-                if j <= 1: # print full address
-                    shared_bytes = self._reg_read_bytes(i)
-                    print("Pipe", j, is_open, "bound:", shared_bytes)
-                else: # print shared bytes + unique byte = actual address used by radio
-                    specific_address = bytearray([self._reg_read(i)]) + shared_bytes[1:]
-                    print("Pipe", j, is_open, "bound:", specific_address)
-                if self._open_pipes & (1 << j):
-                    print('\t\texpecting', payload_width, 'byte static payloads')
+            print('TX address____________', self._tx_address)
+            for i, address in enumerate(self._pipes):
+                is_open = "( open )" if self._open_pipes & (1 << i) else "(closed)"
+                if i <= 1: # print full address
+                    print("Pipe", i, is_open, "bound:", address)
+                else: # print unique byte + shared bytes = actual address used by radio
+                    print("Pipe", i, is_open, "bound:",
+                          bytes([self._pipes[i]]) + self._pipes[1][1:])
+                if self._open_pipes & (1 << i):
+                    print('\t\texpecting', self._payload_widths[i], 'byte static payloads')
 
     @property
     def dynamic_payloads(self):
