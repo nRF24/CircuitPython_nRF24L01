@@ -1,11 +1,7 @@
-'''
-    Simple example of detecting (and verifying) the IRQ
-    interrupt pin on the nRF24L01
-
-    Master transmits once, receives once and intentionally fails a transmit.
-    Slave acts as a ponging RX node to successfully complete the tests on the master.
-'''
-
+"""
+Simple example of detecting (and verifying) the IRQ
+interrupt pin on the nRF24L01
+"""
 import time
 import board
 import digitalio as dio
@@ -18,7 +14,7 @@ address = b'1Node'
 irq = dio.DigitalInOut(board.D4)
 irq.switch_to_input()  # make sure its an input object
 # change these (digital output) pins accordingly
-ce = dio.DigitalInOut(board.D9)  # AKA board.CE1 on the rasberry pi
+ce = dio.DigitalInOut(board.D4)
 csn = dio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
@@ -30,8 +26,8 @@ spi = board.SPI()  # init spi bus object
 nrf = RF24(spi, csn, ce)
 nrf.arc = 15  # turn up automatic retries to the max. default is 3
 
-
 def master(timeout=5):  # will only wait 5 seconds for slave to respond
+    """Transmits once, receives once, and intentionally fails a transmit"""
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(address)
     # ensures the nRF24L01 is in TX mode
@@ -85,8 +81,8 @@ def master(timeout=5):  # will only wait 5 seconds for slave to respond
             'IRQ on data fail is not active, check your wiring and call interrupt_config()')
     nrf.clear_status_flags()  # clear all flags for next test
 
-
-def slave(timeout=10):  # will listen for 10 seconds before timming out
+def slave(timeout=10):  # will listen for 10 seconds before timing out
+    """Acts as a ponging RX node to successfully complete the tests on the master"""
     # setup radio to recieve ping
     nrf.open_rx_pipe(0, address)
     nrf.listen = 1
@@ -102,7 +98,6 @@ def slave(timeout=10):  # will listen for 10 seconds before timming out
     nrf.open_tx_pipe(address)
     nrf.send(b'pong')  # send a payload to complete the on data ready test
     # we're done on this side
-
 
 print("""\
     nRF24L01 Interrupt test\n\

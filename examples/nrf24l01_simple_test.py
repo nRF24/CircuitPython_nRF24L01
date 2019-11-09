@@ -1,10 +1,6 @@
-'''
-    Simple example of library usage.
-
-    Master transmits an incrementing double every second.
-    Slave polls the radio and prints the received value.
-'''
-
+"""
+Simple example of library usage.
+"""
 import time
 import struct
 import board
@@ -15,7 +11,7 @@ from circuitpython_nrf24l01 import RF24
 address = b'1Node'
 
 # change these (digital output) pins accordingly
-ce = dio.DigitalInOut(board.D9)  # AKA board.CE1 on the rasberry pi
+ce = dio.DigitalInOut(board.D4)
 csn = dio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
@@ -26,8 +22,8 @@ spi = board.SPI()  # init spi bus object
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(spi, csn, ce)
 
-
 def master(count=5):  # count = 5 will only transmit 5 packets
+    """Transmits an incrementing integer every second"""
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(address)
     # ensures the nRF24L01 is in TX mode
@@ -55,11 +51,8 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         time.sleep(1)
         counter -= 1
 
-# running slave to only fetch/receive count number of packets
-# count = 3 will mimic a full RX FIFO behavior via nrf.listen = False
-
-
 def slave(count=3):
+    """Polls the radio and prints the received value"""
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 0
     # pipe number options range [0,5]
@@ -88,7 +81,6 @@ def slave(count=3):
 
     # recommended behavior is to keep in TX mode while idle
     nrf.listen = False  # put the nRF24L01 is in TX mode
-
 
 print("""\
     nRF24L01 Simple test.\n\

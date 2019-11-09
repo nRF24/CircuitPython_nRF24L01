@@ -20,6 +20,15 @@ Introduction
 
 Circuitpython driver library for the nRF24L01 transceiver
 
+CircuitPython port of the nRF24L01 library from Micropython.
+Original work by Damien P. George & Peter Hinch can be found `here
+<https://github.com/micropython/micropython/tree/master/drivers/nrf24l01>`_
+
+The Micropython source has been rewritten to expose all the nRF24L01's features and for
+compatibilty with the Raspberry Pi and other Circuitpython compatible devices. Modified by Brendan Doherty, Rhys Thomas
+
+* Author(s): Damien P. George, Peter Hinch, Rhys Thomas, Brendan Doherty
+
 Features currently supported
 ----------------------------
 
@@ -29,7 +38,7 @@ Features currently supported
 * custom acknowledgment (ACK) payloads for bi-directional communication
 * flag a single payload for no acknowledgment (ACK) from the receiving nRF24L01
 * "re-use the same payload" feature (for manually re-transmitting failed transmissions that remain in the buffer)
-* multiple payload transmissions with one function call (MUST read documentation on the :py:meth:`~circuitpython_nrf24l01.RF24.send` function)
+* multiple payload transmissions with one function call (MUST read documentation on the :py:meth:`~circuitpython_nrf24l01.RF24.send()` function)
 * context manager compatible for easily switching between different radio configurations using "with" statements
 * configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or failed transmissions (these 3 flags control the 1 IRQ pin). There's also virtual representations of these interrupt flags available (see :py:attr:`~circuitpython_nrf24l01.RF24.irq_DR`, :py:attr:`~circuitpython_nrf24l01.RF24.irq_DS`, :py:attr:`~circuitpython_nrf24l01.RF24.irq_DF` attributes)
 * invoke sleep mode (AKA power down mode) for ultra-low current consumption
@@ -38,12 +47,12 @@ Features currently supported
 * adjust the nRF24L01's frequency channel (2.4-2.525 GHz)
 * adjust the nRF24L01's power amplifier level (0, -6, -12, or -18 dBm)
 * adjust the nRF24L01's RF data rate (250Kbps is buggy due to hardware design, but 1Mbps and 2Mbps are reliable)
+* a nRF24L01 driven by this library can communicate with a nRF24L01 on an Arduino driven by the `TMRh20 RF24 library <http://tmrh20.github.io/RF24/>`_. See the nrf24l01_2arduino_handling_data.py code in the `examples folder of this library's repository <examples.html#working-with-tmrh20-s-arduino-library>`_
 
 Features currently unsupported
 -------------------------------
 
-* as of yet, no [intended] implementation for Multiceiver mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). Although this might be acheived easily using the "automatic retry delay" (:py:attr:`~circuitpython_nrf24l01.RF24.ard`) and "automatic retry count" (:py:attr:`~circuitpython_nrf24l01.RF24.arc`) attributes set accordingly (varyingly high).
-* for reason(s) unknown, a nRF24L01 driven by this library will not "talk" to a nRF24L01 on an Arduino driven by the `TMRh20 RF24 library <http://tmrh20.github.io/RF24/>`_. There is no problems when a nRF24L01 driven by this library "talks" to another nRF24L01 that's also driven by this library. `Other Arduino-based nRF24L01 libraries are available <https://playground.arduino.cc/InterfacingWithHardware/Nrf24L01/>`_, but they have not been tested to communicate with this CircuitPython-nRF24L01 library.
+* as of yet, no [intended] implementation for Multiceiver mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). Although this might be acheived easily using the "automatic retry delay" (:py:attr:`~circuitpython_nrf24l01.RF24.ard`) and "automatic retry count" (:py:attr:`~circuitpython_nrf24l01.RF24.arc`) attributes set accordingly (varyingly high -- this has not been tested).
 
 Dependencies
 =============
@@ -95,7 +104,7 @@ The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) t
 +------------+----------------+----------------+
 |    VCC     |       3V       |      3.3V      |
 +------------+----------------+----------------+
-|    CE      |  GPIO9 (CE1)   |       D9       |
+|    CE      |     GPIO4      |       D4       |
 +------------+----------------+----------------+
 |    CSN     |     GPIO5      |       D5       |
 +------------+----------------+----------------+

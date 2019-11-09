@@ -1,10 +1,8 @@
-'''
-    Simple example of library usage in context.
-
-    This will not transmit anything, but rather
-    display settings after changing contexts ( & thus configurations)
-'''
-
+"""
+Simple example of library usage in context.
+This will not transmit anything, but rather
+display settings after changing contexts ( & thus configurations)
+"""
 import board
 import digitalio as dio
 from circuitpython_nrf24l01 import RF24
@@ -13,7 +11,7 @@ from circuitpython_nrf24l01 import RF24
 address = b'1Node'
 
 # change these (digital output) pins accordingly
-ce = dio.DigitalInOut(board.D9)  # AKA board.CE1 on the rasberry pi
+ce = dio.DigitalInOut(board.D4)
 csn = dio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
@@ -32,10 +30,13 @@ nrf = RF24(spi, csn, ce, ack=True)
 # CRC is set to 1 byte long
 # data rate is set to 250Kbps
 # payload length is set to 8 bytes
-# address length is set to 3 bytes
-basicRF = RF24(spi, csn, ce, dynamic_payloads=False, irq_DR=False, irq_DS=False,
-               channel=2, crc=1, data_rate=250, payload_length=8, address_length=3, ard=1000, arc=15)
-
+# NOTE address length is set to 3 bytes
+basicRF = RF24(spi, csn, ce,
+               dynamic_payloads=False,
+               irq_DR=False, irq_DS=False,
+               channel=2, crc=1, data_rate=250,
+               payload_length=8, address_length=3,
+               ard=1000, arc=15)
 
 print("\nsettings configured by the nrf object")
 with nrf:

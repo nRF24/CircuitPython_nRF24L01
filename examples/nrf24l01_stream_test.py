@@ -1,9 +1,6 @@
-'''
-    Example of library usage for streaming multiple payloads.
-    Master transmits an payloads until FIFO is empty.
-    Slave stops listening after 3 seconds of no response.
-'''
-
+"""
+Example of library usage for streaming multiple payloads.
+"""
 import time
 import board
 import digitalio as dio
@@ -13,7 +10,7 @@ from circuitpython_nrf24l01 import RF24
 address = b'1Node'
 
 # change these (digital output) pins accordingly
-ce = dio.DigitalInOut(board.D9)  # AKA board.CE1 on the rasberry pi
+ce = dio.DigitalInOut(board.D4)
 csn = dio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
@@ -35,8 +32,8 @@ for i in range(SIZE):
     buffers.append(buff)
     del buff
 
-
 def master(count=1):  # count = 5 will transmit the list 5 times
+    """Transmits a massive buffer of payloads"""
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(address)
     # ensures the nRF24L01 is in TX mode
@@ -52,10 +49,8 @@ def master(count=1):  # count = 5 will transmit the list 5 times
     success_percentage /= SIZE * count
     print('successfully sent', success_percentage * 100, '%')
 
-# running slave to only fetch/receive & count number of packets
-
-
 def slave(timeout=5):
+    """Stops listening after timeout with no response"""
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 0
     # pipe number options range [0,5]
@@ -75,7 +70,6 @@ def slave(timeout=5):
 
     # recommended behavior is to keep in TX mode while idle
     nrf.listen = False  # put the nRF24L01 is in TX mode
-
 
 print("""\
     nRF24L01 Stream test\n\
