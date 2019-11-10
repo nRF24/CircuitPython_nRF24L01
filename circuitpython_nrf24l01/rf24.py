@@ -149,7 +149,7 @@ class RF24:
         # init the _open_pipes attribute (reflects only RX state on each pipe)
         self._open_pipes = 0  # <- means all pipes closed
         # init the SPI bus and pins
-        self.spi = SPIDevice(spi, chip_select=csn, baudrate=1250000)
+        self._spi = SPIDevice(spi, chip_select=csn, baudrate=1250000)
 
         # store the ce pin
         self.ce_pin = ce
@@ -248,7 +248,7 @@ class RF24:
     # pylint: disable=no-member
     def _reg_read(self, reg):
         buf = bytearray(2)  # 2 = 1 status byte + 1 byte of returned content
-        with self.spi as spi:
+        with self._spi as spi:
             time.sleep(0.005)  # time for CSN to settle
             spi.readinto(buf, write_value=reg)
         self._status = buf[0]  # save status byte
@@ -257,7 +257,7 @@ class RF24:
     def _reg_read_bytes(self, reg, buf_len=5):
         # allow an extra byte for status data
         buf = bytearray(buf_len + 1)
-        with self.spi as spi:
+        with self._spi as spi:
             time.sleep(0.005)  # time for CSN to settle
             spi.readinto(buf, write_value=reg)
         self._status = buf[0]  # save status byte
@@ -266,7 +266,7 @@ class RF24:
     def _reg_write_bytes(self, reg, out_buf):
         out_buf = bytes([0x20 | reg]) + out_buf
         in_buf = bytearray(len(out_buf))
-        with self.spi as spi:
+        with self._spi as spi:
             time.sleep(0.005)  # time for CSN to settle
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]  # save status byte
@@ -277,7 +277,7 @@ class RF24:
         else:
             out_buf = bytes([0x20 | reg, value])
         in_buf = bytearray(len(out_buf))
-        with self.spi as spi:
+        with self._spi as spi:
             time.sleep(0.005)  # time for CSN to settle
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]  # save status byte
@@ -631,7 +631,7 @@ class RF24:
             for b in buf:
                 timeout = pl_coef * (((8 * (len(b) + pl_len)) + 9) / bitrate) + \
                     stby2active + t_irq + t_retry + \
-                    (len(b) * 64 / self.spi.baudrate)
+                    (len(b) * 64 / self._spi.baudrate)
                 self.write(b, ask_no_ack)
                 # wait for the ESB protocol to finish (or at least attempt)
                 time.sleep(timeout) # TODO could do this better
