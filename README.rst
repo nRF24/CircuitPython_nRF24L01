@@ -6,8 +6,8 @@ Introduction
 
 .. :py:class:: RF24
 
-.. image:: https://readthedocs.org/projects/circuitpython-nrf24l01/badge/?version=latest
-    :target: https://circuitpython-nrf24l01.readthedocs.io/
+.. image:: https://readthedocs.org/projects/circuitpython-nrf24l01/badge/?version=stable
+    :target: https://circuitpython-nrf24l01.readthedocs.io/en/stable/
     :alt: Documentation Status
 
 .. image:: https://travis-ci.org/2bndy5/CircuitPython_nRF24L01.svg?branch=master
