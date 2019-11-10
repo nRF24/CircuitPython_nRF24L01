@@ -37,10 +37,10 @@ def master(timeout=5):  # will only wait 5 seconds for slave to respond
     print("Pinging: enslaved nRF24L01 without auto_ack")
     nrf.write(b'ping')
     time.sleep(0.00001)  # mandatory 10 microsecond pulse starts transmission
-    nrf.ce.value = 0  # end 10 us pulse; now in active TX
-    while not nrf.irq_DS and not nrf.irq_DF:
+    nrf.ce_pin.value = 0  # end 10 us pulse; now in active TX
+    while not nrf.irq_ds and not nrf.irq_df:
         nrf.update()  # updates the current status on IRQ flags
-    if nrf.irq_DS and not irq.value:
+    if nrf.irq_ds and not irq.value:
         print('interrupt on data sent successful')
     else:
         print(
@@ -55,7 +55,7 @@ def master(timeout=5):  # will only wait 5 seconds for slave to respond
         pass
     if nrf.any():
         print('Pong received')
-        if nrf.irq_DR and not irq.value:
+        if nrf.irq_dr and not irq.value:
             print('interrupt on data ready successful')
         else:
             print(
@@ -71,10 +71,10 @@ def master(timeout=5):  # will only wait 5 seconds for slave to respond
     nrf.flush_tx()  # just in case the previous "on data sent" test failed
     nrf.write(b'dummy')  # slave isn't listening anymore
     time.sleep(0.00001)  # mandatory 10 microsecond pulse starts transmission
-    nrf.ce.value = 0  # end 10 us pulse; now in active TX
-    while not nrf.irq_DS and not nrf.irq_DF:  # these attributes don't update themselves
-        nrf.update()  # updates the current status on all IRQ flags (irq_DR, irq_DF, irq_DS)
-    if nrf.irq_DF and not irq.value:
+    nrf.ce_pin.value = 0  # end 10 us pulse; now in active TX
+    while not nrf.irq_ds and not nrf.irq_df:  # these attributes don't update themselves
+        nrf.update()  # updates the current status on all IRQ flags (irq_dr, irq_df, irq_ds)
+    if nrf.irq_df and not irq.value:
         print('interrupt on data fail successful')
     else:
         print(

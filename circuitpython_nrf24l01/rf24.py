@@ -20,6 +20,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+# pylint: disable=too-many-lines
 """
 rf24 module containing the base class RF24
 """
@@ -99,13 +100,13 @@ class RF24:
         allowing custom response payloads appended to the ACK packets. Enabling this also requires
         the `auto_ack` attribute enabled. This can be changed at any time by using the `ack`
         attribute.
-    :param bool irq_DR: When "Data is Ready", this configures the interrupt (IRQ) trigger of the
+    :param bool irq_dr: When "Data is Ready", this configures the interrupt (IRQ) trigger of the
         nRF24L01's IRQ pin (active low). Defaults to enabled. This can be changed at any time by
         using the `interrupt_config()` function.
-    :param bool irq_DS: When "Data is Sent", this configures the interrupt (IRQ) trigger of the
+    :param bool irq_ds: When "Data is Sent", this configures the interrupt (IRQ) trigger of the
         nRF24L01's IRQ pin (active low). Defaults to enabled. This can be changed at any time by
         using the `interrupt_config()` function.
-    :param bool irq_DF: When "max retry attempts are reached" (specified by the `arc` attribute),
+    :param bool irq_df: When "max retry attempts are reached" (specified by the `arc` attribute),
         this configures the interrupt (IRQ) trigger of the nRF24L01's IRQ pin (active low) and
         represents transmission failure. Defaults to enabled. This can be changed at any time by
         using the `interrupt_config()` function.
@@ -123,9 +124,9 @@ class RF24:
                  auto_ack=True,
                  ask_no_ack=True,
                  ack=False,
-                 irq_DR=True,
-                 irq_DS=True,
-                 irq_DF=True):
+                 irq_dr=True,
+                 irq_ds=True,
+                 irq_df=True):
         self._payload_length = payload_length  # inits internal attribute
         self.payload_length = payload_length
         # last address assigned to pipe0 for reading. init to None
@@ -151,9 +152,9 @@ class RF24:
         self.spi = SPIDevice(spi, chip_select=csn, baudrate=1250000)
 
         # store the ce pin
-        self.ce = ce
+        self.ce_pin = ce
         # reset ce.value & disable the chip comms
-        self.ce.switch_to_output(value=False)
+        self.ce_pin.switch_to_output(value=False)
         # if radio is powered up and CE is LOW: standby-I mode
         # if radio is powered up and CE is HIGH: standby-II mode
 
@@ -162,7 +163,7 @@ class RF24:
         # configure the CONFIG register:IRQ(s) config, setup CRC feature, and trigger standby-I &
         # TX mode (the "| 2")
         if 0 <= crc <= 2:
-            self._config = ((not irq_DR) << 6) | ((not irq_DS) << 5) | ((not irq_DF) << 4) | \
+            self._config = ((not irq_dr) << 6) | ((not irq_ds) << 5) | ((not irq_df) << 4) | \
                 ((crc + 1) << 2 if crc else 0) | 2
             self._reg_write(CONFIG, self._config)  # dump to register
         else:
@@ -208,7 +209,7 @@ class RF24:
         with self:  # write to registers & power up
             # using __enter__() configures all virtual features and settings to the hardware
             # registers
-            self.ce.value = 0  # ensure standby-I mode to write to CONFIG register
+            self.ce_pin.value = 0  # ensure standby-I mode to write to CONFIG register
             self._reg_write(CONFIG, self._config | 1)  # enable RX mode
             time.sleep(0.000015)  # wait time for transitioning modes RX/TX
             self.flush_rx()  # spec sheet say "used in RX mode"
@@ -431,7 +432,7 @@ class RF24:
             Sheet
             <https://www.sparkfun.com/datasheets/Components/SMD/
             nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this attribute
-            flushes the RX FIFO, clears the `irq_DR` status flag, and puts nRF24L01 in power up
+            flushes the RX FIFO, clears the `irq_dr` status flag, and puts nRF24L01 in power up
             mode. Notice the CE pin is be held HIGH during RX mode.
 
             `False` disables RX mode. As mentioned in above link, this puts nRF24L01's power in
@@ -452,8 +453,8 @@ class RF24:
 
     def _start_listening(self):
         # ensure radio is in power down or standby-I mode
-        if self.ce.value:
-            self.ce.value = 0
+        if self.ce_pin.value:
+            self.ce_pin.value = 0
 
         if self._pipe0_read_addr is not None:
             # make sure the last call to open_rx_pipe(0) sticks if initialized
@@ -468,14 +469,14 @@ class RF24:
         self.clear_status_flags(True, False, False) # only Data Ready flag
 
         # enable radio comms
-        self.ce.value = 1 # radio begins listening after CE pulse is > 130 µs
+        self.ce_pin.value = 1 # radio begins listening after CE pulse is > 130 µs
         time.sleep(0.00013) # ensure pulse is > 130 µs
         # nRF24L01 has just entered active RX + standby-II mode
 
     def _stop_listening(self):
         # ensure radio is in standby-I mode
-        if self.ce.value:
-            self.ce.value = 0
+        if self.ce_pin.value:
+            self.ce_pin.value = 0
         # set radio in TX mode as recommended behavior per spec sheet.
         self._config = self._config & 0xFE  # does not put radio to sleep
         self._reg_write(CONFIG, self._config)
@@ -499,7 +500,7 @@ class RF24:
 
     def recv(self):
         """This function is used to retrieve the next available payload in the RX FIFO buffer, then
-        clears the `irq_DR` status flag. This function also serves as a helper function to
+        clears the `irq_dr` status flag. This function also serves as a helper function to
         `read_ack()` in TX mode to aquire any custom payload in the automatic acknowledgement (ACK)
         packet -- only when the `ack` attribute is enabled.
 
@@ -589,7 +590,7 @@ class RF24:
         """
         # ensure power down/standby-I for proper manipulation of PWR_UP & PRIM_RX bits in
         # CONFIG register
-        self.ce.value = 0
+        self.ce_pin.value = 0
         self.flush_tx()
         self.clear_status_flags(False)  # clears TX related flags only
         # using spec sheet calculations:
@@ -635,7 +636,7 @@ class RF24:
                 # wait for the ESB protocol to finish (or at least attempt)
                 time.sleep(timeout) # TODO could do this better
                 self.update()  # update status flags
-                if self.irq_DF:  # need to clear for continuing transmissions
+                if self.irq_df:  # need to clear for continuing transmissions
                     # retry twice at most -- this seemed adaquate during testing
                     for i in range(2):
                         if not self.resend():  # clears flags upon entering and exiting
@@ -648,11 +649,11 @@ class RF24:
                             else:
                                 result.append(True)
                             break
-                elif self.irq_DS:
+                elif self.irq_ds:
                     result.append(True)
                     # clears TX related flags only
                     self.clear_status_flags(False)
-            self.ce.value = 0
+            self.ce_pin.value = 0
             return result
         if not buf or len(buf) > 32:
             raise ValueError("buf must be a buffer protocol object with a byte length of"
@@ -667,20 +668,20 @@ class RF24:
         # hold CE HIGH to continue processing through the rest of the TX FIFO bound for the
         # address passed to open_tx_pipe()
         # go to Standby-I power mode (power attribute still == True)
-        self.ce.value = 0
+        self.ce_pin.value = 0
 
         # now wait till the nRF24L01 has determined the result or timeout (based on calcs
         # from spec sheet)
         start = time.monotonic()
-        while not self.irq_DS and not self.irq_DF and (time.monotonic() - start) < timeout:
+        while not self.irq_ds and not self.irq_df and (time.monotonic() - start) < timeout:
             self.update()  # perform Non-operation command to get status byte (should be faster)
-            # print('status: DR={} DS={} DF={}'.format(self.irq_DR, self.irq_DS, self.irq_DF))
-        if self.irq_DS or self.irq_DF:  # transmission done
+            # print('status: DR={} DS={} DF={}'.format(self.irq_dr, self.irq_ds, self.irq_df))
+        if self.irq_ds or self.irq_df:  # transmission done
             # get status flags to detect error
-            result = self.irq_DS if self.auto_ack else not self.irq_DF
+            result = self.irq_ds if self.auto_ack else not self.irq_df
 
         # read ack payload clear status flags, then power down
-        if self.ack and self.irq_DS and not ask_no_ack:
+        if self.ack and self.irq_ds and not ask_no_ack:
             # get and save ACK payload to self.ack if user wants it
             result = self.read_ack()  # save RX'd ACK payload to result
             if result is None:  # can't return empty handed
@@ -689,7 +690,7 @@ class RF24:
         return result
 
     @property
-    def irq_DR(self):
+    def irq_dr(self):
         """A `bool` that represents the "Data Ready" interrupted flag. (read-only)
 
         * `True` represents Data is in the RX FIFO buffer
@@ -707,7 +708,7 @@ class RF24:
         return bool(self._status & 0x40)
 
     @property
-    def irq_DS(self):
+    def irq_ds(self):
         """A `bool` that represents the "Data Sent" interrupted flag. (read-only)
 
         * `True` represents a successful transmission
@@ -725,7 +726,7 @@ class RF24:
         return bool(self._status & 0x20)
 
     @property
-    def irq_DF(self):
+    def irq_df(self):
         """A `bool` that represents the "Data Failed" interrupted flag. (read-only)
 
         * `True` signifies the nRF24L01 attemped all configured retries
@@ -753,7 +754,7 @@ class RF24:
         :param bool data_fail: specifies wheather to clear the "Max Re-transmit reached" flag.
 
         .. note:: Clearing the ``data_fail`` flag is necessary for continued transmissions from the
-            nRF24L01 (locks the TX FIFO buffer when `irq_DF` is `True`) despite wheather or not the
+            nRF24L01 (locks the TX FIFO buffer when `irq_df` is `True`) despite wheather or not the
             MCU is taking advantage of the interrupt (IRQ) pin. Call this function only when there
             is an antiquated status flag (after you've dealt with the specific payload related to
             the staus flags that were set), otherwise it can cause payloads to be ignored and
@@ -778,8 +779,8 @@ class RF24:
             attempts to re-transmit the packet have been reached. If `auto_ack` attribute is
             disabled, then this IRQ event is not used.
 
-        .. note:: To fetch the status (not configuration) of these IRQ flags, use the `irq_DF`,
-            `irq_DS`, `irq_DR` attributes respectively.
+        .. note:: To fetch the status (not configuration) of these IRQ flags, use the `irq_df`,
+            `irq_ds`, `irq_dr` attributes respectively.
 
         .. tip:: Paraphrased from nRF24L01+ Specification Sheet:
 
@@ -820,10 +821,10 @@ class RF24:
             - ``IRQ - Data Sent`` The current setting of the IRQ pin on "Data Sent" event
             - ``IRQ - Data Fail`` The current setting of the IRQ pin on "Data Fail" event
             - ``Data Ready`` Is there RX data ready to be read?
-              (state of the `irq_DR` flag)
-            - ``Data Sent`` Has the TX data been sent? (state of the `irq_DS` flag)
+              (state of the `irq_dr` flag)
+            - ``Data Sent`` Has the TX data been sent? (state of the `irq_ds` flag)
             - ``Data Failed`` Has the maximum attempts to re-transmit been reached?
-              (state of the `irq_DF` flag)
+              (state of the `irq_df` flag)
             - ``TX FIFO full`` Is the TX FIFO buffer full? (state of the `tx_full` flag)
             - ``TX FIFO empty`` Is the TX FIFO buffer empty?
             - ``RX FIFO full`` Is the RX FIFO buffer full?
@@ -863,11 +864,11 @@ class RF24:
         print("Packets Lost______________{} total".format((watchdog & 0xF0) >> 4))
         print("Retry Attempts Made_______{}".format(watchdog & 0x0F))
         print("IRQ - Data Ready______{}    Data Ready___________{}".format(
-            '_True' if not bool(self._config & 0x40) else 'False', self.irq_DR))
+            '_True' if not bool(self._config & 0x40) else 'False', self.irq_dr))
         print("IRQ - Data Fail_______{}    Data Failed__________{}".format(
-            '_True' if not bool(self._config & 0x20) else 'False', self.irq_DF))
+            '_True' if not bool(self._config & 0x20) else 'False', self.irq_df))
         print("IRQ - Data Sent_______{}    Data Sent____________{}".format(
-            '_True' if not bool(self._config & 0x10) else 'False', self.irq_DS))
+            '_True' if not bool(self._config & 0x10) else 'False', self.irq_ds))
         print("TX FIFO full__________{}    TX FIFO empty________{}".format(
             '_True' if bool(self.tx_full) else 'False', bool(self.fifo(True, True))))
         print("RX FIFO full__________{}    RX FIFO empty________{}".format(
@@ -880,7 +881,7 @@ class RF24:
             'Enabled' if self.auto_ack else 'Disabled'))
         print("Primary Mode_____________{}    Power Mode___________{}".format(
             'RX' if self.listen else 'TX',
-            ('Standby-II' if self.ce.value else 'Standby-I') if self._config & 2 else 'Off'))
+            ('Standby-II' if self.ce_pin.value else 'Standby-I') if self._config & 2 else 'Off'))
         if dump_pipes:
             print('TX address____________', self._tx_address)
             for i, address in enumerate(self._pipes):
@@ -1287,8 +1288,8 @@ class RF24:
         """This function is only used to get an updated status byte over SPI from the nRF24L01 and
         is exposed to the MCU for asynchronous applications. Refreshing the status byte is vital to
         checking status of the interrupts, RX pipe number related to current RX payload, and if the
-        TX FIFO buffer is full. This function returns nothing, but internally updates the `irq_DR`,
-        `irq_DS`, `irq_DF`, and `tx_full` attributes. Internally this is a helper function to
+        TX FIFO buffer is full. This function returns nothing, but internally updates the `irq_dr`,
+        `irq_ds`, `irq_df`, and `tx_full` attributes. Internally this is a helper function to
         `pipe()`, `send()`, and `resend()` functions"""
         # perform non-operation to get status byte
         # should be faster than reading the STATUS register
@@ -1305,7 +1306,7 @@ class RF24:
             over-written by using `send()` or `write()` to load a new payload.
         """
         if not self.fifo(True, True):  # also updates _fifo attribute
-            if self.irq_DF or self.irq_DS:  # check and clear flags
+            if self.irq_df or self.irq_ds:  # check and clear flags
                 self.clear_status_flags(False)  # clears TX related flags only
             result = None
             if self._features & 1 == 0:  # ensure REUSE_TX_PL optional command is allowed
@@ -1314,11 +1315,12 @@ class RF24:
             # payload will get re-used. This command tells the radio not pop TX payload from
             # FIFO on success
             self._reg_write(0xE3)  # 0xE3 == REUSE_TX_PL command
-            self.ce.value = 0  # this cycles the CE pin to re-enable transmission of re-used payload
-            self.ce.value = 1
+            # cycle the CE pin to re-enable transmission of re-used payload
+            self.ce_pin.value = 0
+            self.ce_pin.value = 1
             time.sleep(0.00001)  # mandated 10 µs pulse
             # now get result
-            self.ce.value = 0  # only send one payload
+            self.ce_pin.value = 0  # only send one payload
             start = time.monotonic()
             # timeout calc assumes 32 byte payload (no way to tell when payload has already been
             # loaded into TX FIFO)
@@ -1333,13 +1335,13 @@ class RF24:
                        380) * (self._setup_retr & 0x0f) / 1000000
             timeout = pl_coef * (((8 * (32 + pl_len)) + 9) /
                                  bitrate) + stby2active + t_irq + t_retry
-            while not self.irq_DS and not self.irq_DF and (time.monotonic() - start) < timeout:
+            while not self.irq_ds and not self.irq_df and (time.monotonic() - start) < timeout:
                 self.update()  # perform Non-operation command to get status byte (should be faster)
-            if self.irq_DS or self.irq_DF:  # transmission done
+            if self.irq_ds or self.irq_df:  # transmission done
                 # get status flags to detect error
-                result = bool(self.irq_DS)
+                result = bool(self.irq_ds)
             # read ack payload clear status flags, then power down
-            if self.ack and self.irq_DS:
+            if self.ack and self.irq_ds:
                 # get and save ACK payload to self.ack if user wants it
                 result = self.read_ack()  # save reply in input buffer
                 if result is None:  # can't return empty handed
@@ -1440,7 +1442,7 @@ class RF24:
             # print("payload does want acknowledgment")
         # enable radio comms so it can send the data by starting the mandatory minimum 10 µs pulse
         # on CE. Let send() measure this pulse for blocking reasons
-        self.ce.value = 1  # re-used payloads start with this as well
+        self.ce_pin.value = 1  # re-used payloads start with this as well
         # radio will automatically go to standby-II after transmission while CE is still HIGH only
         # if dynamic_payloads and auto_ack are enabled
 
@@ -1466,15 +1468,15 @@ class RF24:
         """
         self._reg_write(0xE1)
 
-    def fifo(self, tx=False, empty=None):
+    def fifo(self, about_tx=False, check_empty=None):
         """This provides some precision determining the status of the TX/RX FIFO buffers.
         (read-only)
 
-        :param bool tx:
+        :param bool about_tx:
             * `True` means information returned is about the TX FIFO buffer.
             * `False` means information returned is about the RX FIFO buffer. This parameter
               defaults to `False` when not specified.
-        :param bool empty:
+        :param bool check_empty:
             * `True` tests if the specified FIFO buffer is empty.
             * `False` tests if the specified FIFO buffer is full.
             * `None` (when not specified) returns a 2 bit number representing both empty (bit 1) &
@@ -1482,20 +1484,20 @@ class RF24:
         :returns:
             * A `bool` answer to the question:
               "Is the [TX/RX]:[`True`/`False`] FIFO buffer [empty/full]:[`True`/`False`]?
-            * If the ``empty`` parameter is not specified: an `int` in range [0,2] for which:
+            * If the ``check_empty`` parameter is not specified: an `int` in range [0,2] for which:
 
               - ``1`` means the specified FIFO buffer is full
               - ``2`` means the specified FIFO buffer is empty
               - ``0`` means the specified FIFO buffer is neither full nor empty
         """
-        if (empty is None and isinstance(tx, (bool, int))) or \
-                (isinstance(empty, (bool, int)) and isinstance(tx, (bool, int))):
+        if (check_empty is None and isinstance(about_tx, (bool, int))) or \
+                (isinstance(check_empty, (bool, int)) and isinstance(about_tx, (bool, int))):
             self._fifo = self._reg_read(FIFO)  # refresh the data
-            if empty is None:
-                return (self._fifo & (0x30 if tx else 0x03)) >> (4 * tx)
-            return bool(self._fifo & ((2 - empty) << (4 * tx)))
-        raise ValueError("Argument 1 ('tx') must always be a bool or int. Argument 2 ('empty')"
-                         ", if specified, must be a bool or int")
+            if check_empty is None:
+                return (self._fifo & (0x30 if about_tx else 0x03)) >> (4 * about_tx)
+            return bool(self._fifo & ((2 - check_empty) << (4 * about_tx)))
+        raise ValueError("Argument 1 ('about_tx') must always be a bool or int. Argument 2"
+                         " ('check_empty'), if specified, must be a bool or int")
 
     def pipe(self):
         """This function returns information about the data pipe that received the next available

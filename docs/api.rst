@@ -83,9 +83,9 @@ Advanced API
     .. autoattribute:: dynamic_payloads
     .. autoattribute:: payload_length
     .. autoattribute:: auto_ack
-    .. autoattribute:: irq_DR
-    .. autoattribute:: irq_DF
-    .. autoattribute:: irq_DS
+    .. autoattribute:: irq_dr
+    .. autoattribute:: irq_df
+    .. autoattribute:: irq_ds
     .. automethod:: clear_status_flags
     .. automethod:: interrupt_config
     .. autoattribute:: ack

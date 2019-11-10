@@ -32,7 +32,7 @@ nrf = RF24(spi, csn, ce, ack=True)
 # automatic retry attempts is set to 15 (maximum allowed)
 # automatic retry delay (between attempts) is set to 1000 microseconds
 basicRF = RF24(spi, csn, ce,
-               dynamic_payloads=False, irq_DR=False, irq_DS=False,
+               dynamic_payloads=False, irq_dr=False, irq_ds=False,
                channel=2, crc=1, data_rate=2, payload_length=8,
                address_length=3, pa_level=-12, ard=1000, arc=15)
 
