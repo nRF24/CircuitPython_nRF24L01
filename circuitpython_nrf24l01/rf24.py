@@ -243,6 +243,7 @@ class RF24:
         return self
 
     def __exit__(self, *exc):
+        self.power = 0
         return False
 
     # pylint: disable=no-member
