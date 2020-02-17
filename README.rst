@@ -119,7 +119,7 @@ The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) t
 +------------+----------------+----------------+
 |    MISO    | GPIO9 (MISO)   |      MISO      |
 +------------+----------------+----------------+
-|    IRQ     |     GPIO4      |       D4       |
+|    IRQ     |     GPIO4      |       D12      |
 +------------+----------------+----------------+
 
 .. tip:: User reports and personal experiences have improved results if there is a capacitor of 100 mirofarads [+ another optional 0.1 microfarads capacitor for added stability] connected in parrallel to the VCC and GND pins.

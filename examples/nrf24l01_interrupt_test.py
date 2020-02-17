@@ -11,7 +11,7 @@ from circuitpython_nrf24l01 import RF24
 address = b'1Node'
 
 # select your digital input pin that's connected to the IRQ pin on the nRF4L01
-irq = dio.DigitalInOut(board.D4)
+irq = dio.DigitalInOut(board.D12)
 irq.switch_to_input()  # make sure its an input object
 # change these (digital output) pins accordingly
 ce = dio.DigitalInOut(board.D4)
