@@ -99,6 +99,7 @@ Advanced API
     .. autoattribute:: ard
     .. autoattribute:: pa_level
     .. autoattribute:: tx_full
+    .. autoattribute:: rpd
     .. automethod:: update
     .. automethod:: resend
     .. automethod:: write
@@ -106,3 +107,15 @@ Advanced API
     .. automethod:: flush_tx
     .. automethod:: fifo
     .. automethod:: pipe
+    .. automethod:: address
+
+Sniffer
+=======
+    .. automodule:: circuitpython_nrf24l01.sniffer
+        :members:
+
+Logitech Mouse
+==============
+
+    .. automodule:: circuitpython_nrf24l01.logitech_mouse
+        :members:

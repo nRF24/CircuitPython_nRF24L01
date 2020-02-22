@@ -134,14 +134,11 @@ class RF24:
         self._status = 0
         # init shadow copy of RX addresses for all pipes
         self._pipes = [b'', b'', 0, 0, 0, 0]
-        for i in range(6): # set all pipe's RX addresses to reset value
+        for i in range(6): # capture all pipe's RX addresses from last usage
             if i < 2:
-                if not i:
-                    self._pipes[i] = b'\xe7' * address_length
-                else:
-                    self._pipes[i] = b'\xc2' * address_length
+                self._pipes[i] = self._reg_read_bytes(RX_ADDR + i)
             else:
-                self._pipes[i] = 0xc1 + i
+                self._pipes[i] = self._reg_read(RX_ADDR + i)
         self._tx_address = self._pipes[0] # shadow copy of the TX_ADDR
         self._payload_widths = [0, 0, 0, 0, 0, 0] # payload_length specific to each pipe
         # shadow copy of last RX_ADDR written to pipe 0
@@ -1270,6 +1267,25 @@ class RF24:
                 "power amplitude must be one of the following (dBm): -18, -12, -6, 0")
 
     @property
+    def rpd(self):
+        """This read-only attribute returns `True` if RPD (Received Power Detector) is triggered
+        or `False` if not triggered.
+
+        .. note:: The RPD flag is triggered in the following cases:
+
+            1. During RX mode (`listen` = `True`) and a RF transmission with a gain above a preset
+               (non-adjustable) -64 dBm threshold.
+            2. When a packet is received (indicative of the nRF24L01 used to detect/"listen" for
+               incoming packets).
+            3. When the nRF24L01's CE pin goes from HIGH to LOW (or when the `listen` attribute
+               changes from `True` to `False`).
+            4. When the underlying ESB (Enhanced ShockBurst) protocol reaches a hardcoded
+               (non-adjustable) RX timeout.
+
+        """
+        return bool(self._reg_read(0x09))
+
+    @property
     def tx_full(self):
         """An attribute to represent the nRF24L01's status flag signaling that the TX FIFO buffer
         is full. (read-only)
@@ -1514,3 +1530,15 @@ class RF24:
         if pipe <= 5:  # is there data in RX FIFO?
             return pipe
         return None  # RX FIFO is empty
+
+    def address(self, index=0):
+        """Returns the current address set to a specified data pipe. (read-only)
+
+        :param int index: the number of the data pipe whose address is to be returned.
+            A valid index ranges [0,5]. Otherwise an `IndexError` is thown.
+        """
+        if index < 0 or index > 5:
+            raise IndexError("index {} is out of bounds [0,5]".format(index))
+        if index <= 1:
+            return self._pipes[index]
+        return bytes(self._pipes[index]) + self._pipes[1][1:]

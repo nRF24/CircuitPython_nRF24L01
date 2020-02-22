@@ -34,7 +34,7 @@ PAIRING_PACKETS = [
     b'\x15\x40\x01\x84\x26',
     b'\x00\x5F\x02\x00\x00\x00\x00\x58\x8A\x51\xEA\x01\x07\x00\x00\x01\x00\x00\x00\x00\x00\x79',
     b'\x00\x40\x02\x01\xbd',
-    b'\x00\x5F\x03\x01\x00\x04\x4D\x35\x31\x30\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xB6',
+    b'\x00\x5F\x03\x01\x00\x04M510\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xB6',
     b'\x00\x5F\x03\x01\x0f',
     b'\x00\x0F\x06\x01\x00\x00\x00\x00\x00\xEA']
 # End of pre-defined pairing packets
@@ -43,17 +43,19 @@ class LogitechMouse:
     """A class to emulate the behavior of a Logitech-branded wireless mouse using the
     nRF24L01 transceiver and a Logitech Unifying USB Receiver.
 
-    :param RF24 nrf24: the instantiated object of the nRF24L01 radio to be used.
+    :param ~circuitpython_nrf24l01.rf24.RF24 nrf24: the instantiated object of the nRF24L01
+        radio to be used.
     """
     def __init__(self, nrf24):
         self.radio = nrf24
         self.radio.listen = False # ensure TX mode
         self.power = False # power down nRF24L01 for configuration
+        # placeholder for address to a specific Unifying dongle after pairing success
+        self.bonded_mac_addr = b'\x00' * 5
         with self:
             # use the context manager to configure the radio accordingly
-            self.radio.open_tx_pipe(PAIRING_MAC_ADDRESS)
-            self.radio.open_rx_pipe(1, PAIRING_MAC_ADDRESS)
             # see __enter__()
+            self._set_addr(PAIRING_MAC_ADDRESS)
 
     def __enter__(self):
         with self.radio as nrf:
@@ -74,7 +76,11 @@ class LogitechMouse:
         self.radio.open_rx_pipe(1, addr)
         self.radio.open_rx_pipe(2, b'\x00')
 
-    def pair(self, timeout=0):
+    def _pairing_step(self, index_long, index_short, ack_payload, attempts):
+        #TODO
+        pass
+
+    def pair(self, attempts=0):
         """initiate pairing sequence with a Logitech Unifying receiver.
 
         .. important:: Remember to put the Unifying receiver in discovery/pairing mode using
@@ -94,6 +100,7 @@ class LogitechMouse:
              scroll_v=0, scroll_h=0,
              left_click=False, right_click=False):
         """Sends the mouse data to the Logitech Unifying receiver
+
         :param int x_move: a 12 bit signed int describing the velocity of the mouse on the X-axis.
         :param int y_move: a 12 bit signed int describing the velocity of the mouse on the Y-axis.
         :param int scroll_h: a 8 bit signed int describing the velocity of scrolling on the X-axis.

@@ -52,3 +52,21 @@ This test is meant to prove compatibility with the popular Arduino library for t
 .. literalinclude:: ../examples/nrf24l01_2arduino_handling_data.py
     :caption: examples/nrf24l01_2arduino_handling_data.py
     :linenos:
+
+Emulate a Logitech Mouse
+------------------------
+
+This test shows how to use the nRF24L01 to communicate with a Logitech Unifying receiver/dongle as a Logitech mouse (model M510).
+
+.. literalinclude:: ../examples/nrf24l01_logitech_mouse_test.py
+    :caption: examples/nrf24l01_logitech_mouse_test.py
+    :linenos:
+
+Intuitive sniffer Example
+-------------------------
+
+This test shows how to use the nRF24L01 to detect transmissions between other nRF24 series (or OTA-compatible) transceivers.
+
+.. literalinclude:: ../examples/nrf24l01_sniffer_test.py
+    :caption: examples/nrf24l01_sniffer_test.py
+    :linenos:
