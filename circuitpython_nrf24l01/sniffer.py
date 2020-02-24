@@ -42,9 +42,9 @@ class Sniffer:
         :param int wait_time: The amount of seconds that the scanning process waits at most per
             channel for signal detection. Defaults to 5 seconds.
         """
-        self.radio.listen = True
-        found_signal = False
         for chnl in range(0, 125):
+            self.radio.listen = True
+            found_signal = False
             self.radio.channel = chnl
             timeout = time.monotonic() + wait_time # listen for x seconds
             while time.monotonic() <= timeout and not found_signal:
@@ -52,7 +52,7 @@ class Sniffer:
                     found_signal = True
             if found_signal:
                 print("found signal on channel", chnl)
-        self.radio.listen = False
+            self.radio.listen = False
 
     def find_address(self, wait_time=1):
         """This function sequentially scans all permutations of RF addresses for reception of a
@@ -77,14 +77,15 @@ class Sniffer:
             expedite the process.
         """
         length = self.radio.address_length
-        self.radio.listen = False
         for major in range(0, 256, 6): # [0,255] in increments of 6
-            for minor in range(2 ** ((length - 1) * 8) - 1):
+            for minor in range(2 ** ((length - 1) * 8)):
+                self.radio.listen = False
                 # [0, 2 to the power of (number of bits in (total - 1) bytes]
                 # convert minor address part from int to bytearray w/o using struct
                 base_minor = b''
-                for byte_pos in range(length - 1, 0, 1):
-                    base_minor += bytes([minor & (0xff << byte_pos) >> byte_pos])
+                for byte_pos in range(length - 2, -1, -1):
+                    base_minor += bytes([(minor & (0xff << (byte_pos * 8))) >> byte_pos * 8])
+                print("testing address minor", hex(minor), "major", hex(major))
                 self._set_address_range(major, base_minor)
                 self.radio.listen = True
                 # wait for reception
@@ -98,7 +99,4 @@ class Sniffer:
         """ sets addresses to all 6 data pipes based on major (`int`) and minor (`bytearray`)
         starting points """
         for i in range(6):
-            if i <= 1:
-                self.radio.open_rx_pipe(i, bytes([base_major + i]) + base_minor)
-            else:
-                self.radio.open_rx_pipe(i, bytes([base_major + i]))
+            self.radio.open_rx_pipe(i, bytes([base_major + i]) + base_minor)
