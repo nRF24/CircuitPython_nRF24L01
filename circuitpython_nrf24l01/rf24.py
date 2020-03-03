@@ -174,7 +174,7 @@ class RF24:
                 self._pipes[i] = self._reg_read_bytes(RX_ADDR + i)
             else:
                 self._pipes[i] = self._reg_read(RX_ADDR + i)
-        print(self._pipes)
+
         # shadow copy of the TX_ADDR
         self._tx_address = self._reg_read_bytes(TX_ADDR)
 

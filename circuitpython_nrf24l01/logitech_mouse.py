@@ -95,21 +95,30 @@ class LogitechMouse:
                 result = self.radio.send(PAIRING_PACKETS[index_long])
                 if isinstance(result, bool): # transmit failed
                     attempts -= 1
+                    print("transmit pairing packet", index_long, "failed")
                 elif result is None: # transmit success , but no ACK recv'd
+                    print("transmit pairing packet", index_long,
+                          "succeeded, but with no ACK payload")
+                    result = True
                     break # send next packet
                 # else we have ACK payload, but not the one we need
                 else: # for debugging
-                    print('packet', index_long, 'returned', result)
-            if index_short is not None: # if pairing sequence is not on last step
+                    print('pairing packet', index_long, 'returned', result)
+            if index_short is not None and attempts:
+                # if pairing sequence is not on last step and attempts > 0
                 result = False # discards any ACK payload from previous packet
                 while attempts and not result:
                     result = self.radio.send(PAIRING_PACKETS[index_short])
                     if isinstance(result, bool) or result is None: # transmit failed
+                        print("transmit pairing packet", index_short, "failed")
                         attempts -= 1
-                    elif ack_payload is not None: # if we need the ACK payload
+                    elif ack_payload is not None and result is not None:
+                        # if we need the ACK payload
+                        print('pairing packet', index_short, 'returned', result)
                         ack_payload[0] = result # return ACK payload by reference
                     else: # we don't need the ACK payload
                         # we're done with this step in the sequence
+                        print('pairing packet', index_short, 'returned (unused)', result)
                         result = True
                         keep_going = False # exit function
             else:
@@ -117,7 +126,7 @@ class LogitechMouse:
                 keep_going = False
         return attempts
 
-    def pair(self):
+    def pair(self, retries=255):
         """Initiate pairing sequence with a Logitech Unifying receiver. Remember to put
         the Unifying receiver in discovery/pairing mode using Logitech's Unifying software!
 
@@ -139,7 +148,7 @@ class LogitechMouse:
         # length is arbitrary because recv() returns full ack payload when
         # dynamic_paylaods == True (needed for ACK payloads)
         ack_buf = [b'\x00'] # buffer to save ACK payload (as a list obj for passing by reference)
-        attempts = self._pairing_step(0, index_short=1, ack_payload=ack_buf)
+        attempts = self._pairing_step(0, index_short=1, ack_payload=ack_buf, attempts=retries)
         if not attempts:
             return False
 
@@ -170,7 +179,11 @@ class LogitechMouse:
         Attempts to reconnect to a bonded Unifying receiver (if said receiver's address is saved).
         """
         self._set_addr(self.bonded_address)
-        return self.pair()
+        print("TX address set to", self.bonded_address)
+        if not self.pair(retries=5):
+            self._set_addr(PAIRING_ADDRESS)
+            return False
+        return True
 
     # pylint: disable=too-many-arguments
     def move(self,
