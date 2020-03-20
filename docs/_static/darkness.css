@@ -254,6 +254,9 @@ body {
 .wy-menu-vertical li.toctree-l2.current>a {
   background:#242424;
 }
+.wy-menu-vertical li.toctree-l2.current li.toctree-l3>a {
+  background:#033969;
+}
 
 /* -----------------------------------------API sections-------------------------------------- */
 .rst-content dl:not(.docutils) dl dt {
