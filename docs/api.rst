@@ -4,7 +4,6 @@
 .. If your library file(s) are nested in a directory (e.g. /adafruit_foo/foo.py)
 .. use this format as the module name: "adafruit_foo.foo"
 
-.. currentmodule:: circuitpython_nrf24l01.rf24
 
 RF24 class
 ==============
@@ -12,6 +11,7 @@ RF24 class
 Troubleshooting info
 --------------------
 
+.. currentmodule:: circuitpython_nrf24l01.rf24
 .. important:: The nRF24L01 has 3 key features that can be interdependent of each other. Their
     priority of dependence is as follows:
 
@@ -275,5 +275,5 @@ address()
 Fake BLE
 ==============
 
-    .. automodule:: circuitpython_nrf24l01.fake_ble
-        :members:
+    .. autoclass:: circuitpython_nrf24l01.fake_ble
+        :members: send, name
