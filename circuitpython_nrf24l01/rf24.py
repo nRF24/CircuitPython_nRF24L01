@@ -588,28 +588,25 @@ class RF24:
         self.ce_pin.value = 0
         self.flush_tx()  # be sure there is space in the TX FIFO
         # using spec sheet calculations:
-        # timeout total = T_upload + 2 * stby2active + T_overAir + T_ack + T_irq
-
+        # timeout total = T_upload + 2 * stby2active + T_overAir + T_ack + T_irq + T_retry
         # T_upload = payload length (in bits) / spi data rate (bits per second =
         # baudrate / bits per byte)
         # T_upload is finished before timeout begins
-
         # T_download == T_upload, however RX devices spi settings must match TX's for
-        # accurate calc
-
-        # let 2 * stby2active (in µs) ~= (2 + 1 if getting ack else 0) * 130
-
+        #   accurate calc
+        # let 2 * stby2active (in µs) ~= (2 + (1 if getting ack else 0)) * 130
         # let T_ack = T_overAir as the payload size is the only distictive variable between
-        # the 2
+        #   the 2
         # T_overAir (in seconds) = ( 8 (bits/byte) * (1 byte preamble + address length +
-        # payload length + crc length) + 9 bit packet ID ) / RF data rate (in bits/sec)
-
-        # spec sheet says T_irq is (0.0000082 if self.data_rate == 1 else 0.000006) seconds
-        pl_coef = 1 + (bool(self.auto_ack) and not ask_no_ack)
-        pl_len = 1 + self._addr_len + (max(0, ((self._config & 12) >> 2) - 1))
+        #   payload length + crc length) + 9 bit packet ID ) / RF data rate (in bits/sec)
+        # T_irq (in seconds) = (0.0000082 if self.data_rate == 1 else 0.000006)
+        # T_retry (in microseconds)= (arc * ard)
+        need_ack = self._setup_retr & 0x0f and not ask_no_ack
+        packet_data = 1 + self._addr_len + (max(0, ((self._config & 12) >> 2) - 1))
         bitrate = ((2000000 if self._rf_setup & 0x28 == 8 else 250000)
                    if self._rf_setup & 0x28 else 1000000) / 8
-        stby2active = (1 + pl_coef) * 0.00013
+        t_ack = (((packet_data + 32) * 8 + 9) / bitrate) if need_ack else 0  # assumes 32-byte ACK
+        stby2active = (1 + (need_ack)) * 0.00013
         t_irq = 0.0000082 if not self._rf_setup & 0x28 else 0.000006
         t_retry = (((self._setup_retr & 0xf0) >> 4) * 250 + 380) * \
             (self._setup_retr & 0x0f) / 1000000
@@ -623,18 +620,20 @@ class RF24:
                                      " buffer protocol object with a byte length of\nat least 1 "
                                      "and no greater than 32".format(i))
             for i, b in enumerate(buf):
-                timeout = pl_coef * (((8 * (len(b) + pl_len)) + 9) / bitrate) + \
-                    stby2active + t_irq + t_retry + \
-                    (len(b) * 64 / self._spi.baudrate) + \
-                    (0.00001 if not i else 0) # include 10 us pulse on first payload
+                timeout = (((8 * (len(b) + packet_data)) + 9) / bitrate) + \
+                    stby2active + t_irq + t_retry + t_ack + \
+                    (len(b) * 64 / self._spi.baudrate)  # t_upload
+                self.clear_status_flags(False) # clear TX related flags
                 self.write(b, ask_no_ack)  # clears TX flags on entering
+                time.sleep(0.00001)
+                self.ce_pin.value = 0
                 self._wait_for_result(timeout) # now get result
                 if self.arc and self.irq_df: # need to clear for continuing transmissions
                     # retry twice at most -- this seemed adaquate during testing
                     retry = False
                     for _ in range(2):
                         # resend() clears flags upon entering and exiting
-                        retry = self.resend(True)  # `True` leaves ce pin high
+                        retry = self.resend()
                         if retry is None or retry:
                             break # retry succeeded
                     result.append(retry)
@@ -643,14 +642,13 @@ class RF24:
                         result.append(self.recv()) # save ACK payload & clears RX flag
                     else:
                         result.append(self.irq_ds)  # will always be True (in this case)
-                    self.clear_status_flags(False) # clear TX related flags
             return result
         if not buf or len(buf) > 32:
             raise ValueError("buf must be a buffer protocol object with a byte length of"
                              "\nat least 1 and no greater than 32")
         # T_upload is done before timeout begins (after payload write action AKA upload)
-        timeout = pl_coef * (((8 * (len(buf) + pl_len)) + 9) /
-                             bitrate) + stby2active + t_irq + t_retry
+        timeout = (((8 * (len(buf) + packet_data)) + 9) /
+                   bitrate) + stby2active + t_irq + t_retry + t_ack
         self.write(buf, ask_no_ack)  # init using non-blocking helper
         time.sleep(0.00001)  # ensure CE pulse is >= 10 µs
         # if pulse is stopped here, the nRF24L01 only handles the top level payload in the FIFO.
@@ -790,7 +788,8 @@ class RF24:
             - ``Auto retry delay`` The current setting of the `ard` attribute
             - ``Auto retry attempts`` The current setting of the `arc` attribute
             - ``Packets lost on current channel`` Total amount of packets lost (transmission
-              failures). This only resets when the `channel` is changed.
+              failures). This only resets when the `channel` is changed. This count will
+              only go up 15.
             - ``Retry attempts made for last transmission`` Amount of attempts to re-transmit
               during last
               transmission (resets per payload)
@@ -838,9 +837,9 @@ class RF24:
         print("Payload lengths___________{} bytes".format(self.payload_length))
         print("Auto retry delay__________{} microseconds".format(self.ard))
         print("Auto retry attempts_______{} maximum".format(self.arc))
-        print("Packets lost on current channel__________________{}".format(
+        print("Packets lost on current channel_____________________{}".format(
             (watchdog & 0xF0) >> 4))
-        print("Retry attempts made for last transmission________{}".format(watchdog & 0x0F))
+        print("Retry attempts made for last transmission___________{}".format(watchdog & 0x0F))
         print("IRQ - Data Ready______{}    Data Ready___________{}".format(
             '_True' if not bool(self._config & 0x40) else 'False', self.irq_dr))
         print("IRQ - Data Fail_______{}    Data Failed__________{}".format(
@@ -1147,7 +1146,8 @@ class RF24:
     @property
     def crc(self):
         """This `int` attribute specifies the nRF24L01's CRC (cyclic redundancy checking) encoding
-        scheme in terms of byte length. CRC is a way of making sure that the transmission didn't get corrupted over the air.
+        scheme in terms of byte length. CRC is a way of making sure that the transmission didn't
+        get corrupted over the air.
 
         A valid input value is in range [0,2]:
 
@@ -1291,17 +1291,11 @@ class RF24:
         # should be faster than reading the STATUS register
         self._reg_write(0xFF)
 
-    def resend(self, leave_ce_high=False):
+    def resend(self):
         """Use this function to maunally re-send the previous payload in the
         top level (first out) of the TX FIFO buffer. All returned data follows the same patttern
         that `send()` returns with the added condition that this function will return `False`
         if the TX FIFO buffer is empty.
-
-        :param bool leave_ce_high: `True` will leave the CE pin high for quicker consecutive
-            retransmissions. Default is `False` and leaves the CE pin low after a mandatory 10
-            microsecond pulse (which initiates the retransmission). This is handy when
-            `auto_ack` attribute is enabled, otherwise, it can pose consequences to the radio's
-            hardware (see warning in `write()`).
 
         .. note:: The nRF24L01 normally removes a payload from the TX FIFO buffer after successful
             transmission, but not when this function is called. The payload (successfully
@@ -1311,12 +1305,13 @@ class RF24:
         """
         result = False
         if not self.fifo(True, True):  # is there a pre-existing payload
+            self.clear_status_flags(False) # clear TX related flags
             # indicate existing payload will get re-used.
             # This command tells the radio not pop TX payload from FIFO on success
             self._reg_write(0xE3)  # 0xE3 == REUSE_TX_PL command
             # timeout calc assumes 32 byte payload because there is no way to tell when payload
-            # has already been loaded into TX FIFO
-            pl_coef = 1 + bool(self.auto_ack)
+            # has already been loaded into TX FIFO; also assemues 32-byte ACK if needed
+            pl_coef = 1 + bool(self._setup_retr & 0x0f)
             pl_len = 1 + self._addr_len + (
                 max(0, ((self._config & 12) >> 2) - 1))
             bitrate = ((2000000 if self._rf_setup & 0x28 == 8 else 250000)
@@ -1325,15 +1320,13 @@ class RF24:
             t_irq = 0.0000082 if not self._rf_setup & 0x28 else 0.000006
             t_retry = (((self._setup_retr & 0xf0) >> 4) * 250 +
                        380) * (self._setup_retr & 0x0f) / 1000000
-            # include mandatory 10 microsecond pulse if leave_ce_high == True
             timeout = pl_coef * (((8 * (32 + pl_len)) + 9) / bitrate) + \
-                stby2active + t_irq + t_retry + (0.00001 if leave_ce_high else 0)
+                stby2active + t_irq + t_retry
             # cycle the CE pin to re-enable transmission of re-used payload
             self.ce_pin.value = 0
             self.ce_pin.value = 1
-            if not leave_ce_high:
-                time.sleep(0.00001)
-                self.ce_pin.value = 0  # only send one payload
+            time.sleep(0.00001)
+            self.ce_pin.value = 0  # only send one payload
             self._wait_for_result(timeout)
             result = self.irq_ds
             if self.ack and self.irq_dr:  # check if there is an ACK payload
