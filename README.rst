@@ -40,7 +40,7 @@ Features currently supported
 * "re-use the same payload" feature (for manually re-transmitting failed transmissions that remain in the buffer)
 * multiple payload transmissions with one function call (MUST read documentation on the :py:meth:`~circuitpython_nrf24l01.RF24.send()` function)
 * context manager compatible for easily switching between different radio configurations using "with" statements
-* configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or failed transmissions (these 3 flags control the 1 IRQ pin). There's also virtual representations of these interrupt flags available (see :py:attr:`~circuitpython_nrf24l01.RF24.irq_DR`, :py:attr:`~circuitpython_nrf24l01.RF24.irq_ds`, :py:attr:`~circuitpython_nrf24l01.RF24.irq_df` attributes)
+* configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or failed transmissions (these 3 flags control the 1 IRQ pin). There's also virtual representations of these interrupt flags available (see :py:attr:`~circuitpython_nrf24l01.RF24.irq_dr`, :py:attr:`~circuitpython_nrf24l01.RF24.irq_ds`, :py:attr:`~circuitpython_nrf24l01.RF24.irq_df` attributes)
 * invoke sleep mode (AKA power down mode) for ultra-low current consumption
 * cyclic redundancy checking (CRC) up to 2 bytes long
 * adjust the nRF24L01's builtin automatic re-transmit feature's parameters (:py:attr:`~circuitpython_nrf24l01.RF24.arc`: number of attempts, :py:attr:`~circuitpython_nrf24l01.RF24.ard`: delay between attempts)

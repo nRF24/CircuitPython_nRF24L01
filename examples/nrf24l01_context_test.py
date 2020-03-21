@@ -33,7 +33,7 @@ nrf = RF24(spi, csn, ce, ack=True)
 # NOTE address length is set to 3 bytes
 basicRF = RF24(spi, csn, ce,
                dynamic_payloads=False,
-               irq_DR=False, irq_ds=False,
+               irq_dr=False, irq_ds=False,
                channel=2, crc=1, data_rate=250,
                payload_length=8, address_length=3,
                ard=1000, arc=15)
