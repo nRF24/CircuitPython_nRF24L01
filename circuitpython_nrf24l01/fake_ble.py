@@ -129,7 +129,7 @@ class FakeBLE(RF24):
         Options are ``0`` (dBm), ``-6`` (dBm), ``-12`` (dBm), or ``-18`` (dBm). This can be
         changed at any time by using the `pa_level` attribute.
     """
-    def __init__(self, spi, csn, ce, name=None, pa_level=False, irq_DR=False, irq_DS=True):
+    def __init__(self, spi, csn, ce, name=None, pa_level=False, irq_dr=False, irq_ds=True):
         super(FakeBLE, self).__init__(spi, csn, ce,
                                       pa_level=pa_level,
                                       crc=0,
@@ -137,9 +137,9 @@ class FakeBLE(RF24):
                                       arc=0,
                                       address_length=4,
                                       ask_no_ack=False,
-                                      irq_DF=False,
-                                      irq_DR=irq_DR,
-                                      irq_DS=irq_DS)
+                                      irq_df=False,
+                                      irq_dr=irq_dr,
+                                      irq_ds=irq_ds)
         self._chan = 0
         self._ble_name = None
         self.name = name
@@ -204,7 +204,7 @@ class FakeBLE(RF24):
         .. note:: If the name of the emulated BLE device is also to be braodcast, then the 'name'
             attribute should be set prior to calling `send()`.
         """
-        self.ce.value = 0
+        self.ce_pin.value = 0
         self.flush_tx()
         self.clear_status_flags(False) # clears TX related flags only
         # max payload_length = 32 - 14(header, MAC, & CRC) - 2(container header) - 3(BLE flags)
@@ -249,14 +249,14 @@ class FakeBLE(RF24):
         self.write(_reverse_bits(_ble_whitening(payload, whiten_coef)))
         time.sleep(0.00001) # ensure CE pulse is >= 10 µs
         # pulse is stopped here; the nRF24L01 only handles the top level payload in the FIFO.
-        self.ce.value = 0 # go to Standby-I power mode (power attribute still == True)
+        self.ce_pin.value = 0 # go to Standby-I power mode (power attribute still == True)
 
         # T_upload is done before timeout begins (after payload write action AKA upload)
         timeout = (((8 * (5 + len(payload))) + 9) / 125000) + 0.0002682
         start = time.monotonic()
-        while not self.irq_DS and (time.monotonic() - start) < timeout:
+        while not self.irq_ds and (time.monotonic() - start) < timeout:
             self.update() # perform Non-operation command to get status byte (should be faster)
-            # print('status: DR={} DS={} DF={}'.format(self.irq_DR, self.irq_DS, self.irq_DF))
+            # print('status: DR={} DS={} DF={}'.format(self.irq_dr, self.irq_ds, self.irq_df))
         self.clear_status_flags(False) # only TX related IRQ flags
 
     # Altering all the following settings is disabled
