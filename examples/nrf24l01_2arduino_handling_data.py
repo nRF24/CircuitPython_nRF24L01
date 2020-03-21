@@ -22,7 +22,7 @@ csn = dio.DigitalInOut(board.D5)
 spi = board.SPI()  # init spi bus object
 
 # initialize the nRF24L01 on the spi bus object
-nrf = RF24(spi, csn, ce, ask_no_ack=False)
+nrf = RF24(spi, csn, ce)
 nrf.dynamic_payloads = False # this is the default in the TMRh20 arduino library
 
 # set address of TX node into a RX pipe

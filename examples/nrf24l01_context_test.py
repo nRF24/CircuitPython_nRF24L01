@@ -16,25 +16,33 @@ csn = dio.DigitalInOut(board.D5)
 spi = board.SPI()  # init spi bus object
 
 # initialize the nRF24L01 objects on the spi bus object
-nrf = RF24(spi, csn, ce, ack=True)
 # the first object will have all the features enabled
-# including the option to use custom ACK payloads
+nrf = RF24(spi, csn, ce)
+# enable the option to use custom ACK payloads
+nrf.ack = True
 
 # the second object has most features disabled/altered
+basicRF = RF24(spi, csn, ce)
 # disabled dynamic_payloads, but still using enabled auto_ack
+basicRF.dynamic_payloads = False
 # the IRQ pin is configured to only go active on "data fail"
+basicRF.interrupt_config(data_recv=False, data_sent=False)
 # using a different channel: 2 (default is 76)
+basicRF.channel = 2
 # CRC is set to 1 byte long
+basicRF.crc = 1
 # data rate is set to 2 Mbps
+basicRF.data_rate = 2
 # payload length is set to 8 bytes
+basicRF.payload_length = 8
 # NOTE address length is set to 3 bytes
+basicRF.address_length = 3
 # RF power amplifier is set to -12 dbm
-# automatic retry attempts is set to 15 (maximum allowed)
+basicRF.pa_level = -12
 # automatic retry delay (between attempts) is set to 1000 microseconds
-basicRF = RF24(spi, csn, ce,
-               dynamic_payloads=False, irq_dr=False, irq_ds=False,
-               channel=2, crc=1, data_rate=2, payload_length=8,
-               address_length=3, pa_level=-12, ard=1000, arc=15)
+basicRF.ard = 1000
+# automatic retry attempts is set to 15 (maximum allowed)
+basicRF.arc = 15
 
 print("\nsettings configured by the nrf object")
 with nrf:
