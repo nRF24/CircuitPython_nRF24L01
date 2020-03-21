@@ -272,13 +272,8 @@ address()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.address
 
-Sniffer
-=======
-    .. automodule:: circuitpython_nrf24l01.sniffer
-        :members:
-
-Logitech Mouse
+Fake BLE
 ==============
 
-    .. automodule:: circuitpython_nrf24l01.logitech_mouse
+    .. automodule:: circuitpython_nrf24l01.fake_ble
         :members:
