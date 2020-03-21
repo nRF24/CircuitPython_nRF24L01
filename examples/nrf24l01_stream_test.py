@@ -42,7 +42,7 @@ def master(count=1):  # count = 5 will transmit the list 5 times
     success_percentage = 0
     for _ in range(count):
         now = time.monotonic() * 1000  # start timer
-        result = nrf.send(buffers)
+        result = nrf.send(buffers, force_retry=2)
         print('Transmission took', time.monotonic() * 1000 - now, 'ms')
         for r in result:
             success_percentage += 1 if r else 0

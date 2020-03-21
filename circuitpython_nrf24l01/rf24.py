@@ -519,7 +519,7 @@ class RF24:
         # return all available bytes from payload
         return result
 
-    def send(self, buf, ask_no_ack=False):
+    def send(self, buf, ask_no_ack=False, force_retry=0):
         """This blocking function is used to transmit payload(s).
 
         :returns:
@@ -555,33 +555,32 @@ class RF24:
             ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about
             the payload). Therefore, it takes advantage of an nRF24L01 feature specific to
             individual payloads, and its value is not saved anywhere. You do not need to specify
-            this for every payload if the `auto_ack` attribute is disabled, however this parameter
-            should work despite the `auto_ack` attribute's setting.
+            this for every payload if the `arc` attribute is disabled, however this parameter
+            will work despite the `arc` attribute's setting.
 
             .. note:: Each transmission is in the form of a packet. This packet contains sections
                 of data around and including the payload. `See Chapter 7.3 in the nRF24L01
                 Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
                 nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1136318>`_ for more
                 details.
+        :param int force_retry: The number of brute-force attempts to `resend()` a failed
+            transmission. Default is 0. This parameter has no affect on transmissions if `arc` is
+            ``0`` or ``ask_no_ack`` parameter is set to `True`. Each re-attempt still takes
+            advantage of `arc` & `ard` attributes. During multi-payload processing, this
+            parameter is meant to slow down CircuitPython devices just enough for the Raspberry
+            Pi to catch up (due to the Raspberry Pi's seemingly slower SPI speeds). See also
+            `resend()` as using this parameter carries the same implications documented there.
 
-        .. tip:: It is highly recommended that `auto_ack` attribute is enabled when sending
-            multiple payloads. Test results with the `auto_ack` attribute disabled were very poor
+        .. tip:: It is highly recommended that `arc` attribute is enabled when sending
+            multiple payloads. Test results with the `arc` attribute disabled were very poor
             (much < 50% received). This same advice applies to the ``ask_no_ack`` parameter (leave
             it as `False` for multiple payloads).
-
         .. warning::  The nRF24L01 will block usage of the TX FIFO buffer upon failed
             transmissions. Failed transmission's payloads stay in TX FIFO buffer until the MCU
             calls `flush_tx()` and `clear_status_flags()`. Therefore, this function will discard
             failed transmissions' payloads when sending a list or tuple of payloads, so it can
             continue to process through the list/tuple even if any payload fails to be
             acknowledged.
-
-        .. note:: We've tried very hard to keep nRF24L01s driven by CircuitPython devices compliant
-            with nRF24L01s driven by the Raspberry Pi. But due to the Raspberry Pi's seemingly
-            slower SPI speeds, we've had to resort to internally deploying `resend()` twice (at
-            most when needed) for payloads that failed during multi-payload processing. This tactic
-            is meant to slow down CircuitPython devices just enough for the Raspberry Pi to catch
-            up. Transmission failures are less possible this way.
         """
         # ensure power down/standby-I for proper manipulation of PWR_UP & PRIM_RX bits in
         # CONFIG register
@@ -628,15 +627,9 @@ class RF24:
                 time.sleep(0.00001)
                 self.ce_pin.value = 0
                 self._wait_for_result(timeout) # now get result
-                if self.arc and self.irq_df: # need to clear for continuing transmissions
-                    # retry twice at most -- this seemed adaquate during testing
-                    retry = False
-                    for _ in range(2):
-                        # resend() clears flags upon entering and exiting
-                        retry = self.resend()
-                        if retry is None or retry:
-                            break # retry succeeded
-                    result.append(retry)
+                if self._setup_retr & 0x0f and self.irq_df:
+                    # need to clear for continuing transmissions
+                    result.append(self._attempt2resend(force_retry))
                 else:  # if auto_ack is disabled
                     if self.ack and self.irq_dr and not ask_no_ack:
                         result.append(self.recv()) # save ACK payload & clears RX flag
@@ -656,10 +649,15 @@ class RF24:
         # the address passed to open_tx_pipe()
         self.ce_pin.value = 0 # go to Standby-I power mode (power attribute still True)
         self._wait_for_result(timeout)
-        result = self.irq_ds
-        if self.ack and self.irq_dr:  # is there an ACK payload?
-            result = self.recv()  # save RX'd ACK payload to result & clears RX flag
-        self.clear_status_flags(False)  # only TX related IRQ flags
+        if self._setup_retr & 0x0f and self.irq_df:
+            # if auto-retransmit is on and last attempt failed
+            result = self._attempt2resend(force_retry)
+        else:  # if auto_ack is disabled
+            if self.ack and self.irq_dr and not ask_no_ack:
+                result = self.recv() # save ACK payload & clears RX flag
+            else:
+                result = self.irq_ds  # will always be True (in this case)
+            self.clear_status_flags(False)  # only TX related IRQ flags
         return result
 
     @property
@@ -1368,16 +1366,16 @@ class RF24:
         .. note:: The nRF24L01 doesn't initiate sending until a mandatory minimum 10 µs pulse on
             the CE pin is acheived. That pulse is initiated before this function exits. However, we
             have left that 10 µs wait time to be managed by the MCU in cases of asychronous
-            application, or it is managed by using `send()` instead of this function. If the CE pin
-            remains HIGH for longer than 10 µs, then the nRF24L01 will continue to transmit all
-            payloads found in the TX FIFO buffer.
+            application, or it is managed by using `send()` instead of this function. According to
+            the Specification sheet, if the CE pin remains HIGH for longer than 10 µs, then the
+            nRF24L01 will continue to transmit all payloads found in the TX FIFO buffer.
 
         .. warning:: A note paraphrased from the `nRF24L01+ Specifications Sheet <https://www.
             sparkfun.com/datasheets/Components/SMD/
             nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1121422>`_:
 
             It is important to NEVER to keep the nRF24L01+ in TX mode for more than 4 ms at a time.
-            If the [`auto_ack` attribute is] enabled, nRF24L01+ is never in TX mode longer than 4
+            If the [`arc` attribute is] enabled, nRF24L01+ is never in TX mode longer than 4
             ms.
 
         .. tip:: Use this function at your own risk. Because of the underlying `"Enhanced
@@ -1513,3 +1511,12 @@ class RF24:
         while not self.irq_ds and not self.irq_df and (time.monotonic() - start) < timeout:
             self.update()  # perform Non-operation command to get status byte (should be faster)
             # print('status: DR={} DS={} DF={}'.format(self.irq_dr, self.irq_ds, self.irq_df))
+
+    def _attempt2resend(self, attempts):
+        retry = False
+        for _ in range(attempts):
+            # resend() clears flags upon entering and exiting
+            retry = self.resend()
+            if retry is None or retry:
+                break # retry succeeded
+        return retry
