@@ -84,7 +84,7 @@ Contructor
 .. autoclass:: circuitpython_nrf24l01.rf24.RF24
   :no-members:
 
-  A driver class for the nRF24L01(+) transceiver radios. This class aims to be compatible with
+  This class aims to be compatible with
   other devices in the nRF24xxx product line that implement the Nordic proprietary Enhanced
   ShockBurst Protocol (and/or the legacy ShockBurst Protocol), but officially only supports
   (through testing) the nRF24L01 and nRF24L01+ devices.
@@ -99,62 +99,13 @@ Contructor
       CSN (Chip Select Not) pin. This is required.
   :param ~digitalio.DigitalInOut ce: The digital output pin that is connected to the nRF24L01's
       CE (Chip Enable) pin. This is required.
-  :param int channel: This is used to specify a certain radio frequency that the nRF24L01 uses.
-      Defaults to 76 and can be changed at any time by using the `channel` attribute.
-  :param int payload_length: This is the length (in bytes) of a single payload to be transmitted
-      or received. This is ignored if the `dynamic_payloads` attribute is enabled. Defaults to 32
-      and must be in range [1,32]. This can be changed at any time by using the `payload_length`
-      attribute.
-  :param int address_length: This is the length (in bytes) of the addresses that are assigned to
-      the data pipes for transmitting/receiving. Defaults to 5 and must be in range [3,5]. This
-      can be changed at any time by using the `address_length` attribute.
-  :param int ard: This specifies the delay time (in µs) between attempts to automatically
-      re-transmit. This can be changed at any time by using the `ard` attribute. This parameter
-      must be a multiple of 250 in the range [250,4000]. Defualts to 1500 µs.
-  :param int arc: This specifies the automatic re-transmit count (maximum number of automatically
-      attempts to re-transmit). This can be changed at any time by using the `arc` attribute.
-      This parameter must be in the range [0,15]. Defaults to 3.
-  :param int crc: This parameter controls the CRC setting of transmitted packets. Options are
-      ``0`` (off), ``1`` or ``2`` (byte long CRC enabled). This can be changed at any time by
-      using the `crc` attribute. Defaults to 2.
-  :param int data_rate: This parameter controls the RF data rate setting of transmissions.
-      Options are ``1`` (Mbps), ``2`` (Mbps), or ``250`` (Kbps). This can be changed at any time
-      by using the `data_rate` attribute. Defaults to 1.
-  :param int pa_level: This parameter controls the RF power amplifier setting of transmissions.
-      Options are ``0`` (dBm), ``-6`` (dBm), ``-12`` (dBm), or ``-18`` (dBm). This can be changed
-      at any time by using the `pa_level` attribute. Defaults to 0.
-  :param bool dynamic_payloads: This parameter enables/disables the dynamic payload length
-      feature of the nRF24L01. Defaults to enabled. This can be changed at any time by using the
-      `dynamic_payloads` attribute.
-  :param bool auto_ack: This parameter enables/disables the automatic acknowledgment (ACK)
-      feature of the nRF24L01. Defaults to enabled if `dynamic_payloads` is enabled. This can be
-      changed at any time by using the `auto_ack` attribute.
-  :param bool ask_no_ack: This represents a special flag that has to be thrown to enable a
-      feature specific to individual payloads. Setting this parameter only enables access to this
-      feature; it does not invoke it (see parameters for `send()` or `write()` functions).
-      Enabling/Disabling this does not affect `auto_ack` attribute.
-  :param bool ack: This represents a special flag that has to be thrown to enable a feature
-      allowing custom response payloads appended to the ACK packets. Enabling this also requires
-      the `auto_ack` attribute enabled. This can be changed at any time by using the `ack`
-      attribute.
-  :param bool irq_dr: When "Data is Ready", this configures the interrupt (IRQ) trigger of the
-      nRF24L01's IRQ pin (active low). Defaults to enabled. This can be changed at any time by
-      using the `interrupt_config()` function.
-  :param bool irq_ds: When "Data is Sent", this configures the interrupt (IRQ) trigger of the
-      nRF24L01's IRQ pin (active low). Defaults to enabled. This can be changed at any time by
-      using the `interrupt_config()` function.
-  :param bool irq_df: When "max retry attempts are reached" (specified by the `arc` attribute),
-      this configures the interrupt (IRQ) trigger of the nRF24L01's IRQ pin (active low) and
-      represents transmission failure. Defaults to enabled. This can be changed at any time by
-      using the `interrupt_config()` function.
 
 address_length
 ******************
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.address_length
 
-  This `int` attribute specifies the length (in bytes) of addresses to be used for RX/TX
-  pipes. The addresses assigned to the data pipes must have byte length equal to the value
+  The addresses assigned to the data pipes must have byte length equal to the value
   set for this attribute.
 
   A valid input value must be an `int` in range [3,5]. Otherwise a `ValueError` exception is
@@ -164,8 +115,6 @@ open_tx_pipe()
 ******************
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.open_tx_pipe
-
-  This function is used to open a data pipe for OTA (over the air) TX transmissions.
 
   :param bytearray address: The virtual address of the receiving nRF24L01. This must have a
       length equal to the `address_length` attribute (see `address_length` attribute).
@@ -183,9 +132,6 @@ close_rx_pipe()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.close_rx_pipe
 
-  This function is used to close a specific data pipe from OTA (over the air) RX
-  transmissions.
-
   :param int pipe_number: The data pipe to use for RX transactions. This must be in range
       [0,5]. Otherwise a `ValueError` exception is thrown.
   :param bool reset: `True` resets the address for the specified ``pipe_number`` to the
@@ -197,8 +143,7 @@ open_rx_pipe()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.open_rx_pipe
 
-  This function is used to open a specific data pipe for OTA (over the air) RX
-  transmissions. If `dynamic_payloads` attribute is `False`, then the `payload_length`
+  If `dynamic_payloads` attribute is `False`, then the `payload_length`
   attribute is used to specify the expected length of the RX payload on the specified data
   pipe.
 
@@ -217,8 +162,6 @@ listen
 ******************
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.listen
-
-  An attribute to represent the nRF24L01 primary role as a radio.
 
   Setting this attribute incorporates the proper transitioning to/from RX mode as it involves
   playing with the `power` attribute and the nRF24L01's CE pin. This attribute does not power
@@ -245,8 +188,7 @@ any()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.any
 
-  This function checks if the nRF24L01 has received any data at all, and then reports the
-  next available payload's length (in bytes) -- if there is any.
+  -- if there is any.
 
   :returns:
       - `int` of the size (in bytes) of an available RX payload (if any).
@@ -257,8 +199,8 @@ recv()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.recv
 
-  This function is used to retrieve the next available payload in the RX FIFO buffer, then
-  clears the `irq_dr` status flag. This function synonomous to `read_ack()`.
+  in the RX FIFO buffer, then clears the `irq_dr` status flag. This function synonomous to
+  `read_ack()`.
 
   :returns: A `bytearray` of the RX payload data or `None` if there is no payload
 
@@ -271,8 +213,6 @@ send()
 ******************
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.send
-
-  This blocking function is used to transmit payload(s).
 
   :returns:
       * `list` if a list or tuple of payloads was passed as the ``buf`` parameter. Each item
@@ -342,7 +282,6 @@ what_happened()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.what_happened
 
-  This debuggung function aggregates and outputs all status/condition related information
   from the nRF24L01. Some information may be irrelevant depending on nRF24L01's
   state/condition.
 
@@ -400,22 +339,21 @@ dynamic_payloads
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.dynamic_payloads
 
-  This `bool` attribute controls the nRF24L01's dynamic payload length feature.
+  Default setting is `True`.
 
-  - `True` enables nRF24L01's dynamic payload length feature. The `payload_length`
-    attribute is ignored when this feature is enabled.
-  - `False` disables nRF24L01's dynamic payload length feature. Be sure to adjust
-    the `payload_length` attribute accordingly when `dynamic_payloads` feature is disabled.
+  - `True` enables nRF24L01's dynamic payload length feature. The `payload_length` attribute is
+    ignored when this feature is enabled.
+  - `False` disables nRF24L01's dynamic payload length feature. Be sure to adjust the
+    `payload_length` attribute accordingly when `dynamic_payloads` feature is disabled.
 
 payload_length
 ******************************
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.payload_length
 
-  This `int` attribute specifies the length (in bytes) of payload that is regarded,
-  meaning "how big of a payload should the radio care about?" If the `dynamic_payloads`
-  attribute is enabled, this attribute has no affect. When `dynamic_payloads` is disabled,
-  this attribute is used to specify the payload length when entering RX mode.
+  If the `dynamic_payloads` attribute is enabled, this attribute has no affect. When
+  `dynamic_payloads` is disabled, this attribute is used to specify the payload length when
+  entering RX mode.
 
   A valid input value must be an `int` in range [1,32]. Otherwise a `ValueError` exception is
   thrown. Default is set to the nRF24L01's maximum of 32.
@@ -431,8 +369,7 @@ auto_ack
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.auto_ack
 
-  This `bool` attribute controls the nRF24L01's automatic acknowledgment feature during
-  the process of receiving a packet.
+  a packet. Default setting is `True`.
 
   - `True` enables transmitting automatic acknowledgment packets. The CRC (cyclic redundancy
     checking) is enabled automatically by the nRF24L01 if the `auto_ack` attribute is enabled
@@ -445,8 +382,7 @@ arc
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.arc
 
-  This `int` attribute specifies the nRF24L01's number of attempts to re-transmit TX
-  payload when acknowledgment packet is not received. The `auto_ack` must be enabled on the
+  when acknowledgment packet is not received. The `auto_ack` must be enabled on the
   receiving nRF24L01, otherwise this attribute will make `send()` seem like it failed.
 
   A valid input value must be in range [0,15]. Otherwise a `ValueError` exception is thrown.
@@ -458,8 +394,7 @@ ard
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.ard
 
-  This `int` attribute specifies the nRF24L01's delay (in µs) between attempts to
-  automatically re-transmit the TX payload when an expected acknowledgement (ACK) packet is
+  when an expected acknowledgement (ACK) packet is
   not received. During this time, the nRF24L01 is listening for the ACK packet. If the
   `auto_ack` attribute is disabled, this attribute is not applied.
 
@@ -480,9 +415,8 @@ ack
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.ack
 
-  This `bool` attribute represents the status of the nRF24L01's capability to use custom
-  payloads as part of the automatic acknowledgment (ACK) packet. Use this attribute to
-  set/check if the custom ACK payloads feature is enabled.
+  Use this attribute to set/check if the custom ACK payloads feature is enabled. Default setting
+  is `False`.
 
   - `True` enables the use of custom ACK payloads in the ACK packet when responding to
     receiving transmissions. As `dynamic_payloads` and `auto_ack` attributes are required for
@@ -496,8 +430,7 @@ load_ack()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.load_ack
 
-  This allows the MCU to specify a payload to be allocated into the TX FIFO buffer for use
-  on a specific data pipe. This payload will then be appended to the automatic acknowledgment
+  This payload will then be appended to the automatic acknowledgment
   (ACK) packet that is sent when fresh data is received on the specified pipe. See
   `read_ack()` on how to fetch a received custom ACK payloads.
 
@@ -530,8 +463,7 @@ read_ack()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.read_ack
 
-  Allows user to read the automatic acknowledgement (ACK) payload (if any) when nRF24L01
-  is in TX mode. This function is called from a blocking `send()` call if the `ack` attribute
+  This function is called from a blocking `send()` call if the `ack` attribute
   is enabled. Alternatively, this function can be called directly in case of calling the
   non-blocking `write()` function during asychronous applications. This function is an alias
   of `recv()` and remains for bakward compatibility with older versions of this library.
@@ -544,7 +476,7 @@ irq_dr
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.irq_dr
 
-  A `bool` that represents the "Data Ready" interrupted flag. (read-only)
+  (read-only)
 
   * `True` represents Data is in the RX FIFO buffer
   * `False` represents anything depending on context (state/condition of FIFO buffers) --
@@ -563,7 +495,7 @@ irq_df
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.irq_df
 
-  A `bool` that represents the "Data Failed" interrupted flag. (read-only)
+  (read-only)
 
   * `True` signifies the nRF24L01 attemped all configured retries
   * `False` represents anything depending on context (state/condition) -- usually this means
@@ -583,7 +515,7 @@ irq_ds
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.irq_ds
 
-  A `bool` that represents the "Data Sent" interrupted flag. (read-only)
+  (read-only)
 
   * `True` represents a successful transmission
   * `False` represents anything depending on context (state/condition of FIFO buffers) --
@@ -602,9 +534,8 @@ clear_status_flags()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.clear_status_flags
 
-  This clears the interrupt flags in the status register. Internally, this is
-  automatically called by `send()`, `write()`, `recv()`, and when `listen` changes from
-  `False` to `True`.
+  Internally, this is automatically called by `send()`, `write()`, `recv()`, and when `listen`
+  changes from `False` to `True`.
 
   :param bool data_recv: specifies wheather to clear the "RX Data Ready" flag.
   :param bool data_sent: specifies wheather to clear the "TX Data Sent" flag.
@@ -625,16 +556,15 @@ interrupt_config()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.interrupt_config
 
-  Sets the configuration of the nRF24L01's IRQ (interrupt) pin. The signal from the
-  nRF24L01's IRQ pin is active LOW. (write-only)
+  The digital signal from the nRF24L01's IRQ pin is active LOW. (write-only)
 
   :param bool data_recv: If this is `True`, then IRQ pin goes active when there is new data
-      to read in the RX FIFO buffer.
+      to read in the RX FIFO buffer. Default setting is `True`
   :param bool data_sent: If this is `True`, then IRQ pin goes active when a payload from TX
-      buffer is successfully transmit.
+      buffer is successfully transmit. Default setting is `True`
   :param bool data_fail: If this is `True`, then IRQ pin goes active when maximum number of
       attempts to re-transmit the packet have been reached. If `auto_ack` attribute is
-      disabled, then this IRQ event is not used.
+      disabled, then this IRQ event is not used. Default setting is `True`
 
   .. note:: To fetch the status (not configuration) of these IRQ flags, use the `irq_df`,
       `irq_ds`, `irq_dr` attributes respectively.
@@ -655,9 +585,6 @@ data_rate
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.data_rate
 
-  This `int` attribute specifies the nRF24L01's frequency data rate for OTA (over the air)
-  transmissions.
-
   A valid input value is:
 
   - ``1`` sets the frequency data rate to 1 Mbps
@@ -677,8 +604,6 @@ channel
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.channel
 
-  This `int` attribute specifies the nRF24L01's frequency (in 2400 + `channel` MHz).
-
   A valid input value must be in range [0, 125] (that means [2.4, 2.525] GHz). Otherwise a
   `ValueError` exception is thrown. Default is 76.
 
@@ -687,9 +612,7 @@ crc
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.crc
 
-  This `int` attribute specifies the nRF24L01's CRC (cyclic redundancy checking) encoding
-  scheme in terms of byte length. CRC is a way of making sure that the transmission didn't
-  get corrupted over the air.
+  CRC is a way of making sure that the transmission didn't get corrupted over the air.
 
   A valid input value is in range [0,2]:
 
@@ -707,8 +630,7 @@ power
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.power
 
-  This `bool` attribute controls the power state of the nRF24L01. This is exposed for
-  asynchronous applications and user preference.
+  This is exposed for asynchronous applications and user preference.
 
   - `False` basically puts the nRF24L01 to sleep (AKA power down mode) with ultra-low
     current consumption. No transmissions are executed when sleeping, but the nRF24L01 can
@@ -734,8 +656,7 @@ pa_level
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.pa_level
 
-  This `int` attribute specifies the nRF24L01's power amplifier level (in dBm). Higher
-  levels mean the transmission will cover a longer distance. Use this attribute to tweak the
+  Higher levels mean the transmission will cover a longer distance. Use this attribute to tweak the
   nRF24L01 current consumption on projects that don't span large areas.
 
   A valid input value is:
@@ -752,9 +673,6 @@ tx_full
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.tx_full
 
-  An attribute to represent the nRF24L01's status flag signaling that the TX FIFO buffer
-  is full. (read-only)
-
   Calling this does not execute an SPI transaction. It only exposes that latest data
   contained in the STATUS byte that's always returned from any SPI transactions with the
   nRF24L01. Use the `update()` function to manually refresh this data when needed.
@@ -768,9 +686,6 @@ rpd
 ******************************
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.rpd
-
-  This read-only attribute returns `True` if RPD (Received Power Detector) is triggered
-  or `False` if not triggered.
 
   .. note:: The RPD flag is triggered in the following cases:
 
@@ -788,8 +703,7 @@ update()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.update
 
-  This function is only used to get an updated status byte over SPI from the nRF24L01 and
-  is exposed to the MCU for asynchronous applications. Refreshing the status byte is vital to
+  and is exposed to the MCU for asynchronous applications. Refreshing the status byte is vital to
   checking status of the interrupts, RX pipe number related to current RX payload, and if the
   TX FIFO buffer is full. This function returns nothing, but internally updates the `irq_dr`,
   `irq_ds`, `irq_df`, and `tx_full` attributes. Internally this is a helper function to
@@ -800,10 +714,8 @@ resend()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.resend
 
-  Use this function to maunally re-send the previous payload in the
-  top level (first out) of the TX FIFO buffer. All returned data follows the same patttern
-  that `send()` returns with the added condition that this function will return `False`
-  if the TX FIFO buffer is empty.
+  All returned data follows the same patttern that `send()` returns with the added condition that
+  this function will return `False` if the TX FIFO buffer is empty.
 
   .. note:: The nRF24L01 normally removes a payload from the TX FIFO buffer after successful
       transmission, but not when this function is called. The payload (successfully
@@ -815,10 +727,6 @@ write()
 ******************************
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.write
-
-  This non-blocking function (when used as alternative to `send()`) is meant for
-  asynchronous applications and can only handle one payload at a time as it is a helper
-  function to `send()`.
 
   :param bytearray buf: The payload to transmit. This bytearray must have a length greater
       than 0 and less than 32 bytes, otherwise a `ValueError` exception is thrown.
@@ -880,8 +788,6 @@ flush_rx()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.flush_rx
 
-  A helper function to flush the nRF24L01's internal RX FIFO buffer. (write-only)
-
   .. note:: The nRF24L01 RX FIFO is 3 level stack that holds payload data. This means that
       there can be up to 3 received payloads (each of a maximum length equal to 32 bytes)
       waiting to be read (and popped from the stack) by `recv()` or `read_ack()`. This
@@ -891,8 +797,6 @@ flush_tx()
 ******************************
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.flush_tx
-
-  A helper function to flush the nRF24L01's internal TX FIFO buffer. (write-only)
 
   .. note:: The nRF24L01 TX FIFO is 3 level stack that holds payload data. This means that
       there can be up to 3 payloads (each of a maximum length equal to 32 bytes) waiting to
@@ -905,9 +809,6 @@ fifo()
 ******************************
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.fifo
-
-  This provides some precision determining the status of the TX/RX FIFO buffers.
-  (read-only)
 
   :param bool about_tx:
       * `True` means information returned is about the TX FIFO buffer.
@@ -932,9 +833,6 @@ pipe()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.pipe
 
-  This function returns information about the data pipe that received the next available
-  payload in the RX FIFO buffer.
-
   :returns:
       - `None` if there is no payload in RX FIFO.
       - The `int` identifying pipe number [0,5] that received the next available payload in
@@ -944,8 +842,6 @@ address()
 ******************************
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.address
-
-  Returns the current address set to a specified data pipe or the TX address. (read-only)
 
   :param int index: the number of the data pipe whose address is to be returned. Defaults to
       ``-1``. A valid index ranges [0,5] for RX addresses or any negative `int` for the TX
