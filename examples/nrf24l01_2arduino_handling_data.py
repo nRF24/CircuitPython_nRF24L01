@@ -46,10 +46,8 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         # 'f' means a single 4 byte float value.
         buffer = struct.pack('<Lf', start_timer, float_value)
         result = nrf.send(buffer)
-        if result is None:
-            print('send() timed out')
-        elif not result:
-            print('send() failed')
+        if not result:
+            print('send() failed or timed out')
         else:
             nrf.listen = True # get radio ready to receive a response
             timeout = True # used to determine if response timed out
@@ -90,10 +88,8 @@ def slave(count=3):
             rx = struct.unpack('<Lf', buffer[:8]) # "[:8]" ignores the padded 0s
             # print the unsigned long and float data sent in the response
             print("Responding: {}, {}".format(rx[0], rx[1] + 0.01))
-            if result is None:
-                print('response timed out')
-            elif not result:
-                print('response failed')
+            if not result:
+                print('response failed or timed out')
             else:
                 # print timer results on transmission success
                 print('successful response took', end_timer - start_timer * 1000, 'ms')

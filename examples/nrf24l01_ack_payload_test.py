@@ -57,10 +57,8 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         nrf.ack = True  # enable feature before send()
         now = time.monotonic() * 1000  # start timer
         result = nrf.send(buffer)  # becomes the response buffer
-        if result is None:
-            print('send() timed out')
-        elif not result:
-            print('send() failed')
+        if not result:
+            print('send() failed or timed out')
         else:
             # print the received ACK that was automatically
             # fetched and saved to "buffer" via send()
@@ -107,7 +105,6 @@ def slave(count=3):
     # recommended behavior is to keep in TX mode while idle
     nrf.listen = False  # put radio in TX mode
     nrf.flush_tx()  # flush any ACK payload
-
 
 print("""\
     nRF24L01 ACK test\n\

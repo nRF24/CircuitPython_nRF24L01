@@ -96,7 +96,8 @@ def slave(timeout=10):  # will listen for 10 seconds before timing out
     nrf.flush_rx()
     nrf.listen = 0
     nrf.open_tx_pipe(address)
-    nrf.send(b'pong')  # send a payload to complete the on data ready test
+    # send a payload to complete the on data ready test
+    nrf.send(b'pong', force_retry=1)
     # we're done on this side
 
 print("""\

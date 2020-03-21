@@ -513,7 +513,7 @@ class RF24:
         # buffer size = current payload size
         curr_pl_size = self.payload_length if not self.dynamic_payloads else self.any()
         # get the data (0x61 = R_RX_PAYLOAD)
-        result = None if not curr_pl_size else self._reg_read_bytes(0x61, curr_pl_size)
+        result = self._reg_read_bytes(0x61, curr_pl_size)
         # clear only Data Ready IRQ flag for accurate RX FIFO read operations
         self.clear_status_flags(True, False, False)
         # return all available bytes from payload
