@@ -134,9 +134,6 @@ close_rx_pipe()
 
   :param int pipe_number: The data pipe to use for RX transactions. This must be in range
       [0,5]. Otherwise a `ValueError` exception is thrown.
-  :param bool reset: `True` resets the address for the specified ``pipe_number`` to the
-      factory address (different for each pipe). `False` leaves the address on the specified
-      ``pipe_number`` alone. Be aware that the addresses will remain despite loss of power.
 
 open_rx_pipe()
 ******************
