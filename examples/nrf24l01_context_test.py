@@ -5,7 +5,8 @@ display settings after changing contexts ( & thus configurations)
 """
 import board
 import digitalio as dio
-from circuitpython_nrf24l01 import RF24
+# this script is not compatible with rf24_m0 for ATSAMD21 M0 based board
+from circuitpython_nrf24l01.rf24 import RF24
 
 # change these (digital output) pins accordingly
 ce = dio.DigitalInOut(board.D4)

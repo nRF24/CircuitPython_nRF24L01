@@ -301,54 +301,31 @@ class RF24:
         if not buf or len(buf) > 32:
             raise ValueError("buf must be a buffer protocol object with a byte length of"
                              "\nat least 1 and no greater than 32")
-        # using spec sheet calculations:
-        # timeout total = T_upload + 2 * stby2active + T_overAir + T_ack + T_irq + T_retry
-        # T_upload = payload length (in bits) / spi data rate (bits per second =
-        # baudrate / bits per byte)
-        # T_upload is finished before timeout begins
-        # T_download == T_upload, however RX devices spi settings must match TX's for
-        #   accurate calc
-        # let 2 * stby2active (in µs) ~= (2 + (1 if getting ack else 0)) * 130
-        # let T_ack = T_overAir as the payload size is the only distictive variable between
-        #   the 2
-        # T_overAir (in seconds) = ( 8 (bits/byte) * (1 byte preamble + address length +
-        #   payload length + crc length) + 9 bit packet ID ) / RF data rate (in bits/sec)
-        # T_irq (in seconds) = (0.0000082 if self.data_rate == 1 else 0.000006)
-        # T_retry (in microseconds)= (arc * ard)
         need_ack = self._setup_retr & 0x0f and not ask_no_ack
         packet_data = 1 + self._addr_len + (max(0, ((self._config & 12) >> 2) - 1))
         bitrate = ((2000000 if self._rf_setup & 0x28 == 8 else 250000)
                    if self._rf_setup & 0x28 else 1000000) / 8
-        t_ack = (((packet_data + 32) * 8 + 9) / bitrate) if need_ack else 0  # assumes 32-byte ACK
+        t_ack = (((packet_data + 32) * 8 + 9) / bitrate) if need_ack else 0
         stby2active = (1 + (need_ack)) * 0.00013
         t_irq = 0.0000082 if not self._rf_setup & 0x28 else 0.000006
         t_retry = (((self._setup_retr & 0xf0) >> 4) * 250 + 380) * \
             (self._setup_retr & 0x0f) / 1000000
         timeout = (((8 * (len(buf) + packet_data)) + 9) /
                    bitrate) + stby2active + t_irq + t_retry + t_ack
-        self.write(buf, ask_no_ack)  # init using non-blocking helper
-        time.sleep(0.00001)  # ensure CE pulse is >= 10 µs
-        # if pulse is stopped here, the nRF24L01 only handles the top level payload in the FIFO.
-        # we could hold CE HIGH to continue processing through the rest of the TX FIFO bound for
-        # the address passed to open_tx_pipe()
-        self.ce_pin.value = 0 # go to Standby-I power mode (power attribute still True)
+        self.write(buf, ask_no_ack)
+        time.sleep(0.00001)
+        self.ce_pin.value = 0
         self._wait_for_result(timeout)
         if self._setup_retr & 0x0f and self.irq_df:
-            # if auto-retransmit is on and last attempt failed
-            retry = False
             for _ in range(force_retry):
-                # resend() clears flags upon entering and exiting
-                retry = self.resend()
-                if retry is None or retry:
+                result = self.resend()
+                if result is None or result:
                     break # retry succeeded
-            result = retry
-        else:  # if succeeded
+        else:
+            result = self.irq_ds
             if self.ack and self.irq_dr and not ask_no_ack:
-                # if ACK payload is waiting in RX FIFO
-                result = self.recv() # save ACK payload & clears RX flag
-            else:  # if auto-ack is disabled
-                result = self.irq_ds  # will always be True (in this case)
-            self.clear_status_flags(False)  # only TX related IRQ flags
+                result = self.recv()
+            self.clear_status_flags(False)
         return result
 
     @property

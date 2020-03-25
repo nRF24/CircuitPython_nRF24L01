@@ -4,7 +4,9 @@ Example of library usage for streaming multiple payloads.
 import time
 import board
 import digitalio as dio
-from circuitpython_nrf24l01 import RF24
+# if running this on a ATSAMD21 M0 based board
+# from circuitpython_nrf24l01.rf24_m0 import RF24
+from circuitpython_nrf24l01.rf24 import RF24
 
 # addresses needs to be in a buffer protocol object (bytearray)
 address = b'1Node'

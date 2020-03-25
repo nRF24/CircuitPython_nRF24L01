@@ -1,3 +1,4 @@
+# see license and copyright information in rf24.py of this directory
 # pylint: disable=missing-class-docstring,missing-function-docstring,missing-module-docstring
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
@@ -180,41 +181,30 @@ class RF24:
                 "buf must be a buffer protocol object with a byte length of"
                 "\nat least 1 and no greater than 32")
         # using spec sheet calculations: assuming max time for a packet
-        arc = self._reg_read(4)
-        ard = arc >> 4
-        arc &= 0xF
-        packet_data = 1 + 5 + 2  # preamble (1), address (5), crc (2)
-        bitrate = 2000000 / 8  # 2Mbps
+        arc_d = self._reg_read(4)
+        need_ack = bool((arc_d & 0xF) and not ask_no_ack)
         t_ack = 0
-        if not ask_no_ack:  # this assumes a 32-byte ACK payload
-            t_ack = ((packet_data + 32) * 8 + 9) / bitrate
-        stby2active = (1 + (not ask_no_ack)) * 0.00013
-        t_irq = 0.0000082  # max per spec sheet
-        t_retry = (ard * 250 + 380) * arc / 1000000  # retries * delay
+        if need_ack:
+            t_ack = 329 / 250000  # this assumes a 32-byte ACK payload
+        t_retry = ((arc_d >> 4) * 250 + 380) * (arc_d & 0xF) / 1000000
         timeout = (
-            (((8 * (len(buf) + packet_data)) + 9) / bitrate)
-            + stby2active
-            + t_irq
-            + t_retry
-            + t_ack)
+            (((8 * (len(buf) + 8)) + 9) / 250000)
+            + (1 + need_ack) * 0.00013 + 0.0000082 + t_retry + t_ack)
         self.write(buf, ask_no_ack)
         sleep(0.00001)  # ensure CE pulse is >= 10 µs
         self.ce_pin.value = 0
         start = monotonic()
         while not (self._status & 0x30) and (monotonic() - start) < timeout:
             self.update()
-        if arc and self.irq_df:
-            retry = False
+        if need_ack and self.irq_df:
             for _ in range(force_retry):
-                retry = self.resend()
-                if retry is None or retry:
+                result = self.resend()
+                if result is None or result:
                     break  # retry succeeded
-            result = retry
         else:  # if succeeded
+            result = self.irq_ds
             if self._reg_read(0x1D) & 2 and self.irq_dr and not ask_no_ack:
                 result = self.recv()
-            else:
-                result = self.irq_ds
             self.clear_status_flags(False)
         return result
 
@@ -284,8 +274,8 @@ class RF24:
     @ard.setter
     def ard(self, delta_t):
         if 250 <= delta_t <= 4000 and delta_t % 250 == 0:
-            setup_ret = self._reg_read(4)
-            if ((self._reg_read(4) & 0xF0) >> 4) * 250 + 250 != delta_t:
+            setup_retr = self._reg_read(4)
+            if ((setup_retr & 0xF0) >> 4) * 250 + 250 != delta_t:
                 setup_retr = (int((delta_t - 250) / 250) << 4) | (setup_retr & 0x0F)
                 self._reg_write(4, setup_retr)
         else:
@@ -419,17 +409,9 @@ class RF24:
         if not self.fifo(True, True):
             self.clear_status_flags(False)
             self._reg_write(0xE3)  # 0xE3 == REUSE_TX_PL command
-            # timeout calc assumes 32 byte payload (& 32-byte ACK if needed)
-            arc = self._reg_read(4)
-            ard = arc >> 4
-            arc &= 0xF
-            bitrate = 2000000 / 8  # 2Mbps
-            # this assumes a 32-byte TX & ACK payloads
-            t_packet = 2 * (((8 + 32) * 8 + 9) / bitrate)
-            stby2active = 2 * 0.00013
-            t_irq = 0.0000082  # max per spec sheet
-            t_retry = (ard * 250 + 380) * arc / 1000000  # retries * delay
-            timeout = (t_packet + stby2active + t_irq + t_retry)
+            arc_d = self._reg_read(4)
+            t_retry = ((arc_d >> 4) * 250 + 380) * (arc_d & 0xF) / 1000000
+            timeout = (329 / 125000 + 0.0002682 + t_retry)
             self.ce_pin.value = 0
             self.ce_pin.value = 1
             sleep(0.00001)
