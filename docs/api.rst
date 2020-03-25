@@ -71,6 +71,24 @@ With the `auto_ack` feature enabled, you get:
     configuration (see `send()` & `write()` function
     parameters for more details).
 
+About the lite version
+----------------------
+
+This library contains a "lite" version of ``rf24.py`` titled ``rf24_lite.py``. It has been
+developed to save space on microcontrollers with limited amount of RAM and/or storage (like boards
+using the ATSAMD21 M0). The following functionality has been removed from the lite version:
+
+  * `address`
+  * `rpd`
+  * `pipe()`
+  * `fifo()`
+  * `tx_full`
+  * `address_length` (this is always set to 5 bytes)
+  * `read_ack()` (depricated anyway; use `recv()` instead)
+  * `crc` (always using 2 bytes encoding scheme)
+  * `auto_ack` (always on)
+  * all comments and docstrings (meaning ``help()`` will not provide any specific information)
+
 Basic API
 ---------
 
