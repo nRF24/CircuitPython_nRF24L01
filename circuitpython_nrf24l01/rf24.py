@@ -49,9 +49,8 @@ TX_ADDR    = const(0x10) # Address used for TX transmissions
 class RF24:
     """A driver class for the nRF24L01(+) transceiver radios."""
     def __init__(self, spi, csn, ce):
-        self._payload_length = 32  # inits internal attribute
+        self._payload_length = 32
         self.payload_length = 32
-        # last address assigned to pipe0 for reading. init to None
         self._fifo = 0
         self._status = 0
         # init shadow copy of RX addresses for all pipes
@@ -82,19 +81,19 @@ class RF24:
         # shadow copy of the TX_ADDR
         self._tx_address = self._reg_read_bytes(TX_ADDR)
         # configure the SETUP_RETR register
-        self._setup_retr = 0x53  #ard = 1500; arc = 3
+        self._setup_retr = 0x53  # ard = 1500; arc = 3
         # configure the RF_SETUP register
         self._rf_setup = 0x06  # 1 Mbps data_rate, and 0 dbm pa_level
         # configure dynamic_payloads & auto_ack for RX operations
         self._dyn_pl = 0x3F  # 0x3F = dynamic_payloads enabled on all pipes
         self._aa = 0x3F  # 0x3F = auto_ack enabled on all pipes
         # configure features for TX operations
-        # 5 = enable dynamic_payloads, disable custom ack payloads, and allow ask_no_ack command
+        # 5 = enable dynamic_payloads, disable custom ack payloads, & allow ask_no_ack command
         self._features = 5
         self._channel = 76
         self._addr_len = 5
 
-        with self:  # write to registers & power up
+        with self:
             self.ce_pin.value = 0
             self._reg_write(CONFIG, self._config | 1)
             time.sleep(0.000015)
@@ -177,7 +176,7 @@ class RF24:
             self._reg_write(SETUP_AW, length - 2)
         else:
             raise ValueError(
-                "address length can only be set in range [3,5] bytes")
+                "address length can only be set in range [3, 5] bytes")
 
     def open_tx_pipe(self, address):
         """This function is used to open a data pipe for OTA (over the air) TX
@@ -268,39 +267,37 @@ class RF24:
     def any(self):
         """This function checks if the nRF24L01 has received any data at all,
         and then reports the next available payload's length (in bytes)"""
-        return self._reg_read(0x60)  # 0x60 = R_RX_PL_WID command
+        self._features = self._reg_read(FEATURE)
+        if self._features & 4:
+            return self._reg_read(0x60)
+        if self.irq_dr:
+            return self._reg_read(RX_PW + ((self._status & 0xE) >> 1))
+        return 0
 
     def recv(self):
         """This function is used to retrieve the next available payload"""
         if not self.irq_dr:
             return None
-        curr_pl_size = self.payload_length if not self.dynamic_payloads else self.any()
-        result = self._reg_read_bytes(0x61, curr_pl_size)  # 0x61 = R_RX_PAYLOAD
+        curr_pl_size = self.any()
+        result = self._reg_read_bytes(0x61, curr_pl_size)
         self.clear_status_flags(True, False, False)
         return result
 
     def send(self, buf, ask_no_ack=False, force_retry=0):
         """This blocking function is used to transmit payload(s)."""
-        # ensure power down/standby-I for proper manipulation of PWR_UP & PRIM_RX bits in
-        # CONFIG register
         self.ce_pin.value = 0
-        self.flush_tx()  # be sure there is space in the TX FIFO
-        if isinstance(buf, (list, tuple)):  # writing a set of payloads
+        self.flush_tx()
+        if isinstance(buf, (list, tuple)):
             result = []
-            for i, b in enumerate(buf):  # check invalid payloads first
-                # this way when we raise a ValueError exception we don't leave the nRF24L01 in an
-                # unknown frozen state.
+            for i, b in enumerate(buf):
                 if not b or len(b) > 32:
                     raise ValueError("buf (item {} in the list/tuple) must be a"
-                                     " buffer protocol object with a byte length of\nat least 1 "
-                                     "and no greater than 32".format(i))
+                                     " buffer protocol object with length in range [1, 32]" % i)
             for i, b in enumerate(buf):
-                # use recursion for each payload
                 result.append(self.send(b, ask_no_ack, force_retry))
             return result
         if not buf or len(buf) > 32:
-            raise ValueError("buf must be a buffer protocol object with a byte length of"
-                             "\nat least 1 and no greater than 32")
+            raise ValueError("buf must be a buffer protocol object with length in range [1, 32]")
         need_ack = self._setup_retr & 0x0f and not ask_no_ack
         packet_data = 1 + self._addr_len + (max(0, ((self._config & 12) >> 2) - 1))
         bitrate = ((2000000 if self._rf_setup & 0x28 == 8 else 250000)
@@ -310,17 +307,16 @@ class RF24:
         t_irq = 0.0000082 if not self._rf_setup & 0x28 else 0.000006
         t_retry = (((self._setup_retr & 0xf0) >> 4) * 250 + 380) * \
             (self._setup_retr & 0x0f) / 1000000
-        timeout = (((8 * (len(buf) + packet_data)) + 9) /
-                   bitrate) + stby2active + t_irq + t_retry + t_ack
         self.write(buf, ask_no_ack)
         time.sleep(0.00001)
         self.ce_pin.value = 0
-        self._wait_for_result(timeout)
+        self._wait_for_result((((8 * (len(buf) + packet_data)) + 9) /
+                               bitrate) + stby2active + t_irq + t_retry + t_ack)
         if self._setup_retr & 0x0f and self.irq_df:
             for _ in range(force_retry):
                 result = self.resend()
                 if result is None or result:
-                    break # retry succeeded
+                    break
         else:
             result = self.irq_ds
             if self.ack and self.irq_dr and not ask_no_ack:
@@ -345,7 +341,6 @@ class RF24:
 
     def clear_status_flags(self, data_recv=True, data_sent=True, data_fail=True):
         """This clears the interrupt flags in the status register."""
-        # 0x07 = STATUS register
         self._reg_write(0x07, (data_recv << 6) | (
             data_sent << 5) | (data_fail << 4))
 
@@ -359,7 +354,7 @@ class RF24:
     def what_happened(self, dump_pipes=False):
         """This debuggung function aggregates and outputs all status/condition
         related information"""
-        watchdog = self._reg_read(8)  # 8 == OBSERVE_TX register
+        watchdog = self._reg_read(8)
         print("Channel___________________{} ~ {} GHz".format(
             self.channel, (self.channel + 2400) / 1000))
         print("RF Data Rate______________{} {}".format(
@@ -393,15 +388,11 @@ class RF24:
             'RX' if self.listen else 'TX',
             ('Standby-II' if self.ce_pin.value else 'Standby-I') if self._config & 2 else 'Off'))
         if dump_pipes:
-            print('TX address____________', self._tx_address)
-            for i, address in enumerate(self._pipes):
+            print('TX address____________', self.address())
+            for i  in range(6):
                 is_open = "( open )" if self._open_pipes & (1 << i) else "(closed)"
-                if i <= 1: # print full address
-                    print("Pipe", i, is_open, "bound:", address)
-                else: # print unique byte + shared bytes = actual address used by radio
-                    print("Pipe", i, is_open, "bound:",
-                          bytes([self._pipes[i]]) + self._pipes[1][1:])
-                if self._open_pipes & (1 << i):
+                print("Pipe", i, is_open, "bound:", self.address(i))
+                if is_open:
                     print('\t\texpecting', self._payload_widths[i], 'byte static payloads')
 
     @property
@@ -417,7 +408,7 @@ class RF24:
         if self._features & 4 != enable:
             self._features = (self._features & 3) | (enable << 2)
             self._reg_write(FEATURE, self._features)
-        self._dyn_pl = 0x3F if enable else 0  # 0x3F =  enable dynamic payloads all pipes
+        self._dyn_pl = 0x3F if enable else 0
         self._reg_write(DYNPD, self._dyn_pl)
 
     @property
@@ -427,12 +418,11 @@ class RF24:
 
     @payload_length.setter
     def payload_length(self, length):
-        # max payload size is 32 bytes
         if not length or length <= 32:
             self._payload_length = length
         else:
             raise ValueError(
-                "{}: payload length can only be set in range [1,32] bytes".format(length))
+                "{}: payload length can only be set in range [1, 32] bytes".format(length))
 
     @property
     def arc(self):
@@ -449,7 +439,7 @@ class RF24:
                 self._reg_write(SETUP_RETR, self._setup_retr)
         else:
             raise ValueError(
-                "automatic re-transmit count(/attempts) must in range [0,15]")
+                "automatic re-transmit count(/attempts) must in range [0, 15]")
 
     @property
     def ard(self):
@@ -468,7 +458,7 @@ class RF24:
                 self._reg_write(SETUP_RETR, self._setup_retr)
         else:
             raise ValueError("automatic re-transmit delay can only be a multiple of 250 in range "
-                             "[250,4000]")
+                             "[250, 4000]")
 
     @property
     def auto_ack(self):
@@ -479,7 +469,7 @@ class RF24:
     @auto_ack.setter
     def auto_ack(self, enable):
         assert isinstance(enable, (bool, int))
-        self._aa = 0x3F if enable else 0  # 0x3F = enable auto_ack on all pipes
+        self._aa = 0x3F if enable else 0
         self._reg_write(EN_AA, self._aa)
 
     @property
@@ -505,14 +495,13 @@ class RF24:
         """This allows the MCU to specify a payload to be allocated into the
         TX FIFO buffer for use on a specific data pipe."""
         if pipe_number < 0 or pipe_number > 5:
-            raise ValueError("pipe number must be in range [0,5]")
+            raise ValueError("pipe number must be in range [0, 5]")
         if not buf or len(buf) > 32:
-            raise ValueError("buf must be a buffer protocol object with a byte length of"
-                             "\nat least 1 and no greater than 32")
+            raise ValueError("buf must be a buffer protocol object with length in range [1, 32]")
         if not self.ack:
             self.ack = True
         if not self.tx_full:
-            self._reg_write_bytes(0xA8 | pipe_number, buf)  # 0xA8 = W_ACK_PAYLOAD
+            self._reg_write_bytes(0xA8 | pipe_number, buf)
             return True
         return False
 
@@ -550,7 +539,7 @@ class RF24:
             self._channel = channel
             self._reg_write(RF_CH, channel)
         else:
-            raise ValueError("channel acn only be set in range [0,125]")
+            raise ValueError("channel acn only be set in range [0, 125]")
 
     @property
     def crc(self):
@@ -582,14 +571,13 @@ class RF24:
         if self.power != is_on:
             self._config = (self._config & 0x7d) | (is_on << 1)
             self._reg_write(CONFIG, self._config)
-            # power up/down takes < 150 µs + 4 µs
             time.sleep(0.00016)
 
     @property
     def pa_level(self):
         """This `int` attribute specifies the nRF24L01's power amplifier level
         (in dBm)."""
-        self._rf_setup = self._reg_read(RF_SETUP)  # refresh data
+        self._rf_setup = self._reg_read(RF_SETUP)
         return (3 - ((self._rf_setup & RF_SETUP) >> 1)) * -6
 
     @pa_level.setter
@@ -617,7 +605,7 @@ class RF24:
     def update(self):
         """This function is only used to get an updated status byte over SPI
         from the nRF24L01"""
-        self._reg_write(0xFF)  # 0xFF = non-operation command
+        self._reg_write(0xFF)
 
     def resend(self):
         """Use this function to maunally re-send the previous payload in the
@@ -625,8 +613,7 @@ class RF24:
         result = False
         if not self.fifo(True, True):
             self.clear_status_flags(False)
-            self._reg_write(0xE3)  # 0xE3 == REUSE_TX_PL command
-            # timeout calc assumes 32 byte payload (& 32-byte ACK if needed)
+            self._reg_write(0xE3)
             pl_coef = 1 + bool(self._setup_retr & 0x0f)
             pl_len = 1 + self._addr_len + (
                 max(0, ((self._config & 12) >> 2) - 1))
@@ -644,7 +631,7 @@ class RF24:
             self.ce_pin.value = 0
             self._wait_for_result(timeout)
             result = self.irq_ds
-            if self.ack and self.irq_dr:  # is there an ACK payload
+            if self.ack and self.irq_dr:
                 result = self.recv()
             self.clear_status_flags(False)
         return result
@@ -654,27 +641,22 @@ class RF24:
         asynchronous applications and can only handle one payload at a time as it is a
         helper function to `send()`."""
         if not buf or len(buf) > 32:
-            raise ValueError("buf must be a buffer protocol object with a byte length of"
-                             "\nat least 1 and no greater than 32")
+            raise ValueError("buf must be a buffer protocol object with length in range [1, 32]")
         self.clear_status_flags(False)
         if self._config & 3 != 2:
-            # ensures tx mode & powered up
             self._config = (self._reg_read(CONFIG) & 0x7c) | 2
             self._reg_write(CONFIG, self._config)
-            time.sleep(0.00016)  # power up/down takes < 150 µs + 4 µs
-        # pad out or truncate data to fill payload_length if dynamic_payloads == False
+            time.sleep(0.00016)
         if not self.dynamic_payloads:
             if len(buf) < self.payload_length:
                 for _ in range(self.payload_length - len(buf)):
                     buf += b'\x00'
             elif len(buf) > self.payload_length:
                 buf = buf[:self.payload_length]
-        # now upload the payload accordingly with appropriate command
-        if ask_no_ack:  # payload doesn't want acknowledgment
+        if ask_no_ack:
             if self._features & 1 == 0:
-                self._features = self._features & 0xFE | 1  # set EN_DYN_ACK flag high
+                self._features = self._features & 0xFE | 1
                 self._reg_write(FEATURE, self._features)
-        # 0xA0 = W_TX_PAYLOAD; 0xB0 = W_TX_PAYLOAD_NO_ACK
         self._reg_write_bytes(0xA0 | (ask_no_ack << 4), buf)
         self.ce_pin.value = 1
 
@@ -691,7 +673,7 @@ class RF24:
         (read-only)"""
         if (check_empty is None and isinstance(about_tx, (bool, int))) or \
                 (isinstance(check_empty, (bool, int)) and isinstance(about_tx, (bool, int))):
-            self._fifo = self._reg_read(FIFO)  # refresh the data
+            self._fifo = self._reg_read(FIFO)
             if check_empty is None:
                 return (self._fifo & (0x30 if about_tx else 0x03)) >> (4 * about_tx)
             return bool(self._fifo & ((2 - check_empty) << (4 * about_tx)))
@@ -702,7 +684,7 @@ class RF24:
         """This function returns information about the data pipe that received the next
         available payload in the RX FIFO buffer."""
         self.update()
-        result = (self._status & 0x0E) >> 1  # 0x0E==RX_P_NO
+        result = (self._status & 0x0E) >> 1
         if result <= 5:
             return result
         return None
