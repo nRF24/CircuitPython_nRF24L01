@@ -259,6 +259,15 @@ body {
 }
 
 /* -----------------------------------------API sections-------------------------------------- */
+
+.wy-table-bordered-all td, .rst-content table.docutils td {
+  text-align: left;
+}
+
+.rst-content table.docutils.citation, .rst-content table.docutils.footnote {
+  color: white;
+}
+
 .rst-content dl:not(.docutils) dl dt {
   background: #343434;
   color: #e5df8e;
