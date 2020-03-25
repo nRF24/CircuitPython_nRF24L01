@@ -10,8 +10,8 @@ Introduction
     :target: https://circuitpython-nrf24l01.readthedocs.io/en/stable/
     :alt: Documentation Status
 
-.. image:: https://travis-ci.org/2bndy5/CircuitPython_nRF24L01.svg?branch=master
-    :target: https://travis-ci.org/2bndy5/CircuitPython_nRF24L01
+.. image:: https://github.com/2bndy5/CircuitPython_nRF24L01/workflows/Build%20CI/badge.svg
+    :target: https://github.com/2bndy5/CircuitPython_nRF24L01/actions/
     :alt: Build Status
 
 .. image:: https://img.shields.io/pypi/v/circuitpython-nrf24l01.svg
@@ -44,7 +44,7 @@ Features currently supported
 * flag a single payload for no acknowledgment (ACK) from the receiving nRF24L01
 * "re-use the same payload" feature (for manually re-transmitting failed transmissions that remain in the buffer)
 * multiple payload transmissions with one function call (MUST read documentation on the `send()` function)
-* context manager compatible for easily switching between different radio configurations using "with" statements
+* context manager compatible for easily switching between different radio configurations using "with" statements (not available in ``rf24_m0.py`` variant for M0 based boards)
 * configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or failed transmissions (these 3 flags control the 1 IRQ pin). There's also virtual representations of these interrupt flags available (see `irq_dr`, `irq_ds`, `irq_df` attributes)
 * invoke sleep mode (AKA power down mode) for ultra-low current consumption
 * cyclic redundancy checking (CRC) up to 2 bytes long

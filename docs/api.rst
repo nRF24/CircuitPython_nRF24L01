@@ -280,7 +280,7 @@ what_happened()
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.what_happened
 
   from the nRF24L01. Some information may be irrelevant depending on nRF24L01's
-  state/condition.
+  state/condition. (not available in ``rf24_m0.py`` variant for M0 based boards)
 
   :prints:
 
