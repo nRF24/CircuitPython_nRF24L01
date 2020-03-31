@@ -40,7 +40,7 @@ With the `auto_ack` feature enabled, you get:
 
     You should think of the data pipes as a "parking spot" for your payload. There are only six
     data pipes on the nRF24L01, thus it can simultaneously "listen" to a maximum of 6 other nRF24L01
-    radios. However, it can only "talk" to 1 other nRF24L01 at a time).
+    radios. However, it can only "talk" to 1 other nRF24L01 at a time.
 
     The specified address is not the address of an nRF24L01 radio, rather it is more like a path
     that connects the endpoints. When assigning addresses to a data pipe, you can use any 5 byte
@@ -48,7 +48,7 @@ With the `auto_ack` feature enabled, you get:
     broadcasting addresses), so you're not limited to communicating with only the same 6 nRF24L01
     radios (more on this when we officially support "Multiciever" mode).
 
-    Finnaly, the radio's channel is not be confused with the radio's pipes. Channel selection is a
+    Finally, the radio's channel is not be confused with the radio's pipes. Channel selection is a
     way of specifying a certain radio frequency (frequency = [2400 + channel] MHz). Channel
     defaults to 76 (like the arduino library), but options range from 0 to 125 -- that's 2.4
     GHz to 2.525 GHz. The channel can be tweaked to find a less occupied frequency amongst
