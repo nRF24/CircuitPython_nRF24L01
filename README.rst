@@ -1,10 +1,4 @@
 
-Introduction
-------------
-
-.. :py:currentmodule:: circuitpython_nrf24l01.rf24
-
-.. :py:class:: RF24
 
 .. image:: https://readthedocs.org/projects/circuitpython-nrf24l01/badge/?version=stable
     :target: https://circuitpython-nrf24l01.readthedocs.io/en/stable/
@@ -16,6 +10,7 @@ Introduction
 
 .. image:: https://img.shields.io/github/commits-since/2bndy5/CircuitPython_nRF24L01/latest?&style=plastic
     :alt: GitHub commits since latest release (by date)
+    :target: https://github.com/2bndy5/CircuitPython_nRF24L01/commits/master
 
 .. image:: https://img.shields.io/pypi/v/circuitpython-nrf24l01.svg
     :alt: latest version on PyPI
@@ -28,6 +23,9 @@ Introduction
 .. image:: https://img.shields.io/github/downloads/2bndy5/CircuitPython_nRF24L01/total?color=success&label=Downloads&logo=github&style=plastic
     :alt: GitHub All Release Downloads
     :target: https://github.com/2bndy5/CircuitPython_nRF24L01/releases
+
+Introduction
+------------
 
 Circuitpython driver library for the nRF24L01 transceiver
 
