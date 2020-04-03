@@ -845,9 +845,10 @@ pipe
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.pipe
 
   :returns:
-      - `None` if there is no payload in RX FIFO.
-      - The `int` identifying pipe number [0,5] that received the next available payload in
-        the RX FIFO buffer.
+
+    * `None` if there is no payload in RX FIFO.
+    * The `int` identifying pipe number [0,5] that received the next available payload in
+      the RX FIFO buffer.
 
 address()
 ******************************
