@@ -80,7 +80,7 @@ using the ATSAMD21 M0). The following functionality has been removed from the li
 
   * `address`
   * `rpd`
-  * `pipe()`
+  * `pipe`
   * `fifo()`
   * `tx_full`
   * `address_length` (this is always set to 5 bytes)
@@ -844,8 +844,9 @@ pipe
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.pipe
 
-  :returns:
+  (read only)
 
+  :returns:
     * `None` if there is no payload in RX FIFO.
     * The `int` identifying pipe number [0,5] that received the next available payload in
       the RX FIFO buffer.

@@ -729,7 +729,7 @@ class RF24:
 
     @property
     def pipe(self):
-        """This function returns information about the data pipe that received
+        """This attribute returns information about the data pipe that received
         the next available payload in the RX FIFO buffer."""
         self.update()
         result = (self._status & 0x0E) >> 1
