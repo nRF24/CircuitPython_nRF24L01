@@ -93,7 +93,7 @@ def slave(count=3):
             count -= 1
             # print details about the received packet (if any)
             print("Found {} bytes on pipe {}\
-                ".format(repr(nrf.any()), nrf.pipe()))
+                ".format(repr(nrf.any()), nrf.pipe))
             # retreive the received packet's payload
             rx = nrf.recv()  # clears flags & empties RX FIFO
             print("Received (raw): {}".format(repr(rx)))
