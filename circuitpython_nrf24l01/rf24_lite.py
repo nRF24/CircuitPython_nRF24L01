@@ -1,9 +1,13 @@
 # see license and copyright information in rf24.py of this directory
-# pylint: disable=missing-class-docstring,missing-function-docstring,missing-module-docstring
+# pylint: disable=missing-class-docstring,missing-function-docstring
+# pylint: disable=missing-module-docstring
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
-from adafruit_bus_device.spi_device import SPIDevice
+try:
+    from ubus_device import SPIDevice
+except ImportError:
+    from adafruit_bus_device.spi_device import SPIDevice
 
 class RF24:
     def __init__(self, spi, csn, ce):
@@ -33,20 +37,22 @@ class RF24:
 
     # pylint: disable=no-member
     def _reg_read(self, reg):
-        buf = bytearray(2)
+        out_buf = bytearray([reg, 0])
+        in_buf = bytearray([0, 0])
         with self._spi as spi:
             time.sleep(0.005)
-            spi.readinto(buf, write_value=reg)
-        self._status = buf[0]
-        return buf[1]
+            spi.write_readinto(out_buf, in_buf)
+        self._status = in_buf[0]
+        return in_buf[1]
 
     def _reg_read_bytes(self, reg, buf_len=5):
-        buf = bytearray(buf_len + 1)
+        in_buf = bytearray(buf_len + 1)
+        out_buf = bytearray([reg]) + b'\x00' * buf_len
         with self._spi as spi:
             time.sleep(0.005)
-            spi.readinto(buf, write_value=reg)
-        self._status = buf[0]
-        return buf[1:]
+            spi.write_readinto(out_buf, in_buf)
+        self._status = in_buf[0]
+        return in_buf[1:]
 
     def _reg_write_bytes(self, reg, out_buf):
         out_buf = bytes([0x20 | reg]) + out_buf
@@ -75,9 +81,9 @@ class RF24:
             self._reg_write(0x11, self.payload_length)
             self._reg_write_bytes(0x10, address)
         else:
-            raise ValueError(
-                "address must be a buffer protocol object with a byte length\nequal "
-                "to the address_length attribute (currently set to 5)")
+            raise ValueError("address must be a buffer protocol object with"
+                             " a byte length\nequal to the address_length "
+                             "attribute (currently set to 5)")
 
     def close_rx_pipe(self, pipe_number):
         if pipe_number < 0 or pipe_number > 5:
@@ -90,9 +96,9 @@ class RF24:
         if pipe_number < 0 or pipe_number > 5:
             raise ValueError("pipe number must be in range [0, 5]")
         if len(address) != 5:
-            raise ValueError(
-                "address must be a buffer protocol object with a byte length\nequal "
-                "to the address_length attribute (currently set to 5)")
+            raise ValueError("address must be a buffer protocol object with"
+                             " a byte length\nequal to the address_length "
+                             "attribute (currently set to 5)")
         if pipe_number < 2:
             if not pipe_number:
                 self._pipe0_read_addr = address
@@ -110,9 +116,10 @@ class RF24:
     def listen(self, is_rx):
         assert isinstance(is_rx, (bool, int))
         if self.listen != is_rx:
-            self._start_listening()
-        else:
-            self._stop_listening()
+            if is_rx:
+                self._start_listening()
+            else:
+                self._stop_listening()
 
     def _start_listening(self):
         if self.ce_pin.value:
@@ -133,7 +140,7 @@ class RF24:
         time.sleep(0.00016)
 
     def any(self):
-        if self._reg_read(0x1D) & 4:
+        if self._reg_read(0x1D) & 4 and self.irq_dr:
             return self._reg_read(0x60)
         if self.irq_dr:
             return self._reg_read(0x11 + ((self._status & 0xE) >> 1))
@@ -141,9 +148,11 @@ class RF24:
 
     def recv(self):
         pl_wid = self.any()
-        result = self._reg_read_bytes(0x61, pl_wid)
-        self.clear_status_flags(True, False, False)
-        return result
+        if pl_wid:
+            result = self._reg_read_bytes(0x61, pl_wid)
+            self.clear_status_flags(True, False, False)
+            return result
+        return None
 
     def send(self, buf, ask_no_ack=False, force_retry=0):
         self.ce_pin.value = 0
@@ -152,30 +161,27 @@ class RF24:
             result = []
             for i, b in enumerate(buf):
                 if not b or len(b) > 32:
-                    raise ValueError(
-                        "buf (item {} in the list/tuple) must be a"
-                        " buffer protocol object with length in range [1, 32]" % i)
+                    raise ValueError("buf (item {} in the list/tuple) must"
+                                     " be a buffer protocol object with "
+                                     "length in range [1, 32]".format(i))
             for i, b in enumerate(buf):
                 result.append(self.send(b, ask_no_ack, force_retry))
             return result
         if not buf or len(buf) > 32:
-            raise ValueError(
-                "buf must be a buffer protocol object with length in range [1, 32]")
+            raise ValueError("buf must be a buffer protocol object with "
+                             "length in range [1, 32]")
         arc_d = self._reg_read(4)
+        get_ack_pl = bool(self._reg_read(0x1D) & 2)
         need_ack = bool((arc_d & 0xF) and not ask_no_ack)
-        t_ack = 0
-        if need_ack:
-            t_ack = 329 / 250000
+        t_ack = 0 if need_ack else (329 if get_ack_pl else 73)
         t_retry = ((arc_d >> 4) * 250 + 380) * (arc_d & 0xF) / 1000000
         timeout = (
-            (((8 * (len(buf) + 8)) + 9) / 250000)
-            + (1 + need_ack) * 0.00013 + 0.0000082 + t_retry + t_ack)
+            (((8 * (len(buf) + 8)) + 9 + t_ack) / 250000)
+            + (1 + need_ack) * 0.00013 + 0.0000082 + t_retry)
         self.write(buf, ask_no_ack)
         time.sleep(0.00001)
         self.ce_pin.value = 0
-        start = time.monotonic()
-        while not (self._status & 0x30) and (time.monotonic() - start) < timeout:
-            self.update()
+        self._wait4result(timeout)
         if need_ack and self.irq_df:
             for _ in range(force_retry):
                 result = self.resend()
@@ -183,7 +189,7 @@ class RF24:
                     break
         else:
             result = self.irq_ds
-            if self._reg_read(0x1D) & 2 and self.irq_dr and not ask_no_ack:
+            if get_ack_pl and self.irq_dr and not ask_no_ack:
                 result = self.recv()
             self.clear_status_flags(False)
         return result
@@ -200,12 +206,16 @@ class RF24:
     def irq_df(self):
         return bool(self._status & 0x10)
 
-    def clear_status_flags(self, data_recv=True, data_sent=True, data_fail=True):
-        self._reg_write(7, (data_recv << 6) | (data_sent << 5) | (data_fail << 4))
+    def clear_status_flags(self, data_recv=True, data_sent=True,
+                           data_fail=True):
+        flag_config = (bool(data_recv) << 6) | (bool(data_sent) << 5)
+        flag_config |= (bool(data_fail) << 4)
+        self._reg_write(7, flag_config)
 
-    def interrupt_config(self, data_recv=True, data_sent=True, data_fail=True):
-        config = self._reg_read(0) & 0x0F
-        config |= (not data_fail << 4) | (not data_sent << 5) | (not data_recv << 6)
+    def interrupt_config(self, data_recv=True, data_sent=True,
+                         data_fail=True):
+        config = (self._reg_read(0) & 0x0F) | (not bool(data_recv) << 6)
+        config |= (not bool(data_fail) << 4) | (not bool(data_sent) << 5)
         self._reg_write(0, config)
 
     @property
@@ -231,7 +241,8 @@ class RF24:
         if not length or length <= 32:
             self._payload_length = length
         else:
-            raise ValueError("{}: payload length can only be in range [1, 32] bytes" % length)
+            raise ValueError("{}: payload length can only be in range [1, "
+                             "32] bytes".format(length))
 
     @property
     def arc(self):
@@ -245,7 +256,8 @@ class RF24:
                 setup_retr = (setup_retr & 0xF0) | count
                 self._reg_write(4, setup_retr)
         else:
-            raise ValueError("automatic re-transmit count must in range [0, 15]")
+            raise ValueError(
+                "automatic re-transmit count must in range [0, 15]")
 
     @property
     def ard(self):
@@ -254,17 +266,16 @@ class RF24:
     @ard.setter
     def ard(self, delta_t):
         if 250 <= delta_t <= 4000 and delta_t % 250 == 0:
-            setup_retr = self._reg_read(4)
-            if ((setup_retr & 0xF0) >> 4) * 250 + 250 != delta_t:
-                setup_retr = (int((delta_t - 250) / 250) << 4) | (setup_retr & 0x0F)
-                self._reg_write(4, setup_retr)
+            setup_retr = self._reg_read(4) & 0x0F
+            setup_retr |= (int((delta_t - 250) / 250) << 4)
+            self._reg_write(4, setup_retr)
         else:
-            raise ValueError(
-                "automatic re-transmit delay must be a multiple of 250 in range [250,4000]")
+            raise ValueError("automatic re-transmit delay must be a multiple"
+                             " of 250 in range [250,4000]")
 
     @property
     def ack(self):
-        return bool((self._reg_read(0x1D) & 6) and self._reg_read(1))
+        return bool((self._reg_read(0x1D) & 6 == 6) and self._reg_read(1))
 
     @ack.setter
     def ack(self, enable):
@@ -281,8 +292,8 @@ class RF24:
         if pipe_number < 0 or pipe_number > 5:
             raise ValueError("pipe number must be in range [0, 5]")
         if not buf or len(buf) > 32:
-            raise ValueError(
-                "buf must be a buffer protocol object with length in range [1, 32]")
+            raise ValueError("buf must be a buffer protocol object with"
+                             " length in range [1, 32]")
         if not self._reg_read(0x1D) & 2:
             self.ack = True
         if not self._status & 1:
@@ -299,13 +310,11 @@ class RF24:
     def data_rate(self, speed):
         if speed in (1, 2, 250):
             speed = 0 if speed == 1 else (8 if speed == 2 else 0x20)
-            rf_setup = self._reg_read(6)
-            if ((2 if rf_setup == 8 else 250) if rf_setup else 1) != speed:
-                rf_setup = (rf_setup & 0xD7) | speed
-                self._reg_write(6, rf_setup)
+            rf_setup = (self._reg_read(6) & 0xD7) | speed
+            self._reg_write(6, rf_setup)
         else:
-            raise ValueError(
-                "data rate must be one of the following ([M,M,K]bps): 1, 2, 250")
+            raise ValueError("data rate must be one of the following "
+                             "([M,M,K]bps): 1, 2, 250")
 
     @property
     def channel(self):
@@ -316,7 +325,7 @@ class RF24:
         if 0 <= channel <= 125:
             self._reg_write(5, channel)
         else:
-            raise ValueError("channel acn only be set in range [0,125]")
+            raise ValueError("channel can only be set in range [0,125]")
 
     @property
     def power(self):
@@ -329,7 +338,6 @@ class RF24:
         if bool(config & 2) != is_on:
             config = (config & 0x7D) | (is_on << 1)
             self._reg_write(0, config)
-            # power up/down takes < 150 µs + 4 µs
             time.sleep(0.00016)
 
     @property
@@ -344,8 +352,8 @@ class RF24:
             rf_setup = (self._reg_read(6) & 0xF9) | power
             self._reg_write(6, rf_setup)
         else:
-            raise ValueError(
-                "power amplitude must be one of the following (dBm): -18, -12, -6, 0")
+            raise ValueError("power amplitude must be one of the following"
+                             " (dBm): -18, -12, -6, 0")
 
     def update(self):
         self._reg_write(0xFF)
@@ -362,9 +370,7 @@ class RF24:
             self.ce_pin.value = 1
             time.sleep(0.00001)
             self.ce_pin.value = 0
-            start = time.monotonic()
-            while not (self._status & 0x30) and (time.monotonic() - start) < timeout:
-                self.update()
+            self._wait4result(timeout)
             result = self.irq_ds
             if self._reg_read(0x1D) & 2 and self.irq_dr:
                 result = self.recv()
@@ -373,8 +379,8 @@ class RF24:
 
     def write(self, buf, ask_no_ack=False):
         if not buf or len(buf) > 32:
-            raise ValueError(
-                "buf must be a buffer protocol object with length in range [1, 32]")
+            raise ValueError("buf must be a buffer protocol object with "
+                             "length in range [1, 32]")
         self.clear_status_flags(False)
         config = self._reg_read(0)
         if config & 3 != 2:
@@ -394,3 +400,16 @@ class RF24:
 
     def flush_tx(self):
         self._reg_write(0xE1)
+
+    def _wait4result(self, timeout):
+        try:
+            start = time.monotonic()
+            while not self._status & 0x30 and (
+                    time.monotonic() - start) < timeout:
+                self.update()
+        except AttributeError:
+            # pylint: disable=no-member
+            start = time.ticks_ms() / 1000.0
+            while not self._status & 0x30 and (
+                    time.ticks_ms() / 1000.0 - start) < timeout:
+                self.update()

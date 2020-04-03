@@ -839,10 +839,10 @@ fifo()
         - ``2`` means the specified FIFO buffer is empty
         - ``0`` means the specified FIFO buffer is neither full nor empty
 
-pipe()
+pipe
 ******************************
 
-.. automethod:: circuitpython_nrf24l01.rf24.RF24.pipe
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.pipe
 
   :returns:
       - `None` if there is no payload in RX FIFO.
