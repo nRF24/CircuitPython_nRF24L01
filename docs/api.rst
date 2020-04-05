@@ -232,7 +232,7 @@ send()
         in the list/tuple that was passed. The return statuses will be in one of the
         following forms:
       * `False` if transmission fails. Transmission failure can only be detected if `auto_ack`
-        is `False`.
+        is `True`.
       * `True` if transmission succeeds.
       * `bytearray` or `None` when the `ack` attribute is `True`. Because the payload expects
         a responding custom ACK payload, the response is returned (upon successful
