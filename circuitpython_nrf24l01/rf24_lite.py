@@ -80,13 +80,11 @@ class RF24:
             self._reg_write(2, self._reg_read(2) | 1)
             self._reg_write_bytes(0x10, address)
         else:
-            raise ValueError("address must be a buffer protocol object with"
-                             " a byte length\nequal to the address_length "
-                             "attribute (currently set to 5)")
+            raise ValueError("address length must equal 5")
 
     def close_rx_pipe(self, pipe_number):
         if pipe_number < 0 or pipe_number > 5:
-            raise ValueError("pipe number must be in range [0, 5]")
+            raise ValueError("pipe_number must be in range [0, 5]")
         open_pipes = self._reg_read(2)
         if open_pipes & (1 << pipe_number):
             self._reg_write(2, open_pipes & ~(1 << pipe_number))
@@ -95,9 +93,7 @@ class RF24:
         if pipe_number < 0 or pipe_number > 5:
             raise ValueError("pipe number must be in range [0, 5]")
         if len(address) != 5:
-            raise ValueError("address must be a buffer protocol object with"
-                             " a byte length\nequal to the address_length "
-                             "attribute (currently set to 5)")
+            raise ValueError("address length must equal 5")
         if pipe_number < 2:
             if not pipe_number:
                 self._pipe0_read_addr = address
@@ -159,15 +155,13 @@ class RF24:
             result = []
             for i, b in enumerate(buf):
                 if not b or len(b) > 32:
-                    raise ValueError("buf (item {} in the list/tuple) must"
-                                     " be a buffer protocol object with "
-                                     "length in range [1, 32]".format(i))
+                    raise ValueError("index {}: buffer must have a length in "
+                                     "range [1, 32] ".format(i))
             for i, b in enumerate(buf):
                 result.append(self.send(b, ask_no_ack, force_retry))
             return result
         if not buf or len(buf) > 32:
-            raise ValueError("buf must be a buffer protocol object with "
-                             "length in range [1, 32]")
+            raise ValueError("buffer must have a length in range [1, 32]")
         get_ack_pl = bool(self._reg_read(0x1D) & 2)
         need_ack = bool((self._reg_read(4) & 0xF) and not ask_no_ack)
         self.write(buf, ask_no_ack)
@@ -235,8 +229,7 @@ class RF24:
             for i in range(6):
                 self._reg_write(0x11 + i, length)
         else:
-            raise ValueError("{}: payload length can only be in range [1, "
-                             "32] bytes".format(length))
+            raise ValueError("payload length must be in range [1, 32] bytes")
 
     @property
     def arc(self):
@@ -250,8 +243,7 @@ class RF24:
                 setup_retr = (setup_retr & 0xF0) | count
                 self._reg_write(4, setup_retr)
         else:
-            raise ValueError(
-                "automatic re-transmit count must in range [0, 15]")
+            raise ValueError("arc must in range [0, 15]")
 
     @property
     def ard(self):
@@ -264,8 +256,8 @@ class RF24:
             setup_retr |= (int((delta_t - 250) / 250) << 4)
             self._reg_write(4, setup_retr)
         else:
-            raise ValueError("automatic re-transmit delay must be a multiple"
-                             " of 250 in range [250,4000]")
+            raise ValueError("ard must be a multiple of 250 in range "
+                             "[250, 4000]")
 
     @property
     def ack(self):
@@ -286,8 +278,7 @@ class RF24:
         if pipe_number < 0 or pipe_number > 5:
             raise ValueError("pipe number must be in range [0, 5]")
         if not buf or len(buf) > 32:
-            raise ValueError("buf must be a buffer protocol object with"
-                             " length in range [1, 32]")
+            raise ValueError("buffer must have a length in range [1, 32]")
         if not self._reg_read(0x1D) & 2:
             self.ack = True
         if not self._status & 1:
@@ -307,8 +298,7 @@ class RF24:
             rf_setup = (self._reg_read(6) & 0xD7) | speed
             self._reg_write(6, rf_setup)
         else:
-            raise ValueError("data rate must be one of the following "
-                             "([M,M,K]bps): 1, 2, 250")
+            raise ValueError("data_rate options limited to 1, 2, 250")
 
     @property
     def channel(self):
@@ -319,7 +309,7 @@ class RF24:
         if 0 <= channel <= 125:
             self._reg_write(5, channel)
         else:
-            raise ValueError("channel can only be set in range [0,125]")
+            raise ValueError("channel can only be set in range [0, 125]")
 
     @property
     def power(self):
@@ -333,21 +323,6 @@ class RF24:
             config = (config & 0x7D) | (is_on << 1)
             self._reg_write(0, config)
             time.sleep(0.00016)
-
-    @property
-    def pa_level(self):
-        rf_setup = self._reg_read(6)
-        return (3 - ((rf_setup & 6) >> 1)) * -6
-
-    @pa_level.setter
-    def pa_level(self, power):
-        if power in (-18, -12, -6, 0):
-            power = (3 - int(power / -6)) * 2
-            rf_setup = (self._reg_read(6) & 0xF9) | power
-            self._reg_write(6, rf_setup)
-        else:
-            raise ValueError("power amplitude must be one of the following"
-                             " (dBm): -18, -12, -6, 0")
 
     def update(self):
         self._reg_write(0xFF)
@@ -371,8 +346,7 @@ class RF24:
 
     def write(self, buf, ask_no_ack=False):
         if not buf or len(buf) > 32:
-            raise ValueError("buf must be a buffer protocol object with "
-                             "length in range [1, 32]")
+            raise ValueError("buffer must have a length in range [1, 32]")
         self.clear_status_flags(False)
         config = self._reg_read(0)
         if config & 3 != 2:

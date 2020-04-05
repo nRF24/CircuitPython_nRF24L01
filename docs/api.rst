@@ -72,8 +72,9 @@ About the lite version
 ======================
 
 This library contains a "lite" version of ``rf24.py`` titled ``rf24_lite.py``. It has been
-developed to save space on microcontrollers with limited amount of RAM and/or storage (like boards
-using the ATSAMD21 M0). The following functionality has been removed from the lite version:
+developed to save space on microcontrollers with limited amount of RAM and/or storage (like
+boards using the ATSAMD21 M0). The following functionality has been removed from the lite
+version:
 
   * `address`
   * `what_happened()`
@@ -81,11 +82,16 @@ using the ATSAMD21 M0). The following functionality has been removed from the li
   * `pipe`
   * `fifo()`
   * `tx_full`
+  * `pa_level` (always set to 0 dBm)
   * `address_length` (this is always set to 5 bytes)
   * `read_ack()` (deprecated anyway; use `recv()` instead)
   * `crc` (always using 2 bytes encoding scheme)
   * `auto_ack` (always on)
-  * all comments and docstrings (meaning ``help()`` will not provide any specific information)
+  * all comments and docstrings (meaning ``help()`` will not provide any specific information).
+    Exception prompts have also been reduced and adjusted accordingly.
+  * switching between different radio configurations using context manager (the `with` blocks).
+    It is advised that only one `RF24` object be instantiated when RAM is limited (less than or
+    equal to 32KB).
 
 RF24 class
 ==============
