@@ -45,14 +45,12 @@ TX_ADDRESS = const(0x10)  # Address used for TX transmissions
 class RF24:
     """A driver class for the nRF24L01(+) transceiver radios."""
     def __init__(self, spi, csn, ce):
-        self._payload_length = 32
+        self._pl_len = 32
         self.payload_length = 32
         self._fifo = 0
         self._status = 0
         # init shadow copy of RX addresses for all pipes for context manager
         self._pipes = [b'\xE7' * 5, b'\xC2' * 5, 0, 0, 0, 0]
-        # init shadow copy of static payload lengths for context manager
-        self._payload_widths = [32] * 6  # payload_length for each pipe
         # shadow copy of last RX_ADDR_P0 written to pipe 0 needed as
         # open_tx_pipe() appropriates pipe 0 for ACK packet
         self._pipe0_read_addr = None
@@ -110,7 +108,7 @@ class RF24:
                 self._reg_write_bytes(RX_ADDR_P0 + i, address)
             else:
                 self._reg_write(RX_ADDR_P0 + i, address)
-            self._reg_write(RX_PL_LENG + i, self._payload_widths[i])
+            self._reg_write(RX_PL_LENG + i, self._pl_len)
         self._reg_write_bytes(TX_ADDRESS, self._tx_address)
         self.address_length = self._addr_len
         self.channel = self._channel
@@ -183,8 +181,6 @@ class RF24:
                 self._reg_write_bytes(RX_ADDR_P0, address)
                 self._open_pipes = self._open_pipes | 1
                 self._reg_write(OPEN_PIPES, self._open_pipes)
-                self._payload_widths[0] = self.payload_length
-                self._reg_write(RX_PL_LENG, self.payload_length)
                 self._pipes[0] = address
             self._tx_address = address
             self._reg_write_bytes(TX_ADDRESS, address)
@@ -225,8 +221,6 @@ class RF24:
         self._open_pipes = self._reg_read(OPEN_PIPES)
         self._open_pipes = self._open_pipes | (1 << pipe_number)
         self._reg_write(OPEN_PIPES, self._open_pipes)
-        self._reg_write(RX_PL_LENG + pipe_number, self.payload_length)
-        self._payload_widths[pipe_number] = self.payload_length
 
     @property
     def listen(self):
@@ -303,22 +297,11 @@ class RF24:
         get_ack_pl = bool(self._features & 6 == 6 and self._dyn_pl and use_ack)
         if get_ack_pl:
             self.flush_rx()
-        packet_data = 1 + self._addr_len + (max(0, ((self._config & 12) >> 2)
-                                                - 1))
-        bitrate = ((250000 if self._rf_setup & 0x28 == 8 else 31250) if
-                   self._rf_setup & 0x28 else 125000)
-        t_ack = 0
-        if use_ack:
-            t_ack = (((packet_data + 32 * get_ack_pl) * 8 + 9) / bitrate)
-        stby2active = (1 + (use_ack)) * 0.00013
-        t_irq = 0.0000082 if not self._rf_setup & 0x28 else 0.000006
-        t_retry = (((self._retry_setup & 0xf0) >> 4) * 250 + 380) * \
-            (self._retry_setup & 0x0f) / 1000000
         self.write(buf, ask_no_ack)
         time.sleep(0.00001)
         self.ce_pin.value = 0
-        self._wait4result((((8 * (len(buf) + packet_data)) + 9) /
-                           bitrate) + stby2active + t_irq + t_retry + t_ack)
+        while not self._status & 0x30:
+            self.update()
         if self._retry_setup & 0x0f and self.irq_df:
             for _ in range(force_retry):
                 result = self.resend()
@@ -414,7 +397,7 @@ class RF24:
                     "(closed)"
                 print("Pipe", i, is_open, "bound:", self.address(i))
                 if is_open:
-                    print('\t\texpecting', self._payload_widths[i],
+                    print('\t\texpecting', self._pl_len,
                           'byte static payloads')
 
     @property
@@ -438,12 +421,14 @@ class RF24:
     @property
     def payload_length(self):
         """This `int` attribute specifies the length (in bytes) of payload"""
-        return self._payload_length
+        return self._pl_len
 
     @payload_length.setter
     def payload_length(self, length):
         if not length or length <= 32:
-            self._payload_length = length
+            self._pl_len = length
+            for i in range(6):
+                self._reg_write(RX_PL_LENG + i, length)
         else:
             raise ValueError("{}: payload length can only be set in range [1,"
                              " 32] bytes".format(length))
@@ -650,25 +635,12 @@ class RF24:
                 self.flush_rx()
             self.clear_status_flags(get_ack_pl)
             self._reg_write(0xE3)
-            tx_packet_len = 8 * (33 + self._addr_len + (
-                max(0, ((self._config & 12) >> 2) - 1))) + 9
-            ack_packet_len = 0
-            if self._aa:
-                ack_packet_len = (
-                    (1 + self._addr_len + 32 * get_ack_pl) * 8 + 9)
-            rf_rate = self._rf_setup & 0x28
-            bitrate = (
-                (250000 if rf_rate == 8 else 31250) if rf_rate else 125000)
-            stby2active = (1 + bool(self._aa)) * 0.00013
-            t_irq = 0.0000082 if not rf_rate else 0.000006
-            t_retry = (((self._retry_setup & 0xf0) >> 4) * 250 +
-                       380) * (self._retry_setup & 0x0f) / 1000000
             self.ce_pin.value = 0
             self.ce_pin.value = 1
             time.sleep(0.00001)
             self.ce_pin.value = 0
-            self._wait4result(((tx_packet_len + ack_packet_len) / bitrate)
-                              + stby2active + t_irq + t_retry)
+            while not self._status & 0x30:
+                self.update()
             result = self.irq_ds
             if get_ack_pl:
                 result = self.recv()  # get ACK payload
@@ -690,11 +662,11 @@ class RF24:
             self._reg_write(CONFIGURE, self._config)
             time.sleep(0.00016)
         if not self.dynamic_payloads:
-            if len(buf) < self.payload_length:
-                for _ in range(self.payload_length - len(buf)):
-                    buf += b'\x00'
-            elif len(buf) > self.payload_length:
-                buf = buf[:self.payload_length]
+            if len(buf) < self._pl_len:
+                for _ in range(self._pl_len - len(buf)):
+                    buf += b"\x00"
+            elif len(buf) > self._pl_len:
+                buf = buf[ : self._pl_len]
         if ask_no_ack:
             if self._features & 1 == 0:
                 self._features = self._features & 0xFE | 1
@@ -747,17 +719,3 @@ class RF24:
         if index <= 1:
             return self._pipes[index]
         return bytes(self._pipes[index]) + self._pipes[1][1:]
-
-    def _wait4result(self, timeout):
-        try:
-            start = time.monotonic()
-            while not self._status & 0x30 and (
-                    time.monotonic() - start) < timeout:
-                self.update()
-        except AttributeError:
-            # in micropython, time.ticks_ms() / 1000.0 = time.monotonic()
-            # pylint: disable=no-member
-            start = time.ticks_ms() / 1000.0
-            while not self._status & 0x30 and (
-                    time.ticks_ms() / 1000.0 - start) < timeout:
-                self.update()

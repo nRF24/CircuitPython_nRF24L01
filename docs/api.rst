@@ -2,11 +2,8 @@
 
 .. currentmodule:: circuitpython_nrf24l01.rf24
 
-RF24 class
-==============
-
 Troubleshooting info
---------------------
+====================
 
 .. important:: The nRF24L01 has 3 key features that can be interdependent of each other. Their
     priority of dependence is as follows:
@@ -72,22 +69,26 @@ With the `auto_ack` feature enabled, you get:
     parameters for more details).
 
 About the lite version
-----------------------
+======================
 
 This library contains a "lite" version of ``rf24.py`` titled ``rf24_lite.py``. It has been
 developed to save space on microcontrollers with limited amount of RAM and/or storage (like boards
 using the ATSAMD21 M0). The following functionality has been removed from the lite version:
 
   * `address`
+  * `what_happened()`
   * `rpd`
   * `pipe`
   * `fifo()`
   * `tx_full`
   * `address_length` (this is always set to 5 bytes)
-  * `read_ack()` (depricated anyway; use `recv()` instead)
+  * `read_ack()` (deprecated anyway; use `recv()` instead)
   * `crc` (always using 2 bytes encoding scheme)
   * `auto_ack` (always on)
   * all comments and docstrings (meaning ``help()`` will not provide any specific information)
+
+RF24 class
+==============
 
 Basic API
 ---------
@@ -230,12 +231,8 @@ send()
         in the returned list will contain the returned status for each corresponding payload
         in the list/tuple that was passed. The return statuses will be in one of the
         following forms:
-      * `False` if transmission fails or reaches the timeout sentinal. The timeout condition
-        is very rare and could mean something/anything went wrong with either/both TX/RX
-        transceivers. The timeout sentinal for transmission is calculated using `table 18 in
-        the nRF24L01 specification sheet <https://www.sparkfun.com/datasheets/Components/SMD/
-        nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1123001>`_.
-        Transmission failure can only be returned if `arc` is greater than ``0``.
+      * `False` if transmission fails. Transmission failure can only be detected if `auto_ack`
+        is `False`.
       * `True` if transmission succeeds.
       * `bytearray` or `None` when the `ack` attribute is `True`. Because the payload expects
         a responding custom ACK payload, the response is returned (upon successful
@@ -791,8 +788,7 @@ write()
       radio damage or misbehavior as a result of disobeying the 4 ms rule. See also `table 18
       in the nRF24L01 specification sheet <https://www.sparkfun.com/datasheets/Components/SMD/
       nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1123001>`_ for calculating
-      necessary transmission time (these calculations are used in the `send()` and `resend()`
-      functions).
+      an adequate transmission timeout sentinal.
 
 flush_rx()
 ******************************
