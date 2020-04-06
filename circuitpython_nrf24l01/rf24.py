@@ -629,8 +629,8 @@ class RF24:
         top level (first out) of the TX FIFO buffer."""
         result = False
         if not self.fifo(True, True):
-            get_ack_pl = bool(self._features & 6 == 6 and self._aa and
-                              self._dyn_pl)
+            get_ack_pl = bool(self._features & 6 == 6 and self._aa & 1 and
+                              self._dyn_pl & 1)
             if get_ack_pl:
                 self.flush_rx()
             self.clear_status_flags(get_ack_pl)
@@ -656,12 +656,11 @@ class RF24:
                              "length in range [1, 32]")
         self.clear_status_flags(
             bool(self._features & 6 == 6 and self._aa and self._dyn_pl))
-        self._features = self._reg_read(TX_FEATURE)
         if self._config & 3 != 2:  # is radio powered up in TX mode?
             self._config = (self._reg_read(CONFIGURE) & 0x7c) | 2
             self._reg_write(CONFIGURE, self._config)
             time.sleep(0.00016)
-        if not self.dynamic_payloads:
+        if not bool((self._dyn_pl & 1) and (self._features & 4)):
             if len(buf) < self._pl_len:
                 for _ in range(self._pl_len - len(buf)):
                     buf += b"\x00"
@@ -675,13 +674,11 @@ class RF24:
         self.ce_pin.value = 1
 
     def flush_rx(self):
-        """A helper function to flush the nRF24L01's internal RX FIFO buffer.
-        (write-only)"""
+        """A helper function to flush the nRF24L01's RX FIFO buffer."""
         self._reg_write(0xE2)
 
     def flush_tx(self):
-        """A helper function to flush the nRF24L01's internal TX FIFO buffer.
-        (write-only)"""
+        """A helper function to flush the nRF24L01's TX FIFO buffer."""
         self._reg_write(0xE1)
 
     def fifo(self, about_tx=False, check_empty=None):
@@ -701,7 +698,7 @@ class RF24:
 
     @property
     def pipe(self):
-        """This attribute returns information about the data pipe that received
+        """The identifying number of the data pipe that received
         the next available payload in the RX FIFO buffer."""
         self.update()
         result = (self._status & 0x0E) >> 1

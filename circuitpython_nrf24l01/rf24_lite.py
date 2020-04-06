@@ -213,8 +213,8 @@ class RF24:
     def dynamic_payloads(self, enable):
         assert isinstance(enable, (bool, int))
         features = self._reg_read(0x1D)
-        if bool(features & 4) != enable:
-            features = (features & 3) | (enable << 2)
+        if bool(features & 4) != bool(enable):
+            features = (features & 3) | (bool(enable) << 2)
             self._reg_write(0x1D, features)
         self._reg_write(0x1C, 0x3F if enable else 0)
 

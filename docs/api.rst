@@ -82,11 +82,12 @@ version:
   * `pipe`
   * `fifo()`
   * `tx_full`
-  * `pa_level` (always set to 0 dBm)
+  * `pa_level` (this is always set to 0 dBm)
   * `address_length` (this is always set to 5 bytes)
   * `read_ack()` (deprecated anyway; use `recv()` instead)
   * `crc` (always using 2 bytes encoding scheme)
-  * `auto_ack` (always on)
+  * `auto_ack` (this is always on). Pass ``ask_no_ack`` parameter as `True` to `send()` or
+    `write()` to disable automatic acknowledgement for TX operations.
   * all comments and docstrings (meaning ``help()`` will not provide any specific information).
     Exception prompts have also been reduced and adjusted accordingly.
   * switching between different radio configurations using context manager (the `with` blocks).
@@ -275,7 +276,8 @@ send()
       advantage of `arc` & `ard` attributes. During multi-payload processing, this
       parameter is meant to slow down CircuitPython devices just enough for the Raspberry
       Pi to catch up (due to the Raspberry Pi's seemingly slower SPI speeds). See also
-      `resend()` as using this parameter carries the same implications documented there.
+      notes on `resend()` as using this parameter carries the same implications documented
+      there.
 
   .. tip:: It is highly recommended that `arc` attribute is enabled when sending
       multiple payloads. Test results with the `arc` attribute disabled were very poor
