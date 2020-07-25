@@ -259,16 +259,17 @@ class RF24:
 
     def any(self):
         """This function checks if the nRF24L01 has received any data at all,
-        and then reports the next available payload's length (in bytes)"""
+        and then reports the next available payload's length (in bytes)."""
         self._features = self._reg_read(TX_FEATURE)
         if self.irq_dr:
             if self._features & 4:
                 return self._reg_read(0x60)
-            return self._reg_read(RX_PL_LENG + ((self._status & 0xE) >> 1))
+            return self._reg_read(RX_PL_LENG + self.pipe)
         return 0
 
     def recv(self):
-        """This function is used to retrieve the next available payload"""
+        """This function is used to retrieve the next available payload in the
+        RX FIFO buffer, then clears the `irq_dr` status flag."""
         curr_pl_size = self.any()
         if not curr_pl_size:
             return None
@@ -316,17 +317,20 @@ class RF24:
 
     @property
     def irq_dr(self):
-        """A `bool` that represents the "Data Ready" interrupted flag."""
+        """A `bool` that represents the "Data Ready" interrupted flag.
+        (read-only)"""
         return bool(self._status & 0x40)
 
     @property
     def irq_ds(self):
-        """A `bool` that represents the "Data Sent" interrupted flag."""
+        """A `bool` that represents the "Data Sent" interrupted flag.
+        (read-only)"""
         return bool(self._status & 0x20)
 
     @property
     def irq_df(self):
-        """A `bool` that represents the "Data Failed" interrupted flag."""
+        """A `bool` that represents the "Data Failed" interrupted flag.
+        (read-only)"""
         return bool(self._status & 0x10)
 
     def clear_status_flags(self, data_recv=True, data_sent=True,
@@ -346,7 +350,7 @@ class RF24:
 
     def what_happened(self, dump_pipes=False):
         """This debuggung function aggregates and outputs all status/condition
-        related information"""
+        related information from the nRF24L01."""
         observer = self._reg_read(8)
         print("Channel___________________{} ~ {} GHz".format(
             self.channel, (self.channel + 2400) / 1000))
@@ -436,7 +440,8 @@ class RF24:
     @property
     def arc(self):
         """This `int` attribute specifies the nRF24L01's number of attempts
-        to re-transmit TX payload"""
+        to re-transmit TX payload when acknowledgment packet is not received.
+        """
         self._retry_setup = self._reg_read(SETUP_RETR)
         return self._retry_setup & 0x0f
 
@@ -454,7 +459,8 @@ class RF24:
     def ard(self):
         """This `int` attribute specifies the nRF24L01's delay (in
         microseconds) between attempts to automatically re-transmit the
-        TX payload"""
+        TX payload when an expected acknowledgement (ACK) packet is not
+        received."""
         self._retry_setup = self._reg_read(SETUP_RETR)
         return ((self._retry_setup & 0xf0) >> 4) * 250 + 250
 
@@ -472,7 +478,7 @@ class RF24:
     @property
     def auto_ack(self):
         """This `bool` attribute controls the nRF24L01's automatic
-        acknowledgment feature during the process of receiving"""
+        acknowledgment feature during the process of receiving a packet."""
         self._aa = self._reg_read(AUTO_ACK)
         return bool(self._aa)
 
@@ -621,7 +627,7 @@ class RF24:
 
     def update(self):
         """This function is only used to get an updated status byte over SPI
-        from the nRF24L01"""
+        from the nRF24L01."""
         self._reg_write(0xFF)
 
     def resend(self):
@@ -699,8 +705,7 @@ class RF24:
     @property
     def pipe(self):
         """The identifying number of the data pipe that received
-        the next available payload in the RX FIFO buffer."""
-        self.update()
+        the next available payload in the RX FIFO buffer. (read only)"""
         result = (self._status & 0x0E) >> 1
         if result <= 5:
             return result
