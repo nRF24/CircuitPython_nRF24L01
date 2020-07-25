@@ -85,12 +85,9 @@ developed to save space on microcontrollers with limited amount of RAM and/or st
 boards using the ATSAMD21 M0). The following functionality has been removed from the lite
 version:
 
-    * `address`
+    * `address()`
     * `what_happened()`
-    * `rpd`
-    * `pipe`
     * `fifo()`
-    * `tx_full`
     * `pa_level` (this is always set to 0 dBm)
     * `address_length` (this is always set to 5 bytes)
     * `read_ack()` (deprecated anyway; use `recv()` instead)

@@ -4,10 +4,12 @@
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
+
 try:
     from ubus_device import SPIDevice
 except ImportError:
     from adafruit_bus_device.spi_device import SPIDevice
+
 
 class RF24:
     def __init__(self, spi, csn, ce):
@@ -47,7 +49,7 @@ class RF24:
 
     def _reg_read_bytes(self, reg, buf_len=5):
         in_buf = bytearray(buf_len + 1)
-        out_buf = bytearray([reg]) + b'\x00' * buf_len
+        out_buf = bytearray([reg]) + b"\x00" * buf_len
         with self._spi as spi:
             time.sleep(0.005)
             spi.write_readinto(out_buf, in_buf)
@@ -72,6 +74,7 @@ class RF24:
             time.sleep(0.005)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
+
     # pylint: enable=no-member
 
     def open_tx_pipe(self, address):
@@ -137,7 +140,7 @@ class RF24:
         if self._reg_read(0x1D) & 4 and self.irq_dr:
             return self._reg_read(0x60)
         if self.irq_dr:
-            return self._reg_read(0x11 + ((self._status & 0xE) >> 1))
+            return self._reg_read(0x11 + self.pipe)
         return 0
 
     def recv(self):
@@ -155,8 +158,10 @@ class RF24:
             result = []
             for i, b in enumerate(buf):
                 if not b or len(b) > 32:
-                    raise ValueError("index {}: buffer must have a length in "
-                                     "range [1, 32] ".format(i))
+                    raise ValueError(
+                        "index {}: buffer must have a length in "
+                        "range [1, 32] ".format(i)
+                    )
             for i, b in enumerate(buf):
                 result.append(self.send(b, ask_no_ack, force_retry))
             return result
@@ -193,14 +198,27 @@ class RF24:
     def irq_df(self):
         return bool(self._status & 0x10)
 
-    def clear_status_flags(self, data_recv=True, data_sent=True,
-                           data_fail=True):
+    @property
+    def tx_full(self):
+        return bool(self._status & 1)
+
+    @property
+    def rpd(self):
+        return bool(self._reg_read(0x09))
+
+    @property
+    def pipe(self):
+        result = (self._status & 0x0E) >> 1
+        if result <= 5:
+            return result
+        return None
+
+    def clear_status_flags(self, data_recv=True, data_sent=True, data_fail=True):
         flag_config = (bool(data_recv) << 6) | (bool(data_sent) << 5)
-        flag_config |= (bool(data_fail) << 4)
+        flag_config |= bool(data_fail) << 4
         self._reg_write(7, flag_config)
 
-    def interrupt_config(self, data_recv=True, data_sent=True,
-                         data_fail=True):
+    def interrupt_config(self, data_recv=True, data_sent=True, data_fail=True):
         config = (self._reg_read(0) & 0x0F) | (not bool(data_recv) << 6)
         config |= (not bool(data_fail) << 4) | (not bool(data_sent) << 5)
         self._reg_write(0, config)
@@ -253,11 +271,10 @@ class RF24:
     def ard(self, delta_t):
         if 250 <= delta_t <= 4000 and delta_t % 250 == 0:
             setup_retr = self._reg_read(4) & 0x0F
-            setup_retr |= (int((delta_t - 250) / 250) << 4)
+            setup_retr |= int((delta_t - 250) / 250) << 4
             self._reg_write(4, setup_retr)
         else:
-            raise ValueError("ard must be a multiple of 250 in range "
-                             "[250, 4000]")
+            raise ValueError("ard must be a multiple of 250 in range " "[250, 4000]")
 
     @property
     def ack(self):
@@ -271,7 +288,7 @@ class RF24:
             self._reg_write(1, 0x3F)
             self._reg_write(0x1C, 0x3F)
             features = (features & 3) | 4
-        features |= (2 if enable else 0)
+        features |= 2 if enable else 0
         self._reg_write(0x1D, features)
 
     def load_ack(self, buf, pipe_number):
@@ -358,7 +375,7 @@ class RF24:
                 for _ in range(pl_width - len(buf)):
                     buf += b"\x00"
             elif len(buf) > pl_width:
-                buf = buf[ : pl_width]
+                buf = buf[:pl_width]
         self._reg_write_bytes(0xA0 | (ask_no_ack << 4), buf)
         self.ce_pin.value = 1
 
