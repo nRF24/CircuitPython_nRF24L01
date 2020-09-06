@@ -178,7 +178,7 @@ class RF24:
     def open_tx_pipe(self, address):
         """This function is used to open a data pipe for OTA (over the air)
         TX transmissions."""
-        if len(address) == self.address_length:
+        if len(address) == self._addr_len:
             if self.auto_ack:
                 self._pipes[0] = address
                 self._reg_write_bytes(RX_ADDR_P0, address)
@@ -192,7 +192,7 @@ class RF24:
                 "address must be a buffer protocol object with a"
                 " byte length\nequal to the address_length "
                 "attribute (currently set to"
-                " {})".format(self.address_length)
+                " {})".format(self._addr_len)
             )
 
     def close_rx_pipe(self, pipe_number):
@@ -210,12 +210,12 @@ class RF24:
         the air) RX transmissions."""
         if pipe_number < 0 or pipe_number > 5:
             raise ValueError("pipe number must be in range [0,5]")
-        if len(address) != self.address_length:
+        if len(address) != self._addr_len:
             raise ValueError(
                 "address must be a buffer protocol object with a"
                 " byte length\nequal to the address_length "
                 "attribute (currently set to"
-                " {})".format(self.address_length)
+                " {})".format(self._addr_len)
             )
         if pipe_number < 2:
             if not pipe_number:
