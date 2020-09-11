@@ -72,7 +72,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         time.sleep(1)
         count -= 1
 
-def slave(count=3):
+def slave(count=5):
     """Prints the received value and sends a dummy ACK payload"""
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 0
