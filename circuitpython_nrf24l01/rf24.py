@@ -303,9 +303,8 @@ class RF24:
             raise ValueError(
                 "buf must be a buffer protocol object with " "length in range [1, 32]"
             )
-        use_ack = bool(self._aa and not ask_no_ack)
-        get_ack_pl = bool(self._features & 6 == 6 and self._dyn_pl and use_ack)
-        result = None
+        get_ack_pl = bool(self._features & 6 == 6 and self._dyn_pl and self._aa and not ask_no_ack)
+        result = False
         if get_ack_pl:
             self.flush_rx()
         self.write(buf, ask_no_ack)
@@ -313,16 +312,15 @@ class RF24:
         self.ce_pin.value = 0
         while not self._status & 0x30:
             self.update()
-        if self._retry_setup & 0x0F and self.irq_df:
+        if self.irq_df:  # irq_df only asserted if arc > 0
             for _ in range(force_retry):
                 result = self.resend()
                 if result is None or result:
                     break
-        else:
-            result = self.irq_ds
-            if get_ack_pl:
-                result = self.recv()
-            self.clear_status_flags(False)
+        result = self.irq_ds
+        if get_ack_pl and self.irq_ds:  # if successful and expecting ack payload
+            result = self.recv()
+        self.clear_status_flags(False)
         return result
 
     @property
