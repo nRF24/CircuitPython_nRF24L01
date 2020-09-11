@@ -305,6 +305,7 @@ class RF24:
             )
         use_ack = bool(self._aa and not ask_no_ack)
         get_ack_pl = bool(self._features & 6 == 6 and self._dyn_pl and use_ack)
+        result = None
         if get_ack_pl:
             self.flush_rx()
         self.write(buf, ask_no_ack)
