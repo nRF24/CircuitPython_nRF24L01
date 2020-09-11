@@ -767,4 +767,4 @@ class RF24:
             return self._tx_address
         if index <= 1:
             return self._pipes[index]
-        return bytes(self._pipes[index]) + self._pipes[1][1:]
+        return bytes([self._pipes[index]]) + self._pipes[1][1:]
