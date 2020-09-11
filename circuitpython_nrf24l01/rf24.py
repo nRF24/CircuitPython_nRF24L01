@@ -49,7 +49,6 @@ class RF24:
 
     def __init__(self, spi, csn, ce):
         self._pl_len = 32
-        self.payload_length = 32
         self._fifo = 0
         self._status = 0
         # init shadow copy of RX addresses for all pipes for context manager
