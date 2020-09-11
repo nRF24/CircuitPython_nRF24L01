@@ -102,25 +102,17 @@ Pinout
 
 The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) that can only be connected to their counterparts on the MCU (microcontroller unit). The other 2 essential pins (CE & CSN) can be connected to any digital output pins. Lastly, the only optional pin on the nRf24L01 GPIOs is the IRQ (interrupt; a digital output that's active when low) pin and is only connected to the MCU via a digital input pin during the interrupt example. The following pinout is used in the example codes of this library's `example directory <https://github.com/2bndy5/CircuitPython_nRF24L01/tree/master/examples>`_.
 
-+------------+----------------+----------------+
-|  nRF24L01  |  Raspberry Pi  |  ItsyBitsy M4  |
-+============+================+================+
-|    GND     |      GND       |       GND      |
-+------------+----------------+----------------+
-|    VCC     |       3V       |      3.3V      |
-+------------+----------------+----------------+
-|    CE      |     GPIO4      |       D4       |
-+------------+----------------+----------------+
-|    CSN     |     GPIO5      |       D5       |
-+------------+----------------+----------------+
-|    SCK     | GPIO11 (SCK)   |       SCK      |
-+------------+----------------+----------------+
-|    MOSI    | GPIO10 (MOSI)  |      MOSI      |
-+------------+----------------+----------------+
-|    MISO    | GPIO9 (MISO)   |      MISO      |
-+------------+----------------+----------------+
-|    IRQ     |     GPIO4      |       D12      |
-+------------+----------------+----------------+
+.. csv-table::
+    :header: nRF2401, "Raspberry Pi", "ItsyBitsy M4"
+
+    GND, GND, GND
+    VCC, 3V, 3.3V
+    CE, GPIO4, D4
+    CSN, GPIO5, D5
+    SCK, "GPIO11 (SCK)", SCK
+    MOSI, "GPIO10 (MOSI)", MOSI
+    MISO, "GPIO9 (MISO)", MISO
+    IRQ, GPIO12, D12
 
 .. tip:: User reports and personal experiences have improved results if there is a capacitor of 100 mirofarads [+ another optional 0.1 microfarads capacitor for added stability] connected in parrallel to the VCC and GND pins.
 
