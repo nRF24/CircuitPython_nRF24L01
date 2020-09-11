@@ -52,7 +52,7 @@ class RF24:
         self._fifo = 0
         self._status = 0
         # init shadow copy of RX addresses for all pipes for context manager
-        self._pipes = [b"\xE7" * 5, b"\xC2" * 5, 0, 0, 0, 0]
+        self._pipes = [b"\xE7" * 5, b"\xC2" * 5, 0xC3, 0xC4, 0xC5, 0xC6]
         # shadow copy of last RX_ADDR_P0 written to pipe 0 needed as
         # open_tx_pipe() appropriates pipe 0 for ACK packet
         self._pipe0_read_addr = None
@@ -105,11 +105,11 @@ class RF24:
         self._reg_write(AUTO_ACK, self._aa)
         self._reg_write(TX_FEATURE, self._features)
         self._reg_write(SETUP_RETR, self._retry_setup)
-        for i, address in enumerate(self._pipes):
+        for i, addr in enumerate(self._pipes):
             if i < 2:
-                self._reg_write_bytes(RX_ADDR_P0 + i, address)
+                self._reg_write_bytes(RX_ADDR_P0 + i, addr)
             else:
-                self._reg_write(RX_ADDR_P0 + i, address)
+                self._reg_write(RX_ADDR_P0 + i, addr)
             self._reg_write(RX_PL_LENG + i, self._pl_len)
         self._reg_write_bytes(TX_ADDRESS, self._tx_address)
         self.address_length = self._addr_len
@@ -434,8 +434,8 @@ class RF24:
             print("TX address____________", self.address())
             self._open_pipes = self._reg_read(OPEN_PIPES)
             for i in range(6):
-                is_open = "( open )" if self._open_pipes & (1 << i) else "(closed)"
-                print("Pipe", i, is_open, "bound:", self.address(i))
+                is_open = self._open_pipes & (1 << i)
+                print("Pipe", i, "( open )" if is_open else "(closed)", "bound:", self.address(i))
                 if is_open:
                     print("\t\texpecting", self._pl_len, "byte static payloads")
 

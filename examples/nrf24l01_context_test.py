@@ -58,17 +58,15 @@ with nrf:
 
 print("\nsettings configured by the basicRF object")
 with basicRF as nerf:  # the "as nerf" part is optional
-    nerf.open_rx_pipe(2, b'SOS') # again only uses the first character
+    nerf.open_rx_pipe(2, b'?') # again only uses the first character
     nerf.what_happened(1)
 
 # if you examine the outputs from what_happened() you'll see:
 #   pipe 5 is opened using the nrf object, but closed using the basicRF object.
 #   pipe 2 is closed using the nrf object, but opened using the basicRF object.
+#   also notice the different addresses bound to the RX pipes
 # this is because the "with" statements load the existing settings
 # for the RF24 object specified after the word "with".
 
-# the things that remain consistent despite the use of "with"
-# statements includes the power mode (standby or sleep), and
-# primary role (RX/TX mode)
-# NOTE this library uses the adresses' reset values and closes all pipes upon
-# instantiation
+# exiting a with statement will always set the nRF24L01's power mode to sleep
+# NOTE this library's RF24 class closes all pipes upon instantiation
