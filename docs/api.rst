@@ -110,7 +110,7 @@ Contructor
 ******************
 
 .. autoclass:: circuitpython_nrf24l01.rf24.RF24
-  :no-members:
+    :no-members:
 
     This class aims to be compatible with other devices in the nRF24xxx product line that implement
     the Nordic proprietary Enhanced ShockBurst Protocol (and/or the legacy ShockBurst Protocol),

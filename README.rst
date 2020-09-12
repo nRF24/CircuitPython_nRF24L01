@@ -149,58 +149,22 @@ To run the simple example, navigate to this repository's "examples" folder in th
 About the nRF24L01
 ==================
 
-Here are the features listed directly from the datasheet (referenced here in the documentation as the `nRF24L01+ Specification Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf>`_):
+More finite details about the nRF24L01 are available from the datasheet (referenced here in the documentation as the `nRF24L01+ Specification Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf>`_)
 
-Key Features:
--------------
+Future Project Ideas/Additions
+==============================
 
-    * Worldwide 2.4GHz ISM band operation
-    * 250kbps, 1Mbps and 2Mbps on air data rates
-    * Ultra low power operation
-    * 11.3mA TX at 0dBm output power
-    * 13.5mA RX at 2Mbps air data rate
-    * 900nA in power down
-    * 26μA in standby-I
-    * On chip voltage regulator
-    * 1.9 to 3.6V supply range
-    * Enhanced ShockBurst™
-    * Automatic packet handling
-    * Auto packet transaction handling
-    * 6 data pipe MultiCeiver™
-    * Drop-in compatibility with nRF24L01
-    * On-air compatible in 250kbps and 1Mbps with nRF2401A, nRF2402, nRF24E1 and nRF24E2
-    * Low cost BOM
-    * ±60ppm 16MHz crystal
-    * 5V tolerant inputs
-    * Compact 20-pin 4x4mm QFN package
-
-Applications
-------------
-
-    * Wireless PC Peripherals
-    * Mouse, keyboards and remotes
-    * 3-in-1 desktop bundles
-    * Advanced Media center remote controls
-    * VoIP headsets
-    * Game controllers
-    * Sports watches and sensors
-    * RF remote controls for consumer electronics
-    * Home and commercial automation
-    * Ultra low power sensor networks
-    * Active RFID
-    * Asset tracking systems
-    * Toys
-
-Future Project Ideas/Additions using the nRF24L01 (not currently supported by this circuitpython library):
+    The following are only ideas; they are not currently supported by this circuitpython library.
 
     * `There's a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3 pins <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.html>`_ (uses custom bitbanging SPI functions and an external circuit involving a resistor and a capacitor)
     * network linking layer, maybe something like `TMRh20's RF24Network <http://tmrh20.github.io/RF24Network/>`_
     * add a fake BLE module for sending BLE beacon advertisments from the nRF24L01 as outlined by `Dmitry Grinberg in his write-up (including C source code) <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_. We've started developing this, but fell short of success in `the BLEfake branch of this library's repository <https://github.com/2bndy5/CircuitPython_nRF24L01/tree/BLEfake>`_
+    * implement the Gazelle-based protocol used by the BBC micro-bit (`makecode.com's radio blocks <https://makecode.microbit.org/reference/radio>`_).
 
 Where do I get 1?
 =================
 
-See the store links on the sidebar or just google "nRF24L01". It is worth noting that you generally don't want to buy just 1 as you need 2 for testing -- 1 to send & 1 to receive and vise versa. This library has been tested on a cheaply bought 10 pack from Amazon.com using a highly recommended capacitor (100 µF) on the power pins. Don't get lost on Amazon or eBay! There are other wireless transceivers that are NOT compatible with this library. For instance, the esp8266-01 (also sold in packs) is NOT compatible with this library, but looks very similar to the nRF24L01(+) and could lead to an accidental purchase.
+See the store links on the sidebar or just google "nRF24L01". It is worth noting that you generally don't want to buy just 1 as you need 2 for testing -- 1 to send & 1 to receive and vise versa. This library has been tested on a cheaply bought 10 pack from Amazon.com using a highly recommended capacitor (100 µF) on the power pins. Don't get lost on Amazon or eBay! There are other wireless transceivers that are NOT compatible with this library. For instance, the esp8266-01 (also sold in packs) is NOT compatible with this library, but looks very similar to the nRF24L01(+) and could lead to an accidental purchase. Beware there are counterfeit nRF24L01 modules out there. To determine if your purchase is a counterfeit, please `read this article <https://hackaday.com/2015/02/23/nordic-nrf24l01-real-vs-fake/>`_.
 
 Contributing
 ============
@@ -229,4 +193,5 @@ Now, once you have the virtual environment activated:
     sphinx-build -E -W -b html . _build/html
 
 This will output the documentation to ``docs/_build/html``. Open the index.html in your browser to
-view them. It will also (due to -W) error out on any warning like Travis CI does. This is a good way to locally verify it will pass.
+view them. It will also (due to -W) error out on any warning like the Github action, Build CI,
+does. This is a good way to locally verify it will pass.
