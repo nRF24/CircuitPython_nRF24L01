@@ -145,11 +145,11 @@ class RF24:
 
     def recv(self):
         pl_wid = self.any()
-        if pl_wid:
-            result = self._reg_read_bytes(0x61, pl_wid)
-            self.clear_status_flags(True, False, False)
-            return result
-        return None
+        if not pl_wid:
+            return None
+        result = self._reg_read_bytes(0x61, pl_wid)
+        self.clear_status_flags(True, False, False)
+        return result
 
     def send(self, buf, ask_no_ack=False, force_retry=0):
         self.ce_pin.value = 0
@@ -167,23 +167,23 @@ class RF24:
             return result
         if not buf or len(buf) > 32:
             raise ValueError("buffer must have a length in range [1, 32]")
-        get_ack_pl = bool(self._reg_read(0x1D) & 2)
-        need_ack = bool((self._reg_read(4) & 0xF) and not ask_no_ack)
+        get_ack_pl = bool((self._reg_read(0x1D) & 6) == 6 and self._reg_read(4) & 0xF)
+        if get_ack_pl:
+            self.flush_rx()
         self.write(buf, ask_no_ack)
         time.sleep(0.00001)
         self.ce_pin.value = 0
         while not self._status & 0x30:
             self.update()
-        if need_ack and self.irq_df:
+        result = self.irq_ds
+        if self.irq_df:
             for _ in range(force_retry):
                 result = self.resend()
                 if result is None or result:
                     break
-        else:
-            result = self.irq_ds
-            if get_ack_pl and self.irq_dr and not ask_no_ack:
-                result = self.recv()
-            self.clear_status_flags(False)
+        if get_ack_pl and not ask_no_ack and self.irq_ds:
+            result = self.recv()
+        self.clear_status_flags(False)
         return result
 
     @property
@@ -274,7 +274,7 @@ class RF24:
             setup_retr |= int((delta_t - 250) / 250) << 4
             self._reg_write(4, setup_retr)
         else:
-            raise ValueError("ard must be a multiple of 250 in range " "[250, 4000]")
+            raise ValueError("ard must be a multiple of 250 in range [250, 4000]")
 
     @property
     def ack(self):

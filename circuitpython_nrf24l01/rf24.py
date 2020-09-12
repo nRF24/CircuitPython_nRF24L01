@@ -303,8 +303,7 @@ class RF24:
             raise ValueError(
                 "buf must be a buffer protocol object with " "length in range [1, 32]"
             )
-        get_ack_pl = bool(self._features & 6 == 6 and self._dyn_pl and self._aa and not ask_no_ack)
-        result = False
+        get_ack_pl = bool(self._features & 6 == 6 and self._dyn_pl and self._aa)
         if get_ack_pl:
             self.flush_rx()
         self.write(buf, ask_no_ack)
@@ -312,13 +311,13 @@ class RF24:
         self.ce_pin.value = 0
         while not self._status & 0x30:
             self.update()
-        if self.irq_df:  # irq_df only asserted if arc > 0
+        result = self.irq_ds
+        if self.irq_df:
             for _ in range(force_retry):
                 result = self.resend()
                 if result is None or result:
                     break
-        result = self.irq_ds
-        if get_ack_pl and self.irq_ds:  # if successful and expecting ack payload
+        if get_ack_pl and not ask_no_ack and self.irq_ds:
             result = self.recv()
         self.clear_status_flags(False)
         return result
@@ -433,7 +432,13 @@ class RF24:
             self._open_pipes = self._reg_read(OPEN_PIPES)
             for i in range(6):
                 is_open = self._open_pipes & (1 << i)
-                print("Pipe", i, "( open )" if is_open else "(closed)", "bound:", self.address(i))
+                print(
+                    "Pipe",
+                    i,
+                    "( open )" if is_open else "(closed)",
+                    "bound:",
+                    self.address(i),
+                )
                 if is_open:
                     print("\t\texpecting", self._pl_len, "byte static payloads")
 
@@ -467,10 +472,7 @@ class RF24:
             for i in range(6):
                 self._reg_write(RX_PL_LENG + i, length)
         else:
-            raise ValueError(
-                "{}: payload length can only be set in range [1,"
-                " 32] bytes".format(length)
-            )
+            raise ValueError("payload length must be in range [1, 32] bytes")
 
     @property
     def arc(self):
@@ -734,7 +736,7 @@ class RF24:
         """This provides some precision determining the status of the TX/RX
         FIFO buffers. (read-only)"""
         if (check_empty is None and isinstance(about_tx, (bool, int))) or (
-                isinstance(check_empty, (bool, int)) and isinstance(about_tx, (bool, int))
+            isinstance(check_empty, (bool, int)) and isinstance(about_tx, (bool, int))
         ):
             self._fifo = self._reg_read(0x17)
             mask = 4 * about_tx

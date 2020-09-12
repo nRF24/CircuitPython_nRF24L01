@@ -6,7 +6,7 @@ import struct
 import board
 import digitalio as dio
 # if running this on a ATSAMD21 M0 based board
-# from circuitpython_nrf24l01.rf24_m0 import RF24
+# from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
 
 # addresses needs to be in a buffer protocol object (bytearray)

@@ -479,10 +479,12 @@ read_ack()
     This function is called from a blocking `send()` call if the `ack` attribute
     is enabled. Alternatively, this function can be called directly in case of calling the
     non-blocking `write()` function during asychronous applications. This function is an alias
-    of `recv()` and remains for bakward compatibility with older versions of this library.
+    of `recv()` and remains for backward compatibility with older versions of this library.
 
     .. note:: See also the `ack`, `dynamic_payloads`, and `auto_ack` attributes as they must be
         enabled to use custom ACK payloads.
+
+    .. warning:: This function will be deprecated on next major release. Use `recv()` instead. 
 
 irq_dr
 ******************************
