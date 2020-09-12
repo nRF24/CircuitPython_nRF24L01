@@ -735,14 +735,13 @@ class RF24:
     def fifo(self, about_tx=False, check_empty=None):
         """This provides some precision determining the status of the TX/RX
         FIFO buffers. (read-only)"""
-        if (check_empty is None and isinstance(about_tx, (bool, int))) or (
-            isinstance(check_empty, (bool, int)) and isinstance(about_tx, (bool, int))
-        ):
-            self._fifo = self._reg_read(0x17)
-            mask = 4 * about_tx
-            if check_empty is None:
-                return (self._fifo & (0x30 if about_tx else 0x03)) >> mask
-            return bool(self._fifo & ((2 - check_empty) << mask))
+        if isinstance(about_tx, (bool, int)):
+            if check_empty is None or isinstance(check_empty, (bool, int)):
+                self._fifo = self._reg_read(0x17)
+                mask = 4 * about_tx
+                if check_empty is None:
+                    return (self._fifo & (0x30 if about_tx else 0x03)) >> mask
+                return bool(self._fifo & ((2 - check_empty) << mask))
         raise ValueError(
             "Argument 1 ('about_tx') must always be a bool or "
             "int. Argument 2 ('check_empty'), if specified, must"
