@@ -78,12 +78,9 @@ class RF24:
     # pylint: enable=no-member
 
     def open_tx_pipe(self, address):
-        if len(address) == 5:
-            self._reg_write_bytes(0x0A, address)
-            self._reg_write(2, self._reg_read(2) | 1)
-            self._reg_write_bytes(0x10, address)
-        else:
-            raise ValueError("address length must equal 5")
+        self._reg_write_bytes(0x0A, address)
+        self._reg_write(2, self._reg_read(2) | 1)
+        self._reg_write_bytes(0x10, address)
 
     def close_rx_pipe(self, pipe_number):
         if pipe_number < 0 or pipe_number > 5:
@@ -95,8 +92,6 @@ class RF24:
     def open_rx_pipe(self, pipe_number, address):
         if pipe_number < 0 or pipe_number > 5:
             raise ValueError("pipe number must be in range [0, 5]")
-        if len(address) != 5:
-            raise ValueError("address length must equal 5")
         if pipe_number < 2:
             if not pipe_number:
                 self._pipe0_read_addr = address
