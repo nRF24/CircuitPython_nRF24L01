@@ -222,31 +222,23 @@ class RF24:
     def listen(self, is_rx):
         assert isinstance(is_rx, (bool, int))
         if self.listen != is_rx:
+            if self.ce_pin.value:
+                self.ce_pin.value = 0
             if is_rx:
-                self._start_listening()
+                if self._pipe0_read_addr is not None:
+                    self._pipes[0] = self._pipe0_read_addr
+                    self._reg_write_bytes(RX_ADDR_P0, self._pipe0_read_addr)
+                self._config = (self._config & 0xFC) | 3
+                self._reg_write(CONFIGURE, self._config)
+                time.sleep(0.00015)  # mandatory wait to power up radio
+                self.flush_rx()
+                self.clear_status_flags(True, False, False)
+                self.ce_pin.value = 1  # mandatory pulse is > 130 µs
+                time.sleep(0.00013)
             else:
-                self._stop_listening()
-
-    def _start_listening(self):
-        if self.ce_pin.value:
-            self.ce_pin.value = 0
-        if self._pipe0_read_addr is not None:
-            self._pipes[0] = self._pipe0_read_addr
-            self._reg_write_bytes(RX_ADDR_P0, self._pipe0_read_addr)
-        self._config = (self._config & 0xFC) | 3
-        self._reg_write(CONFIGURE, self._config)
-        time.sleep(0.00015)  # mandatory wait to power up radio
-        self.flush_rx()
-        self.clear_status_flags(True, False, False)
-        self.ce_pin.value = 1  # mandatory pulse is > 130 µs
-        time.sleep(0.00013)
-
-    def _stop_listening(self):
-        if self.ce_pin.value:
-            self.ce_pin.value = 0
-        self._config = self._config & 0xFE
-        self._reg_write(CONFIGURE, self._config)
-        time.sleep(0.00016)
+                self._config = self._config & 0xFE
+                self._reg_write(CONFIGURE, self._config)
+                time.sleep(0.00016)
 
     def any(self):
         """This function checks if the nRF24L01 has received any data at all,

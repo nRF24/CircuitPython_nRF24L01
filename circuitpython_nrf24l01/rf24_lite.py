@@ -108,28 +108,20 @@ class RF24:
     def listen(self, is_rx):
         assert isinstance(is_rx, (bool, int))
         if self.listen != is_rx:
+            if self.ce_pin.value:
+                self.ce_pin.value = 0
             if is_rx:
-                self._start_listening()
+                if self._pipe0_read_addr is not None:
+                    self._reg_write_bytes(0x0A, self._pipe0_read_addr)
+                self._reg_write(0, self._reg_read(0) & 0xFC | 3)
+                time.sleep(0.00015)
+                self.flush_rx()
+                self.clear_status_flags(True, False, False)
+                self.ce_pin.value = 1
+                time.sleep(0.00013)
             else:
-                self._stop_listening()
-
-    def _start_listening(self):
-        if self.ce_pin.value:
-            self.ce_pin.value = 0
-        if self._pipe0_read_addr is not None:
-            self._reg_write_bytes(0x0A, self._pipe0_read_addr)
-        self._reg_write(0, self._reg_read(0) & 0xFC | 3)
-        time.sleep(0.00015)
-        self.flush_rx()
-        self.clear_status_flags(True, False, False)
-        self.ce_pin.value = 1
-        time.sleep(0.00013)
-
-    def _stop_listening(self):
-        if self.ce_pin.value:
-            self.ce_pin.value = 0
-        self._reg_write(0, self._reg_read(0) & 0xFE)
-        time.sleep(0.00016)
+                self._reg_write(0, self._reg_read(0) & 0xFE)
+                time.sleep(0.00016)
 
     def any(self):
         if self._reg_read(0x1D) & 4 and self.irq_dr:
