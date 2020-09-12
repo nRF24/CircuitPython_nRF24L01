@@ -1,6 +1,5 @@
 # see license and copyright information in rf24.py of this directory
-# pylint: disable=missing-class-docstring,missing-function-docstring
-# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring,missing-function-docstring,missing-module-docstring
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
@@ -65,6 +64,7 @@ class RF24:
         self._status = in_buf[0]
 
     def _reg_write(self, reg, value=None):
+        out_buf = bytes(0)
         if value is None:
             out_buf = bytes([reg])
         else:
@@ -156,17 +156,9 @@ class RF24:
         self.flush_tx()
         if isinstance(buf, (list, tuple)):
             result = []
-            for i, b in enumerate(buf):
-                if not b or len(b) > 32:
-                    raise ValueError(
-                        "index {}: buffer must have a length in "
-                        "range [1, 32] ".format(i)
-                    )
-            for i, b in enumerate(buf):
+            for b in buf:
                 result.append(self.send(b, ask_no_ack, force_retry))
             return result
-        if not buf or len(buf) > 32:
-            raise ValueError("buffer must have a length in range [1, 32]")
         get_ack_pl = bool((self._reg_read(0x1D) & 6) == 6 and self._reg_read(4) & 0xF)
         if get_ack_pl:
             self.flush_rx()

@@ -44,7 +44,7 @@ Features currently supported
 * flag a single payload for no acknowledgment (ACK) from the receiving nRF24L01
 * "re-use the same payload" feature (for manually re-transmitting failed transmissions that remain in the buffer)
 * multiple payload transmissions with one function call (MUST read documentation on the `send()` function)
-* context manager compatible for easily switching between different radio configurations using "with" statements (not available in ``rf24_m0.py`` variant for M0 based boards)
+* context manager compatible for easily switching between different radio configurations using "with" statements (not available in ``rf24_lite.py`` variant for M0 based boards)
 * configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or failed transmissions (these 3 flags control the 1 IRQ pin). There's also virtual representations of these interrupt flags available (see `irq_dr`, `irq_ds`, `irq_df` attributes)
 * invoke sleep mode (AKA power down mode) for ultra-low current consumption
 * cyclic redundancy checking (CRC) up to 2 bytes long
@@ -126,21 +126,20 @@ To run the simple example, navigate to this repository's "examples" folder in th
 .. code-block:: python
 
     >>> from nrf24l01_simple_test import *
-        nRF24L01 Simple test
+        nRF24L01 Simple test.
         Run slave() on receiver
         Run master() on transmitter
-    >>> master(3)
+    >>> master()
+    Sending: 5 as struct: b'\x05\x00\x00\x00'
+    send() successful
+    Transmission took 36.0 ms
+    Sending: 4 as struct: b'\x04\x00\x00\x00'
+    send() successful
+    Transmission took 28.0 ms
     Sending: 3 as struct: b'\x03\x00\x00\x00'
-    send() succeessful
-    Transmission took 86.0 ms
-    Sending: 2 as struct: b'\x02\x00\x00\x00'
-    send() succeessful
-    Transmission took 109.0 ms
-    Sending: 1 as struct: b'\x01\x00\x00\x00'
-    send() succeessful
-    Transmission took 109.0 ms
-    # these results were observed from a test on the Raspberry Pi 3
-    # transmissions from a CircuitPython device took 32 to 64 ms
+    send() successful
+    Transmission took 24.0 ms
+
 
 
 About the nRF24L01

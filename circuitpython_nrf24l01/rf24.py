@@ -148,6 +148,7 @@ class RF24:
         self._status = in_buf[0]
 
     def _reg_write(self, reg, value=None):
+        out_buf = bytes(0)
         if value is None:
             out_buf = bytes([reg])
         else:
@@ -183,7 +184,6 @@ class RF24:
                 self._reg_write_bytes(RX_ADDR_P0, address)
                 self._open_pipes = self._open_pipes | 1
                 self._reg_write(OPEN_PIPES, self._open_pipes)
-                self._pipes[0] = address
             self._tx_address = address
             self._reg_write_bytes(TX_ADDRESS, address)
         else:
@@ -296,13 +296,9 @@ class RF24:
                         " a buffer protocol object with length "
                         "in range [1, 32]".format(i)
                     )
-            for i, b in enumerate(buf):
+            for b in buf:
                 result.append(self.send(b, ask_no_ack, force_retry))
             return result
-        if not buf or len(buf) > 32:
-            raise ValueError(
-                "buf must be a buffer protocol object with " "length in range [1, 32]"
-            )
         get_ack_pl = bool(self._features & 6 == 6 and self._dyn_pl and self._aa)
         if get_ack_pl:
             self.flush_rx()
@@ -692,7 +688,7 @@ class RF24:
                 self.update()
             result = self.irq_ds
             if get_ack_pl:
-                result = self.recv()  # get ACK payload
+                result = self.recv()
             self.clear_status_flags(False)
         return result
 
