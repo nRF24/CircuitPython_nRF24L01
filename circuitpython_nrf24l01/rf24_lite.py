@@ -22,7 +22,6 @@ class RF24:
             self.power = False
         else:
             raise RuntimeError("nRF24L01 Hardware not responding")
-        self.channel = 76
         self._reg_write(3, 3)
         self._reg_write(6, 6)
         self._reg_write(2, 0)
@@ -30,8 +29,8 @@ class RF24:
         self._reg_write(1, 0x3F)
         self._reg_write(0x1D, 5)
         self._reg_write(4, 0x53)
+        self.channel = 76
         self.payload_length = 32
-
         self.flush_rx()
         self.flush_tx()
         self.clear_status_flags()
@@ -107,7 +106,7 @@ class RF24:
     @listen.setter
     def listen(self, is_rx):
         assert isinstance(is_rx, (bool, int))
-        if self.listen != is_rx:
+        if self.listen != bool(is_rx):
             if self.ce_pin.value:
                 self.ce_pin.value = 0
             if is_rx:

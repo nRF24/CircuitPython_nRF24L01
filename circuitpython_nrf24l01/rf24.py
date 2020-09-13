@@ -266,13 +266,6 @@ class RF24:
         self.flush_tx()
         if isinstance(buf, (list, tuple)):
             result = []
-            for i, b in enumerate(buf):
-                if not b or len(b) > 32:
-                    raise ValueError(
-                        "buf (item {} in the list/tuple) must be"
-                        " a buffer protocol object with length "
-                        "in range [1, 32]".format(i)
-                    )
             for b in buf:
                 result.append(self.send(b, ask_no_ack, force_retry))
             return result
