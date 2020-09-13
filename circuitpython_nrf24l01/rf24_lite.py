@@ -1,5 +1,5 @@
 # see license and copyright information in rf24.py of this directory
-# pylint: disable=missing-class-docstring,missing-function-docstring,missing-module-docstring
+# pylint: disable=missing-docstring
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
@@ -12,11 +12,10 @@ except ImportError:
 
 class RF24:
     def __init__(self, spi, csn, ce):
-        self._pipe0_read_addr = None
-        self._status = 0
         self.ce_pin = ce
         self.ce_pin.switch_to_output(value=False)
         self._spi = SPIDevice(spi, chip_select=csn, baudrate=1250000)
+        self._status = 0
         self._reg_write(0, 0x0E)
         if self._reg_read(0) & 3 == 2:
             self.power = False
@@ -29,6 +28,7 @@ class RF24:
         self._reg_write(1, 0x3F)
         self._reg_write(0x1D, 5)
         self._reg_write(4, 0x53)
+        self._pipe0_read_addr = None
         self.channel = 76
         self.payload_length = 32
         self.flush_rx()

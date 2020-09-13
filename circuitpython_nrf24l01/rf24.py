@@ -48,19 +48,10 @@ class RF24:
     """A driver class for the nRF24L01(+) transceiver radios."""
 
     def __init__(self, spi, csn, ce):
-        self._pl_len = 32
-        self._fifo = 0
-        self._status = 0
-        # init shadow copy of RX addresses for all pipes for context manager
-        self._pipes = [b"\xE7" * 5, b"\xC2" * 5, 0xC3, 0xC4, 0xC5, 0xC6]
-        # shadow copy of last RX_ADDR_P0 written to pipe 0 needed as
-        # open_tx_pipe() appropriates pipe 0 for ACK packet
-        self._pipe0_read_addr = None
-        # _open_pipes attribute reflects only RX state on each pipe
-        self._open_pipes = 0  # 0 = all pipes closed
         self._spi = SPIDevice(spi, chip_select=csn, baudrate=1250000)
         self.ce_pin = ce
         self.ce_pin.switch_to_output(value=False)  # pre-empt standby-I mode
+        self._status = 0  # status byte returned on all SPI transactions
         # pre-configure the CONFIGURE register:
         #   0x0E = IRQs are all enabled, CRC is enabled with 2 bytes, and
         #          power up in TX mode
@@ -70,12 +61,20 @@ class RF24:
             self.power = False
         else:  # hardware presence check NOT passed
             raise RuntimeError("nRF24L01 Hardware not responding")
-        # shadow copies of RX pipe addresses for context manager
-        for i in range(6):
+        # init shadow copy of RX addresses for all pipes for context manager
+        self._pipes = [b"\xE7" * 5, b"\xC2" * 5, 0xC3, 0xC4, 0xC5, 0xC6]
+        # _open_pipes attribute reflects only RX state on each pipe
+        self._open_pipes = 0  # 0 = all pipes closed
+        for i in range(6):  # capture RX addresses from registers
             if i < 2:
                 self._pipes[i] = self._reg_read_bytes(RX_ADDR_P0 + i)
             else:
                 self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
+        # init shadow copy of last RX_ADDR_P0 written to pipe 0 needed as
+        # open_tx_pipe() appropriates pipe 0 for ACK packet
+        self._pipe0_read_addr = None
+        # init shadow copy of register about FIFO info
+        self._fifo = 0
         # shadow copy of the TX_ADDRESS
         self._tx_address = self._reg_read_bytes(TX_ADDRESS)
         # pre-configure the SETUP_RETR register
@@ -91,6 +90,7 @@ class RF24:
         self._features = 5
         self._channel = 76  # 2.476 GHz
         self._addr_len = 5  # 5-byte long addresses
+        self._pl_len = 32
 
         with self:  # dumps internal attributes to all registers
             self.flush_rx()
