@@ -139,15 +139,13 @@ class RF24:
 
     def send(self, buf, ask_no_ack=False, force_retry=0):
         self.ce_pin.value = 0
-        self.flush_tx()
         if isinstance(buf, (list, tuple)):
             result = []
             for b in buf:
                 result.append(self.send(b, ask_no_ack, force_retry))
             return result
-        get_ack_pl = bool((self._reg_read(0x1D) & 6) == 6 and self._reg_read(4) & 0xF)
-        if get_ack_pl:
-            self.flush_rx()
+        self.flush_tx()
+        self.flush_rx()
         self.write(buf, ask_no_ack)
         time.sleep(0.00001)
         self.ce_pin.value = 0
@@ -159,7 +157,7 @@ class RF24:
                 result = self.resend()
                 if result is None or result:
                     break
-        if get_ack_pl and not ask_no_ack and self.irq_ds:
+        if not ask_no_ack and self._status & 0x60:
             result = self.recv()
         self.clear_status_flags(False)
         return result
@@ -325,7 +323,9 @@ class RF24:
     def resend(self):
         result = False
         if not self._reg_read(0x17) & 0x10:
-            self.clear_status_flags(False)
+            if self.pipe is not None:
+                self.flush_rx()
+            self.clear_status_flags()
             self._reg_write(0xE3)
             self.ce_pin.value = 0
             self.ce_pin.value = 1
@@ -342,7 +342,7 @@ class RF24:
     def write(self, buf, ask_no_ack=False):
         if not buf or len(buf) > 32:
             raise ValueError("buffer must have a length in range [1, 32]")
-        self.clear_status_flags(False)
+        self.clear_status_flags()
         config = self._reg_read(0)
         if config & 3 != 2:
             self._reg_write(0, (config & 0x7C) | 2)
