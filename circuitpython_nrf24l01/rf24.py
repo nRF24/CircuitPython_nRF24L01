@@ -62,7 +62,7 @@ class RF24:
         else:  # hardware presence check NOT passed
             raise RuntimeError("nRF24L01 Hardware not responding")
         # init shadow copy of RX addresses for all pipes for context manager
-        self._pipes = [b"\xE7" * 5, b"\xC2" * 5, 0xC3, 0xC4, 0xC5, 0xC6]
+        self._pipes = [bytearray(5), bytearray(5), 0xC3, 0xC4, 0xC5, 0xC6]
         # _open_pipes attribute reflects only RX state on each pipe
         self._open_pipes = 0  # 0 = all pipes closed
         for i in range(6):  # capture RX addresses from registers
@@ -132,7 +132,7 @@ class RF24:
 
     def _reg_read_bytes(self, reg, buf_len=5):
         in_buf = bytearray(buf_len + 1)
-        out_buf = bytearray([reg]) + b"\x00" * buf_len
+        out_buf = bytes([reg]) + b"\x00" * buf_len
         with self._spi as spi:
             time.sleep(0.005)
             spi.write_readinto(out_buf, in_buf)
@@ -179,7 +179,8 @@ class RF24:
         """This function is used to open a data pipe for OTA (over the air)
         TX transmissions."""
         if self.auto_ack:
-            self._pipes[0] = address
+            for i, val in enumerate(address):
+                self._pipes[0][i] = val
             self._reg_write_bytes(RX_ADDR_P0, address)
             self._open_pipes = self._open_pipes | 1
             self._reg_write(OPEN_PIPES, self._open_pipes)
