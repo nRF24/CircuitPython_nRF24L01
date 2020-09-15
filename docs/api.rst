@@ -854,7 +854,7 @@ fifo()
         - `True` tests if the specified FIFO buffer is empty.
         - `False` tests if the specified FIFO buffer is full.
         - `None` (when not specified) returns a 2 bit number representing both empty (bit 1) &
-          full (bit 0) tests related to the FIFO buffer specified using the ``tx`` parameter.
+          full (bit 0) tests related to the FIFO buffer specified using the ``about_tx`` parameter.
     :returns:
         - A `bool` answer to the question:
           "Is the [TX/RX]:[`True`/`False`] FIFO buffer [empty/full]:[`True`/`False`]?

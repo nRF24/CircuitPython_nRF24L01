@@ -249,8 +249,8 @@ class RF24:
     def any(self):
         """This function checks if the nRF24L01 has received any data at all,
         and then reports the next available payload's length (in bytes)."""
-        self._features = self._reg_read(TX_FEATURE)
-        if self.irq_dr:
+        self.update()
+        if self.pipe is not None:
             if self._features & 4:
                 return self._reg_read(0x60)
             return self._pl_len[self.pipe]
@@ -262,13 +262,8 @@ class RF24:
         curr_pl_size = self.any()
         if not curr_pl_size:
             return None
-        last_ce_state = self.ce_pin.value
-        self.ce_pin.value = 0
         result = self._reg_read_bytes(0x61, curr_pl_size)
         self.clear_status_flags(True, False, False)
-        if self.ce_pin.value != last_ce_state:
-            self.ce_pin.value = 1
-            time.sleep(0.00013 if self._config & 1 else 0.00001)
         return result
 
     def send(self, buf, ask_no_ack=False, force_retry=0):
