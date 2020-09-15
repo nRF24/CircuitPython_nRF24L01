@@ -122,7 +122,7 @@ class RF24:
 
     # pylint: disable=no-member
     def _reg_read(self, reg):
-        out_buf = bytearray([reg, 0])
+        out_buf = bytes([reg, 0])
         in_buf = bytearray([0, 0])
         with self._spi as spi:
             time.sleep(0.005)
@@ -178,13 +178,14 @@ class RF24:
     def open_tx_pipe(self, address):
         """This function is used to open a data pipe for OTA (over the air)
         TX transmissions."""
-        if self.auto_ack:
+        if self.arc:
             for i, val in enumerate(address):
                 self._pipes[0][i] = val
             self._reg_write_bytes(RX_ADDR_P0, address)
             self._open_pipes = self._open_pipes | 1
             self._reg_write(OPEN_PIPES, self._open_pipes)
-        self._tx_address = address
+        for i, val in enumerate(address):
+            self._tx_address[i] = val
         self._reg_write_bytes(TX_ADDRESS, address)
 
     def close_rx_pipe(self, pipe_number):
@@ -205,7 +206,7 @@ class RF24:
         if address:
             if pipe_number < 2:
                 if not pipe_number:
-                    self._pipe0_read_addr = address
+                    self._pipe0_read_addr = bytearray(address)
                 for i, val in enumerate(address):
                     self._pipes[pipe_number][i] = val
                 self._reg_write_bytes(RX_ADDR_P0 + pipe_number, address)
