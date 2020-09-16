@@ -85,21 +85,31 @@ developed to save space on microcontrollers with limited amount of RAM and/or st
 boards using the ATSAMD21 M0). The following functionality has been removed from the lite
 version:
 
-    * `address()`
-    * `what_happened()`
-    * `fifo()`
-    * `pa_level` (this is always set to 0 dBm)
-    * `read_ack()` (deprecated on next major release anyway; use `recv()` instead)
-    * `crc` (always using 2 bytes encoding scheme)
-    * `auto_ack` (this is always on for all pipes). Pass ``ask_no_ack`` parameter as `True` to
-      `send()` or `write()` to disable automatic acknowledgement for TX operations.
-    * all comments and docstrings (meaning ``help()`` will not provide any specific information).
-      Exception prompts have also been reduced and adjusted accordingly.
-    * switching between different radio configurations using context manager (the `with` blocks).
-      It is advised that only one `RF24` object be instantiated when RAM is limited (less than or
-      equal to 32KB).
+    * `address()` removed.
+    * `what_happened()` removed. However you can use the following function to dump all available registers' values (for advanced users):
+      
+      .. code-block:: python
+
+          # let `nrf` be the instantiated RF24 object
+          def dump_registers(end=0x1e):
+              for i in range(end):
+                  if i in (0xA, 0xB, 0x10):
+                      print(hex(i), "=", nrf._reg_read_bytes(i))
+                  elif not i in (0x18, 0x19, 0x1a, 0x1b):
+                      print(hex(i), "=", hex(nrf._reg_read(i)))
+    * `fifo()` removed.
     * `dynamic_payloads` applies to all pipes, not individual pipes.
     * `payload_length` applies to all pipes, not individual pipes.
+    * `read_ack()` removed. This is deprecated on next major release anyway; use `recv()` instead.
+    * `load_ack()` is available, but it will not throw exceptions for malformed ``buf`` or invalid ``pipe_number`` parameters.
+    * `crc` removed. 2-bytes encoding scheme (CRC16) is always enabled.
+    * `auto_ack` removed. This is always enabled for all pipes. Pass ``ask_no_ack`` parameter as `True` to
+      `send()` or `write()` to disable automatic acknowledgement for TX operations.
+    * All comments and docstrings removed, meaning ``help()`` will not provide any specific information.
+      Exception prompts have also been reduced and adjusted accordingly.
+    * Cannot switch between different radio configurations using context manager (the `with` blocks).
+      It is advised that only one `RF24` object be instantiated when RAM is limited (less than or
+      equal to 32KB).
 
 RF24 class
 ==============
@@ -287,6 +297,11 @@ send()
 
 Advanced API
 ------------
+
+CSN_DELAY
+******************************
+
+.. autodata:: circuitpython_nrf24l01.rf24.CSN_DELAY
 
 what_happened()
 ******************************
