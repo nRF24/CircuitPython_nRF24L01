@@ -89,7 +89,6 @@ version:
     * `what_happened()`
     * `fifo()`
     * `pa_level` (this is always set to 0 dBm)
-    * `address_length` (this is always set to 5 bytes)
     * `read_ack()` (deprecated on next major release anyway; use `recv()` instead)
     * `crc` (always using 2 bytes encoding scheme)
     * `auto_ack` (this is always on for all pipes). Pass ``ask_no_ack`` parameter as `True` to
@@ -890,3 +889,38 @@ address()
     :param int index: the number of the data pipe whose address is to be returned. Defaults to
         ``-1``. A valid index ranges [0,5] for RX addresses or any negative `int` for the TX
         address. Otherwise an `IndexError` is thown.
+
+start_carrier_wave()
+******************************
+
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.start_carrier_wave
+
+    This is a basic test of the nRF24L01's TX output. It is a commonly required
+    test for telecommunication regulations. Calling this function may introduce
+    interference with other transceivers that use frequencies in range [2.4,
+    2.525] GHz. To verify that this test is working properly, use the following
+    code on a seperate nRF24L01 transceiver:
+
+    .. code-block:: python
+
+        # declare objects for SPI bus and CSN pin and CE pin
+        nrf. = RF24(spi, csn, ce)
+        # set nrf.pa_level, nrf.channel, & nrf.data_rate values to
+        # match the corresponding attributes on the device that is
+        # transmitting the carrier wave
+        nrf.listen = True
+        if nrf.rpd:
+            print("carrier wave detected")
+
+    The `pa_level`, `channel` & `data_rate` attributes are vital factors to
+    the success of this test. See also the `rpd` attribute.
+
+stop_carrier_wave()
+******************************
+
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.stop_carrier_wave
+
+    See `start_carrier_wave()` for more details.
+
+    .. note::
+        Calling this function puts the nRF24L01 to sleep (AKA power down mode).

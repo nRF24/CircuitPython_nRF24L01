@@ -76,14 +76,26 @@ class RF24:
 
     # pylint: enable=no-member
 
+    @property
+    def address_length(self):
+        return self._reg_read(0x03) + 2
+
+    @address_length.setter
+    def address_length(self, length):
+        if 3 <= length <= 5:
+            self._reg_write(0x03, length - 2)
+        else:
+            raise ValueError("address length can only be set in range [3, 5] bytes")
+
     def open_tx_pipe(self, address):
-        self._reg_write_bytes(0x0A, address)
-        self._reg_write(2, self._reg_read(2) | 1)
+        if self.arc:
+            self._reg_write_bytes(0x0a, address)
+            self._reg_write(2, self._reg_read(2) | 1)
         self._reg_write_bytes(0x10, address)
 
     def close_rx_pipe(self, pipe_number):
         if pipe_number < 0 or pipe_number > 5:
-            raise ValueError("pipe_number must be in range [0, 5]")
+            raise ValueError("pipe number must be in range [0, 5]")
         open_pipes = self._reg_read(2)
         if open_pipes & (1 << pipe_number):
             self._reg_write(2, open_pipes & ~(1 << pipe_number))
@@ -91,49 +103,52 @@ class RF24:
     def open_rx_pipe(self, pipe_number, address):
         if pipe_number < 0 or pipe_number > 5:
             raise ValueError("pipe number must be in range [0, 5]")
-        if pipe_number < 2:
-            if not pipe_number:
-                self._pipe0_read_addr = address
-            self._reg_write_bytes(0x0A + pipe_number, address)
+        if address:
+            if pipe_number < 2:
+                if not pipe_number:
+                    self._pipe0_read_addr = address
+                self._reg_write_bytes(0x0a + pipe_number, address)
+            else:
+                self._reg_write(0x0a + pipe_number, address[0])
+            self._reg_write(2, self._reg_read(2) | (1 << pipe_number))
         else:
-            self._reg_write(0x0A + pipe_number, address[0])
-        self._reg_write(2, self._reg_read(2) | (1 << pipe_number))
+            raise ValueError("address length cannot be 0")
 
     @property
     def listen(self):
-        return (self._reg_read(0) & 3) == 3
+        return self.power and bool(self._reg_read(0) & 1)
 
     @listen.setter
     def listen(self, is_rx):
         assert isinstance(is_rx, (bool, int))
-        if self.listen != bool(is_rx):
+        if self.listen != is_rx:
             if self.ce_pin.value:
                 self.ce_pin.value = 0
             if is_rx:
                 if self._pipe0_read_addr is not None:
-                    self._reg_write_bytes(0x0A, self._pipe0_read_addr)
-                self._reg_write(0, self._reg_read(0) & 0xFC | 3)
-                time.sleep(0.00015)
+                    self._reg_write_bytes(0x0a, self._pipe0_read_addr)
+                self._reg_write(0, (self._reg_read(0) & 0xFC) | 3)
+                time.sleep(0.00015)  # mandatory wait to power up radio
                 self.flush_rx()
                 self.clear_status_flags(True, False, False)
-                self.ce_pin.value = 1
+                self.ce_pin.value = 1  # mandatory pulse is > 130 µs
                 time.sleep(0.00013)
             else:
                 self._reg_write(0, self._reg_read(0) & 0xFE)
                 time.sleep(0.00016)
 
     def any(self):
-        if self._reg_read(0x1D) & 4 and self.irq_dr:
+        if self._reg_read(0x1D) & 4 and self.pipe is not None:
             return self._reg_read(0x60)
-        if self.irq_dr:
+        if self.pipe is not None:
             return self._reg_read(0x11 + self.pipe)
         return 0
 
     def recv(self):
-        pl_wid = self.any()
-        if not pl_wid:
+        curr_pl_size = self.any()
+        if not curr_pl_size:
             return None
-        result = self._reg_read_bytes(0x61, pl_wid)
+        result = self._reg_read_bytes(0x61, curr_pl_size)
         self.clear_status_flags(True, False, False)
         return result
 
@@ -145,7 +160,8 @@ class RF24:
                 result.append(self.send(b, ask_no_ack, force_retry))
             return result
         self.flush_tx()
-        self.flush_rx()
+        if self.pipe is not None:
+            self.flush_rx()
         self.write(buf, ask_no_ack)
         time.sleep(0.00001)
         self.ce_pin.value = 0
@@ -157,7 +173,7 @@ class RF24:
                 result = self.resend()
                 if result is None or result:
                     break
-        if not ask_no_ack and self._status & 0x60:
+        if not ask_no_ack and self._status & 0x60 == 0x60:
             result = self.recv()
         self.clear_status_flags(False)
         return result
@@ -201,7 +217,7 @@ class RF24:
 
     @property
     def dynamic_payloads(self):
-        return bool(self._reg_read(0x1D) & 4)
+        return bool(self._reg_read(0x1c) and self._reg_read(0x1d) & 4)
 
     @dynamic_payloads.setter
     def dynamic_payloads(self, enable):
@@ -334,7 +350,7 @@ class RF24:
             while not self._status & 0x30:
                 self.update()
             result = self.irq_ds
-            if self._reg_read(0x1D) & 2 and self.irq_dr:
+            if self._status & 0x60 == 0x60:
                 result = self.recv()
             self.clear_status_flags(False)
         return result
@@ -362,3 +378,17 @@ class RF24:
 
     def flush_tx(self):
         self._reg_write(0xE1)
+
+    def start_carrier_wave(self):
+        self.power = 0
+        self.ce_pin.value = 0
+        self.listen = 0
+        self._reg_write(6, self._reg_read(6) | 0x90)
+        self.power = 1
+        self.ce_pin.value = 1
+        time.sleep(0.00028)
+
+    def stop_carrier_wave(self):
+        self.ce_pin.value = 0
+        self.power = 0
+        self._reg_write(6, self._reg_read(6) & ~0x90)

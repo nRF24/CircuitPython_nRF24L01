@@ -192,7 +192,7 @@ class RF24:
         """This function is used to close a specific data pipe from OTA (over
         the air) RX transmissions."""
         if pipe_number < 0 or pipe_number > 5:
-            raise ValueError("pipe number must be in range [0,5]")
+            raise ValueError("pipe number must be in range [0, 5]")
         self._open_pipes = self._reg_read(OPEN_PIPES)
         if self._open_pipes & (1 << pipe_number):
             self._open_pipes = self._open_pipes & ~(1 << pipe_number)
@@ -213,8 +213,7 @@ class RF24:
             else:
                 self._pipes[pipe_number] = address[0]
                 self._reg_write(RX_ADDR_P0 + pipe_number, address[0])
-            self._open_pipes = self._reg_read(OPEN_PIPES)
-            self._open_pipes = self._open_pipes | (1 << pipe_number)
+            self._open_pipes = self._reg_read(OPEN_PIPES) | (1 << pipe_number)
             self._reg_write(OPEN_PIPES, self._open_pipes)
         else:
             raise ValueError("address length cannot be 0")
@@ -752,3 +751,20 @@ class RF24:
         if index <= 1:
             return self._pipes[index]
         return bytes([self._pipes[index]]) + self._pipes[1][1:]
+
+    def start_carrier_wave(self):
+        """Starts a continuous carrier wave test."""
+        self.power = 0
+        self.ce_pin.value = 0
+        self.listen = 0
+        self._rf_setup |= 0x90
+        self._reg_write(RF_PA_RATE, self._rf_setup)
+        self.power = 1
+        self.ce_pin.value = 1
+
+    def stop_carrier_wave(self):
+        """Stops a continuous carrier wave test."""
+        self.ce_pin.value = 0
+        self.power = 0
+        self._rf_setup &= ~0x90
+        self._reg_write(RF_PA_RATE, self._rf_setup)
