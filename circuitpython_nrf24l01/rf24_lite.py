@@ -89,7 +89,7 @@ class RF24:
 
     def open_tx_pipe(self, address):
         if self.arc:
-            self._reg_write_bytes(0x0a, address)
+            self._reg_write_bytes(0x0A, address)
             self._reg_write(2, self._reg_read(2) | 1)
         self._reg_write_bytes(0x10, address)
 
@@ -107,9 +107,9 @@ class RF24:
             if pipe_number < 2:
                 if not pipe_number:
                     self._pipe0_read_addr = address
-                self._reg_write_bytes(0x0a + pipe_number, address)
+                self._reg_write_bytes(0x0A + pipe_number, address)
             else:
-                self._reg_write(0x0a + pipe_number, address[0])
+                self._reg_write(0x0A + pipe_number, address[0])
             self._reg_write(2, self._reg_read(2) | (1 << pipe_number))
         else:
             raise ValueError("address length cannot be 0")
@@ -126,7 +126,7 @@ class RF24:
                 self.ce_pin.value = 0
             if is_rx:
                 if self._pipe0_read_addr is not None:
-                    self._reg_write_bytes(0x0a, self._pipe0_read_addr)
+                    self._reg_write_bytes(0x0A, self._pipe0_read_addr)
                 self._reg_write(0, (self._reg_read(0) & 0xFC) | 3)
                 time.sleep(0.00015)  # mandatory wait to power up radio
                 self.flush_rx()
@@ -217,7 +217,7 @@ class RF24:
 
     @property
     def dynamic_payloads(self):
-        return bool(self._reg_read(0x1c) and self._reg_read(0x1d) & 4)
+        return bool(self._reg_read(0x1C) and self._reg_read(0x1D) & 4)
 
     @dynamic_payloads.setter
     def dynamic_payloads(self, enable):
