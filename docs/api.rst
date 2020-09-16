@@ -714,25 +714,6 @@ tx_full
         - `False` for TX FIFO buffer is not full. This doesn't mean the TX FIFO buffer is
           empty.
 
-rpd
-******************************
-
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.rpd
-
-    The RPD flag is triggered in the following cases:
-
-        1. During RX mode (`listen` = `True`) and an arbitrary RF transmission with a gain above
-           -64 dBm threshold is/was present.
-        2. When a packet is received (instigated by the nRF24L01 used to detect/"listen" for
-           incoming packets).
-
-    .. note:: See also
-        `section 6.4 of the Specification Sheet concerning the RPD flag
-        <https://www.sparkfun.com/datasheets/Components/SMD/
-        nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1160291>`_. Ambient temperature
-        affects the -64 dBm threshold. The latching of this flag happens differently under certain
-        conditions.
-
 update()
 ******************************
 
@@ -889,6 +870,25 @@ address()
     :param int index: the number of the data pipe whose address is to be returned. Defaults to
         ``-1``. A valid index ranges [0,5] for RX addresses or any negative `int` for the TX
         address. Otherwise an `IndexError` is thown.
+
+rpd
+******************************
+
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.rpd
+
+    The RPD flag is triggered in the following cases:
+
+        1. During RX mode (`listen` = `True`) and an arbitrary RF transmission with a gain above
+           -64 dBm threshold is/was present.
+        2. When a packet is received (instigated by the nRF24L01 used to detect/"listen" for
+           incoming packets).
+
+    .. note:: See also
+        `section 6.4 of the Specification Sheet concerning the RPD flag
+        <https://www.sparkfun.com/datasheets/Components/SMD/
+        nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1160291>`_. Ambient temperature
+        affects the -64 dBm threshold. The latching of this flag happens differently under certain
+        conditions.
 
 start_carrier_wave()
 ******************************
