@@ -28,9 +28,9 @@ nrf = RF24(spi, csn, ce)
 nrf.dynamic_payloads = False # this is the default in the TMRh20 arduino library
 
 # set address of TX node into a RX pipe
-nrf.open_rx_pipe(1, address[1])
+nrf.open_rx_pipe(1, address[0])
 # set address of RX node into a TX pipe
-nrf.open_tx_pipe(address[0])
+nrf.open_tx_pipe(address[1])
 
 def master(count=5):  # count = 5 will only transmit 5 packets
     """Transmits an arbitrary unsigned long value every second. This method
