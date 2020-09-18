@@ -1,15 +1,9 @@
-# see license and copyright information in rf24.py of this directory
+# see license and copyright information in rf24.py
 # pylint: disable=missing-docstring
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
-
-try:
-    from ubus_device import SPIDevice
-except ImportError:
-    from adafruit_bus_device.spi_device import SPIDevice
-
-CSN_DELAY = 0.005
+from adafruit_bus_device.spi_device import SPIDevice
 
 
 class RF24:
@@ -41,7 +35,7 @@ class RF24:
         out_buf = bytearray([reg, 0])
         in_buf = bytearray([0, 0])
         with self._spi as spi:
-            time.sleep(CSN_DELAY)
+            time.sleep(0.005)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         return in_buf[1]
@@ -50,7 +44,7 @@ class RF24:
         in_buf = bytearray(buf_len + 1)
         out_buf = bytearray([reg]) + b"\x00" * buf_len
         with self._spi as spi:
-            time.sleep(CSN_DELAY)
+            time.sleep(0.005)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         return in_buf[1:]
@@ -59,19 +53,17 @@ class RF24:
         out_buf = bytes([0x20 | reg]) + out_buf
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
-            time.sleep(CSN_DELAY)
+            time.sleep(0.005)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
 
     def _reg_write(self, reg, value=None):
-        out_buf = bytes(0)
-        if value is None:
-            out_buf = bytes([reg])
-        else:
+        out_buf = bytes([reg])
+        if value is not None:
             out_buf = bytes([0x20 | reg, value])
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
-            time.sleep(CSN_DELAY)
+            time.sleep(0.005)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
 
@@ -83,7 +75,7 @@ class RF24:
     @address_length.setter
     def address_length(self, length):
         if not 3 <= length <= 5:
-            raise ValueError("address_length can only be set in range [3, 5] bytes")
+            raise ValueError("address_length must be in range [3, 5]")
         self._reg_write(0x03, length - 2)
 
     def open_tx_pipe(self, address):
@@ -94,7 +86,7 @@ class RF24:
 
     def close_rx_pipe(self, pipe_number):
         if pipe_number < 0 or pipe_number > 5:
-            raise ValueError("pipe number must be in range [0, 5]")
+            raise ValueError("pipe_number must be in range [0, 5]")
         open_pipes = self._reg_read(2)
         if open_pipes & (1 << pipe_number):
             self._reg_write(2, open_pipes & ~(1 << pipe_number))
@@ -124,10 +116,10 @@ class RF24:
                 if self._pipe0_read_addr is not None:
                     self._reg_write_bytes(0x0A, self._pipe0_read_addr)
                 self._reg_write(0, (self._reg_read(0) & 0xFC) | 3)
-                time.sleep(0.00015)  # mandatory wait to power up radio
+                time.sleep(0.00015)
                 self.flush_rx()
                 self.clear_status_flags(True, False, False)
-                self.ce_pin.value = 1  # mandatory pulse is > 130 µs
+                self.ce_pin.value = 1
                 time.sleep(0.00013)
             else:
                 self._reg_write(0, self._reg_read(0) & 0xFE)
@@ -221,7 +213,7 @@ class RF24:
     @payload_length.setter
     def payload_length(self, length):
         if not length or length > 32:
-            raise ValueError("payload_length must be in range [1, 32] bytes")
+            raise ValueError("payload_length must be in range [1, 32]")
         for i in range(6):
             self._reg_write(0x11 + i, length)
 
@@ -232,7 +224,7 @@ class RF24:
     @arc.setter
     def arc(self, count):
         if not 0 <= count <= 15:
-            raise ValueError("arc must in range [0, 15]")
+            raise ValueError("arc must be in range [0, 15]")
         self._reg_write(4, (self._reg_read(4) & 0xF0) | count)
 
     @property
@@ -247,15 +239,12 @@ class RF24:
 
     @property
     def ack(self):
-        return self._reg_read(0x1D) & 6 == 6 and bool(
-            self._reg_read(1) & self._reg_read(0x1C)
-        )
+        return self._reg_read(0x1D) & 6 == 6 and bool(self._reg_read(0x1C))
 
     @ack.setter
     def ack(self, enable):
         features = self._reg_read(0x1D) & 5
         if enable:
-            self._reg_write(1, 0x3F)
             self._reg_write(0x1C, 0x3F)
             features = (features & 3) | 4
         features |= 2 if enable else 0
@@ -287,7 +276,7 @@ class RF24:
     @channel.setter
     def channel(self, channel):
         if not 0 <= int(channel) <= 125:
-            raise ValueError("channel can only be set in range [0, 125]")
+            raise ValueError("channel must be in range [0, 125]")
         self._reg_write(5, int(channel))
 
     @property
@@ -298,8 +287,7 @@ class RF24:
     def power(self, is_on):
         config = self._reg_read(0)
         if bool(config & 2) != bool(is_on):
-            config = config & 0x7D | bool(is_on) << 1
-            self._reg_write(0, config)
+            self._reg_write(0, config & 0x7D | bool(is_on) << 1)
             time.sleep(0.00016)
 
     @property
@@ -308,9 +296,9 @@ class RF24:
 
     @pa_level.setter
     def pa_level(self, power):
-        if not power in (-18, -12, -6, 0):
+        if power not in (-18, -12, -6, 0):
             raise ValueError("pa_level must be -18, -12, -6, or 0")
-        self._reg_write(6, (self._reg_read(6) & 0xF9) | ((3 - int(power / -6)) * 2))
+        self._reg_write(6, self._reg_read(6) & 0xF8 | (3 - int(power / -6)) * 2 | 1)
 
     def update(self):
         self._reg_write(0xFF)
@@ -336,7 +324,7 @@ class RF24:
 
     def write(self, buf, ask_no_ack=False):
         if not buf or len(buf) > 32:
-            raise ValueError("buffer must have a length in range [1, 32]")
+            raise ValueError("buffer length must be in range [1, 32]")
         self.clear_status_flags()
         config = self._reg_read(0)
         if config & 3 != 2:
@@ -345,8 +333,7 @@ class RF24:
         if not self.dynamic_payloads:
             pl_width = self.payload_length
             if len(buf) < pl_width:
-                for _ in range(pl_width - len(buf)):
-                    buf += b"\x00"
+                buf += b"\x00" * pl_width - len(buf)
             elif len(buf) > pl_width:
                 buf = buf[:pl_width]
         self._reg_write_bytes(0xA0 | (ask_no_ack << 4), buf)
@@ -357,21 +344,3 @@ class RF24:
 
     def flush_tx(self):
         self._reg_write(0xE1)
-
-    @property
-    def rpd(self):
-        return bool(self._reg_read(0x09))
-
-    def start_carrier_wave(self):
-        self.power = 0
-        self.ce_pin.value = 0
-        self.listen = 0
-        self._reg_write(6, self._reg_read(6) | 0x90)
-        self.power = 1
-        self.ce_pin.value = 1
-        time.sleep(0.00028)
-
-    def stop_carrier_wave(self):
-        self.ce_pin.value = 0
-        self.power = 0
-        self._reg_write(6, self._reg_read(6) & ~0x90)

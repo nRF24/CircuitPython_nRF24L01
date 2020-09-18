@@ -149,10 +149,8 @@ class RF24:
         self._status = in_buf[0]
 
     def _reg_write(self, reg, value=None):
-        out_buf = bytes(0)
-        if value is None:
-            out_buf = bytes([reg])
-        else:
+        out_buf = bytes([reg])
+        if value is not None:
             out_buf = bytes([0x20 | reg, value])
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
@@ -637,12 +635,21 @@ class RF24:
 
     @pa_level.setter
     def pa_level(self, power):
-        if not power in (-18, -12, -6, 0):
+        lna_bit = True
+        if isinstance(power, (list, tuple)) and len(power) > 1:
+            lna_bit, power = bool(power[1]), int(power[0])
+        if power not in (-18, -12, -6, 0):
             raise ValueError("pa_level must be -18, -12, -6, or 0 (in dBm)")
         power = (3 - int(power / -6)) * 2
-        if self.pa_level != power:
-            self._rf_setup = (self._rf_setup & 0xF9) | power
-            self._reg_write(RF_PA_RATE, self._rf_setup)
+        self._rf_setup = (self._rf_setup & 0xF8) | power | lna_bit
+        self._reg_write(RF_PA_RATE, self._rf_setup)
+
+    @property
+    def is_lna_enabled(self):
+        """A read-only `bool` attribute about the LNA (Low Noise Amplifier) gain
+        feature used in the nRF24L01-PA/LNA modules."""
+        self._rf_setup = self._reg_read(RF_PA_RATE)
+        return bool(self._rf_setup & 1)
 
     def update(self):
         """This function is only used to get an updated status byte over SPI
@@ -683,8 +690,7 @@ class RF24:
             time.sleep(0.00016)
         if not bool((self._dyn_pl & 1) and (self._features & 4)):
             if len(buf) < self._pl_len[0]:
-                for _ in range(self._pl_len[0] - len(buf)):
-                    buf += b"\x00"
+                buf += b"\x00" * self._pl_len[0] - len(buf)
             elif len(buf) > self._pl_len[0]:
                 buf = buf[: self._pl_len[0]]
         if ask_no_ack:

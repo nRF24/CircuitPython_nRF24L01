@@ -105,6 +105,9 @@ version:
     * `crc` removed. 2-bytes encoding scheme (CRC16) is always enabled.
     * `auto_ack` removed. This is always enabled for all pipes. Pass ``ask_no_ack`` parameter as `True` to
       `send()` or `write()` to disable automatic acknowledgement for TX operations.
+    * `is_lna_enabled` removed. This will always be enabled, and `pa_level` will not accept a `list` or `tuple`. This only affects certain boards anyway.
+    * `rpd`, `start_carrier_wave()`, & `stop_carrier_wave()` removed. These only perform a test of the nRF24L01's hardware.
+    * `CSN_DELAY` removed. This is hard-coded to 5 milliseconds
     * All comments and docstrings removed, meaning ``help()`` will not provide any specific information.
       Exception prompts have also been reduced and adjusted accordingly.
     * Cannot switch between different radio configurations using context manager (the `with` blocks).
@@ -712,7 +715,25 @@ pa_level
     - ``-6`` sets the nRF24L01's power amplifier to -6 dBm
     - ``0`` sets the nRF24L01's power amplifier to 0 dBm (highest)
 
-    Any invalid input throws a `ValueError` exception. Default is 0 dBm.
+    If this attribute is set to a `list` or `tuple`, then the list/tuple must contain the
+    desired power amplifier level (from list above) at index 0 and a `bool` to control
+    the Low Noise Amplifier (LNA) feature at index 1. All other indices will be discarded.
+
+        .. note::
+            The LNA feature only applies to the nRF24L01 (non-plus variant). This
+            includes boards with the RFX24C01-based PA/LNA muxing IC attached to an
+            SMA-type detachable antenna.
+
+    Any invalid input will invoke the default of 0 dBm with LNA enabled.
+
+is_lna_enabled
+******************************
+
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.is_lna_enabled
+
+    See `pa_level` attribute about how to set this. Default is always enabled, but this
+    feature is specific to certain nRF24L01-based circuits. Check with your module's
+    manufacturer to see is it can toggle the Low Noise Amplifier feature.
 
 tx_full
 ******************************
