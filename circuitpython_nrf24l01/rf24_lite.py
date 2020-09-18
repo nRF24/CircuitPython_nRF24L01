@@ -57,10 +57,10 @@ class RF24:
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
 
-    def _reg_write(self, reg, value=None):
+    def _reg_write(self, reg, val=None):
         out_buf = bytes([reg])
-        if value is not None:
-            out_buf = bytes([0x20 | reg, value])
+        if val is not None:
+            out_buf = bytes([0x20 | reg, val])
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
             time.sleep(0.005)
@@ -78,31 +78,31 @@ class RF24:
             raise ValueError("address_length must be in range [3, 5]")
         self._reg_write(0x03, length - 2)
 
-    def open_tx_pipe(self, address):
+    def open_tx_pipe(self, addr):
         if self.arc:
-            self._reg_write_bytes(0x0A, address)
+            self._reg_write_bytes(0x0A, addr)
             self._reg_write(2, self._reg_read(2) | 1)
-        self._reg_write_bytes(0x10, address)
+        self._reg_write_bytes(0x10, addr)
 
-    def close_rx_pipe(self, pipe_number):
-        if pipe_number < 0 or pipe_number > 5:
+    def close_rx_pipe(self, pipe_num):
+        if pipe_num < 0 or pipe_num > 5:
             raise ValueError("pipe_number must be in range [0, 5]")
         open_pipes = self._reg_read(2)
-        if open_pipes & (1 << pipe_number):
-            self._reg_write(2, open_pipes & ~(1 << pipe_number))
+        if open_pipes & (1 << pipe_num):
+            self._reg_write(2, open_pipes & ~(1 << pipe_num))
 
-    def open_rx_pipe(self, pipe_number, address):
-        if not 0 <= pipe_number <= 5:
+    def open_rx_pipe(self, pipe_num, addr):
+        if not 0 <= pipe_num <= 5:
             raise ValueError("pipe_number must be in range [0, 5]")
-        if not address:
+        if not addr:
             raise ValueError("address length cannot be 0")
-        if pipe_number < 2:
-            if not pipe_number:
-                self._pipe0_read_addr = address
-            self._reg_write_bytes(0x0A + pipe_number, address)
+        if pipe_num < 2:
+            if not pipe_num:
+                self._pipe0_read_addr = addr
+            self._reg_write_bytes(0x0A + pipe_num, addr)
         else:
-            self._reg_write(0x0A + pipe_number, address[0])
-        self._reg_write(2, self._reg_read(2) | (1 << pipe_number))
+            self._reg_write(0x0A + pipe_num, addr[0])
+        self._reg_write(2, self._reg_read(2) | (1 << pipe_num))
 
     @property
     def listen(self):
@@ -133,10 +133,10 @@ class RF24:
         return 0
 
     def recv(self):
-        curr_pl_size = self.any()
-        if not curr_pl_size:
+        pl_size = self.any()
+        if not pl_size:
             return None
-        result = self._reg_read_bytes(0x61, curr_pl_size)
+        result = self._reg_read_bytes(0x61, pl_size)
         self.clear_status_flags(True, False, False)
         return result
 
@@ -222,10 +222,10 @@ class RF24:
         return self._reg_read(4) & 0x0F
 
     @arc.setter
-    def arc(self, count):
-        if not 0 <= count <= 15:
+    def arc(self, cnt):
+        if not 0 <= cnt <= 15:
             raise ValueError("arc must be in range [0, 15]")
-        self._reg_write(4, (self._reg_read(4) & 0xF0) | count)
+        self._reg_write(4, (self._reg_read(4) & 0xF0) | cnt)
 
     @property
     def ard(self):
@@ -250,12 +250,12 @@ class RF24:
         features |= 2 if enable else 0
         self._reg_write(0x1D, features)
 
-    def load_ack(self, buf, pipe_number):
-        if 0 <= pipe_number <= 5 and (not buf or len(buf) > 32):
+    def load_ack(self, buf, pipe_num):
+        if 0 <= pipe_num <= 5 and (not buf or len(buf) > 32):
             if not self._reg_read(0x1D) & 2:
                 self.ack = True
             if not self.tx_full:
-                self._reg_write_bytes(0xA8 | pipe_number, buf)
+                self._reg_write_bytes(0xA8 | pipe_num, buf)
                 return True
         return False
 
@@ -274,10 +274,10 @@ class RF24:
         return self._reg_read(5)
 
     @channel.setter
-    def channel(self, channel):
-        if not 0 <= int(channel) <= 125:
+    def channel(self, chnl):
+        if not 0 <= int(chnl) <= 125:
             raise ValueError("channel must be in range [0, 125]")
-        self._reg_write(5, int(channel))
+        self._reg_write(5, int(chnl))
 
     @property
     def power(self):
@@ -295,10 +295,10 @@ class RF24:
         return (3 - ((self._reg_read(6) & 6) >> 1)) * -6
 
     @pa_level.setter
-    def pa_level(self, power):
-        if power not in (-18, -12, -6, 0):
+    def pa_level(self, pwr):
+        if pwr not in (-18, -12, -6, 0):
             raise ValueError("pa_level must be -18, -12, -6, or 0")
-        self._reg_write(6, self._reg_read(6) & 0xF8 | (3 - int(power / -6)) * 2 | 1)
+        self._reg_write(6, self._reg_read(6) & 0xF8 | (3 - int(pwr / -6)) * 2 | 1)
 
     def update(self):
         self._reg_write(0xFF)
