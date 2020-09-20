@@ -20,12 +20,8 @@
     :alt: Total PyPI downloads
     :target: https://pepy.tech/project/circuitpython-nrf24l01
 
-.. image:: https://img.shields.io/github/downloads/2bndy5/CircuitPython_nRF24L01/total?color=success&label=Downloads&logo=github&style=plastic
-    :alt: GitHub All Release Downloads
-    :target: https://github.com/2bndy5/CircuitPython_nRF24L01/releases
-
 Introduction
-------------
+============
 
 Circuitpython driver library for the nRF24L01 transceiver
 
@@ -39,7 +35,7 @@ compatibilty with the Raspberry Pi and other Circuitpython compatible devices. M
 * Author(s): Damien P. George, Peter Hinch, Rhys Thomas, Brendan Doherty
 
 Features currently supported
-----------------------------
+============================
 
 * change the addresses' length (can be 3 to 5 bytes long)
 * dynamically sized payloads (max 32 bytes each) or statically sized payloads
@@ -59,7 +55,7 @@ Features currently supported
 * a nRF24L01 driven by this library can communicate with a nRF24L01 on an Arduino driven by the `TMRh20 RF24 library <http://tmrh20.github.io/RF24/>`_. See the nrf24l01_2arduino_handling_data.py code in the `examples folder of this library's repository <examples.html#working-with-tmrh20-s-arduino-library>`_
 
 Features currently unsupported
--------------------------------
+==============================
 
 * as of yet, no [intended] implementation for Multiceiver mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). Although this might be acheived easily using the "automatic retry delay" (`ard`) and "automatic retry count" (`arc`) attributes set accordingly (varyingly high -- this has not been tested).
 
@@ -145,31 +141,85 @@ To run the simple example, navigate to this repository's "examples" folder in th
     Transmission took 24.0 ms
 
 
+Where do I get 1?
+=================
 
-About the nRF24L01
-==================
+See the store links on the sidebar or just google "nRF24L01+". It is worth noting that you
+generally want to buy more than 1 as you need 2 for testing -- 1 to send & 1 to receive and
+vise versa. This library has been tested on a cheaply bought 6 pack from Amazon.com, but don't
+take Amazon or eBay for granted! There are other wireless transceivers that are NOT compatible
+with this library. For instance, the esp8266-01 (also sold in packs) is NOT compatible with
+this library, but looks very similar to the nRF24L01+ and could lead to an accidental purchase.
 
-More finite details about the nRF24L01 are available from the datasheet (referenced here in the documentation as the `nRF24L01+ Specification Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf>`_)
+About the nRF24L01+
+===================
+
+Stablizing the power input to the VCC and GND using parallel capacitors (100 µF + an optional
+0.1µF) provides significant performance increases. This stability is very highly recommended!
+More finite details about the nRF24L01 are available from the datasheet (referenced here in
+the documentation as the `nRF24L01+ Specification Sheet <https://www.sparkfun.com/datasheets/
+Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf>`_)
+
+About the nRF24L01+PA+LNA modules
+=================================
+
+You may find variants of the nRF24L01 transceiver that are marketed as "nRF24L01+PA+LNA".
+These modules are distinct in the fact that they come with a detachable (SMA-type) antenna.
+They employ seperate RFX24C01 IC with the antenna for enhanced Power Amplification (PA) and
+Low Noise Amplification (LNA) features. While they boast greater range with the same
+functionality, they are subject to a couple lesser known (and lesser advertised) drawbacks:
+
+1. Stronger power source. Below is a chart of advertised current requirements that many MCU
+   boards' 3V regulators may not be able to handle.
+
+    .. csv-table::
+        :header: Specification, Value
+        :widths: 10,5
+
+        "Emission mode current(peak)", "115 mA"
+        "Receive Mode current(peak)", "45 mA"
+        "Power-down mode current", "4.2 µA"
+2. Needs sheilding from electromagnetic interference. Sheilding works best when it has a path
+   to ground (GND pin)
+
+nRF24L01(+) clones and counterfeits
+===================================
+
+This library does not directly support clones/counterfeits as there is no way for the library
+to differentiate between an actual nRF24L01+ and a clone/counterfeit. To determine if your
+purchase is a counterfeit, please contact the retailer you purxhased from (`reading this
+article and its links might help
+<https://hackaday.com/2015/02/23/nordic-nrf24l01-real-vs-fake/>`_). The most notable clone is the `Si24R1 <https://lcsc.com/product-detail/
+RF-Transceiver-ICs_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.html>`_. I could not find
+the `Si24R1 datasheet <https://datasheet.lcsc.com/szlcsc/
+1811142211_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.pdf>`_ in english. Troubleshooting
+the SI24R1 may require `replacing the onboard antennae with a wire
+<https://forum.mysensors.org/post/96871>`_. Furthermore, the Si24R1 has different power
+amplifier options as noted in the `RF_PWR section (bits 0 through 2) of the RF_SETUP register
+(hex address 6) of the datasheet <https://datasheet.lcsc.com/szlcsc/
+1811142211_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.pdf#%5B%7B%22num%22%3A329%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C0%2C755%2Cnull%5D>`_.
+While the options' values differ from those identified by this library's API, the
+underlying commands to configure those options are almost identical to the nRF24L01. Other
+known clones include the bk242x (AKA RFM7x).
 
 Future Project Ideas/Additions
 ==============================
 
     The following are only ideas; they are not currently supported by this circuitpython library.
 
-    * `There's a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3 pins <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.html>`_ (uses custom bitbanging SPI functions and an external circuit involving a resistor and a capacitor)
-    * network linking layer, maybe something like `TMRh20's RF24Network <http://tmrh20.github.io/RF24Network/>`_
-    * add a fake BLE module for sending BLE beacon advertisments from the nRF24L01 as outlined by `Dmitry Grinberg in his write-up (including C source code) <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_. We've started developing this, but fell short of success in `the BLEfake branch of this library's repository <https://github.com/2bndy5/CircuitPython_nRF24L01/tree/BLEfake>`_
-    * implement the Gazelle-based protocol used by the BBC micro-bit (`makecode.com's radio blocks <https://makecode.microbit.org/reference/radio>`_).
-
-Where do I get 1?
-=================
-
-See the store links on the sidebar or just google "nRF24L01+". It is worth noting that you generally want to buy more than 1 as you need 2 for testing -- 1 to send & 1 to receive and vise versa. This library has been tested on a cheaply bought 10 pack from Amazon.com using a highly recommended capacitor (100 µF) on the power pins. Don't get lost on Amazon or eBay! There are other wireless transceivers that are NOT compatible with this library. For instance, the esp8266-01 (also sold in packs) is NOT compatible with this library, but looks very similar to the nRF24L01+ and could lead to an accidental purchase.
-
-nRF24L01(+) clones and counterfeits
-===================================
-
-This library does not directly support clones/counterfeits as there is no way for the library to differentiate between an actual nRF24L01+ and a clone/counterfeit. To determine if your purchase is a counterfeit, please contact the retailer you purxhased from (`reading this article and its links might help <https://hackaday.com/2015/02/23/nordic-nrf24l01-real-vs-fake/>`_). The most notable clone is the `Si24R1 <https://lcsc.com/product-detail/RF-Transceiver-ICs_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.html>`_. I could not find the `Si24R1 datasheet <https://datasheet.lcsc.com/szlcsc/1811142211_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.pdf>`_ in english. Troubleshooting the SI24R1 may require `replacing the onboard antennae with a wire <https://forum.mysensors.org/post/96871>`_. Furthermore, the Si24R1 has different power amplifier options as noted in the `RF_PWR section (bits 0 through 2) of the RF_SETUP register (hex address 6) of the datasheet <https://datasheet.lcsc.com/szlcsc/1811142211_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.pdf#%5B%7B%22num%22%3A329%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C0%2C755%2Cnull%5D>`_. While the options' values differ from those identified by this library's API, the underlying commands to configure those options are almost identical to the nRF24L01. Other known clones include the bk242x (AKA RFM7x).
+    * `There's a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3
+      pins <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.
+      html>`_ (uses custom bitbanging SPI functions and an external circuit involving a
+      resistor and a capacitor)
+    * network linking layer, maybe something like `TMRh20's RF24Network
+      <http://tmrh20.github.io/RF24Network/>`_
+    * add a fake BLE module for sending BLE beacon advertisments from the nRF24L01 as outlined
+      by `Dmitry Grinberg in his write-up (including C source code)
+      <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_.
+      We've started developing this, but fell short of success in `the BLEfake branch of this
+      library's repository <https://github.com/2bndy5/CircuitPython_nRF24L01/tree/BLEfake>`_
+    * implement the Gazelle-based protocol used by the BBC micro-bit (`makecode.com's radio
+      blocks <https://makecode.microbit.org/reference/radio>`_).
 
 Contributing
 ============

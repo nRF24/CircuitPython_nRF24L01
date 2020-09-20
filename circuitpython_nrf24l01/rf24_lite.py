@@ -17,7 +17,7 @@ class RF24:
             raise RuntimeError("nRF24L01 Hardware not responding")
         self.power = False
         self._reg_write(3, 3)
-        self._reg_write(6, 6)
+        self._reg_write(6, 7)
         self._reg_write(2, 0)
         self._reg_write(0x1C, 0x3F)
         self._reg_write(1, 0x3F)

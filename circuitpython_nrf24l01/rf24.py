@@ -81,7 +81,7 @@ class RF24:
         # pre-configure the SETUP_RETR register
         self._retry_setup = 0x53  # ard = 1500; arc = 3
         # pre-configure the RF_SETUP register
-        self._rf_setup = 0x06  # 1 Mbps data_rate, and 0 dbm pa_level
+        self._rf_setup = 0x07  # 1 Mbps data_rate, and 0 dbm pa_level
         # pre-configure dynamic_payloads & auto_ack for RX operations
         self._dyn_pl = 0x3F  # 0x3F = enable dynamic_payloads on all pipes
         self._aa = 0x3F  # 0x3F = enable auto_ack on all pipes
@@ -347,6 +347,11 @@ class RF24:
             )
         )
         print("RF Power Amplifier________{} dbm".format(self.pa_level))
+        print(
+            "RF Low Noise Amplifier____{}".format(
+                "Enabled" if self.is_lna_enabled else "Disabled"
+            )
+        )
         print("CRC bytes_________________{}".format(self.crc))
         print("Address length____________{} bytes".format(self.address_length))
         print("TX Payload lengths________{} bytes".format(self.payload_length[0]))
