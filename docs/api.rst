@@ -247,16 +247,29 @@ recv()
     This function can also be used to fetch the last ACK packet's payload if `ack` is enabled.
     
     :param int length: An optional parameter to specify how many bytes to read from the RX
-        FIFO buffer. If this parameter is less than the length of the first available payload
-        in the RX FIFO buffer, then the payload will remain in the RX FIFO buffer until the
-        entire payload is fetched by this function. A value greater than the payload's length
-        will return additional data from other payload(s) in the RX FIFO buffer (if any --
-        otherwise just padded zeros).
-    :returns: A `bytearray` of the RX payload data or `None` if there is no payload
+        FIFO buffer. This parameter is not contrained in any way.
+        
+            - If this parameter is less than the length of the first available payload in the
+              RX FIFO buffer, then the payload will remain in the RX FIFO buffer until the
+              entire payload is fetched by this function.
+            - If this parameter is greater than the next available payload's length, then
+              additional data from other payload(s) in the RX FIFO buffer are returned.
 
-        - If the `dynamic_payloads` attribute is disabled, then the returned bytearray's length
-          is equal to the user defined `payload_length` attribute for the data pipe that
-          received the payload.
+            .. note::
+                The nRF24L01 will repeatedly return the last byte fetched from the RX FIFO
+                buffer when there is no data to return (even if the RX FIFO is empty). Be
+                aware that a payload is only removed from the RX FIFO buffer when the entire
+                payload has been fetched by this function. Notice that this function always
+                starts reading data from the first byte of the first available payload (if
+                any) in the RX FIFO buffer.
+    :returns:
+        A `bytearray` of the RX payload data or `None` if there is no payload. If the
+        ``length`` parameter is not specified, then one of the following two scenarios is
+        applied.
+
+        - If the `dynamic_payloads` attribute is disabled, then the returned bytearray's
+          length is equal to the user defined `payload_length` attribute for the data pipe
+          that received the payload.
         - If the `dynamic_payloads` attribute is enabled, then the returned bytearray's length
           is equal to the payload's length
 
@@ -273,12 +286,12 @@ send()
         - `False` if transmission fails. Transmission failure can only be detected if `arc`
           is greater than ``0``.
         - `True` if transmission succeeds.
-        - `bytearray` or `None` when the `ack` attribute is `True`. Because the payload expects
-          a responding custom ACK payload, the response is returned (upon successful
+        - `bytearray` or `None` when the `ack` attribute is `True`. Because the payload
+          expects a responding custom ACK payload, the response is returned (upon successful
           transmission) as a `bytearray` (or `None` if ACK payload is empty)
 
-    :param bytearray,list,tuple buf: The payload to transmit. This bytearray must have a length
-        in range [1, 32], otherwise a `ValueError` exception is thrown. This can
+    :param bytearray,list,tuple buf: The payload to transmit. This bytearray must have a
+        length in range [1, 32], otherwise a `ValueError` exception is thrown. This can
         also be a list or tuple of payloads (`bytearray`); in which case, all items in the
         list/tuple are processed for consecutive transmissions.
 
@@ -291,8 +304,8 @@ send()
           length is truncated to equal the `payload_length` attribute for pipe 0.
     :param bool ask_no_ack: Pass this parameter as `True` to tell the nRF24L01 not to wait for
         an acknowledgment from the receiving nRF24L01. This parameter directly controls a
-        ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about
-        the payload). Therefore, it takes advantage of an nRF24L01 feature specific to
+        ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information
+        about the payload). Therefore, it takes advantage of an nRF24L01 feature specific to
         individual payloads, and its value is not saved anywhere. You do not need to specify
         this for every payload if the `arc` attribute is disabled, however setting this
         parameter to `True` will work despite the `arc` attribute's setting.
@@ -311,10 +324,10 @@ send()
         notes on `resend()` as using this parameter carries the same implications documented
         there.
 
-    .. tip:: It is highly recommended that `arc` attribute is enabled (greater than ``0``) when
-        sending multiple payloads. Test results with the `arc` attribute disabled were very
-        poor (much < 50% received). This same advice applies to the ``ask_no_ack`` parameter
-        (leave it as `False` for multiple payloads).
+    .. tip:: It is highly recommended that `arc` attribute is enabled (greater than ``0``)
+        when sending multiple payloads. Test results with the `arc` attribute disabled were
+        very poor (much < 50% received). This same advice applies to the ``ask_no_ack``
+        parameter (leave it as `False` for multiple payloads).
     .. warning::  The nRF24L01 will block usage of the TX FIFO buffer upon failed
         transmissions. Failed transmission's payloads stay in TX FIFO buffer until the MCU
         calls `flush_tx()` and `clear_status_flags()`. Therefore, this function will discard
