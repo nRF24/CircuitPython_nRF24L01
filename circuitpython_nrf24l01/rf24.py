@@ -463,6 +463,10 @@ class RF24:
         if bool(self._features & 4) != (self._dyn_pl & 1):
             self._features = (self._features & 3) | ((self._dyn_pl & 1) << 2)
             self._reg_write(TX_FEATURE, self._features)
+        if self._dyn_pl:
+            self._aa |= self._dyn_pl
+            self._reg_write(AUTO_ACK, self._aa)
+            self._config = self._reg_read(CONFIGURE)
         self._reg_write(DYN_PL_LEN, self._dyn_pl)
 
     @property
@@ -530,7 +534,7 @@ class RF24:
                 if i < 6:
                     self._aa = (self._aa & ~(1 << i)) | (bool(val) << i)
         else:
-            raise ValueError("auto_ack: {} is not a valid input for" % enable)
+            raise ValueError("auto_ack: {} is not a valid input" % enable)
         self._reg_write(AUTO_ACK, self._aa)
         if self._aa:  # refresh crc data if enabled
             self._config = self._reg_read(CONFIGURE)
