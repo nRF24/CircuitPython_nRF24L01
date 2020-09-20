@@ -132,11 +132,11 @@ class RF24:
             return self._reg_read(0x11 + self.pipe)
         return 0
 
-    def recv(self):
-        pl_size = self.any()
-        if not pl_size:
+    def recv(self, length=None):
+        ret_size = length if length is not None else self.any()
+        if not ret_size:
             return None
-        result = self._reg_read_bytes(0x61, pl_size)
+        result = self._reg_read_bytes(0x61, ret_size)
         self.clear_status_flags(True, False, False)
         return result
 

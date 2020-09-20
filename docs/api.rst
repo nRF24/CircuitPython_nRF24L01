@@ -17,50 +17,55 @@ Troubleshooting info
 .. important:: The nRF24L01 has 3 key features that can be interdependent of each other. Their
     priority of dependence is as follows:
 
-    1. `dynamic_payloads` feature allowing either TX/RX nRF24L01 to be able to send/receive
-       payloads with their size written into the payloads' packet. With this disabled, both RX/TX
-       nRF24L01 must use matching `payload_length` attributes.
-    2. `auto_ack` feature provides transmission verification by using the RX nRF24L01 to
+    1. `auto_ack` feature provides transmission verification by using the RX nRF24L01 to
        automatically and imediatedly send an acknowledgment (ACK) packet in response to freshly
        received payloads. `auto_ack` does not require `dynamic_payloads` to be enabled.
+    2. `dynamic_payloads` feature allowing either TX/RX nRF24L01 to be able to send/receive
+       payloads with their size written into the payloads' packet. With this disabled, both
+       RX/TX nRF24L01 must use matching `payload_length` attributes. For `dynamic_payloads` to
+       be enabled, the `auto_ack` feature must be enabled. Although, the `auto_ack` feature
+       isn't required when the `dynamic_payloads` feature is disabled.
     3. `ack` feature allows the MCU to append a payload to the ACK packet, thus instant
-       bi-directional communication. A transmitting ACK payload must be loaded into the nRF24L01's
-       TX FIFO buffer (done using `load_ack()`) BEFORE receiving the payload that is to be
-       acknowledged. Once transmitted, the payload is released from the TX FIFO buffer. This
-       feature requires the `auto_ack` and `dynamic_payloads` features enabled.
+       bi-directional communication. A transmitting ACK payload must be loaded into the
+       nRF24L01's TX FIFO buffer (done using `load_ack()`) BEFORE receiving the payload that
+       is to be acknowledged. Once transmitted, the payload is released from the TX FIFO
+       buffer. This feature requires the `auto_ack` and `dynamic_payloads` features enabled.
 
-Remeber that the nRF24L01's FIFO (first-in,first-out) buffer has 3 levels. This means that there
-can be up to 3 payloads waiting to be read (RX) and up to 3 payloads waiting to be transmit (TX).
+Remeber that the nRF24L01's FIFO (first-in,first-out) buffer has 3 levels. This means that
+there can be up to 3 payloads waiting to be read (RX) and up to 3 payloads waiting to be
+transmit (TX).
 
 With the `auto_ack` feature enabled, you get:
 
     * cyclic redundancy checking (`crc`) automatically enabled
-    * to change amount of automatic re-transmit attempts and the delay time between them. See the
-      `arc` and `ard` attributes.
+    * to change amount of automatic re-transmit attempts and the delay time between them.
+      See the `arc` and `ard` attributes.
 
 .. note:: A word on pipes vs addresses vs channels.
 
     You should think of the data pipes as a "parking spot" for your payload. There are only six
-    data pipes on the nRF24L01, thus it can simultaneously "listen" to a maximum of 6 other nRF24L01
-    radios. However, it can only "talk" to 1 other nRF24L01 at a time).
+    data pipes on the nRF24L01, thus it can simultaneously "listen" to a maximum of 6 other
+    nRF24L01 radios. However, it can only "talk" to 1 other nRF24L01 at a time).
 
-    The specified address is not the address of an nRF24L01 radio, rather it is more like a path
-    that connects the endpoints. When assigning addresses to a data pipe, you can use any 5 byte
-    long address you can think of (as long as the first byte is unique among simultaneously
-    broadcasting addresses), so you're not limited to communicating with only the same 6 nRF24L01
-    radios (more on this when we officially support "Multiciever" mode).
+    The specified address is not the address of an nRF24L01 radio, rather it is more like a
+    path that connects the endpoints. When assigning addresses to a data pipe, you can use any
+    5 byte long address you can think of (as long as the first byte is unique among
+    simultaneously broadcasting addresses), so you're not limited to communicating with only
+    the same 6 nRF24L01 radios (more on this when we officially support "Multiciever" mode).
 
-    Finnaly, the radio's channel is not be confused with the radio's pipes. Channel selection is a
-    way of specifying a certain radio frequency (frequency = [2400 + channel] MHz). Channel
-    defaults to 76 (like the arduino library), but options range from 0 to 125 -- that's 2.4
-    GHz to 2.525 GHz. The channel can be tweaked to find a less occupied frequency amongst
-    Bluetooth, WiFi, or other ambient signals that use the same spectrum of frequencies.
+    Finnaly, the radio's channel is not be confused with the radio's pipes. Channel selection
+    is a way of specifying a certain radio frequency (frequency = [2400 + channel] MHz).
+    Channel defaults to 76 (like the arduino library), but options range from 0 to 125 --
+    that's 2.4 GHz to 2.525 GHz. The channel can be tweaked to find a less occupied frequency
+    amongst Bluetooth, WiFi, or other ambient signals that use the same spectrum of 
+    frequencies.
 
-.. warning:: For successful transmissions, most of the endpoint trasceivers' settings/features must
+.. warning:: 
+    For successful transmissions, most of the endpoint trasceivers' settings/features must
     match. These settings/features include:
 
-    * The RX pipe's address on the receiving nRF24L01 (passed to `open_rx_pipe()`) MUST match the
-      TX pipe's address on the transmitting nRF24L01 (passed to `open_tx_pipe()`)
+    * The RX pipe's address on the receiving nRF24L01 (passed to `open_rx_pipe()`) MUST match
+      the TX pipe's address on the transmitting nRF24L01 (passed to `open_tx_pipe()`)
     * `address_length`
     * `channel`
     * `data_rate`
@@ -71,11 +76,11 @@ With the `auto_ack` feature enabled, you get:
     * custom `ack` payloads
     * `crc`
 
-    In fact the only attributes that aren't required to match on both endpoint transceivers would
-    be the identifying data pipe number (passed to `open_rx_pipe()` or `load_ack()`), `pa_level`,
-    `arc`, & `ard` attributes. The ``ask_no_ack`` feature can be used despite the settings/features
-    configuration (see `send()` & `write()` function
-    parameters for more details).
+    In fact the only attributes that aren't required to match on both endpoint transceivers
+    would be the identifying data pipe number (passed to `open_rx_pipe()` or `load_ack()`),
+    `pa_level`, `arc`, & `ard` attributes. The ``ask_no_ack`` feature can be used despite the
+    settings/features configuration (see `send()` & `write()` function parameters for more
+    details).
 
 About the lite version
 ======================
@@ -86,7 +91,8 @@ boards using the ATSAMD21 M0). The following functionality has been removed from
 version:
 
     * `address()` removed.
-    * `what_happened()` removed. However you can use the following function to dump all available registers' values (for advanced users):
+    * `what_happened()` removed. However you can use the following function to dump all
+      available registers' values (for advanced users):
       
       .. code-block:: python
 
@@ -95,24 +101,29 @@ version:
               for i in range(end):
                   if i in (0xA, 0xB, 0x10):
                       print(hex(i), "=", nrf._reg_read_bytes(i))
-                  elif not i in (0x18, 0x19, 0x1a, 0x1b):
+                  elif i not in (0x18, 0x19, 0x1a, 0x1b):
                       print(hex(i), "=", hex(nrf._reg_read(i)))
     * `fifo()` removed.
     * `dynamic_payloads` applies to all pipes, not individual pipes.
     * `payload_length` applies to all pipes, not individual pipes.
-    * `read_ack()` removed. This is deprecated on next major release anyway; use `recv()` instead.
-    * `load_ack()` is available, but it will not throw exceptions for malformed ``buf`` or invalid ``pipe_number`` parameters.
+    * `read_ack()` removed. This is deprecated on next major release anyway; use `recv()` 
+      instead.
+    * `load_ack()` is available, but it will not throw exceptions for malformed ``buf`` or
+      invalid ``pipe_number`` parameters.
     * `crc` removed. 2-bytes encoding scheme (CRC16) is always enabled.
-    * `auto_ack` removed. This is always enabled for all pipes. Pass ``ask_no_ack`` parameter as `True` to
-      `send()` or `write()` to disable automatic acknowledgement for TX operations.
-    * `is_lna_enabled` removed. This will always be enabled, and `pa_level` will not accept a `list` or `tuple`. This only affects certain boards anyway.
-    * `rpd`, `start_carrier_wave()`, & `stop_carrier_wave()` removed. These only perform a test of the nRF24L01's hardware.
+    * `auto_ack` removed. This is always enabled for all pipes. Pass ``ask_no_ack`` parameter
+      as `True` to `send()` or `write()` to disable automatic acknowledgement for TX
+      operations.
+    * `is_lna_enabled` removed. This will always be enabled, and `pa_level` will not accept a
+      `list` or `tuple`. This only affects certain boards anyway.
+    * `rpd`, `start_carrier_wave()`, & `stop_carrier_wave()` removed. These only perform a
+      test of the nRF24L01's hardware.
     * `CSN_DELAY` removed. This is hard-coded to 5 milliseconds
-    * All comments and docstrings removed, meaning ``help()`` will not provide any specific information.
-      Exception prompts have also been reduced and adjusted accordingly.
-    * Cannot switch between different radio configurations using context manager (the `with` blocks).
-      It is advised that only one `RF24` object be instantiated when RAM is limited (less than or
-      equal to 32KB).
+    * All comments and docstrings removed, meaning ``help()`` will not provide any specific
+      information. Exception prompts have also been reduced and adjusted accordingly.
+    * Cannot switch between different radio configurations using context manager (the `with`
+      blocks). It is advised that only one `RF24` object be instantiated when RAM is limited
+      (less than or equal to 32KB).
 
 RF24 class
 ==============
@@ -126,9 +137,10 @@ Contructor
 .. autoclass:: circuitpython_nrf24l01.rf24.RF24
     :no-members:
 
-    This class aims to be compatible with other devices in the nRF24xxx product line that implement
-    the Nordic proprietary Enhanced ShockBurst Protocol (and/or the legacy ShockBurst Protocol),
-    but officially only supports (through testing) the nRF24L01 and nRF24L01+ devices.
+    This class aims to be compatible with other devices in the nRF24xxx product line that
+    implement the Nordic proprietary Enhanced ShockBurst Protocol (and/or the legacy
+    ShockBurst Protocol), but officially only supports (through testing) the nRF24L01 and
+    nRF24L01+ devices.
 
     :param ~busio.SPI spi: The object for the SPI bus that the nRF24L01 is connected to.
 
@@ -154,15 +166,17 @@ open_tx_pipe()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.open_tx_pipe
 
-    :param bytearray address: The virtual address of the receiving nRF24L01. The address specified
-        here must match the address set to one of the RX data pipes of the receiving nRF24L01.
-        The existing address can be altered by writting a bytearray with a length less than 5. The nRF24L01 will use the first `address_length` number of bytes for the RX address on the specified data pipe.
+    :param bytearray address: The virtual address of the receiving nRF24L01. The address
+        specified here must match the address set to one of the RX data pipes of the receiving
+        nRF24L01. The existing address can be altered by writting a bytearray with a length
+        less than 5. The nRF24L01 will use the first `address_length` number of bytes for the
+        RX address on the specified data pipe.
 
     .. note:: There is no option to specify which data pipe to use because the nRF24L01 only
         uses data pipe 0 in TX mode. Additionally, the nRF24L01 uses the same data pipe (pipe
         0) for receiving acknowledgement (ACK) packets in TX mode when the `auto_ack` attribute
-        is enabled for data pipe 0. Thus, RX pipe 0 is appropriated with the TX address (specified
-        here) when `auto_ack` is enabled for data pipe 0.
+        is enabled for data pipe 0. Thus, RX pipe 0 is appropriated with the TX address
+        (specified here) when `auto_ack` is enabled for data pipe 0.
 
 close_rx_pipe()
 ******************
@@ -186,7 +200,9 @@ open_rx_pipe()
     :param bytearray address: The virtual address to the receiving nRF24L01. If using a
         ``pipe_number`` greater than 1, then only the MSByte of the address is written, so make
         sure MSByte (first character) is unique among other simultaneously receiving addresses.
-        The existing address can be altered by writing a bytearray with a length less than 5. The nRF24L01 will use the first `address_length` number of bytes for the RX address on the specified data pipe.
+        The existing address can be altered by writing a bytearray with a length less than 5.
+        The nRF24L01 will use the first `address_length` number of bytes for the RX address on
+        the specified data pipe.
 
     .. note:: The nRF24L01 shares the addresses' last 4 LSBytes on data pipes 2 through
         5. These shared LSBytes are determined by the address set to data pipe 1.
@@ -208,7 +224,6 @@ listen
           nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this attribute
           flushes the RX FIFO, clears the `irq_dr` status flag, and puts nRF24L01 in power up
           mode. Notice the CE pin is be held HIGH during RX mode.
-
         - `False` disables RX mode. As mentioned in above link, this puts nRF24L01's power in
           Standby-I (CE pin is LOW meaning low current & no transmissions) mode which is ideal
           for post-reception work. Disabing RX mode doesn't flush the RX/TX FIFO buffers, so
@@ -230,11 +245,17 @@ recv()
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.recv
 
     This function can also be used to fetch the last ACK packet's payload if `ack` is enabled.
-
+    :param int length: An optional parameter to specify how many bytes to read from the RX
+        FIFO buffer. If this parameter is less than the length of the first available payload
+        in the RX FIFO buffer, then the payload will remain in the RX FIFO buffer until the
+        entire payload is fetched by this function. A value greater than the payload's length
+        will return additional data from other payload(s) in the RX FIFO buffer (if any --
+        otherwise just padded zeros).
     :returns: A `bytearray` of the RX payload data or `None` if there is no payload
 
         - If the `dynamic_payloads` attribute is disabled, then the returned bytearray's length
-          is equal to the user defined `payload_length` attribute for the data pipe that received the payload.
+          is equal to the user defined `payload_length` attribute for the data pipe that
+          received the payload.
         - If the `dynamic_payloads` attribute is enabled, then the returned bytearray's length
           is equal to the payload's length
 
@@ -261,17 +282,19 @@ send()
         list/tuple are processed for consecutive transmissions.
 
         - If the `dynamic_payloads` attribute is disabled for data pipe 0 and this bytearray's
-          length is less than the `payload_length` attribute for pipe 0, then this bytearray is padded with zeros until its length is equal to the `payload_length` attribute for pipe 0.
+          length is less than the `payload_length` attribute for pipe 0, then this bytearray
+          is padded with zeros until its length is equal to the `payload_length` attribute for
+          pipe 0.
         - If the `dynamic_payloads` attribute is disabled for data pipe 0 and this bytearray's
-          length is greater than `payload_length` attribute for pipe 0, then this bytearray's length
-          is truncated to equal the `payload_length` attribute for pipe 0.
+          length is greater than `payload_length` attribute for pipe 0, then this bytearray's
+          length is truncated to equal the `payload_length` attribute for pipe 0.
     :param bool ask_no_ack: Pass this parameter as `True` to tell the nRF24L01 not to wait for
         an acknowledgment from the receiving nRF24L01. This parameter directly controls a
         ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about
         the payload). Therefore, it takes advantage of an nRF24L01 feature specific to
         individual payloads, and its value is not saved anywhere. You do not need to specify
-        this for every payload if the `arc` attribute is disabled, however setting this parameter
-        to `True` will work despite the `arc` attribute's setting.
+        this for every payload if the `arc` attribute is disabled, however setting this
+        parameter to `True` will work despite the `arc` attribute's setting.
 
         .. note:: Each transmission is in the form of a packet. This packet contains sections
             of data around and including the payload. `See Chapter 7.3 in the nRF24L01
@@ -288,9 +311,9 @@ send()
         there.
 
     .. tip:: It is highly recommended that `arc` attribute is enabled (greater than ``0``) when
-        sending multiple payloads. Test results with the `arc` attribute disabled were very poor
-        (much < 50% received). This same advice applies to the ``ask_no_ack`` parameter (leave
-        it as `False` for multiple payloads).
+        sending multiple payloads. Test results with the `arc` attribute disabled were very
+        poor (much < 50% received). This same advice applies to the ``ask_no_ack`` parameter
+        (leave it as `False` for multiple payloads).
     .. warning::  The nRF24L01 will block usage of the TX FIFO buffer upon failed
         transmissions. Failed transmission's payloads stay in TX FIFO buffer until the MCU
         calls `flush_tx()` and `clear_status_flags()`. Therefore, this function will discard
@@ -320,7 +343,8 @@ what_happened()
         - ``RF Power Amplifier`` The current setting of the `pa_level` attribute.
         - ``CRC bytes`` The current setting of the `crc` attribute
         - ``Address length`` The current setting of the `address_length` attribute
-        - ``TX Payload lengths`` The current setting of the `payload_length` attribute for TX operations (concerning data pipe 0)
+        - ``TX Payload lengths`` The current setting of the `payload_length` attribute for TX
+          operations (concerning data pipe 0)
         - ``Auto retry delay`` The current setting of the `ard` attribute
         - ``Auto retry attempts`` The current setting of the `arc` attribute
         - ``Packets lost on current channel`` Total amount of packets lost (transmission
@@ -352,8 +376,9 @@ what_happened()
 
     :param bool dump_pipes: `True` appends the output and prints:
 
-        - the current address used for TX transmissions. This value is the entire content of the
-          nRF24L01's register about the TX address (despite what `address_length` is set to).
+        - the current address used for TX transmissions. This value is the entire content of
+          the nRF24L01's register about the TX address (despite what `address_length` is set
+          to).
         - ``Pipe [#] ([open/closed]) bound: [address]`` where ``#`` represent the pipe number,
           the ``open/closed`` status is relative to the pipe's RX status, and ``address`` is
           the full value stored in the nRF24L01's RX address registers (despite what
@@ -372,41 +397,41 @@ dynamic_payloads
     Default setting is enabled on all pipes.
 
     - `True` or ``1`` enables nRF24L01's dynamic payload length feature for all data pipes. The
-      `payload_length` attribute is ignored when this feature is enabled for respective or all data
-      pipes.
-    - `False` or ``0`` disables nRF24L01's dynamic payload length feature for all data pipes. Be sure
-      to adjust the `payload_length` attribute accordingly when this feature is disabled for any
+      `payload_length` attribute is ignored when this feature is enabled for respective or all
       data pipes.
-    - A `list` or `tuple` containing booleans or integers can be used control this feature per data
-      pipe. Index 0 controls this feature on data pipe 0. Indices greater than 5 will be ignored
-      since there are only 6 data pipes.
+    - `False` or ``0`` disables nRF24L01's dynamic payload length feature for all data pipes.
+      Be sure to adjust the `payload_length` attribute accordingly when this feature is
+      disabled for any data pipes.
+    - A `list` or `tuple` containing booleans or integers can be used control this feature per
+      data pipe. Index 0 controls this feature on data pipe 0. Indices greater than 5 will be
+      ignored since there are only 6 data pipes.
 
     .. note::
-        This attribute mostly relates to RX operations, but data pipe 0 applies to TX operations
-        also.
+        This attribute mostly relates to RX operations, but data pipe 0 applies to TX
+        operations also.
 
 payload_length
 ******************************
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.payload_length
 
-    If the `dynamic_payloads` attribute is enabled for a certain data pipe, this attribute has no
-    affect on that data pipe. When `dynamic_payloads` is disabled for a certain data pipe, this
-    attribute is used to specify the payload length on that data pipe in RX mode.
+    If the `dynamic_payloads` attribute is enabled for a certain data pipe, this attribute has
+    no affect on that data pipe. When `dynamic_payloads` is disabled for a certain data pipe,
+    this attribute is used to specify the payload length on that data pipe in RX mode.
 
     A valid input value must be:
     
         * an `int` in range [1, 32]. Otherwise a `ValueError` exception is thrown.
-        * a `list` or `tuple` containing integers can be used to control this attribute per data
-          pipe. Index 0 controls this feature on data pipe 0. Indices greater than 5 will be ignored
-          since there are only 6 data pipes. if a index's value is ``0``, then the existing setting
-          will persist (not be changed).
+        * a `list` or `tuple` containing integers can be used to control this attribute per
+          data pipe. Index 0 controls this feature on data pipe 0. Indices greater than 5 will
+          be ignored since there are only 6 data pipes. if a index's value is ``0``, then the
+          existing setting will persist (not be changed).
         
         Default is set to the nRF24L01's maximum of 32 (on all data pipes).
 
     .. note::
-        This attribute mostly relates to RX operations, but data pipe 0 applies to TX operations
-        also.
+        This attribute mostly relates to RX operations, but data pipe 0 applies to TX
+        operations also.
 
 auto_ack
 ******************************
@@ -416,16 +441,18 @@ auto_ack
     Default setting is enabled on all data pipes.
 
     - `True` or ``1`` enables transmitting automatic acknowledgment packets for all data pipes.
-      The CRC (cyclic redundancy checking) is enabled automatically by the nRF24L01 if the `auto_ack` attribute is enabled for any data pipe (see also `crc` attribute).
-    - `False` or ``0`` disables transmitting automatic acknowledgment packets for all data pipes.
-      The `crc` attribute will remain unaffected when disabling this attribute for any data pipes.
-    - A `list` or `tuple` containing booleans or integers can be used control this feature per data
-      pipe. Index 0 controls this feature on data pipe 0. Indices greater than 5 will be ignored
-      since there are only 6 data pipes.
+      The CRC (cyclic redundancy checking) is enabled automatically by the nRF24L01 if the
+      `auto_ack` attribute is enabled for any data pipe (see also `crc` attribute).
+    - `False` or ``0`` disables transmitting automatic acknowledgment packets for all data
+      pipes. The `crc` attribute will remain unaffected when disabling this attribute for any
+      data pipes.
+    - A `list` or `tuple` containing booleans or integers can be used control this feature per
+      data pipe. Index 0 controls this feature on data pipe 0. Indices greater than 5 will be
+      ignored since there are only 6 data pipes.
 
     .. note::
-        This attribute mostly relates to RX operations, but data pipe 0 applies to TX operations
-        also.
+        This attribute mostly relates to RX operations, but data pipe 0 applies to TX
+        operations also.
 
 arc
 ******************************
@@ -447,9 +474,9 @@ ard
     During this time, the nRF24L01 is listening for the ACK packet. If the
     `auto_ack` attribute is disabled, this attribute is not applied.
 
-    A valid input value must be in range [250, 4000]. Otherwise a `ValueError` exception is thrown.
-    Default is 1500 for reliability. If this is set to a value that is not multiple of 250, then
-    the highest multiple of 250 that is no greater than the input value is used. 
+    A valid input value must be in range [250, 4000]. Otherwise a `ValueError` exception is
+    thrown. Default is 1500 for reliability. If this is set to a value that is not multiple of
+    250, then the highest multiple of 250 that is no greater than the input value is used. 
 
     .. note:: Paraphrased from nRF24L01 specifications sheet:
 
@@ -465,8 +492,8 @@ ack
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.ack
 
-    Use this attribute to set/check if the custom ACK payloads feature is enabled. Default setting
-    is `False`.
+    Use this attribute to set/check if the custom ACK payloads feature is enabled. Default
+    setting is `False`.
 
     - `True` enables the use of custom ACK payloads in the ACK packet when responding to
       receiving transmissions.
@@ -474,10 +501,11 @@ ack
       receiving transmissions.
 
     .. important::
-        As `dynamic_payloads` and `auto_ack` attributes are required for this feature to work, they
-        are automatically enabled (on data pipe 0) as needed. However, it is required to enable the
-        `auto_ack` and `dynamic_payloads` features on all applicable pipes. Disabling this feature
-        does not disable the `auto_ack` and `dynamic_payloads` attributes for any data pipe; they work just fine without this feature.
+        As `dynamic_payloads` and `auto_ack` attributes are required for this feature to work,
+        they are automatically enabled (on data pipe 0) as needed. However, it is required to
+        enable the `auto_ack` and `dynamic_payloads` features on all applicable pipes.
+        Disabling this feature does not disable the `auto_ack` and `dynamic_payloads`
+        attributes for any data pipe; they work just fine without this feature.
 
 load_ack()
 ******************************
@@ -537,8 +565,8 @@ irq_dr
     :Returns:
         
         - `True` represents Data is in the RX FIFO buffer
-        - `False` represents anything depending on context (state/condition of FIFO buffers)
-          ; usually this means the flag's been reset.
+        - `False` represents anything depending on context (state/condition of FIFO buffers);
+          usually this means the flag's been reset.
 
     Pass ``dataReady`` |irq note|
 
@@ -554,8 +582,8 @@ irq_df
     :Returns:
         
         - `True` signifies the nRF24L01 attemped all configured retries
-        - `False` represents anything depending on context (state/condition)
-          ; usually this means the flag's been reset.
+        - `False` represents anything depending on context (state/condition); usually this
+          means the flag's been reset.
 
     Pass ``dataFail`` |irq note|
 
@@ -571,8 +599,8 @@ irq_ds
     :Returns:
         
         - `True` represents a successful transmission
-        - `False` represents anything depending on context (state/condition of FIFO buffers)
-          ; usually this means the flag's been reset.
+        - `False` represents anything depending on context (state/condition of FIFO buffers);
+          usually this means the flag's been reset.
 
     Pass ``dataSent`` |irq note|
 
@@ -583,8 +611,8 @@ clear_status_flags()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.clear_status_flags
 
-    Internally, this is automatically called by `send()`, `write()`, `recv()`, and when `listen`
-    changes from `False` to `True`.
+    Internally, this is automatically called by `send()`, `write()`, `recv()`, and when
+    `listen` changes from `False` to `True`.
 
     :param bool data_recv: specifies wheather to clear the "RX Data Ready" flag.
     :param bool data_sent: specifies wheather to clear the "TX Data Sent" flag.
@@ -625,7 +653,8 @@ interrupt_config()
         1. read payload through `recv()`
         2. clear ``dataReady`` status flag (taken care of by using `recv()` in previous step)
         3. read FIFO_STATUS register to check if there are more payloads available in RX FIFO
-           buffer. A call to `pipe` (may require `update()` to be called), `any()` or even ``(False,True)`` as parameters to `fifo()` will get this result.
+           buffer. A call to `pipe` (may require `update()` to be called), `any()` or even
+           ``(False,True)`` as parameters to `fifo()` will get this result.
         4. if there is more data in RX FIFO, repeat from step 1
 
 data_rate
@@ -694,19 +723,19 @@ power
         current consumption) or Standby-I (moderate current consumption) modes, which Standby
         mode depends on the state of the CE pin. TX transmissions are only executed during
         Standby-II by calling `send()` or `write()`. RX transmissions are received during
-        Standby-II by setting `listen` attribute to `True` (see `Chapter 6.1.2-7 of the nRF24L01+
-        Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
+        Standby-II by setting `listen` attribute to `True` (see `Chapter 6.1.2-7 of the
+        nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
         nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132980>`_). After using
-        `send()` or setting `listen` to `False`, the nRF24L01 is left in Standby-I mode (see also
-        notes on the `write()` function).
+        `send()` or setting `listen` to `False`, the nRF24L01 is left in Standby-I mode (see
+        also notes on the `write()` function).
 
 pa_level
 ******************************
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.pa_level
 
-    Higher levels mean the transmission will cover a longer distance. Use this attribute to tweak the
-    nRF24L01 current consumption on projects that don't span large areas.
+    Higher levels mean the transmission will cover a longer distance. Use this attribute to
+    tweak the nRF24L01 current consumption on projects that don't span large areas.
 
     A valid input value is:
 
@@ -755,24 +784,26 @@ update()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.update
 
-    Refreshing the status byte is vital to checking status of the interrupt flags, RX pipe number
-    related to current RX payload, and if the TX FIFO buffer is full. This function returns nothing,
-    but internally updates the `irq_dr`, `irq_ds`, `irq_df`, `pipe`, and `tx_full` attributes.
-    Internally this is a helper function to `send()`, and `resend()` functions.
+    Refreshing the status byte is vital to checking status of the interrupt flags, RX pipe
+    number related to current RX payload, and if the TX FIFO buffer is full. This function
+    returns nothing, but internally updates the `irq_dr`, `irq_ds`, `irq_df`, `pipe`, and
+    `tx_full` attributes. Internally this is a helper function to `send()`, and `resend()`
+    functions.
 
 resend()
 ******************************
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.resend
 
-    All returned data from this function follows the same patttern that `send()` returns with the
-    added condition that this function will return `False` if the TX FIFO buffer is empty.
+    All returned data from this function follows the same patttern that `send()` returns with
+    the added condition that this function will return `False` if the TX FIFO buffer is empty.
 
     .. note:: The nRF24L01 normally removes a payload from the TX FIFO buffer after successful
         transmission, but not when this function is called. The payload (successfully
         transmitted or not) will remain in the TX FIFO buffer until `flush_tx()` is called to
         remove them. Alternatively, using this function also allows the failed payload to be
-        over-written by using `send()` or `write()` to load a new payload into the TX FIFO buffer.
+        over-written by using `send()` or `write()` to load a new payload into the TX FIFO
+        buffer.
 
 write()
 ******************************
@@ -783,12 +814,13 @@ write()
         than 0 and less than 32 bytes, otherwise a `ValueError` exception is thrown.
 
         - If the `dynamic_payloads` attribute is disabled for data pipe 0 and this bytearray's
-          length is less than the `payload_length` attribute for data pipe 0, then this bytearray
-          is padded with zeros until its length is equal to the `payload_length` attribute for
-          data pipe 0.
+          length is less than the `payload_length` attribute for data pipe 0, then this
+          bytearray is padded with zeros until its length is equal to the `payload_length`
+          attribute for data pipe 0.
         - If the `dynamic_payloads` attribute is disabled  for data pipe 0 and this bytearray's
-          length is greater than `payload_length` attribute for data pipe 0, then this bytearray's
-          length is truncated to equal the `payload_length` attribute for data pipe 0.
+          length is greater than `payload_length` attribute for data pipe 0, then this
+          bytearray's length is truncated to equal the `payload_length` attribute for data
+          pipe 0.
     :param bool ask_no_ack: Pass this parameter as `True` to tell the nRF24L01 not to wait for
         an acknowledgment from the receiving nRF24L01. This parameter directly controls a
         ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about
@@ -831,9 +863,9 @@ write()
         <https://www.sparkfun.com/datasheets/Components/SMD/
         nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1121422>`_, we have to assume
         radio damage or misbehavior as a result of disobeying the 4 ms rule. See also `table 18
-        in the nRF24L01 specification sheet <https://www.sparkfun.com/datasheets/Components/SMD/
-        nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1123001>`_ for calculating
-        an adequate transmission timeout sentinal.
+        in the nRF24L01 specification sheet <https://www.sparkfun.com/datasheets/Components/
+        SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1123001>`_ for
+        calculating an adequate transmission timeout sentinal.
 
 flush_rx()
 ******************************
@@ -870,7 +902,8 @@ fifo()
         - `True` tests if the specified FIFO buffer is empty.
         - `False` tests if the specified FIFO buffer is full.
         - `None` (when not specified) returns a 2 bit number representing both empty (bit 1) &
-          full (bit 0) tests related to the FIFO buffer specified using the ``about_tx`` parameter.
+          full (bit 0) tests related to the FIFO buffer specified using the ``about_tx``
+          parameter.
     :returns:
         - A `bool` answer to the question:
           "Is the [TX/RX]:[`True`/`False`] FIFO buffer [empty/full]:[`True`/`False`]?
@@ -914,17 +947,17 @@ rpd
 
     The RPD flag is triggered in the following cases:
 
-        1. During RX mode (`listen` = `True`) and an arbitrary RF transmission with a gain above
-           -64 dBm threshold is/was present.
+        1. During RX mode (`listen` = `True`) and an arbitrary RF transmission with a gain
+           above -64 dBm threshold is/was present.
         2. When a packet is received (instigated by the nRF24L01 used to detect/"listen" for
            incoming packets).
 
     .. note:: See also
         `section 6.4 of the Specification Sheet concerning the RPD flag
         <https://www.sparkfun.com/datasheets/Components/SMD/
-        nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1160291>`_. Ambient temperature
-        affects the -64 dBm threshold. The latching of this flag happens differently under certain
-        conditions.
+        nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1160291>`_. Ambient
+        temperature affects the -64 dBm threshold. The latching of this flag happens
+        differently under certain conditions.
 
 start_carrier_wave()
 ******************************

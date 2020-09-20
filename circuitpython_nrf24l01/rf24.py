@@ -49,8 +49,8 @@ allowing a clean SPI transaction."""
 class RF24:
     """A driver class for the nRF24L01(+) transceiver radios."""
 
-    def __init__(self, spi, csn, ce):
-        self._spi = SPIDevice(spi, chip_select=csn, baudrate=10000000)
+    def __init__(self, spi, csn, ce, spi_frequency=10000000):
+        self._spi = SPIDevice(spi, chip_select=csn, baudrate=spi_frequency)
         self.ce_pin = ce
         self.ce_pin.switch_to_output(value=False)  # pre-empt standby-I mode
         self._status = 0  # status byte returned on all SPI transactions
@@ -251,13 +251,13 @@ class RF24:
             return self._pl_len[self.pipe]
         return 0
 
-    def recv(self):
+    def recv(self, length=None):
         """This function is used to retrieve the next available payload in the
         RX FIFO buffer, then clears the `irq_dr` status flag."""
-        curr_pl_size = self.any()
-        if not curr_pl_size:
+        return_size = length if length is not None else self.any()
+        if not return_size:
             return None
-        result = self._reg_read_bytes(0x61, curr_pl_size)
+        result = self._reg_read_bytes(0x61, return_size)
         self.clear_status_flags(True, False, False)
         return result
 
