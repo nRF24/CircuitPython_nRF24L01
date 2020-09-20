@@ -245,6 +245,7 @@ recv()
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.recv
 
     This function can also be used to fetch the last ACK packet's payload if `ack` is enabled.
+    
     :param int length: An optional parameter to specify how many bytes to read from the RX
         FIFO buffer. If this parameter is less than the length of the first available payload
         in the RX FIFO buffer, then the payload will remain in the RX FIFO buffer until the
