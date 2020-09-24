@@ -152,6 +152,9 @@ Contructor
         CSN (Chip Select Not) pin. This is required.
     :param ~digitalio.DigitalInOut ce: The digital output pin that is connected to the nRF24L01's
         CE (Chip Enable) pin. This is required.
+    :param int spi_frequency: Specify which SPI frequency to use on the SPI bus.This parameter
+        only applies to the instantiated object and is made persistent via
+        :py:class:`~adafruit_bus_device.spi_device`.
 
 open_tx_pipe()
 ******************
