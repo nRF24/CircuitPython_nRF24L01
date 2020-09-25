@@ -1014,3 +1014,9 @@ is_lna_enabled
     See `pa_level` attribute about how to set this. Default is always enabled, but this
     feature is specific to certain nRF24L01-based circuits. Check with your module's
     manufacturer to see is it can toggle the Low Noise Amplifier feature.
+
+Fake BLE
+==============
+
+    .. autoclass:: circuitpython_nrf24l01.fake_ble
+        :members:

@@ -49,39 +49,7 @@ work on CircuitPython.
        other event, "on data fail", is ignored because it will never get thrown with "auto_ack"
        off. However the interrupt settings can be modified AFTER instantiation
 """
-
-def _swap_bits(orig):
-    """reverses the bit order into LSbit to MSBit"""
-    reverse = 0
-    for _ in range(8):
-        reverse <<= 1
-        reverse |= orig & 1
-        orig >>= 1
-    return reverse # we're done here
-
-def _reverse_bits(orig):
-    """reverses the bit order into LSbit to MSBit without touching the byte order"""
-    r = b''
-    for byte in orig:
-        r += bytes([_swap_bits(byte)])
-    return r
-
-def _make_crc(data):
-    """use this to create the 3 byte-long CRC data. returns a bytearray"""
-    # taken from source code
-    # https://github.com/adafruit/Adafruit_CircuitPython_SGP30/blob/d209c7c76f941dc60b24d85fdef177b5fb2e9943/adafruit_sgp30.py#L177
-    # zlib or binascii modules would be ideal alternatives on the raspberry pi, but
-    # MicroPython & CircuitPython doesn't have the crc32() included in the uzlib or ubinascii
-    # modules.
-    crc = 0xFF
-    for byte in data:
-        crc ^= byte
-        for _ in range(8):
-            if crc & 0x80:
-                crc = (crc << 1) ^ 0x31
-            else:
-                crc <<= 1
-    return crc & 0xFF
+from .data_manip import crc32, swap_bits, reverse_bits
 
 def _ble_whitening(data, whiten_coef):
     """for "whiten"ing the BLE packet data according to expected parameters"""
@@ -95,8 +63,8 @@ def _ble_whitening(data, whiten_coef):
     #         whitenCoeff <<= 1;
     #     }
     #     data++;
-    result = b''
-    for byte in data: # for every byte
+    result = b""
+    for byte in data:  # for every byte
         for i in range(8):
             if whiten_coef & 0x80:
                 whiten_coef ^= 0x11
@@ -104,6 +72,7 @@ def _ble_whitening(data, whiten_coef):
             whiten_coef <<= 1
         result += bytes([byte])
     return result
+
 
 class FakeBLE:
     """Per the limitations of this technique, only power amplifier level is available for
@@ -113,6 +82,7 @@ class FakeBLE:
         for fake BLE advertisements.
     :param bytearray name: The BLE device name to be advertised with the payload.
     """
+
     def __init__(self, nrf, name=None):
         self._device = nrf
         self._device.address_length = 4
@@ -126,7 +96,7 @@ class FakeBLE:
         self._chan = 0
         self._ble_name = None
         self.name = name
-        self._device.open_tx_pipe(_reverse_bits(b'\x8E\x89\xBE\xD6'))
+        self._device.open_tx_pipe(reverse_bits(b"\x8E\x89\xBE\xD6"))
         # b'\x8E\x89\xBE\xD6' = proper address for BLE advertisments
 
     def __enter__(self):
@@ -161,10 +131,12 @@ class FakeBLE:
             * payload_length has a maximum of (17 - length of name) bytes when
               broadcasting a name for itself.
         """
-        if n is not None and 1 <= len(n) <= 12: # max defined by 1 byte payload data requisite
-            self._ble_name = bytes([len(n) + 1]) + b'\x08' + n
+        if (
+            n is not None and 1 <= len(n) <= 12
+        ):  # max defined by 1 byte payload data requisite
+            self._ble_name = bytes([len(n) + 1]) + b"\x08" + n
         else:
-            self._ble_name = None # name will not be advertised
+            self._ble_name = None  # name will not be advertised
 
     def _chan_hop(self):
         # NOTE BLE channel number is different from the nRF channel number.
@@ -203,35 +175,35 @@ class FakeBLE:
         #                    = 13 - (BLE name length + 2 if any)
         name_len = len(self._ble_name) if self._ble_name is not None else 0
         if not buf or len(buf) > (13 - name_len):
-            raise ValueError("buf must be a buffer protocol object with a byte length of"
-                             " at least 1 and no greater than 13 - "
-                             "{} = {}".format(name_len, 13 - name_len))
+            raise ValueError(
+                "buf must have a length in range [1, {}]".format(13 - name_len)
+            )
         # BLE payload =
         #   header(1) + payload length(1) + MAC address(6) + containers + CRC(3) bytes
         # header == PDU type, given MAC address is random/arbitrary
         #               type == 0x42 for Android or 0x40 for iPhone
         # containers (in bytes) = length(1) + type(1) + data
         # the 1 byte about container's length excludes only itself
-        payload = b'\x42' # init a temp payload buffer with header type byte
+        payload = b"\x42"  # init a temp payload buffer with header type byte
         # to avoid padding when dynamic_payloads is disabled, set payload_length attribute
         self._device.payload_length = len(buf) + 16 + name_len
         # payload length excludes the header, itself, and crc lengths
         payload += bytes([self._device.payload_length - 5])
-        payload += b'\x11\x22\x33\x44\x55\x66' # a bogus MAC address
+        payload += b"\x11\x22\x33\x44\x55\x66"  # a bogus MAC address
         # payload will have at least 2 containers:
         # 3 bytes of flags (required for BLE discoverable), & at least (1+2) byte of data
-        payload += b'\x02\x01\x06' # BLE flags for discoverability and non-pairable etc
+        payload += b"\x02\x01\x06"  # BLE flags for discoverability and non-pairable etc
         # payload will also have to fit the optional BLE device name as
         # a seperate container ([name length + 2] bytes)
         if self._ble_name is not None:
             payload += self._ble_name
-        payload += (bytes([len(buf) + 1]) + b'\xFF' + buf) # append the data container
+        payload += bytes([len(buf) + 1]) + b"\xFF" + buf  # append the data container
         # crc is generated from b'\x55\x55\x55' about everything except itself
-        payload += _make_crc(payload)
-        self._chan_hop() # cycle to next BLE channel per specs
+        payload += crc32(payload)
+        self._chan_hop()  # cycle to next BLE channel per specs
         # the whiten_coef value we need is the BLE channel (37,38, or 39) left shifted one
         whiten_coef = 37 + self._chan
-        whiten_coef = _swap_bits(whiten_coef) | 2
-        rev_whiten_pl = _reverse_bits(_ble_whitening(payload, whiten_coef))
-        print('transmitting {} as {}'.format(payload, rev_whiten_pl))
+        whiten_coef = swap_bits(whiten_coef) | 2
+        rev_whiten_pl = reverse_bits(_ble_whitening(payload, whiten_coef))
+        print("transmitting {} as {}".format(payload, rev_whiten_pl))
         self._device.send(rev_whiten_pl)
