@@ -259,6 +259,15 @@ body {
 }
 
 /* -----------------------------------------API sections-------------------------------------- */
+
+.wy-table-bordered-all td, .rst-content table.docutils td {
+  text-align: left;
+}
+
+.rst-content table.docutils.citation, .rst-content table.docutils.footnote {
+  color: white;
+}
+
 .rst-content dl:not(.docutils) dl dt {
   background: #343434;
   color: #e5df8e;
@@ -304,4 +313,9 @@ code, .rst-content tt, .rst-content code {
 
 .rst-content h1:hover .headerlink::after, .rst-content h2:hover .headerlink::after, .rst-content .toctree-wrapper p.caption:hover .headerlink::after, .rst-content h3:hover .headerlink::after, .rst-content h4:hover .headerlink::after, .rst-content h5:hover .headerlink::after, .rst-content h6:hover .headerlink::after, .rst-content dl dt:hover .headerlink::after, .rst-content p.caption:hover .headerlink::after, .rst-content table > caption:hover .headerlink::after, .rst-content .code-block-caption:hover .headerlink::after {
   color: #29ae5b !important;
+}
+
+html.writer-html4 .rst-content dl:not(.docutils)>dt,
+html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple)>dt {
+ background: #2e363c;
 }

@@ -5,7 +5,9 @@ and retrieve custom automatic acknowledgment payloads.
 import time
 import board
 import digitalio as dio
-from circuitpython_nrf24l01 import RF24
+# if running this on a ATSAMD21 M0 based board
+# from circuitpython_nrf24l01.rf24_lite import RF24
+from circuitpython_nrf24l01.rf24 import RF24
 
 # change these (digital output) pins accordingly
 ce = dio.DigitalInOut(board.D4)
@@ -49,19 +51,16 @@ def master(count=5):  # count = 5 will only transmit 5 packets
     # set address of RX node into a TX pipe
     nrf.open_tx_pipe(address)
 
-    counter = count
-    while counter:
-        buffer = tx + bytes([counter + 48])  # output buffer
+    while count:
+        buffer = tx + bytes([count + 48])  # output buffer
         print("Sending (raw): {}".format(repr(buffer)))
         # to read the ACK payload during TX mode we
         # pass the parameter read_ack as True.
         nrf.ack = True  # enable feature before send()
         now = time.monotonic() * 1000  # start timer
         result = nrf.send(buffer)  # becomes the response buffer
-        if result is None:
-            print('send() timed out')
-        elif not result:
-            print('send() failed')
+        if not result:
+            print('send() failed or timed out')
         else:
             # print the received ACK that was automatically
             # fetched and saved to "buffer" via send()
@@ -71,9 +70,9 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         print('Transmission took',
               time.monotonic() * 1000 - now, 'ms')
         time.sleep(1)
-        counter -= 1
+        count -= 1
 
-def slave(count=3):
+def slave(count=5):
     """Prints the received value and sends a dummy ACK payload"""
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 0
@@ -87,29 +86,27 @@ def slave(count=3):
     # pipe number [0,5]
     nrf.load_ack(buffer, 0)  # load ACK for first response
 
-    counter = count
     start = time.monotonic()
-    while counter and (time.monotonic() - start) < (count * 2):
+    while count and (time.monotonic() - start) < (count * 2):
         if nrf.any():
-            # this will listen indefinitely till counter == 0
-            counter -= 1
+            # this will listen indefinitely till count == 0
+            count -= 1
             # print details about the received packet (if any)
             print("Found {} bytes on pipe {}\
-                ".format(repr(nrf.any()), nrf.pipe()))
+                ".format(repr(nrf.any()), nrf.pipe))
             # retreive the received packet's payload
             rx = nrf.recv()  # clears flags & empties RX FIFO
             print("Received (raw): {}".format(repr(rx)))
             start = time.monotonic()
-            if counter:  # Going again?
+            if count:  # Going again?
                 # build new ACK
-                buffer = ACK + bytes([counter + 48])
+                buffer = ACK + bytes([count + 48])
                 # load ACK for next response
                 nrf.load_ack(buffer, 0)
 
     # recommended behavior is to keep in TX mode while idle
     nrf.listen = False  # put radio in TX mode
     nrf.flush_tx()  # flush any ACK payload
-
 
 print("""\
     nRF24L01 ACK test\n\

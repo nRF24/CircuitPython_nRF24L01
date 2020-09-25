@@ -8,7 +8,9 @@ import time
 import struct
 import board
 import digitalio as dio
-from circuitpython_nrf24l01 import RF24
+# if running this on a ATSAMD21 M0 based board
+# from circuitpython_nrf24l01.rf24_lite import RF24
+from circuitpython_nrf24l01.rf24 import RF24
 
 # addresses needs to be in a buffer protocol object (bytearray)
 address = [b'1Node', b'2Node']
@@ -22,13 +24,13 @@ csn = dio.DigitalInOut(board.D5)
 spi = board.SPI()  # init spi bus object
 
 # initialize the nRF24L01 on the spi bus object
-nrf = RF24(spi, csn, ce, ask_no_ack=False)
+nrf = RF24(spi, csn, ce)
 nrf.dynamic_payloads = False # this is the default in the TMRh20 arduino library
 
 # set address of TX node into a RX pipe
-nrf.open_rx_pipe(1, address[1])
+nrf.open_rx_pipe(1, address[0])
 # set address of RX node into a TX pipe
-nrf.open_tx_pipe(address[0])
+nrf.open_tx_pipe(address[1])
 
 def master(count=5):  # count = 5 will only transmit 5 packets
     """Transmits an arbitrary unsigned long value every second. This method
@@ -46,10 +48,8 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         # 'f' means a single 4 byte float value.
         buffer = struct.pack('<Lf', start_timer, float_value)
         result = nrf.send(buffer)
-        if result is None:
-            print('send() timed out')
-        elif not result:
-            print('send() failed')
+        if not result:
+            print('send() failed or timed out')
         else:
             nrf.listen = True # get radio ready to receive a response
             timeout = True # used to determine if response timed out
@@ -90,10 +90,8 @@ def slave(count=3):
             rx = struct.unpack('<Lf', buffer[:8]) # "[:8]" ignores the padded 0s
             # print the unsigned long and float data sent in the response
             print("Responding: {}, {}".format(rx[0], rx[1] + 0.01))
-            if result is None:
-                print('response timed out')
-            elif not result:
-                print('response failed')
+            if not result:
+                print('response failed or timed out')
             else:
                 # print timer results on transmission success
                 print('successful response took', end_timer - start_timer * 1000, 'ms')

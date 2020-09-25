@@ -43,3 +43,12 @@ This is a test to show how to use "with" statements to manage multiple different
 .. literalinclude:: ../examples/nrf24l01_context_test.py
     :caption: examples/nrf24l01_context_test.py
     :linenos:
+
+Working with TMRh20's Arduino library
+-------------------------------------
+
+This test is meant to prove compatibility with the popular Arduino library for the nRF24L01 by TMRh20 (available for install via the Arduino IDE's Library Manager). The following code has been designed/test with the TMRh20 library example named "GettingStarted_HandlingData.ino".
+
+.. literalinclude:: ../examples/nrf24l01_2arduino_handling_data.py
+    :caption: examples/nrf24l01_2arduino_handling_data.py
+    :linenos:
