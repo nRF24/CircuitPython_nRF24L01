@@ -80,7 +80,7 @@ def validate(data, bit_length, deg_poly, init_value):
 
 def swap_bits(original):
     """reverses the bit order into LSbit to MSBit in a single byte.
-    
+
     :returns:
         An `int` containing the byte whose bits go from LSBit to MSBit
         compared to the value passed to the ``original`` parameter.
@@ -98,7 +98,7 @@ def swap_bits(original):
 
 def reverse_bits(original):
     """reverses the bit order into LSbit to MSBit without touching the byte order
-    
+
     :returns:
         A bytearray whose bytes still go from MSByte to LSByte, but each
         byte's bits go from LSBit to MSBit.
@@ -108,4 +108,4 @@ def reverse_bits(original):
     r = b""
     for byte in original:
         r += bytes([swap_bits(byte)])
-    return bytearray([r])
+    return bytearray(r)

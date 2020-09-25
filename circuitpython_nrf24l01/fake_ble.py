@@ -90,9 +90,6 @@ class FakeBLE:
         self._device.auto_ack = False
         self._device.crc = 0
         self._device.arc = 0
-        self._device.irq_df = False
-        self._device.irq_dr = False
-        self._device.irq_ds = True
         self._chan = 0
         self._ble_name = None
         self.name = name
@@ -100,9 +97,10 @@ class FakeBLE:
         # b'\x8E\x89\xBE\xD6' = proper address for BLE advertisments
 
     def __enter__(self):
-        return self._device.__enter__()
+        self._device.__enter__()
+        return self
 
-    def __exit(self, *exc):
+    def __exit__(self, *exc):
         return self._device.__exit__(exc)
 
     @property
@@ -188,7 +186,7 @@ class FakeBLE:
         # to avoid padding when dynamic_payloads is disabled, set payload_length attribute
         self._device.payload_length = len(buf) + 16 + name_len
         # payload length excludes the header, itself, and crc lengths
-        payload += bytes([self._device.payload_length - 5])
+        payload += bytes(self._device.payload_length[0] - 5)
         payload += b"\x11\x22\x33\x44\x55\x66"  # a bogus MAC address
         # payload will have at least 2 containers:
         # 3 bytes of flags (required for BLE discoverable), & at least (1+2) byte of data
@@ -199,11 +197,15 @@ class FakeBLE:
             payload += self._ble_name
         payload += bytes([len(buf) + 1]) + b"\xFF" + buf  # append the data container
         # crc is generated from b'\x55\x55\x55' about everything except itself
-        payload += crc32(payload)
+        checksum = crc32(payload)
+        for i in range(4):
+            shifted = (8 * (2 - i))
+            payload += bytes([(checksum & (0xFF << shifted)) >> shifted])
         self._chan_hop()  # cycle to next BLE channel per specs
         # the whiten_coef value we need is the BLE channel (37,38, or 39) left shifted one
         whiten_coef = 37 + self._chan
         whiten_coef = swap_bits(whiten_coef) | 2
         rev_whiten_pl = reverse_bits(_ble_whitening(payload, whiten_coef))
         print("transmitting {} as {}".format(payload, rev_whiten_pl))
+        print("payload length (whitened) =", len(rev_whiten_pl))
         self._device.send(rev_whiten_pl)
