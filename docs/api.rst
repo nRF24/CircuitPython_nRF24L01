@@ -1018,5 +1018,5 @@ is_lna_enabled
 Fake BLE
 ==============
 
-    .. autoclass:: circuitpython_nrf24l01.fake_ble
+    .. automodule:: circuitpython_nrf24l01.fake_ble
         :members:

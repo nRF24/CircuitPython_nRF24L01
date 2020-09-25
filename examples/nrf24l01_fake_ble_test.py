@@ -17,8 +17,7 @@ csn = dio.DigitalInOut(board.D5)
 spi = board.SPI()  # init spi bus object
 
 # initialize the nRF24L01 on the spi bus object as a BLE radio using
-radio = RF24(spi, csn, ce)
-nrf = FakeBLE(radio, name=b'nRF24')
+nrf = FakeBLE(RF24(spi, csn, ce), name=b'nRF24')
 
 # the name parameter is going to be its braodcasted BLE name
 # this can be changed at any time using the attribute

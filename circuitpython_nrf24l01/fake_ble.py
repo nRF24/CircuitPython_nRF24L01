@@ -75,33 +75,35 @@ def _ble_whitening(data, whiten_coef):
 
 
 class FakeBLE:
-    """Per the limitations of this technique, only power amplifier level is available for
-    configuration when advertising BLE data.
+    """Per the limitations of this technique, only `RF24.pa_level` is
+    available for configuration when advertising BLE data.
 
-    :param ~circuitpython_nrf24l01 nrf: The object for the nRF24L01 transceiver to use
-        for fake BLE advertisements.
-    :param bytearray name: The BLE device name to be advertised with the payload.
+    :param ~circuitpython_nrf24l01.RF24 nrf: The object for the nRF24L01
+        transceiver to use for fake BLE advertisements.
+    :param bytearray name: The BLE device name to be advertised with the
+        payload.
     """
 
     def __init__(self, nrf, name=None):
         self._device = nrf
+        self._chan = 0
+        self._ble_name = None
+        self.name = name
+        with self:
+            self._device.open_tx_pipe(reverse_bits(b"\x8E\x89\xBE\xD6"))
+        # b'\x8E\x89\xBE\xD6' = proper address for BLE advertisments
+
+    def __enter__(self):
         self._device.address_length = 4
         self._device.dynamic_payloads = False
         self._device.auto_ack = False
         self._device.crc = 0
         self._device.arc = 0
-        self._chan = 0
-        self._ble_name = None
-        self.name = name
-        self._device.open_tx_pipe(reverse_bits(b"\x8E\x89\xBE\xD6"))
-        # b'\x8E\x89\xBE\xD6' = proper address for BLE advertisments
-
-    def __enter__(self):
-        self._device.__enter__()
         return self
 
     def __exit__(self, *exc):
-        return self._device.__exit__(exc)
+        self._device.power = 0
+        return False
 
     @property
     def name(self):
@@ -129,9 +131,8 @@ class FakeBLE:
             * payload_length has a maximum of (17 - length of name) bytes when
               broadcasting a name for itself.
         """
-        if (
-            n is not None and 1 <= len(n) <= 12
-        ):  # max defined by 1 byte payload data requisite
+        if (n is not None and 1 <= len(n) <= 12):
+            # max defined by 1 byte payload data requisite
             self._ble_name = bytes([len(n) + 1]) + b"\x08" + n
         else:
             self._ble_name = None  # name will not be advertised
