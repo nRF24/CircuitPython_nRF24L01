@@ -131,7 +131,7 @@ RF24 class
 Basic API
 ---------
 
-Contructor
+Constructor
 ******************
 
 .. autoclass:: circuitpython_nrf24l01.rf24.RF24
