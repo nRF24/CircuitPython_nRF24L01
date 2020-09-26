@@ -49,29 +49,121 @@ work on CircuitPython.
        other event, "on data fail", is ignored because it will never get thrown with "auto_ack"
        off. However the interrupt settings can be modified AFTER instantiation
 """
-from .data_manip import crc32, swap_bits, reverse_bits
 
-def _ble_whitening(data, whiten_coef):
-    """for "whiten"ing the BLE packet data according to expected parameters"""
-    # uint8_t  m;
-    # while(len--){
-    #     for(m = 1; m; m <<= 1){
-    #         if(whitenCoeff & 0x80){
-    #             whitenCoeff ^= 0x11;
-    #             (*data) ^= m;
-    #         }
-    #         whitenCoeff <<= 1;
-    #     }
-    #     data++;
-    result = b""
-    for byte in data:  # for every byte
-        for i in range(8):
-            if whiten_coef & 0x80:
-                whiten_coef ^= 0x11
-                byte ^= 1 << i
-            whiten_coef <<= 1
-        result += bytes([byte])
+
+def swap_bits(original):
+    """reverses the bit order into LSbit to MSBit in a single byte.
+
+    :returns:
+        An `int` containing the byte whose bits go from LSBit to MSBit
+        compared to the value passed to the ``original`` parameter.
+    :param int original: This should be a single unsigned byte, meaning the
+        parameters value can only range from 0 to 255.
+    """
+    original &= 0xFF
+    reverse = 0
+    for _ in range(8):
+        reverse <<= 1
+        reverse |= original & 1
+        original >>= 1
+    return reverse
+
+
+def reverse_bits(original):
+    """reverses the bit the byte order into LSB to MSB
+
+    :returns:
+        A `bytearray` whose bytes still go from MSByte to LSByte, but each
+        byte's bits go from LSBit to MSBit.
+    :param bytearray original: The original buffer whose bits are to be
+        reversed.
+    """
+    length = len(original) - 1
+    ret = bytearray(length + 1)
+    for i, byte in enumerate(original):
+        ret[i] = swap_bits(byte)
+    return ret
+
+
+def reverse_bytes(original):
+    """Reverses the byte order for all bytes passed to the ``original``
+    `bytearray`"""
+    result = bytearray(3)
+    for i, byte in enumerate(original):
+        result[len(original) - 1 - i] = byte
     return result
+
+
+def add_chunk(data_type, buf):
+    """containerize a chunk of data according to BLE specs.
+    This chunk makes up a part of the advertising payload."""
+    # container = 1 Byte info about container length
+    #             1 Byte info describing datatype
+    #             X bytes holding the data
+    return bytearray([len(buf) + 1, data_type & 0xFF]) + buf
+
+
+def make_payload(mac, name, payload):
+    """assemble the entire packet to be transmitted as a payload."""
+    # data is ordered like so:
+    # 1 byte PDU type (always 0x42)
+    # 1 byte payload size
+    # 6 byte random mac address
+    # 21 bytes of containerized data including descriptor and name
+    # 3 bytes for CRC24
+    pl_size = 11 + (len(name) + 2 if name is not None else 0) + len(payload)
+    buf = bytes([0x42, pl_size]) + mac  # header
+    buf += add_chunk(1, b"\x05")  # device descriptor
+    if name is not None:
+        buf += add_chunk(0x09, name)  # device name
+    return buf + payload
+
+
+def _ble_whitening(data, ble_channel):
+    """for "whiten"ing the BLE packet data according to expected parameters"""
+    data = bytearray(data)
+    coef = reverse_bits(bytes([ble_channel]))[0] & 2
+    for i, byte in enumerate(data):  # for every byte
+        mask = 1
+        for _ in range(8):
+            if coef & 0x80:
+                coef ^= 0x11
+                byte ^= mask
+            mask <<= 1
+            coef <<= 1
+        data[i] = byte
+    return data
+
+
+def crc24_ble(data, deg_poly=0x00065B, init_val=0x555555):
+    """Calculates a checksum of various sized buffers
+
+    :param bytearray data: This `bytearray` of data to be uncorrupted.
+    :param int deg_poly: A preset "degree polynomial" in which each bit represents a degree who's
+        coefficient is 1.
+    :param int init_val: This will be the initial value that the checksum will use while shifting in
+        the buffer data.
+    :returns: A 24-bit `bytearray` representing the checksum of the data.
+    """
+    crc = init_val
+    for byte in data:
+        crc ^= (byte << 16)
+        for _ in range(8):
+            if crc & 0x800000:
+                crc = (crc << 1) ^ deg_poly
+            else:
+                crc = (crc << 1)
+        crc &= 0xFFFFFF
+    crc = (crc).to_bytes(3, "big")
+    return crc
+
+BLE_FREQ = (2, 26, 80)
+""" BLE channel number is different from the nRF channel number.
+These are the predefined channels used.
+- nRF channel 2  == BLE channel 37
+- nRF channel 26 == BLE channel 38
+- nRF channel 80 == BLE channel 39
+"""
 
 
 class FakeBLE:
@@ -90,8 +182,10 @@ class FakeBLE:
         self._ble_name = None
         self.name = name
         with self:
-            self._device.open_tx_pipe(reverse_bits(b"\x8E\x89\xBE\xD6"))
+            self._device.open_rx_pipe(0, b"\x6B\x7D\x91\x71")
+            self._device.open_tx_pipe(b"\x6B\x7D\x91\x71")
         # b'\x8E\x89\xBE\xD6' = proper address for BLE advertisments
+        # with bits and bytes reversed address is b'\x6B\x7D\x91\x71'
 
     def __enter__(self):
         self._device.address_length = 4
@@ -99,6 +193,8 @@ class FakeBLE:
         self._device.auto_ack = False
         self._device.crc = 0
         self._device.arc = 0
+        self._device.power = 1
+        self._device.payload_length = 32
         return self
 
     def __exit__(self, *exc):
@@ -107,45 +203,29 @@ class FakeBLE:
 
     @property
     def name(self):
-        """Represents the emulated BLE device name during braodcasts. This must
-        be a buffer protocol object (`bytearray`) , and can be any length (less
-        than 14) of UTF-8 freindly characters. Set this to `None` to disable
-        advertising a BLE device name.
+        """The broadcasted BLE name of the nRF24L01. This is not required. In
+        fact setting this attribute will subtract from the available payload
+        length (in bytes). Set this attribute to `None` to disable advertising the device name
 
-        .. note:: the BLE device's name will occupy the same space as your TX
-            data. While space is limited to 32 bytes on the nRF24L01, actual
-            usable BLE TX data = 16 - (name length + 2). The other 16 bytes
-            available on the nRF24L01 TX FIFO buffer are reserved for the
-            [arbitrary] MAC address and other BLE related stuff.
+            * payload_length has a maximum of 21 bytes when NOT broadcasting a
+              name for itself.
+            * payload_length has a maximum of [19 - length of name] bytes when
+              broadcasting a name for itself.
         """
-        return self._ble_name[2:] if self._ble_name is not None else None
+        return self._ble_name
 
     @name.setter
     def name(self, n):
-        """The broadcasted BLE name of the nRF24L01. This is not required. In
-        fact setting this attribute will subtract from the available payload
-        length (in bytes).
+        self._ble_name = n
 
-            * payload_length has a maximum of 19 bytes when NOT broadcasting a
-              name for itself.
-            * payload_length has a maximum of (17 - length of name) bytes when
-              broadcasting a name for itself.
-        """
-        if (n is not None and 1 <= len(n) <= 12):
-            # max defined by 1 byte payload data requisite
-            self._ble_name = bytes([len(n) + 1]) + b"\x08" + n
-        else:
-            self._ble_name = None  # name will not be advertised
+    def hop_channel(self):
+        """trigger an automatic change of BLE compliant channels."""
+        self._chan += 1
+        if self._chan > 2:
+            self._chan = 0
+        self._device.channel = BLE_FREQ[self._chan]
 
-    def _chan_hop(self):
-        # NOTE BLE channel number is different from the nRF channel number.
-        #     - nRF channel 2  == BLE channel 37
-        #     - nRF channel 26 == BLE channel 38
-        #     - nRF channel 80 == BLE channel 39
-        self._chan = (self._chan + 1) if (self._chan + 1) < 3 else 0
-        self._device.channel = 26 if self._chan == 1 else (80 if self._chan == 2 else 2)
-
-    def advertise(self, buf):
+    def advertise(self, buf, data_type=0xFF):
         """This blocking function is used to transmit a payload.
 
         :returns: Nothing as every transmission will register as a success under these required
@@ -157,56 +237,23 @@ class FakeBLE:
             (`bytearray`); in which case, all items in the list/tuple are
             processed for consecutive transmissions.
 
-            - If the `dynamic_payloads` attribute is disabled and this
-              bytearray's length is less than the `payload_length` attribute,
-              then this bytearray is padded with zeros until its length is
-              equal to the `payload_length` attribute.
-            - If the `dynamic_payloads` attribute is disabled and this
-              bytearray's length is greater than `payload_length` attribute,
-              then this bytearray's length is truncated to equal the
-              `payload_length` attribute.
-
         .. note:: If the name of the emulated BLE device is also to be
             broadcast, then the 'name' attribute should be set prior to calling
             `advertise()`.
         """
-        # max payload_length = 32 - 14(header, MAC, & CRC) - 2(container header) - 3(BLE flags)
-        #                    = 13 - (BLE name length + 2 if any)
-        name_len = len(self._ble_name) if self._ble_name is not None else 0
-        if not buf or len(buf) > (13 - name_len):
+        if not buf or len(buf) > (21 - len(self.name)):
             raise ValueError(
-                "buf must have a length in range [1, {}]".format(13 - name_len)
+                "buf must have a length in range [1, {}]".format(21 - len(self.name))
             )
-        # BLE payload =
-        #   header(1) + payload length(1) + MAC address(6) + containers + CRC(3) bytes
-        # header == PDU type, given MAC address is random/arbitrary
-        #               type == 0x42 for Android or 0x40 for iPhone
-        # containers (in bytes) = length(1) + type(1) + data
-        # the 1 byte about container's length excludes only itself
-        payload = b"\x42"  # init a temp payload buffer with header type byte
-        # to avoid padding when dynamic_payloads is disabled, set payload_length attribute
-        self._device.payload_length = len(buf) + 16 + name_len
-        # payload length excludes the header, itself, and crc lengths
-        payload += bytes(self._device.payload_length[0] - 5)
-        payload += b"\x11\x22\x33\x44\x55\x66"  # a bogus MAC address
+        mac = b"\x11\x22\x33\x44\x55\x66"  # a bogus MAC address
         # payload will have at least 2 containers:
         # 3 bytes of flags (required for BLE discoverable), & at least (1+2) byte of data
-        payload += b"\x02\x01\x06"  # BLE flags for discoverability and non-pairable etc
-        # payload will also have to fit the optional BLE device name as
-        # a seperate container ([name length + 2] bytes)
-        if self._ble_name is not None:
-            payload += self._ble_name
-        payload += bytes([len(buf) + 1]) + b"\xFF" + buf  # append the data container
+        # b"\x02\x01\x06"  # BLE flags for discoverability and non-pairable etc
+        payload = make_payload(mac, self.name, add_chunk(data_type, buf))
         # crc is generated from b'\x55\x55\x55' about everything except itself
-        checksum = crc32(payload)
-        for i in range(4):
-            shifted = (8 * (2 - i))
-            payload += bytes([(checksum & (0xFF << shifted)) >> shifted])
-        self._chan_hop()  # cycle to next BLE channel per specs
+        payload += crc24_ble(payload)
+        self.hop_channel()  # cycle to next BLE channel per specs
         # the whiten_coef value we need is the BLE channel (37,38, or 39) left shifted one
-        whiten_coef = 37 + self._chan
-        whiten_coef = swap_bits(whiten_coef) | 2
-        rev_whiten_pl = reverse_bits(_ble_whitening(payload, whiten_coef))
-        print("transmitting {} as {}".format(payload, rev_whiten_pl))
-        print("payload length (whitened) =", len(rev_whiten_pl))
+        rev_whiten_pl = reverse_bits(_ble_whitening(payload, self._chan + 37))
+        print("transmitting \n{}\nas\n{}".format(payload, rev_whiten_pl))
         self._device.send(rev_whiten_pl)
