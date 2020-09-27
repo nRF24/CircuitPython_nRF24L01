@@ -1016,5 +1016,4 @@ is_lna_enabled
 fake_ble module
 ===============
 
-    .. automodule:: circuitpython_nrf24l01.fake_ble
-        :members:
+.. automodule:: circuitpython_nrf24l01.fake_ble
