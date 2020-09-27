@@ -49,6 +49,7 @@ work on CircuitPython.
        other event, "on data fail", is ignored because it will never get thrown with "auto_ack"
        off. However the interrupt settings can be modified AFTER instantiation
 """
+from os import urandom
 
 
 def swap_bits(original):
@@ -111,27 +112,28 @@ def make_payload(mac, name, payload):
     # 6 byte random mac address
     # 21 bytes of containerized data including descriptor and name
     # 3 bytes for CRC24
-    pl_size = 11 + (len(name) + 2 if name is not None else 0) + len(payload)
+    pl_size = 9 + (len(name) + 2 if name is not None else 0) + len(payload)
     buf = bytes([0x42, pl_size]) + mac  # header
     buf += add_chunk(1, b"\x05")  # device descriptor
     if name is not None:
         buf += add_chunk(0x09, name)  # device name
-    return buf + payload
+    return buf + payload + crc24_ble(buf + payload)
 
 
-def _ble_whitening(data, ble_channel):
+def ble_whitening(data, ble_channel):
     """for "whiten"ing the BLE packet data according to expected parameters"""
     data = bytearray(data)
-    coef = reverse_bits(bytes([ble_channel]))[0] & 2
+    coef = ble_channel | 0x40
     for i, byte in enumerate(data):  # for every byte
+        res = 0
         mask = 1
         for _ in range(8):
-            if coef & 0x80:
-                coef ^= 0x11
+            if coef & 1:
+                coef ^= 0x88
                 byte ^= mask
             mask <<= 1
-            coef <<= 1
-        data[i] = byte
+            coef >>= 1
+        data[i] = byte ^ res
     return data
 
 
@@ -180,9 +182,10 @@ class FakeBLE:
         self._chan = 0
         self._ble_name = None
         self.name = name
+        self.mac = None
         with self:
-            self._device.open_rx_pipe(0, b"\x6B\x7D\x91\x71")
-            self._device.open_tx_pipe(b"\x6B\x7D\x91\x71")
+            self._device.open_rx_pipe(0, b"\x71\x91\x7D\x6B")
+            self._device.open_tx_pipe(b"\x71\x91\x7D\x6B")
         # b'\x8E\x89\xBE\xD6' = proper address for BLE advertisments
         # with bits and bytes reversed address is b'\x6B\x7D\x91\x71'
 
@@ -199,6 +202,26 @@ class FakeBLE:
     def __exit__(self, *exc):
         self._device.power = 0
         return False
+
+    @property
+    def mac(self):
+        """This attribute returns a 6-byte buffer that is used as the
+        arbitrary mac address of the BLE device being emulated. You can set
+        this attribute using a 6-byte `int` or `bytearray`. If this is set to
+        `None`, then a random 6-byte address is generated.
+        """
+        return self._mac
+
+    @mac.setter
+    def mac(self, address):
+        if address is None:
+            self._mac = urandom(6)
+        if isinstance(address, int):  # assume its a 6-byte int
+            self._mac = (address).to_bytes(6, "little")
+        elif isinstance(address, (bytearray, bytes)):
+            self._mac = address
+        if len(self._mac) < 6:
+            self._mac += urandom(6 - len(self._mac))
 
     @property
     def name(self):
@@ -244,15 +267,9 @@ class FakeBLE:
             raise ValueError(
                 "buf must have a length less than {}".format(21 - len(self.name))
             )
-        mac = b"\x11\x22\x33\x44\x55\x66"  # a bogus MAC address
-        # payload will have at least 2 containers:
-        # 3 bytes of flags (required for BLE discoverable), & at least (1+2) byte of data
-        # b"\x02\x01\x06"  # BLE flags for discoverability and non-pairable etc
-        payload = make_payload(mac, self.name, add_chunk(data_type, buf))
-        # crc is generated from b'\x55\x55\x55' about everything except itself
-        payload += crc24_ble(payload)
-        self.hop_channel()  # cycle to next BLE channel per specs
-        # the whiten_coef value we need is the BLE channel (37,38, or 39) left shifted one
-        rev_whiten_pl = reverse_bits(_ble_whitening(payload, self._chan + 37))
+        payload = make_payload(self._mac, self.name, (add_chunk(data_type, buf) if buf else b''))
+        self.hop_channel()
+        # self._device.payload_length = [len(payload)] * 2
+        rev_whiten_pl = reverse_bits(ble_whitening(payload, self._chan + 37))
         print("transmitting \n{}\nas\n{}".format(payload, rev_whiten_pl))
         self._device.send(rev_whiten_pl)

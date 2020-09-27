@@ -699,7 +699,7 @@ class RF24:
             time.sleep(0.00016)
         if not bool((self._dyn_pl & 1) and (self._features & 4)):
             if len(buf) < self._pl_len[0]:
-                buf += b"\x00" * self._pl_len[0] - len(buf)
+                buf += b"\x00" * (self._pl_len[0] - len(buf))
             elif len(buf) > self._pl_len[0]:
                 buf = buf[: self._pl_len[0]]
         if ask_no_ack:
