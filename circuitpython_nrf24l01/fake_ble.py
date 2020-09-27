@@ -135,7 +135,7 @@ def _ble_whitening(data, ble_channel):
     return data
 
 
-def crc24_ble(data, deg_poly=0x00065B, init_val=0x555555):
+def crc24_ble(data, deg_poly=0x65B, init_val=0x555555):
     """Calculates a checksum of various sized buffers
 
     :param bytearray data: This `bytearray` of data to be uncorrupted.
@@ -147,15 +147,14 @@ def crc24_ble(data, deg_poly=0x00065B, init_val=0x555555):
     """
     crc = init_val
     for byte in data:
-        crc ^= (byte << 16)
+        crc ^= (swap_bits(byte) << 16)
         for _ in range(8):
             if crc & 0x800000:
                 crc = (crc << 1) ^ deg_poly
             else:
-                crc = (crc << 1)
+                crc <<= 1
         crc &= 0xFFFFFF
-    crc = (crc).to_bytes(3, "big")
-    return crc
+    return reverse_bits((crc).to_bytes(3, "big"))
 
 BLE_FREQ = (2, 26, 80)
 """ BLE channel number is different from the nRF channel number.
@@ -241,9 +240,9 @@ class FakeBLE:
             broadcast, then the 'name' attribute should be set prior to calling
             `advertise()`.
         """
-        if not buf or len(buf) > (21 - len(self.name)):
+        if len(buf) > (21 - len(self.name)):
             raise ValueError(
-                "buf must have a length in range [1, {}]".format(21 - len(self.name))
+                "buf must have a length less than {}".format(21 - len(self.name))
             )
         mac = b"\x11\x22\x33\x44\x55\x66"  # a bogus MAC address
         # payload will have at least 2 containers:
