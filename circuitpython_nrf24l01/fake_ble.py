@@ -263,8 +263,8 @@ class FakeBLE:
             self._chan = 0
         self._device.channel = BLE_FREQ[self._chan]
 
-    def _whiten(self, data):
-        """for whitening the BLE packet data so there's no long repeatition
+    def whiten(self, data):
+        """Whitening the BLE packet data so there's no long repeatition
         of bits."""
         data = bytearray(data)
         coef = (self._chan + 37) | 0x40
@@ -319,6 +319,6 @@ class FakeBLE:
             )
         payload = self._make_payload(chunk(data_type, buf) if buf else b'')
         self.hop_channel()
-        rev_whiten_pl = reverse_bits(self._whiten(payload))
+        rev_whiten_pl = reverse_bits(self.whiten(payload))
         # print("transmitting \n{}\nas\n{}".format(payload, rev_whiten_pl))
         self._device.send(rev_whiten_pl)
