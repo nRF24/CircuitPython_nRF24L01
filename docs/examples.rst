@@ -52,3 +52,12 @@ This test is meant to prove compatibility with the popular Arduino library for t
 .. literalinclude:: ../examples/nrf24l01_2arduino_handling_data.py
     :caption: examples/nrf24l01_2arduino_handling_data.py
     :linenos:
+
+Fake BLE Example
+----------------
+
+This is a test to show how to use the nRF24L01 as a BLE advertising beacon.
+
+.. literalinclude:: ../examples/nrf24l01_fake_ble_test.py
+    :caption: examples/nrf24l01_fake_ble_test.py
+    :linenos:

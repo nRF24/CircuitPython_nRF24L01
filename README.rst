@@ -1,4 +1,5 @@
 
+.. .. only:: html
 
 .. image:: https://readthedocs.org/projects/circuitpython-nrf24l01/badge/?version=stable
     :target: https://circuitpython-nrf24l01.readthedocs.io/en/stable/
@@ -53,6 +54,7 @@ Features currently supported
 * adjust the nRF24L01's power amplifier level (0, -6, -12, or -18 dBm)
 * adjust the nRF24L01's RF data rate (250Kbps is buggy due to hardware design, but 1Mbps and 2Mbps are reliable)
 * a nRF24L01 driven by this library can communicate with a nRF24L01 on an Arduino driven by the `TMRh20 RF24 library <http://tmrh20.github.io/RF24/>`_. See the nrf24l01_2arduino_handling_data.py code in the `examples folder of this library's repository <examples.html#working-with-tmrh20-s-arduino-library>`_
+* fake BLE module for sending BLE beacon advertisments from the nRF24L01 as outlined by `Dmitry Grinberg in his write-up (including C source code) <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_.
 
 Features currently unsupported
 ==============================
@@ -213,11 +215,6 @@ Future Project Ideas/Additions
       resistor and a capacitor)
     * network linking layer, maybe something like `TMRh20's RF24Network
       <http://tmrh20.github.io/RF24Network/>`_
-    * add a fake BLE module for sending BLE beacon advertisments from the nRF24L01 as outlined
-      by `Dmitry Grinberg in his write-up (including C source code)
-      <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_.
-      We've started developing this, but fell short of success in `the BLEfake branch of this
-      library's repository <https://github.com/2bndy5/CircuitPython_nRF24L01/tree/BLEfake>`_
     * implement the Gazelle-based protocol used by the BBC micro-bit (`makecode.com's radio
       blocks <https://makecode.microbit.org/reference/radio>`_).
 
