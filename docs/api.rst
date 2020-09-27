@@ -1017,3 +1017,4 @@ fake_ble module
 ===============
 
 .. automodule:: circuitpython_nrf24l01.fake_ble
+  :members:
