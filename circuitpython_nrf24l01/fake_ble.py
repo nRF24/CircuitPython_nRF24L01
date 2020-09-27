@@ -264,8 +264,20 @@ class FakeBLE:
         self._device.channel = BLE_FREQ[self._chan]
 
     def whiten(self, data):
-        """Whitening the BLE packet data so there's no long repeatition
-        of bits."""
+        """Whitening the BLE packet data ensures there's no long repeatition
+        of bits. This is done according to BLE specifications.
+
+        :param bytearray data: The packet to whiten.
+        :returns: A `bytearray` of the ``data`` with the whitening algorythm
+            applied.
+
+        .. warning:: This function uses the current channel being used as a
+            base case for the whitening coefficient. Do not call
+            `hop_channel()` before using this function to de-whiten received
+            payloads (which isn't officially supported yet). Note that
+            `advertise()` uses this function internally to prevent such
+            improper usage.
+        """
         data = bytearray(data)
         coef = (self._chan + 37) | 0x40
         for i, byte in enumerate(data):
