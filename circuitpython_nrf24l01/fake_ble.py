@@ -185,6 +185,7 @@ class FakeBLE:
         self._ble_name = None
         self.name = name
         self.mac = None
+        self._to_iphone = 0x40
         with self:
             self._device.flush_rx()
 
@@ -205,6 +206,18 @@ class FakeBLE:
     def __exit__(self, *exc):
         self._device.power = 0
         return False
+
+    @property
+    def to_iphone(self):
+        """A `bool` to specify if advertisements should be compatible with
+        the iPhone. A value of `False` should still be compatible with other
+        Apple devices. Testing with this attribute as `False` showed
+        compatibility with a Mac desktop."""
+        return self._to_iphone == 0x40
+
+    @to_iphone.setter
+    def to_iphone(self, enable):
+        self._to_iphone = 0x40 if enable else 0x42
 
     @property
     def mac(self):
@@ -278,7 +291,7 @@ class FakeBLE:
         pl_size = 9 + len(payload)
         if self.name is not None:
             pl_size += len(self.name) + 2
-        buf = bytes([0x42, pl_size]) + self.mac  # header
+        buf = bytes([self._to_iphone, pl_size]) + self.mac  # header
         buf += chunk(1, b"\x05")  # device descriptor
         if self.name is not None:
             buf += chunk(0x09, self.name)  # device name
