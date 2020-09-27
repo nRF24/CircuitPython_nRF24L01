@@ -40,7 +40,8 @@ here is simply ported to work on CircuitPython.
     2. the channels that BLE use are limited to the following three: 2.402
        GHz, 2.426 GHz, and 2.480 GHz
     3. :py:attr:`~circuitpython_nrf24l01.rf24.RF24.crc` is disabled in the
-       nRF24L01 firmware as BLE requires 3 bytes (`crc24_ble()`) and nRF24L01
+       nRF24L01 firmware as BLE requires 3 bytes
+       (:py:func:`~circuitpython_nrf24l01.fake_ble.crc24_ble()`) and nRF24L01
        only handles a maximum of 2. Thus, we have appended the required 3
        bytes of CRC24 into the payload.
     4. :py:attr:`~circuitpython_nrf24l01.rf24.RF24.address_length` of BLE
