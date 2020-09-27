@@ -1,25 +1,25 @@
 
-.. only:: html
+.. .. only:: html
 
-    .. image:: https://readthedocs.org/projects/circuitpython-nrf24l01/badge/?version=stable
-        :target: https://circuitpython-nrf24l01.readthedocs.io/en/stable/
-        :alt: Documentation Status
+.. image:: https://readthedocs.org/projects/circuitpython-nrf24l01/badge/?version=stable
+    :target: https://circuitpython-nrf24l01.readthedocs.io/en/stable/
+    :alt: Documentation Status
 
-    .. image:: https://github.com/2bndy5/CircuitPython_nRF24L01/workflows/Build%20CI/badge.svg
-        :target: https://github.com/2bndy5/CircuitPython_nRF24L01/actions?query=workflow%3A%22Build+CI%22
-        :alt: Build Status
+.. image:: https://github.com/2bndy5/CircuitPython_nRF24L01/workflows/Build%20CI/badge.svg
+    :target: https://github.com/2bndy5/CircuitPython_nRF24L01/actions?query=workflow%3A%22Build+CI%22
+    :alt: Build Status
 
-    .. image:: https://img.shields.io/github/commits-since/2bndy5/CircuitPython_nRF24L01/latest?&style=plastic
-        :alt: GitHub commits since latest release (by date)
-        :target: https://github.com/2bndy5/CircuitPython_nRF24L01/commits/master
+.. image:: https://img.shields.io/github/commits-since/2bndy5/CircuitPython_nRF24L01/latest?&style=plastic
+    :alt: GitHub commits since latest release (by date)
+    :target: https://github.com/2bndy5/CircuitPython_nRF24L01/commits/master
 
-    .. image:: https://img.shields.io/pypi/v/circuitpython-nrf24l01.svg
-        :alt: latest version on PyPI
-        :target: https://pypi.python.org/pypi/circuitpython-nrf24l01
+.. image:: https://img.shields.io/pypi/v/circuitpython-nrf24l01.svg
+    :alt: latest version on PyPI
+    :target: https://pypi.python.org/pypi/circuitpython-nrf24l01
 
-    .. image:: https://pepy.tech/badge/circuitpython-nrf24l01?label=pypi%20downloads&logo=python
-        :alt: Total PyPI downloads
-        :target: https://pepy.tech/project/circuitpython-nrf24l01
+.. image:: https://pepy.tech/badge/circuitpython-nrf24l01?label=pypi%20downloads&logo=python
+    :alt: Total PyPI downloads
+    :target: https://pepy.tech/project/circuitpython-nrf24l01
 
 Introduction
 ============
