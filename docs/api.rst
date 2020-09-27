@@ -1,7 +1,5 @@
 
 
-.. currentmodule:: circuitpython_nrf24l01.rf24
-
 .. |irq note| replace::  parameter as `True` to `clear_status_flags()` and reset this. As this
     is a virtual representation of the interrupt event, this attribute will always be updated
     despite what the actual IRQ pin is configured to do about this event.
@@ -1015,8 +1013,8 @@ is_lna_enabled
     feature is specific to certain nRF24L01-based circuits. Check with your module's
     manufacturer to see is it can toggle the Low Noise Amplifier feature.
 
-Fake BLE
-==============
+fake_ble module
+===============
 
     .. automodule:: circuitpython_nrf24l01.fake_ble
         :members:

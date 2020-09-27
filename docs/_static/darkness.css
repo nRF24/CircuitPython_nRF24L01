@@ -319,3 +319,9 @@ html.writer-html4 .rst-content dl:not(.docutils)>dt,
 html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple)>dt {
  background: #2e363c;
 }
+
+html.writer-html4 .rst-content dl:not(.docutils) dl:not(.field-list)>dt,
+html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple) dl:not(.field-list)>dt {
+ background:#2e363c;
+ color:#2980b1;
+}
