@@ -68,7 +68,7 @@ here is simply ported to work on CircuitPython.
        disabled.
 """
 from os import urandom
-
+import struct
 
 def swap_bits(original):
     """reverses the bit order for a single byte.
@@ -104,17 +104,16 @@ def reverse_bits(original):
     return ret
 
 
-# This is not actually used but it could be useful...
-# def reverse_bytes(original):
-#     """Reverses the byte order for all bytes passed to the ``original``
-#     `bytearray`."""
-#     result = bytearray(3)
-#     for i, byte in enumerate(original):
-#         result[len(original) - 1 - i] = byte
-#     return result
+def reverse_bytes(original):
+    """Reverses the byte order for all bytes passed to the ``original``
+    `bytearray` parameter."""
+    result = bytearray(3)
+    for i, byte in enumerate(original):
+        result[len(original) - 1 - i] = byte
+    return result
 
 
-def chunk(data_type, buf):
+def chunk(buf, data_type=0x16):
     """containerize a chunk of data according to BLE specifications.
     This chunk makes up a part of the advertising payload.
 
@@ -168,6 +167,57 @@ These are the predefined channels used.
 * nRF channel 80 == BLE channel 39
 """
 
+SERVICE_TYPES = {
+    "Current Time": 0x1805,
+    "Glucose": 0x1808,
+    "Health Thermometer": 0x1809,
+    "Heart Rate": 0x180D,
+    "Battery": 0x180F,
+    "Blood Pressure": 0x1810,
+    "Location and Navigation": 0x1819,
+    "Weight Scale": 0x181D,
+    "Binary Sensor": 0x183B,
+}
+"""These are some of the common service types provided by the Bluetooth
+SIG as part of the 16-bit UUID assigned numbers. There are many other options,
+but due to the limitations of the nRF24L01 being used as a BLE beacon, these
+would be the most useful."""
+
+
+class ServiceData:
+    """A helper class to package specific service data using Bluetooth SIG
+    defined 16-bit UUID flags to describe the data type.
+
+    :param int type_t: The 16-bit "assigned number" defined by the
+        Bluetooth SIG to describe the service data.
+    :param bytearray data: The service data. The format of the data here
+        depends on the type of service being broadcast.
+    """
+
+    def __init__(self, type_t, data=b"0"):
+        self._type = (type_t).to_bytes(2, "little")
+        self._data = b""
+        self.data = data
+
+    @property
+    def data(self):
+        """The service's data. This is a `bytearray` and can have any format
+        which is usually constructed by python's :py:func:`struct.pack()`"""
+        return self._data
+
+    @data.setter
+    def data(self, value):
+        self._data = value
+
+    @property
+    def buffer(self):
+        """Get the representation of the instantiated object as an
+        immutable bytes object (read-only)."""
+        return bytes(self._type + self.data)
+
+    def __len__(self):
+        return len(self._type) + len(self.data)
+
 
 class FakeBLE:
     """Per the limitations of this technique, only `RF24.pa_level` is
@@ -179,13 +229,13 @@ class FakeBLE:
         payload.
     """
 
-    def __init__(self, nrf, name=None):
+    def __init__(self, nrf):
         self._device = nrf
         self._chan = 0
-        self._ble_name = None
-        self.name = name
-        self.mac = None
         self._to_iphone = 0x40
+        self._show_dbm = False
+        self._ble_name = None
+        self._mac = urandom(6)
         with self:
             self._device.flush_rx()
 
@@ -204,6 +254,7 @@ class FakeBLE:
         return self
 
     def __exit__(self, *exc):
+        self._show_dbm = False
         self._device.power = 0
         return False
 
@@ -256,6 +307,22 @@ class FakeBLE:
     def name(self, n):
         self._ble_name = n
 
+    @property
+    def show_pa_level(self):
+        """If this attribute is `True`, the payload will automatically include
+        the nRF24L01's pa_level in the advertisement. The default value of
+        `False` will exclude this optional information.
+
+        .. note:: This information takes up an extra 3 bytes, and is really
+            only useful for some applications to calculate proximity of the
+            nRF24L01 transceiver.
+        """
+        return bool(self._show_dbm)
+
+    @show_pa_level.setter
+    def show_pa_level(self, enable):
+        self._show_dbm = bool(enable)
+
     def hop_channel(self):
         """trigger an automatic change of BLE compliant channels."""
         self._chan += 1
@@ -300,14 +367,20 @@ class FakeBLE:
         # 6 byte random mac address
         # 21 bytes of containerized data including descriptor and name
         # 3 bytes for CRC24
-        pl_size = 9 + len(payload)
-        if self.name is not None:
-            pl_size += len(self.name) + 2
+        name_length = (len(self.name) + 2) if self.name is not None else 0
+        if len(payload) > (21 - name_length - self._show_dbm * 3):
+            raise ValueError(
+                "buf must have a length less than {}".format(21 - name_length)
+            )
+        pl_size = 9 + len(payload) + name_length + self._show_dbm * 3
+        pa_level = b""
+        if self._show_dbm:
+            pa_level = chunk(struct.pack(">b", self._device.pa_level), 0x0A)
         buf = bytes([self._to_iphone, pl_size]) + self.mac  # header
-        buf += chunk(1, b"\x05")  # device descriptor
-        if self.name is not None:
-            buf += chunk(0x09, self.name)  # device name
-        return buf + payload + crc24_ble(buf + payload)
+        buf += chunk(b"\x05", 1)  # device descriptor
+        if name_length:
+            buf += chunk(self.name, 0x09)  # device name
+        return buf + pa_level + payload + crc24_ble(buf + pa_level + payload)
 
     def advertise(self, buf=b"", data_type=0xFF):
         """This function is used to broadcast a payload.
@@ -325,11 +398,15 @@ class FakeBLE:
             broadcast, then the 'name' attribute should be set prior to calling
             `advertise()`.
         """
-        if len(buf) > (21 - len(self.name)):
-            raise ValueError(
-                "buf must have a length less than {}".format(21 - len(self.name))
-            )
-        payload = self._make_payload(chunk(data_type, buf) if buf else b'')
+        if not isinstance(buf, (bytearray, bytes, list, tuple)):
+            raise ValueError("buffer is an invalid format")
+        payload = b""
+        if isinstance(buf, (list, tuple)):
+            for b in buf:
+                payload += b
+        else:
+            payload = chunk(buf, data_type) if buf else b""
+        payload = self._make_payload(payload)
         self.hop_channel()
         rev_whiten_pl = reverse_bits(self.whiten(payload))
         # print("transmitting \n{}\nas\n{}".format(payload, rev_whiten_pl))
