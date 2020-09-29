@@ -31,7 +31,7 @@ nrf.name = b"foobar"
 
 # if broadcasting to an Android, set the to_iphone attribute to False
 # if broadcasting to an iPhone, set the to_iphone attribute to True
-nrf.to_iphone = False
+# nrf.to_iphone = False
 
 # you can optionally set the arbitrary MAC address to be used as the
 # BLE device's MAC address. Otherwise this is randomly generated.
