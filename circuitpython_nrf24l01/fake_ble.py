@@ -342,7 +342,7 @@ class ServiceData:
     @property
     def data(self):
         """The service's data. This is a `bytearray`, and its format is
-        defined by Bluetooth Service Specifications (and GATT supplemental 
+        defined by Bluetooth Service Specifications (and GATT supplemental
         specifications)."""
         return self._data
 
@@ -365,7 +365,7 @@ class TemperatureServiceData(ServiceData):
     temperature data values as a `float` value."""
 
     def __init__(self):
-        super(TemperatureServiceData, self).__init__(0x1809)
+        super().__init__(0x1809)
 
     @ServiceData.data.setter
     def data(self, value):
@@ -380,7 +380,7 @@ class BatteryServiceData(ServiceData):
     battery charge percentage as a byte value."""
 
     def __init__(self):
-        super(BatteryServiceData, self).__init__(0x180F)
+        super().__init__(0x180F)
 
     @ServiceData.data.setter
     def data(self, value):
