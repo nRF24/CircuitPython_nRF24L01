@@ -9,10 +9,6 @@
     :target: https://github.com/2bndy5/CircuitPython_nRF24L01/actions?query=workflow%3A%22Build+CI%22
     :alt: Build Status
 
-.. image:: https://img.shields.io/github/commits-since/2bndy5/CircuitPython_nRF24L01/latest?&style=plastic
-    :alt: GitHub commits since latest release (by date)
-    :target: https://github.com/2bndy5/CircuitPython_nRF24L01/commits/master
-
 .. image:: https://img.shields.io/pypi/v/circuitpython-nrf24l01.svg
     :alt: latest version on PyPI
     :target: https://pypi.python.org/pypi/circuitpython-nrf24l01

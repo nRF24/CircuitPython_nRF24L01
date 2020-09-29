@@ -2,11 +2,16 @@
 This example of using the nRF24L01 as a 'fake' Buetooth Beacon
 """
 import time
-import struct
 import board
 import digitalio as dio
 from circuitpython_nrf24l01.rf24 import RF24
-from circuitpython_nrf24l01.fake_ble import FakeBLE, chunk, SERVICE_TYPES, ServiceData
+from circuitpython_nrf24l01.fake_ble import (
+    FakeBLE,
+    chunk,
+    ServiceData,
+    BatteryServiceData,
+    TemperatureServiceData,
+)
 
 # change these (digital output) pins accordingly
 ce = dio.DigitalInOut(board.D4)
@@ -24,11 +29,17 @@ nrf = FakeBLE(radio)
 # this can be changed at any time using the attribute
 nrf.name = b"foobar"
 
+# if broadcasting to an Android, set the to_iphone attribute to False
+# if broadcasting to an iPhone, set the to_iphone attribute to True
 nrf.to_iphone = False
 
 # you can optionally set the arbitrary MAC address to be used as the
-# BLE device's MAC address
-nrf.mac = b'\x19\x12\x14\x26\x09\xE0'
+# BLE device's MAC address. Otherwise this is randomly generated.
+nrf.mac = b"\x19\x12\x14\x26\x09\xE0"
+
+# use the eddystone protocol from google to broadcast a URL
+url_service = ServiceData(0xFEAA)
+url_service.data = bytes([0x10, 0, 0x01]) + b"google.com"
 
 def _prompt(count, iterator):
     if (count - iterator) % 5 == 0 or (count - iterator) < 5:
@@ -37,55 +48,58 @@ def _prompt(count, iterator):
         else:
             print(count - iterator, "advertisment left to go!")
 
-def send_name(count=50):
-    """Sends out the device name twice a second."""
+
+def master(count=50):
+    """Sends out the device information twice a second."""
     # using the "with" statement is highly recommended if the nRF24L01 is
     # to be used for more than a BLE configuration
+    battery_service = BatteryServiceData()
+    # battery data is 1 unsigned byte representing a percentage
+    battery_service.data = 85
     with nrf as ble:
         nrf.name = b"nRF24L01"
         nrf.show_pa_level = True
         for i in range(count):  # advertise data this many times
-            _prompt(count, i)
-            # broadcast only the device name and MAC address
-            ble.advertise()
-            # channel hoping is automatically managed by send() per BLE specs
+            _prompt(count, i)  # something to show that it isn't frozen
+            # broadcast only the device name, MAC address, &
+            # battery charge info; 0x16 means service data
+            ble.advertise(battery_service.buffer, data_type=0x16)
+            # channel hoping is recommended per BLE specs
+            ble.hop_channel()
             time.sleep(0.5)  # wait till next broadcast
-    # nrf.show_pa_level returns to false when exiting a with statement block
+    # nrf.show_pa_level & nrf.name both are set to false when
+    # exiting a with statement block
 
 
 def send_temp(count=50):
     """Sends out a fake temperature twice a second."""
-    temperature_service = ServiceData(SERVICE_TYPES["Health Thermometer"])
-    temperature_service.data = struct.pack(">f", 42.0)
-    nrf.name = b"nRf24L01"
-    for i in range(count):
-        _prompt(count, i)
-        payload = temperature_service.buffer
-        # broadcast a device temperature; 0x16 means service data
-        nrf.advertise(payload, data_type=0x16)
-        time.sleep(0.2)
-
-def send_battery_time(count=50):
-    """Sends out a device's battery capacity twice a second."""
-    nrf.name = None
-    time_service = ServiceData(SERVICE_TYPES["Current Time"])
-    #  the time data is seconds since Jan 1, 1970
-    time_service.data = struct.pack(">i", time.time())
-    battery_service = ServiceData(SERVICE_TYPES["Battery"])
-    # battery data is 1 unsigned byte representing a percentage
-    battery_service.data = struct.pack(">B", 80)
-    payload = [
-        chunk(time_service.buffer),
-        chunk(battery_service.buffer)
-    ]
-    for i in range(count):
-        _prompt(count, i)
-        nrf.advertise(payload)
-        time.sleep(0.2)
+    temperature_service = TemperatureServiceData()
+    temperature_service.data = 42.0
+    with nrf as ble:
+        ble.name = b"nRF24L01"
+        for i in range(count):
+            _prompt(count, i)
+            # broadcast a device temperature; 0x16 means service data
+            ble.advertise(temperature_service.buffer, data_type=0x16)
+            # channel hoping is recommended per BLE specs
+            ble.hop_channel()
+            time.sleep(0.2)
 
 
-print("""\
+def send_chunk(pl_chunk, count=50):
+    """Sends out a chunk of data twice a second."""
+    with nrf as ble:
+        for i in range(count):
+            _prompt(count, i)
+            ble.advertise(pl_chunk, 0x16)
+            ble.hop_channel()
+            time.sleep(0.2)
+
+
+print(
+    """\
     nRF24L01 fake BLE beacon test.\n\
-    Run send_name_pa_level() to broadcast the device name and pa_level\n\
-    Run send_temperature() to broadcast a temperature\n\
-    Run send_battery_time() to broadcast battery and time info""")
+    Run master() to broadcast the device name, pa_level, & battery charge\n\
+    Run send_temperature() to broadcast the device name & a temperature\n\
+    Run send_chunk() to broadcast custom chunk of info"""
+)

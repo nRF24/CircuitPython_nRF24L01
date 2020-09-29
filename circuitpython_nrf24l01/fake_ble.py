@@ -19,8 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-"""
-This module uses the `RF24` class to make the nRF24L01 imitate a
+"""This module uses the `RF24` class to make the nRF24L01 imitate a
 Bluetooth-Low-Emissions (BLE) beacon. A BLE beacon can send (referred to as
 advertise) data to any BLE compatible device (ie smart devices with Bluetooth
 4.0 or later) that is listening.
@@ -30,45 +29,10 @@ source code) can be found here
 <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_
 As this technique can prove invaluable in certain project designs, the code
 here is simply ported to work on CircuitPython.
-
-.. important:: Because the nRF24L01 wasn't designed for BLE advertising, it
-    has some limitations that helps to be aware of.
-
-    1. the maximum payload length is shortened to 21 bytes (when not
-       broadcasting a device
-       :py:attr:`~circuitpython_nrf24l01.fake_ble.FakeBLE.name`).
-    2. the channels that BLE use are limited to the following three: 2.402
-       GHz, 2.426 GHz, and 2.480 GHz
-    3. :py:attr:`~circuitpython_nrf24l01.rf24.RF24.crc` is disabled in the
-       nRF24L01 firmware as BLE requires 3 bytes
-       (:py:func:`~circuitpython_nrf24l01.fake_ble.crc24_ble()`) and nRF24L01
-       only handles a maximum of 2. Thus, we have appended the required 3
-       bytes of CRC24 into the payload.
-    4. :py:attr:`~circuitpython_nrf24l01.rf24.RF24.address_length` of BLE
-       packet only uses 4 bytes, so we have set that accordingly.
-    5. The :py:attr:`~circuitpython_nrf24l01.rf24.RF24.auto_ack` (automatic
-       acknowledgment) feature of the nRF24L01 is useless when tranmitting to
-       BLE devices, thus it is disabled as well as automatic re-transmit
-       (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.arc`) and custom ACK
-       payloads (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.ack`) which both
-       depend on the automatic acknowledgments feature.
-    6. The :py:attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads`
-       feature of the nRF24L01 isn't compatible with BLE specifications. Thus,
-       we have disabled it.
-    7. BLE specifications only allow using 1 Mbps RF
-       :py:attr:`~circuitpython_nrf24l01.rf24.RF24.data_rate`, so that too has
-       been hard coded.
-    8. Only the "on data sent"
-       (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_ds`) & "on data ready"
-       (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr`) events will have
-       an effect on the interrupt (IRQ) pin. The "on data fail"
-       (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_df`), is never
-       triggered because
-       :py:attr:`~circuitpython_nrf24l01.rf24.RF24.auto_ack` feature is
-       disabled.
 """
 from os import urandom
 import struct
+
 
 def swap_bits(original):
     """reverses the bit order for a single byte.
@@ -104,22 +68,13 @@ def reverse_bits(original):
     return ret
 
 
-def reverse_bytes(original):
-    """Reverses the byte order for all bytes passed to the ``original``
-    `bytearray` parameter."""
-    result = bytearray(3)
-    for i, byte in enumerate(original):
-        result[len(original) - 1 - i] = byte
-    return result
-
-
 def chunk(buf, data_type=0x16):
     """containerize a chunk of data according to BLE specifications.
     This chunk makes up a part of the advertising payload.
 
+    :param bytearray,bytes buf: The actual data contained in the chunk.
     :param int data_type: the type of data contained in the chunk. This is a
         predefined number according to BLE specifications.
-    :param bytearray,bytes buf: The actual data contained in the chunk.
 
     .. important:: This function is called internally, but can also be used
         to containerize multiple types of data in a single payload.
@@ -149,7 +104,7 @@ def crc24_ble(data, deg_poly=0x65B, init_val=0x555555):
     """
     crc = init_val
     for byte in data:
-        crc ^= (swap_bits(byte) << 16)
+        crc ^= swap_bits(byte) << 16
         for _ in range(8):
             if crc & 0x800000:
                 crc = (crc << 1) ^ deg_poly
@@ -157,6 +112,7 @@ def crc24_ble(data, deg_poly=0x65B, init_val=0x555555):
                 crc <<= 1
         crc &= 0xFFFFFF
     return reverse_bits((crc).to_bytes(3, "big"))
+
 
 BLE_FREQ = (2, 26, 80)
 """ BLE channel number is different from the nRF channel number.
@@ -167,66 +123,13 @@ These are the predefined channels used.
 * nRF channel 80 == BLE channel 39
 """
 
-SERVICE_TYPES = {
-    "Current Time": 0x1805,
-    "Glucose": 0x1808,
-    "Health Thermometer": 0x1809,
-    "Heart Rate": 0x180D,
-    "Battery": 0x180F,
-    "Blood Pressure": 0x1810,
-    "Location and Navigation": 0x1819,
-    "Weight Scale": 0x181D,
-    "Binary Sensor": 0x183B,
-}
-"""These are some of the common service types provided by the Bluetooth
-SIG as part of the 16-bit UUID assigned numbers. There are many other options,
-but due to the limitations of the nRF24L01 being used as a BLE beacon, these
-would be the most useful."""
-
-
-class ServiceData:
-    """A helper class to package specific service data using Bluetooth SIG
-    defined 16-bit UUID flags to describe the data type.
-
-    :param int type_t: The 16-bit "assigned number" defined by the
-        Bluetooth SIG to describe the service data.
-    :param bytearray data: The service data. The format of the data here
-        depends on the type of service being broadcast.
-    """
-
-    def __init__(self, type_t, data=b"0"):
-        self._type = (type_t).to_bytes(2, "little")
-        self._data = b""
-        self.data = data
-
-    @property
-    def data(self):
-        """The service's data. This is a `bytearray` and can have any format
-        which is usually constructed by python's :py:func:`struct.pack()`"""
-        return self._data
-
-    @data.setter
-    def data(self, value):
-        self._data = value
-
-    @property
-    def buffer(self):
-        """Get the representation of the instantiated object as an
-        immutable bytes object (read-only)."""
-        return bytes(self._type + self.data)
-
-    def __len__(self):
-        return len(self._type) + len(self.data)
-
 
 class FakeBLE:
     """Per the limitations of this technique, only `RF24.pa_level` is
     available for configuration when advertising BLE data.
 
-    :param ~circuitpython_nrf24l01.RF24 nrf: The object for the nRF24L01
+    :param ~circuitpython_nrf24l01.rf24.RF24 nrf: The object for the nRF24L01
         transceiver to use for fake BLE advertisements.
-    :param bytearray name: The BLE device name to be advertised with the
-        payload.
     """
 
     def __init__(self, nrf):
@@ -255,6 +158,7 @@ class FakeBLE:
 
     def __exit__(self, *exc):
         self._show_dbm = False
+        self._ble_name = None
         self._device.power = 0
         return False
 
@@ -305,6 +209,11 @@ class FakeBLE:
 
     @name.setter
     def name(self, n):
+        if n is not None:
+            if not isinstance(n, (bytes, bytearray)):
+                raise ValueError("name must be a bytearray or bytes object.")
+            if len(n) > (21 - self._show_dbm * 3):
+                raise ValueError("name length exceeds maximum.")
         self._ble_name = n
 
     @property
@@ -314,17 +223,19 @@ class FakeBLE:
         `False` will exclude this optional information.
 
         .. note:: This information takes up an extra 3 bytes, and is really
-            only useful for some applications to calculate proximity of the
+            only useful for some applications to calculate proximity to the
             nRF24L01 transceiver.
         """
         return bool(self._show_dbm)
 
     @show_pa_level.setter
     def show_pa_level(self, enable):
+        if enable and len(self.name) > 18:
+            raise ValueError("there is not enough room to show the pa_level.")
         self._show_dbm = bool(enable)
 
     def hop_channel(self):
-        """trigger an automatic change of BLE compliant channels."""
+        """Trigger an automatic change of BLE compliant channels."""
         self._chan += 1
         if self._chan > 2:
             self._chan = 0
@@ -370,17 +281,22 @@ class FakeBLE:
         name_length = (len(self.name) + 2) if self.name is not None else 0
         if len(payload) > (21 - name_length - self._show_dbm * 3):
             raise ValueError(
-                "buf must have a length less than {}".format(21 - name_length)
+                "Payload exceeds maximum size. Configuration allows "
+                "{} bytes".format(21 - name_length - self._show_dbm * 3)
             )
         pl_size = 9 + len(payload) + name_length + self._show_dbm * 3
+        buf = bytes([self._to_iphone, pl_size]) + self.mac  # header
+        buf += chunk(b"\x05", 1)  # device descriptor
         pa_level = b""
         if self._show_dbm:
             pa_level = chunk(struct.pack(">b", self._device.pa_level), 0x0A)
-        buf = bytes([self._to_iphone, pl_size]) + self.mac  # header
-        buf += chunk(b"\x05", 1)  # device descriptor
+        buf += pa_level
         if name_length:
             buf += chunk(self.name, 0x09)  # device name
-        return buf + pa_level + payload + crc24_ble(buf + pa_level + payload)
+        buf += payload
+        buf += crc24_ble(buf)
+        # print("Payload size =", len(buf))
+        return buf
 
     def advertise(self, buf=b"", data_type=0xFF):
         """This function is used to broadcast a payload.
@@ -407,7 +323,65 @@ class FakeBLE:
         else:
             payload = chunk(buf, data_type) if buf else b""
         payload = self._make_payload(payload)
-        self.hop_channel()
-        rev_whiten_pl = reverse_bits(self.whiten(payload))
-        # print("transmitting \n{}\nas\n{}".format(payload, rev_whiten_pl))
-        self._device.send(rev_whiten_pl)
+        self._device.send(reverse_bits(self.whiten(payload)))
+
+
+class ServiceData:
+    """An abstract helper class to package specific service data using
+    Bluetooth SIG defined 16-bit UUID flags to describe the data type.
+
+    :param int type_t: The 16-bit "assigned number" defined by the
+        Bluetooth SIG to describe the service data. This parameter is
+        required.
+    """
+
+    def __init__(self, type_t):
+        self._type = struct.pack("<H", type_t)
+        self._data = b""
+
+    @property
+    def data(self):
+        """The service's data. This is a `bytearray`, and its format is
+        defined by Bluetooth Service Specifications (and GATT supplemental 
+        specifications)."""
+        return self._data
+
+    @data.setter
+    def data(self, value):
+        self._data = value
+
+    @property
+    def buffer(self):
+        """Get the representation of the instantiated object as an
+        immutable `bytes` object (read-only)."""
+        return bytes(self._type + self.data)
+
+    def __len__(self):
+        return len(self._type) + len(self.data)
+
+
+class TemperatureServiceData(ServiceData):
+    """This derivitve of the `ServiceData` class can be used to represent
+    temperature data values as a `float` value."""
+
+    def __init__(self):
+        super(TemperatureServiceData, self).__init__(0x1809)
+
+    @ServiceData.data.setter
+    def data(self, value):
+        # the first byte is the base 10 exponent = -2
+        # the last 3 bytes are the mantissa
+        value = struct.pack("<i", int(value * 100) & 0xFFFFFF)
+        self._data = value[:3] + bytes([0xFE])
+
+
+class BatteryServiceData(ServiceData):
+    """This derivitve of the `ServiceData` class can be used to represent
+    battery charge percentage as a byte value."""
+
+    def __init__(self):
+        super(BatteryServiceData, self).__init__(0x180F)
+
+    @ServiceData.data.setter
+    def data(self, value):
+        self._data = struct.pack(">B", value)
