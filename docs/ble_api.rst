@@ -1,5 +1,3 @@
-fake_ble module
-===============
 
 Limitations
 -----------
