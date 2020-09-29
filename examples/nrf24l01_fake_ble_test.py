@@ -7,7 +7,6 @@ import digitalio as dio
 from circuitpython_nrf24l01.rf24 import RF24
 from circuitpython_nrf24l01.fake_ble import (
     FakeBLE,
-    chunk,
     ServiceData,
     BatteryServiceData,
     TemperatureServiceData,
@@ -37,9 +36,6 @@ nrf.name = b"foobar"
 # BLE device's MAC address. Otherwise this is randomly generated.
 nrf.mac = b"\x19\x12\x14\x26\x09\xE0"
 
-# use the eddystone protocol from google to broadcast a URL
-url_service = ServiceData(0xFEAA)
-url_service.data = bytes([0x10, 0, 0x01]) + b"google.com"
 
 def _prompt(count, iterator):
     if (count - iterator) % 5 == 0 or (count - iterator) < 5:
@@ -86,12 +82,17 @@ def send_temp(count=50):
             time.sleep(0.2)
 
 
-def send_chunk(pl_chunk, count=50):
+# use the eddystone protocol from google to broadcast a URL
+url_service = ServiceData(0xFEAA)
+url_service.data = bytes([0x10, 0, 0x01]) + b"google.com"
+
+
+def send_url(count=50):
     """Sends out a chunk of data twice a second."""
     with nrf as ble:
         for i in range(count):
             _prompt(count, i)
-            ble.advertise(pl_chunk, 0x16)
+            ble.advertise(url_service.buffer, 0x16)
             ble.hop_channel()
             time.sleep(0.2)
 
@@ -101,5 +102,5 @@ print(
     nRF24L01 fake BLE beacon test.\n\
     Run master() to broadcast the device name, pa_level, & battery charge\n\
     Run send_temperature() to broadcast the device name & a temperature\n\
-    Run send_chunk() to broadcast custom chunk of info"""
+    Run send_url() to broadcast custom URL link"""
 )
