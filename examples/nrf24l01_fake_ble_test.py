@@ -1,6 +1,6 @@
 """
 This example of using the nRF24L01 as a 'fake' Buetooth Beacon
-    
+
     .. warning:: ATSAMD21 M0-based boards have memory allocation
         error when loading fake_ble.py
 """
