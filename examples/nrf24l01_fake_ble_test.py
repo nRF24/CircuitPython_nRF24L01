@@ -1,5 +1,8 @@
 """
 This example of using the nRF24L01 as a 'fake' Buetooth Beacon
+    
+    .. warning:: ATSAMD21 M0-based boards have memory allocation
+        error when loading fake_ble.py
 """
 import time
 import board
@@ -21,11 +24,12 @@ csn = dio.DigitalInOut(board.D5)
 # available SPI pins, board.SCK, board.MOSI, board.MISO
 spi = board.SPI()  # init spi bus object
 
-# initialize the nRF24L01 on the spi bus object as a BLE radio using
+# initialize the nRF24L01 on the spi bus object
 radio = RF24(spi, csn, ce)
+# overlay BLE compliance on the radio object
 nrf = FakeBLE(radio)
 
-# the name parameter is going to be its braodcasted BLE name
+# the name parameter is going to be its broadcasted BLE name
 # this can be changed at any time using the `name` attribute
 # nrf.name = b"foobar"
 
@@ -36,7 +40,7 @@ nrf = FakeBLE(radio)
 # you can optionally set the arbitrary MAC address to be used as the
 # BLE device's MAC address. Otherwise this is randomly generated upon
 # instantiation of the FakeBLE object.
-nrf.mac = b"\x19\x12\x14\x26\x09\xE0"
+# nrf.mac = b"\x19\x12\x14\x26\x09\xE0"
 
 
 def _prompt(count, iterator):
@@ -47,24 +51,28 @@ def _prompt(count, iterator):
             print(count - iterator, "advertisment left to go!")
 
 
-def master(count=30):
+# create an object for manipulating the battery level data
+battery_service = BatteryServiceData()
+# battery level data is 1 unsigned byte representing a percentage
+battery_service.data = 85
+
+
+def master(count=25):
     """Sends out the device information twice a second."""
     # using the "with" statement is highly recommended if the nRF24L01 is
     # to be used for more than a BLE configuration
-    battery_service = BatteryServiceData()
-    # battery data is 1 unsigned byte representing a percentage
-    battery_service.data = 85
     with nrf as ble:
         nrf.name = b"nRF24L01"
+        # include the radio's pa_level attribute in the payload
         nrf.show_pa_level = True
         print(
             "available bytes in next payload:",
             ble.available(chunk(battery_service.buffer))
-        )
+        )  # using chunk() gives an accurate estimate of available bytes
         for i in range(count):  # advertise data this many times
             if ble.available(chunk(battery_service.buffer)) >= 0:
                 _prompt(count, i)  # something to show that it isn't frozen
-                # broadcast only the device name, MAC address, &
+                # broadcast the device name, MAC address, &
                 # battery charge info; 0x16 means service data
                 ble.advertise(battery_service.buffer, data_type=0x16)
                 # channel hoping is recommended per BLE specs
@@ -74,10 +82,14 @@ def master(count=30):
     # exiting a with statement block
 
 
-def send_temp(count=30):
+# create an object for manipulating temperature measurements
+temperature_service = TemperatureServiceData()
+# temperature's float data has up to 2 decimal places of percision
+temperature_service.data = 42.0
+
+
+def send_temp(count=25):
     """Sends out a fake temperature twice a second."""
-    temperature_service = TemperatureServiceData()
-    temperature_service.data = 42.0
     with nrf as ble:
         ble.name = b"nRF24L01"
         print(
@@ -87,32 +99,36 @@ def send_temp(count=30):
         for i in range(count):
             if ble.available(chunk(temperature_service.buffer)) >= 0:
                 _prompt(count, i)
-                # broadcast a device temperature; 0x16 means service data
+                # broadcast a temperature measurement; 0x16 means service data
                 ble.advertise(temperature_service.buffer, data_type=0x16)
                 # channel hoping is recommended per BLE specs
                 ble.hop_channel()
                 time.sleep(0.2)
 
 
-# use the eddystone protocol from google to broadcast a URL
+# use the Eddystone protocol from Google to broadcast a URL as
+# service data. We'll need an object to manipulate that also
 url_service = UrlServiceData()
+# the data attribute converts a URL string into a simplified
+# bytes object using byte codes defined by the Eddystone protocol.
 url_service.data = "http://www.google.com"
 
 
-def send_url(count=30):
+def send_url(count=25):
     """Sends out a chunk of data twice a second."""
     with nrf as ble:
         print(
             "available bytes in next payload:",
             ble.available(chunk(url_service.buffer))
         )
+        # NOTE we did NOT set a device name in this with block
         for i in range(count):
+            # URLs easily exceed the nRF24L01's max payload length
             if ble.available(chunk(url_service.buffer)) >= 0:
                 _prompt(count, i)
                 ble.advertise(url_service.buffer, 0x16)
                 ble.hop_channel()
                 time.sleep(0.2)
-
 
 print(
     """\
