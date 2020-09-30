@@ -295,8 +295,8 @@ class UrlServiceData(ServiceData):
 
     @property
     def pa_level_at_1_meter(self):
-        """The TX power level (in dBm) at 1 meter from the nRF24L01.
-        This defaults to -25 (due to testing) and must be a signed `int`."""
+        """The TX power level (in dBm) at 1 meter from the nRF24L01. This
+        defaults to -25 (due to testing) and must be a 1-byte signed `int`."""
         return struct.unpack(">b", self._type[-1:])[0]
 
     @pa_level_at_1_meter.setter
