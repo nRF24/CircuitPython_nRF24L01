@@ -5,7 +5,9 @@ import time
 import struct
 import board
 import digitalio as dio
-from circuitpython_nrf24l01 import RF24
+# if running this on a ATSAMD21 M0 based board
+# from circuitpython_nrf24l01.rf24_lite import RF24
+from circuitpython_nrf24l01.rf24 import RF24
 
 # addresses needs to be in a buffer protocol object (bytearray)
 address = b'1Node'
@@ -38,10 +40,8 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         print("Sending: {} as struct: {}".format(count, buffer))
         now = time.monotonic() * 1000  # start timer
         result = nrf.send(buffer)
-        if result is None:
-            print('send() timed out')
-        elif not result:
-            print('send() failed')
+        if not result:
+            print('send() failed or timed out')
         else:
             print('send() successful')
         # print timer results despite transmission success
@@ -50,7 +50,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         time.sleep(1)
         count -= 1
 
-def slave(count=3):
+def slave(count=5):
     """Polls the radio and prints the received value. This method expires
     after 6 seconds of no received transmission"""
     # set address of TX node into an RX pipe. NOTE you MUST specify
@@ -65,7 +65,7 @@ def slave(count=3):
         if nrf.any():
             # print details about the received packet (if any)
             print("Found {} bytes on pipe {}\
-                ".format(repr(nrf.any()), nrf.pipe()))
+                ".format(repr(nrf.any()), nrf.pipe))
             # retreive the received packet's payload
             rx = nrf.recv()  # clears flags & empties RX FIFO
             # expecting an int, thus the string format '<i'

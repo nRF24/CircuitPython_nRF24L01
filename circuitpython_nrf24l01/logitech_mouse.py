@@ -23,104 +23,116 @@
 based on original work done by `Ronan Gaillard (ronan.gaillard@live.fr)
 <https://github.com/ronangaillard/logitech-mouse>`_ for the Arduino platform.
 """
-from struct import pack #, unpack
+from struct import pack  # , unpack
+
 # from .rf24 import RF24
 
 # Logitech unifying specific data
-PAIRING_ADDRESS = b'\xBB\x0A\xDC\xA5\x75' # sufix = 'LL' from logitech-mouse.h
+PAIRING_ADDRESS = b"\xBB\x0A\xDC\xA5\x75"  # sufix = 'LL' from logitech-mouse.h
 # Pre-defined pairing packets
 PAIRING_PACKETS = [
-    b'\x15\x5F\x01\x84\x5E\x3A\xA2\x57\x08\x10\x25\x04\x00\x01\x47\x00\x00\x00\x00\x00\x01\xEC',
-    b'\x15\x40\x01\x84\x26',
-    b'\x00\x5F\x02\x00\x00\x00\x00\x58\x8A\x51\xEA\x01\x07\x00\x00\x01\x00\x00\x00\x00\x00\x79',
-    b'\x00\x40\x02\x01\xbd',
-    b'\x00\x5F\x03\x01\x00\x04M510\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xB6',
-    b'\x00\x5F\x03\x01\x0f',
-    b'\x00\x0F\x06\x01\x00\x00\x00\x00\x00\xEA' + b'\x00' * 12]
+    b"\x15\x5F\x01\x84\x5E\x3A\xA2\x57\x08\x10\x25\x04\x00\x01\x47\x00\x00\x00\x00\x00\x01\xEC",
+    b"\x15\x40\x01\x84\x26",
+    b"\x00\x5F\x02\x00\x00\x00\x00\x58\x8A\x51\xEA\x01\x07\x00\x00\x01\x00\x00\x00\x00\x00\x79",
+    b"\x00\x40\x02\x01\xbd",
+    b"\x00\x5F\x03\x01\x00\x04M510\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xB6",
+    b"\x00\x5F\x03\x01\x0f",
+    b"\x00\x0F\x06\x01\x00\x00\x00\x00\x00\xEA" + b"\x00" * 12,
+]
 # End of pre-defined pairing packets
+
 
 class LogitechMouse:
     """A class to emulate the behavior of a Logitech-branded wireless mouse using the
     nRF24L01 transceiver and a Logitech Unifying USB Receiver.
 
-    :param ~circuitpython_nrf24l01.rf24.RF24 nrf24: the instantiated object of the nRF24L01
+    :param ~circuitpython_nrf24l01.rf24.RF24 nrf: the instantiated object of the nRF24L01
         radio to be used.
     """
-    def __init__(self, nrf24):
-        self.radio = nrf24
-        self.radio.listen = False # ensure TX mode
-        self.power = False # power down nRF24L01 for configuration
 
+    def __init__(self, nrf):
+        self._radio = nrf
         # get address to a specific Unifying dongle after pairing success
-        self.bonded_address = self.radio.address(-1)
-        """The unique address to a particular Logitech Unifying receiver is fetched from
-        the nRF24L01's ``TX_ADDR`` register. This assumes pairing success prior to
-        instantiation and the nRF24L01 hasn't been used for other applications since.
+        self.bonded_address = self._radio.address()
+        """The unique address to a particular Logitech Unifying receiver is
+        fetched from the nRF24L01's ``TX_ADDR`` register. This assumes pairing
+        success prior to instantiation, and the nRF24L01 hasn't been used for
+        other applications since, and the nRF24L01 has not been powered down
+        (TX address resets in Power-on-Reset).
 
         .. note:: Write access to circuitpython's FS (file system) is restricted
             `unless you modify boot.py <https://learn.adafruit.com/
-            cpu-temperature-logging-with-circuit-python/writing-to-the-filesystem>`_ to
-            re-mount the FS with write permission. See also important note in `pair()`.
+            cpu-temperature-logging-with-circuit-python/
+            writing-to-the-filesystem>`_ to re-mount the FS with write
+            permission. See also important note in `pair()`.
         """
 
-        # configure the radio
-        self.radio.address_length = 5
-        self.radio.data_rate = 2
-        self.radio.channel = 5
-        self.radio.ack = True # enables dynamic_payloads and auto_ack
-        self.radio.ard = 1000 # delay 1000 microseconds between auto-retry attempts
-        self.radio.arc = 1 # auto-retry transmit 1 extra attempt
-        # setting payload_length originally was needed for the nature of C++ arrays
-        # the nRF24L01 never actually needs this set due to the use of ACK payloads
-        self.radio.payload_length = 22 # doesn't cost an SPI transaction
+        with self:
+            self._radio.flush_rx()
+            self._radio.clear_status_flags()
 
     def __enter__(self):
-        with self.radio:
-            pass # radio is configured with RF24.__enter__()
+        self._radio.address_length = 5
+        self._radio.data_rate = 2
+        self._radio.channel = 5
+        self._radio.ack = True  # enables dynamic_payloads and auto_ack
+        self._radio.ard = 1000  # delay 1000 microseconds between auto-retry attempts
+        self._radio.arc = 1  # auto-retry transmit 1 extra attempt
+        # setting payload_length originally was needed for the nature of C++ arrays
+        # the nRF24L01 never actually needs this set due to the use of ACK payloads
+        self._radio.payload_length = 22
+        self._radio.listen = False
+        self._radio.power = True
 
     def __exit__(self, *exc):
+        self._radio.power = False
         return False
 
     def _set_addr(self, addr):
-        self.radio.listen = False
-        self.radio.open_tx_pipe(addr)
-        self.radio.open_rx_pipe(1, addr)
-        self.radio.open_rx_pipe(2, b'\x00' + addr[1:])
+        self._radio.listen = False
+        self._radio.open_tx_pipe(addr)
+        self._radio.open_rx_pipe(1, addr)
+        self._radio.open_rx_pipe(2, b"\x00")
 
     def _pairing_step(self, index_long, index_short=None, attempts=255, ack_payload=None):
         keep_going = True
         while keep_going:
             result = False
             while attempts and not result:
-                result = self.radio.send(PAIRING_PACKETS[index_long])
-                if isinstance(result, bool): # transmit failed
+                result = self._radio.send(PAIRING_PACKETS[index_long])
+                if isinstance(result, bool):  # transmit failed
                     attempts -= 1
                     print("transmit pairing packet", index_long, "failed")
-                elif result is None: # transmit success , but no ACK recv'd
-                    print("transmit pairing packet", index_long,
-                          "succeeded, but with no ACK payload")
+                elif result is None:  # transmit success , but no ACK recv'd
+                    print(
+                        "transmit pairing packet",
+                        index_long,
+                        "succeeded, but with no ACK payload",
+                    )
                     result = True
-                    break # send next packet
+                    break  # send next packet
                 # else we have ACK payload, but not the one we need
-                else: # for debugging
-                    print('pairing packet', index_long, 'returned', result)
+                else:  # for debugging
+                    print("pairing packet", index_long, "returned", result)
             if index_short is not None and attempts:
                 # if pairing sequence is not on last step and attempts > 0
-                result = False # discards any ACK payload from previous packet
+                result = False  # discards any ACK payload from previous packet
                 while attempts and not result:
-                    result = self.radio.send(PAIRING_PACKETS[index_short])
-                    if isinstance(result, bool) or result is None: # transmit failed
+                    result = self._radio.send(PAIRING_PACKETS[index_short])
+                    if isinstance(result, bool) or result is None:  # transmit failed
                         print("transmit pairing packet", index_short, "failed")
                         attempts -= 1
                     elif ack_payload is not None and result is not None:
                         # if we need the ACK payload
-                        print('pairing packet', index_short, 'returned', result)
-                        ack_payload[0] = result # return ACK payload by reference
-                    else: # we don't need the ACK payload
+                        print("pairing packet", index_short, "returned", result)
+                        ack_payload[0] = result  # return ACK payload by reference
+                    else:  # we don't need the ACK payload
                         # we're done with this step in the sequence
-                        print('pairing packet', index_short, 'returned (unused)', result)
+                        print(
+                            "pairing packet", index_short, "returned (unused)", result
+                        )
                         result = True
-                        keep_going = False # exit function
+                        keep_going = False  # exit function
             else:
                 # we're already done (triggered on last step of pairing sequence)
                 keep_going = False
@@ -147,8 +159,12 @@ class LogitechMouse:
         """
         # length is arbitrary because recv() returns full ack payload when
         # dynamic_paylaods == True (needed for ACK payloads)
-        ack_buf = [b'\x00'] # buffer to save ACK payload (as a list obj for passing by reference)
-        attempts = self._pairing_step(0, index_short=1, ack_payload=ack_buf, attempts=retries)
+        ack_buf = [
+            b"\x00"
+        ]  # buffer to save ACK payload (as a list obj for passing by reference)
+        attempts = self._pairing_step(
+            0, index_short=1, ack_payload=ack_buf, attempts=retries
+        )
         if not attempts:
             return False
 
@@ -166,7 +182,7 @@ class LogitechMouse:
 
         # save bonded addresses from ack_buf
         # NOTE address is recv()'d reversed w/ 2 byte offset
-        self.bonded_address = b''
+        self.bonded_address = b""
         for byte in ack_buf[0][2:7]:
             self.bonded_address = bytes([byte]) + self.bonded_address
 
@@ -186,19 +202,16 @@ class LogitechMouse:
         return True
 
     # pylint: disable=too-many-arguments
-    def move(self,
-             x_move=0, y_move=0,
-             scroll_v=0, scroll_h=0,
-             left_click=False, right_click=False):
+    def input(self, x_move=0, y_move=0, scroll_v=0, scroll_h=0, left=False, right=False):
         """Sends the mouse data to the Logitech Unifying receiver
 
         :param int x_move: a 12 bit signed int describing the velocity of the mouse on the X-axis.
         :param int y_move: a 12 bit signed int describing the velocity of the mouse on the Y-axis.
         :param int scroll_h: a 8 bit signed int describing the velocity of scrolling on the X-axis.
         :param int scroll_v: a 8 bit signed int describing the velocity of scrolling on the Y-axis.
-        :param bool left_click: a boolean representing the state of the left mouse button.
+        :param bool left: a boolean representing the state of the left mouse button.
             `True` means the button is pressed; `False` means the button is not pressed.
-        :param bool right_click: a boolean representing the state of the right mouse button.
+        :param bool right: a boolean representing the state of the right mouse button.
             `True` means the button is pressed; `False` means the button is not pressed.
 
         .. note:: Extra buttons such as 'browser forward' and 'browser backward' are not supperted
@@ -207,18 +220,20 @@ class LogitechMouse:
         .. important:: All of the parameters are keyword arguments with defaults that resemble
             their idle state.
         """
-        mouse_payload = b'\x00\xC2' + pack('B', (right_click << 1) | left_click)
-        cursor_velocity = pack('3B',
-                               (y_move & 0xff0) >> 4,
-                               (y_move & 0xf) << 4 | (x_move & 0xf00) >> 8,
-                               (x_move & 0xff))
-        mouse_payload += cursor_velocity + b'\x00' + pack('2b', scroll_v, scroll_h)
+        mouse_payload = b"\x00\xC2" + pack("B", (right << 1) | left)
+        cursor_velocity = pack(
+            "3B",
+            (y_move & 0xFF0) >> 4,
+            (y_move & 0xF) << 4 | (x_move & 0xF00) >> 8,
+            (x_move & 0xFF),
+        )
+        mouse_payload += cursor_velocity + b"\x00" + pack("2b", scroll_v, scroll_h)
         checksum = 0
         for byte in mouse_payload:
             checksum += byte
-        mouse_payload += bytes([(-1 * checksum) & 0xff])
-        while not self.radio.send(mouse_payload):
+        mouse_payload += bytes([(-1 * checksum) & 0xFF])
+        while not self._radio.send(mouse_payload):
             # tries to send until succeeds
             # may cause infinite loop if dongle is out-of-range/obstructed/unplugged
             pass
-        self.radio.flush_rx() # dispose of ACK payload
+        self._radio.flush_rx()  # dispose of ACK payload

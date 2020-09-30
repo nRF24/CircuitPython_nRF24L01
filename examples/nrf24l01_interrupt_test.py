@@ -5,7 +5,9 @@ interrupt pin on the nRF24L01
 import time
 import board
 import digitalio as dio
-from circuitpython_nrf24l01 import RF24
+# if running this on a ATSAMD21 M0 based board
+# from circuitpython_nrf24l01.rf24_lite import RF24
+from circuitpython_nrf24l01.rf24 import RF24
 
 # address needs to be in a buffer protocol object (bytearray is preferred)
 address = b'1Node'
@@ -96,7 +98,8 @@ def slave(timeout=10):  # will listen for 10 seconds before timing out
     nrf.flush_rx()
     nrf.listen = 0
     nrf.open_tx_pipe(address)
-    nrf.send(b'pong')  # send a payload to complete the on data ready test
+    # send a payload to complete the on data ready test
+    nrf.send(b'pong', force_retry=1)
     # we're done on this side
 
 print("""\
