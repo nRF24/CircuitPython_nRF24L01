@@ -111,10 +111,10 @@ recv()
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.recv
 
     This function can also be used to fetch the last ACK packet's payload if `ack` is enabled.
-    
+
     :param int length: An optional parameter to specify how many bytes to read from the RX
         FIFO buffer. This parameter is not contrained in any way.
-        
+
             - If this parameter is less than the length of the first available payload in the
               RX FIFO buffer, then the payload will remain in the RX FIFO buffer until the
               entire payload is fetched by this function.
@@ -152,9 +152,9 @@ send()
         - `False` if transmission fails. Transmission failure can only be detected if `arc`
           is greater than ``0``.
         - `True` if transmission succeeds.
-        - `bytearray` or `None` when the `ack` attribute is `True`. Because the payload
+        - `bytearray` or `True` when the `ack` attribute is `True`. Because the payload
           expects a responding custom ACK payload, the response is returned (upon successful
-          transmission) as a `bytearray` (or `None` if ACK payload is empty)
+          transmission) as a `bytearray` (or `True` if ACK payload is empty)
 
     :param bytearray,list,tuple buf: The payload to transmit. This bytearray must have a
         length in range [1, 32], otherwise a `ValueError` exception is thrown. This can
