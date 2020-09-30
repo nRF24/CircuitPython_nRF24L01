@@ -6,8 +6,9 @@ import board
 import digitalio as dio
 from circuitpython_nrf24l01.rf24 import RF24
 from circuitpython_nrf24l01.fake_ble import (
+    chunk,
     FakeBLE,
-    ServiceData,
+    UrlServiceData,
     BatteryServiceData,
     TemperatureServiceData,
 )
@@ -25,15 +26,16 @@ radio = RF24(spi, csn, ce)
 nrf = FakeBLE(radio)
 
 # the name parameter is going to be its braodcasted BLE name
-# this can be changed at any time using the attribute
-nrf.name = b"foobar"
+# this can be changed at any time using the `name` attribute
+# nrf.name = b"foobar"
 
 # if broadcasting to an Android, set the to_iphone attribute to False
 # if broadcasting to an iPhone, set the to_iphone attribute to True
 # nrf.to_iphone = False
 
 # you can optionally set the arbitrary MAC address to be used as the
-# BLE device's MAC address. Otherwise this is randomly generated.
+# BLE device's MAC address. Otherwise this is randomly generated upon
+# instantiation of the FakeBLE object.
 nrf.mac = b"\x19\x12\x14\x26\x09\xE0"
 
 
@@ -45,7 +47,7 @@ def _prompt(count, iterator):
             print(count - iterator, "advertisment left to go!")
 
 
-def master(count=50):
+def master(count=30):
     """Sends out the device information twice a second."""
     # using the "with" statement is highly recommended if the nRF24L01 is
     # to be used for more than a BLE configuration
@@ -55,46 +57,61 @@ def master(count=50):
     with nrf as ble:
         nrf.name = b"nRF24L01"
         nrf.show_pa_level = True
+        print(
+            "available bytes in next payload:",
+            ble.available(chunk(battery_service.buffer))
+        )
         for i in range(count):  # advertise data this many times
-            _prompt(count, i)  # something to show that it isn't frozen
-            # broadcast only the device name, MAC address, &
-            # battery charge info; 0x16 means service data
-            ble.advertise(battery_service.buffer, data_type=0x16)
-            # channel hoping is recommended per BLE specs
-            ble.hop_channel()
-            time.sleep(0.5)  # wait till next broadcast
+            if ble.available(chunk(battery_service.buffer)) >= 0:
+                _prompt(count, i)  # something to show that it isn't frozen
+                # broadcast only the device name, MAC address, &
+                # battery charge info; 0x16 means service data
+                ble.advertise(battery_service.buffer, data_type=0x16)
+                # channel hoping is recommended per BLE specs
+                ble.hop_channel()
+                time.sleep(0.5)  # wait till next broadcast
     # nrf.show_pa_level & nrf.name both are set to false when
     # exiting a with statement block
 
 
-def send_temp(count=50):
+def send_temp(count=30):
     """Sends out a fake temperature twice a second."""
     temperature_service = TemperatureServiceData()
     temperature_service.data = 42.0
     with nrf as ble:
         ble.name = b"nRF24L01"
+        print(
+            "available bytes in next payload:",
+            ble.available(chunk(temperature_service.buffer))
+        )
         for i in range(count):
-            _prompt(count, i)
-            # broadcast a device temperature; 0x16 means service data
-            ble.advertise(temperature_service.buffer, data_type=0x16)
-            # channel hoping is recommended per BLE specs
-            ble.hop_channel()
-            time.sleep(0.2)
+            if ble.available(chunk(temperature_service.buffer)) >= 0:
+                _prompt(count, i)
+                # broadcast a device temperature; 0x16 means service data
+                ble.advertise(temperature_service.buffer, data_type=0x16)
+                # channel hoping is recommended per BLE specs
+                ble.hop_channel()
+                time.sleep(0.2)
 
 
 # use the eddystone protocol from google to broadcast a URL
-url_service = ServiceData(0xFEAA)
-url_service.data = bytes([0x10, 0, 0x01]) + b"google.com"
+url_service = UrlServiceData()
+url_service.data = "http://www.google.com"
 
 
-def send_url(count=50):
+def send_url(count=30):
     """Sends out a chunk of data twice a second."""
     with nrf as ble:
+        print(
+            "available bytes in next payload:",
+            ble.available(chunk(url_service.buffer))
+        )
         for i in range(count):
-            _prompt(count, i)
-            ble.advertise(url_service.buffer, 0x16)
-            ble.hop_channel()
-            time.sleep(0.2)
+            if ble.available(chunk(url_service.buffer)) >= 0:
+                _prompt(count, i)
+                ble.advertise(url_service.buffer, 0x16)
+                ble.hop_channel()
+                time.sleep(0.2)
 
 
 print(
@@ -102,5 +119,5 @@ print(
     nRF24L01 fake BLE beacon test.\n\
     Run master() to broadcast the device name, pa_level, & battery charge\n\
     Run send_temperature() to broadcast the device name & a temperature\n\
-    Run send_url() to broadcast custom URL link"""
+    Run send_url() to broadcast a custom URL link"""
 )
