@@ -57,7 +57,7 @@ battery_service = BatteryServiceData()
 battery_service.data = 85
 
 
-def master(count=25):
+def master(count=50):
     """Sends out the device information twice a second."""
     # using the "with" statement is highly recommended if the nRF24L01 is
     # to be used for more than a BLE configuration
@@ -88,7 +88,7 @@ temperature_service = TemperatureServiceData()
 temperature_service.data = 42.0
 
 
-def send_temp(count=25):
+def send_temp(count=50):
     """Sends out a fake temperature twice a second."""
     with nrf as ble:
         ble.name = b"nRF24L01"
@@ -114,7 +114,7 @@ url_service = UrlServiceData()
 url_service.data = "http://www.google.com"
 
 
-def send_url(count=25):
+def send_url(count=50):
     """Sends out a chunk of data twice a second."""
     with nrf as ble:
         print(
