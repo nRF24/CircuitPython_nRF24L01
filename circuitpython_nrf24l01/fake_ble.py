@@ -85,18 +85,17 @@ class FakeBLE:
         self._device.dynamic_payloads = False
         self._device.data_rate = 1
         self._device.ce_pin.value = 0
+        self._device.arc = 0
         try:
             self._device.address_length = 4
             self._device.auto_ack = (0, 0)
             self._device.crc = 0
-            self._device.arc = 0
             self._device.payload_length = [32, 32]
             self._device.power = 1
         except AttributeError:  # for rf24_lite.py
-            self._device._reg_write(0, 6)
-            self._device._reg_write(1, 0)
             self._device._reg_write(3, 2)
-            self._device._reg_write(4, 0)
+            self._device._reg_write(1, 0)
+            self._device._reg_write(0, 6)
             self._device._reg_write(0x1D, 1)
             self._device.payload_length = 32
         self._device.open_rx_pipe(0, b"\x71\x91\x7D\x6B")

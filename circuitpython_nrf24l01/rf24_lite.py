@@ -7,8 +7,8 @@ from adafruit_bus_device.spi_device import SPIDevice
 
 
 class RF24:
-    def __init__(self, spi, csn, ce):
-        self._spi = SPIDevice(spi, chip_select=csn, baudrate=10000000)
+    def __init__(self, spi, csn, ce, spi_frequency=10000000):
+        self._spi = SPIDevice(spi, chip_select=csn, baudrate=spi_frequency)
         self.ce_pin = ce
         self.ce_pin.switch_to_output(value=False)
         self._status = 0
@@ -32,7 +32,7 @@ class RF24:
 
     # pylint: disable=no-member
     def _reg_read(self, reg):
-        out_buf = bytearray([reg, 0])
+        out_buf = bytes([reg, 0])
         in_buf = bytearray([0, 0])
         with self._spi as spi:
             time.sleep(0.005)
@@ -42,7 +42,7 @@ class RF24:
 
     def _reg_read_bytes(self, reg, buf_len=5):
         in_buf = bytearray(buf_len + 1)
-        out_buf = bytearray([reg]) + b"\x00" * buf_len
+        out_buf = bytes([reg]) + b"\x00" * buf_len
         with self._spi as spi:
             time.sleep(0.005)
             spi.write_readinto(out_buf, in_buf)
@@ -251,10 +251,12 @@ class RF24:
         self._reg_write(0x1D, features)
 
     def load_ack(self, buf, pipe_num):
-        if 0 <= pipe_num <= 5 and (not buf or len(buf) > 32):
+        if 0 <= pipe_num <= 5 and (not buf or (len(buf) < 32)):
+            print("args pass")
             if not self._reg_read(0x1D) & 2:
                 self.ack = True
             if not self.tx_full:
+                print("loading ack")
                 self._reg_write_bytes(0xA8 | pipe_num, buf)
                 return True
         return False
