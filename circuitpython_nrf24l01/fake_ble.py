@@ -231,7 +231,8 @@ class ServiceData:
 
     @property
     def uuid(self):
-        """This returns the Service UUID as a `bytearray`. (read-only)"""
+        """This returns the 16-bit Service UUID as a `bytearray` in little
+        endian. (read-only)"""
         return self._type
 
     @property
