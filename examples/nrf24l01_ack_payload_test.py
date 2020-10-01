@@ -33,6 +33,10 @@ nrf = RF24(spi, csn, ce)
 # to enable the custom ACK payload feature
 nrf.ack = True  # False disables again
 
+# set the Power Amplifier level to -12 dBm since these test examples are
+# usually run with nRF24L01 transceivers in close proximity
+nrf.pa_level = -12
+
 # addresses needs to be in a buffer protocol object (bytearray)
 address = b'1Node'
 

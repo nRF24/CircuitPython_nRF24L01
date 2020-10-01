@@ -23,6 +23,10 @@ spi = board.SPI()  # init spi bus object
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(spi, csn, ce)
 
+# set the Power Amplifier level to -12 dBm since these test examples are
+# usually run with nRF24L01 transceivers in close proximity
+nrf.pa_level = -12
+
 # lets create a list of payloads to be streamed to the nRF24L01 running slave()
 buffers = []
 SIZE = 31

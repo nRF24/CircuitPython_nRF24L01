@@ -24,6 +24,10 @@ spi = board.SPI()  # init spi bus object
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(spi, csn, ce)
 
+# set the Power Amplifier level to -12 dBm since these test examples are
+# usually run with nRF24L01 transceivers in close proximity
+nrf.pa_level = -12
+
 def master(count=5):  # count = 5 will only transmit 5 packets
     """Transmits an incrementing integer every second"""
     # set address of RX node into a TX pipe

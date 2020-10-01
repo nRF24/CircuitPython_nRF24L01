@@ -25,7 +25,11 @@ spi = board.SPI()  # init spi bus object
 
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(spi, csn, ce)
-nrf.dynamic_payloads = False # this is the default in the TMRh20 arduino library
+nrf.dynamic_payloads = False # the default in the TMRh20 arduino library
+
+# set the Power Amplifier level to -12 dBm since these test examples are
+# usually run with nRF24L01 transceivers in close proximity
+nrf.pa_level = -12
 
 # set address of TX node into a RX pipe
 nrf.open_rx_pipe(1, address[0])

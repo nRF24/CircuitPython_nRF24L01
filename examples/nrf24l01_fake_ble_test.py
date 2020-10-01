@@ -42,6 +42,10 @@ nrf = FakeBLE(radio)
 # instantiation of the FakeBLE object.
 # nrf.mac = b"\x19\x12\x14\x26\x09\xE0"
 
+# set the Power Amplifier level to -12 dBm since these test examples are
+# usually run with nRF24L01 transceivers in close proximity
+radio.pa_level = -12
+
 
 def _prompt(count, iterator):
     if (count - iterator) % 5 == 0 or (count - iterator) < 5:

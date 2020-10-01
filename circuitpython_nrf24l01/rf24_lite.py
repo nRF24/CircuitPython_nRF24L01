@@ -252,11 +252,9 @@ class RF24:
 
     def load_ack(self, buf, pipe_num):
         if 0 <= pipe_num <= 5 and (not buf or (len(buf) < 32)):
-            print("args pass")
             if not self._reg_read(0x1D) & 2:
                 self.ack = True
             if not self.tx_full:
-                print("loading ack")
                 self._reg_write_bytes(0xA8 | pipe_num, buf)
                 return True
         return False

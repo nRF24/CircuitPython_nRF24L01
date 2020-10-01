@@ -28,6 +28,11 @@ spi = board.SPI()  # init spi bus object
 nrf = RF24(spi, csn, ce)
 nrf.arc = 15  # turn up automatic retries to the max. default is 3
 
+# set the Power Amplifier level to -12 dBm since these test examples are
+# usually run with nRF24L01 transceivers in close proximity
+nrf.pa_level = -12
+
+
 def master(timeout=5):  # will only wait 5 seconds for slave to respond
     """Transmits once, receives once, and intentionally fails a transmit"""
     # set address of RX node into a TX pipe
