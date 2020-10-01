@@ -22,10 +22,10 @@ here is simply ported to work on CircuitPython.
        the nRF24L01 power amplifier level (using
        :py:attr:`~circuitpython_nrf24l01.fake_ble.FakeBLE.show_pa_level`).
        This is can be calculated as:
-         
+
        **32** (nRF24L01 maximum) - **6** (MAC address) - **5** (required
        flags) - **3** (CRC checksum) = **18**
-       
+
        Use the helper function
        :py:func:`~circuitpython_nrf24l01.fake_ble.FakeBLE.available()` to
        detirmine if your payload can be transmit.
@@ -130,7 +130,7 @@ crc24_ble()
       ``0x555555`` (default value).
    :returns: A 24-bit `bytearray` representing the checksum of the data (in
       proper little endian).
-   
+
 BLE_FREQ
 *****************
 
@@ -182,7 +182,7 @@ name
 
    .. note:: This information occupies (in the TX FIFO) an extra 2 bytes plus
       the length of the name set by this attribute.
-       
+
 show_pa_level
 *************
 
@@ -216,7 +216,7 @@ whiten()
       payloads (which isn't officially supported yet). Note that
       `advertise()` uses this function internally to prevent such
       improper usage.
-   
+
 available()
 *************
 
@@ -230,7 +230,7 @@ available()
       in bytes. This parameter is optional.
    :returns: An `int` representing the length of available bytes for the
       a single payload.
-   
+
 advertise()
 *************
 
@@ -283,7 +283,7 @@ advertise()
       # let `ble` be the instantiated object of the FakeBLE class
       ble.advertise(buffer)
       ble.hop_channel()
-   
+
 Service related classes
 -----------------------
 
@@ -294,7 +294,8 @@ abstract parent
    :members:
    :special-members: __len__
 
-   :param int type_t: The 16-bit "assigned number" defined by the
+   :param int uuid: The 16-bit UUID `"GATT Service assigned number"
+      <https://specificationrefs.bluetooth.com/assigned-values/16-bit%20UUID%20Numbers%20Document.pdf#page=19>`_ defined by the
       Bluetooth SIG to describe the service data. This parameter is
       required.
 

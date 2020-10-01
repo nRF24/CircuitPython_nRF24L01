@@ -225,8 +225,8 @@ class ServiceData:
     """An abstract helper class to package specific service data using
     Bluetooth SIG defined 16-bit UUID flags to describe the data type."""
 
-    def __init__(self, type_t):
-        self._type = struct.pack("<H", type_t)
+    def __init__(self, uuid):
+        self._type = struct.pack("<H", uuid)
         self._data = b""
 
     @property
@@ -296,12 +296,17 @@ class UrlServiceData(ServiceData):
     @property
     def pa_level_at_1_meter(self):
         """The TX power level (in dBm) at 1 meter from the nRF24L01. This
-        defaults to -25 (due to testing) and must be a 1-byte signed `int`."""
+        defaults to -25 (due to testing when broadcasting with 0 dBm) and must
+        be a 1-byte signed `int`."""
         return struct.unpack(">b", self._type[-1:])[0]
 
     @pa_level_at_1_meter.setter
     def pa_level_at_1_meter(self, value):
         self._type = self._type[:-1] + struct.pack(">b", int(value))
+
+    @property
+    def uuid(self):
+        return self._type[:2]
 
     @ServiceData.data.setter
     def data(self, value):

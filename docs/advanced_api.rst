@@ -2,7 +2,7 @@
 .. |irq note| replace::  parameter as `True` to `clear_status_flags()` and reset this. As this
     is a virtual representation of the interrupt event, this attribute will always be updated
     despite what the actual IRQ pin is configured to do about this event.
-    
+
 .. |update manually| replace:: Calling this does not execute an SPI transaction. It only
     exposes that latest data contained in the STATUS byte that's always returned from any
     other SPI transactions. Use the `update()` function to manually refresh this data when
@@ -117,7 +117,7 @@ read_ack()
     .. note:: See also the `ack`, `dynamic_payloads`, and `auto_ack` attributes as they must be
         enabled to use custom ACK payloads.
 
-    .. warning:: This function will be deprecated on next major release. Use `recv()` instead. 
+    .. warning:: This function will be deprecated on next major release. Use `recv()` instead.
 
 irq_dr
 ******************************
@@ -127,7 +127,7 @@ irq_dr
     .
 
     :Returns:
-        
+
         - `True` represents Data is in the RX FIFO buffer
         - `False` represents anything depending on context (state/condition of FIFO buffers);
           usually this means the flag's been reset.
@@ -144,7 +144,7 @@ irq_df
     .
 
     :Returns:
-        
+
         - `True` signifies the nRF24L01 attemped all configured retries
         - `False` represents anything depending on context (state/condition); usually this
           means the flag's been reset.
@@ -161,7 +161,7 @@ irq_ds
     .
 
     :Returns:
-        
+
         - `True` represents a successful transmission
         - `False` represents anything depending on context (state/condition of FIFO buffers);
           usually this means the flag's been reset.
@@ -225,11 +225,11 @@ tx_full
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.tx_full
 
     .
-    
+
     |update manually|
 
     :returns:
-        
+
         - `True` for TX FIFO buffer is full
         - `False` for TX FIFO buffer is not full. This doesn't mean the TX FIFO buffer is
           empty.
@@ -329,7 +329,7 @@ flush_rx()
 
     .. note:: The nRF24L01 RX FIFO is 3 level stack that holds payload data. This means that
         there can be up to 3 received payloads (each of a maximum length equal to 32 bytes)
-        waiting to be read (and popped from the stack) by `recv()` or `read_ack()`. This
+        waiting to be read (and removed from the stack) by `recv()` or `read_ack()`. This
         function clears all 3 levels.
 
 flush_tx()
@@ -340,7 +340,7 @@ flush_tx()
     .. note:: The nRF24L01 TX FIFO is 3 level stack that holds payload data. This means that
         there can be up to 3 payloads (each of a maximum length equal to 32 bytes) waiting to
         be transmit by `send()`, `resend()` or `write()`. This function clears all 3 levels. It
-        is worth noting that the payload data is only popped from the TX FIFO stack upon
+        is worth noting that the payload data is only removed from the TX FIFO stack upon
         successful transmission (see also `resend()` as the handling of failed transmissions
         can be altered).
 
@@ -374,11 +374,11 @@ pipe
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.pipe
 
     .
-    
+
     |update manually|
 
     :Returns:
-        
+
         - `None` if there is no payload in RX FIFO.
         - The `int` identifying pipe number [0,5] that received the next
           available payload in the RX FIFO buffer.
