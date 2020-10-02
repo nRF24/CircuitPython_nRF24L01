@@ -6,13 +6,13 @@ Troubleshooting info
     priority of dependence is as follows:
 
     1. `auto_ack` feature provides transmission verification by using the RX nRF24L01 to
-       automatically and imediatedly send an acknowledgment (ACK) packet in response to freshly
+       automatically and imediatedly send an acknowledgment (ACK) packet in response to
        received payloads. `auto_ack` does not require `dynamic_payloads` to be enabled.
-    2. `dynamic_payloads` feature allowing either TX/RX nRF24L01 to be able to send/receive
+    2. `dynamic_payloads` feature allows either TX/RX nRF24L01 to be able to send/receive
        payloads with their size written into the payloads' packet. With this disabled, both
        RX/TX nRF24L01 must use matching `payload_length` attributes. For `dynamic_payloads` to
        be enabled, the `auto_ack` feature must be enabled. Although, the `auto_ack` feature
-       isn't required when the `dynamic_payloads` feature is disabled.
+       can be used when the `dynamic_payloads` feature is disabled.
     3. `ack` feature allows the MCU to append a payload to the ACK packet, thus instant
        bi-directional communication. A transmitting ACK payload must be loaded into the
        nRF24L01's TX FIFO buffer (done using `load_ack()`) BEFORE receiving the payload that

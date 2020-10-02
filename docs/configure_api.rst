@@ -15,8 +15,8 @@ dynamic_payloads
     Default setting is enabled on all pipes.
 
     - `True` or ``1`` enables nRF24L01's dynamic payload length feature for all data pipes. The
-      `payload_length` attribute is ignored when this feature is enabled for respective or all
-      data pipes.
+      `payload_length` attribute is ignored when this feature is enabled for all
+      respective data pipes.
     - `False` or ``0`` disables nRF24L01's dynamic payload length feature for all data pipes.
       Be sure to adjust the `payload_length` attribute accordingly when this feature is
       disabled for any data pipes.
@@ -26,7 +26,9 @@ dynamic_payloads
 
     .. note::
         This attribute mostly relates to RX operations, but data pipe 0 applies to TX
-        operations also.
+        operations also. The `auto_ack` attribute is set accordingly for data pipes that
+        have this feature enabled. Disabling this feature for any data pipe will not
+        affect the `auto_ack` feature for the corresponding data pipes.
 
 payload_length
 ******************************
@@ -38,13 +40,13 @@ payload_length
     this attribute is used to specify the payload length on that data pipe in RX mode.
 
     A valid input value must be:
-    
+
         * an `int` in range [1, 32]. Otherwise a `ValueError` exception is thrown.
         * a `list` or `tuple` containing integers can be used to control this attribute per
           data pipe. Index 0 controls this feature on data pipe 0. Indices greater than 5 will
           be ignored since there are only 6 data pipes. if a index's value is ``0``, then the
           existing setting will persist (not be changed).
-        
+
         Default is set to the nRF24L01's maximum of 32 (on all data pipes).
 
     .. note::
@@ -94,7 +96,7 @@ ard
 
     A valid input value must be in range [250, 4000]. Otherwise a `ValueError` exception is
     thrown. Default is 1500 for reliability. If this is set to a value that is not multiple of
-    250, then the highest multiple of 250 that is no greater than the input value is used. 
+    250, then the highest multiple of 250 that is no greater than the input value is used.
 
     .. note:: Paraphrased from nRF24L01 specifications sheet:
 
