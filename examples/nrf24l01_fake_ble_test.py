@@ -7,7 +7,6 @@ This example of using the nRF24L01 as a 'fake' Buetooth Beacon
 import time
 import board
 import digitalio as dio
-from circuitpython_nrf24l01.rf24 import RF24
 from circuitpython_nrf24l01.fake_ble import (
     chunk,
     FakeBLE,
