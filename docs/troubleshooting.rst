@@ -10,9 +10,10 @@ Troubleshooting info
        received payloads. `auto_ack` does not require `dynamic_payloads` to be enabled.
     2. `dynamic_payloads` feature allows either TX/RX nRF24L01 to be able to send/receive
        payloads with their size written into the payloads' packet. With this disabled, both
-       RX/TX nRF24L01 must use matching `payload_length` attributes. For `dynamic_payloads` to
-       be enabled, the `auto_ack` feature must be enabled. Although, the `auto_ack` feature
-       can be used when the `dynamic_payloads` feature is disabled.
+       RX/TX nRF24L01 must use matching
+       :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length` attributes. For
+       `dynamic_payloads` to be enabled, the `auto_ack` feature must be enabled. Although,
+       the `auto_ack` feature can be used when the `dynamic_payloads` feature is disabled.
     3. `ack` feature allows the MCU to append a payload to the ACK packet, thus instant
        bi-directional communication. A transmitting ACK payload must be loaded into the
        nRF24L01's TX FIFO buffer (done using `load_ack()`) BEFORE receiving the payload that
@@ -55,10 +56,11 @@ With the `auto_ack` feature enabled, you get:
     * The RX pipe's address on the receiving nRF24L01 (passed to `open_rx_pipe()`) MUST match
       the TX pipe's address on the transmitting nRF24L01 (passed to `open_tx_pipe()`)
     * `address_length`
-    * `channel`
-    * `data_rate`
+    * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.channel`
+    * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.data_rate`
     * `dynamic_payloads`
-    * `payload_length` only when `dynamic_payloads` is disabled
+    * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length` only when `dynamic_payloads`
+      is disabled
     * `auto_ack` on the recieving nRF24L01 must be enabled if `arc` is greater than 0 on the
       transmitting nRF24L01
     * custom `ack` payloads
@@ -66,9 +68,9 @@ With the `auto_ack` feature enabled, you get:
 
     In fact the only attributes that aren't required to match on both endpoint transceivers
     would be the identifying data pipe number (passed to `open_rx_pipe()` or `load_ack()`),
-    `pa_level`, `arc`, & `ard` attributes. The ``ask_no_ack`` feature can be used despite the
-    settings/features configuration (see `send()` & `write()` function parameters for more
-    details).
+    :py:attr:`~circuitpython_nrf24l01.rf24.RF24.pa_level`, `arc`, & `ard` attributes. The
+    ``ask_no_ack`` feature can be used despite the settings/features configuration (see
+    `send()` & `write()` function parameters for more details).
 
 About the lite version
 ======================
@@ -78,11 +80,12 @@ developed to save space on microcontrollers with limited amount of RAM and/or st
 boards using the ATSAMD21 M0). The following functionality has been removed from the lite
 version:
 
-    * `is_plus_variant` is removed, meaning the lite version is not compatibility with
-      the older non-plus variants of the nRF24L01.
+    * The `FakeBLE` class is not compatible with the ``rf24_lite.py`` module.
+    * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.is_plus_variant` is removed, meaning the
+      lite version is not compatibility with the older non-plus variants of the nRF24L01.
     * `address()` removed.
-    * `what_happened()` removed. However you can use the following function to dump all
-      available registers' values (for advanced users):
+    * :py:func:`~circuitpython_nrf24l01.rf24.RF24.what_happened()` removed. However you can
+      use the following function to dump all available registers' values (for advanced users):
 
       .. code-block:: python
 
@@ -95,7 +98,8 @@ version:
                       print(hex(i), "=", hex(nrf._reg_read(i)))
     * `fifo()` removed.
     * `dynamic_payloads` applies to all pipes, not individual pipes.
-    * `payload_length` applies to all pipes, not individual pipes.
+    * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length` applies to all pipes, not
+      individual pipes.
     * `read_ack()` removed. This is deprecated on next major release anyway; use `recv()`
       instead.
     * `load_ack()` is available, but it will not throw exceptions for malformed ``buf`` or
@@ -104,8 +108,10 @@ version:
     * `auto_ack` removed. This is always enabled for all pipes. Pass ``ask_no_ack`` parameter
       as `True` to `send()` or `write()` to disable automatic acknowledgement for TX
       operations.
-    * `is_lna_enabled` removed. This will always be enabled, and `pa_level` will not accept a
-      `list` or `tuple`. This only affects certain boards anyway.
+    * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.is_lna_enabled` removed as it only affects
+      non-plus variants of the nRF24L01.
+    * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.pa_level` is available, but it will not
+      accept a `list` or `tuple`.
     * `rpd`, `start_carrier_wave()`, & `stop_carrier_wave()` removed. These only perform a
       test of the nRF24L01's hardware.
     * `CSN_DELAY` removed. This is hard-coded to 5 milliseconds

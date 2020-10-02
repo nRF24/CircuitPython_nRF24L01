@@ -39,13 +39,21 @@ Features currently supported
 * automatic responding acknowledgment (ACK) for verifying transmission success
 * custom acknowledgment (ACK) payloads for bi-directional communication
 * flag a single payload for no acknowledgment (ACK) from the receiving nRF24L01
-* "re-use the same payload" feature (for manually re-transmitting failed transmissions that remain in the buffer)
-* multiple payload transmissions with one function call (MUST read documentation on the `send()` function)
-* context manager compatible for easily switching between different radio configurations using "with" statements (not available in ``rf24_lite.py`` variant for M0 based boards)
-* configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or failed transmissions (these 3 flags control the 1 IRQ pin). There's also virtual representations of these interrupt flags available (see `irq_dr`, `irq_ds`, `irq_df` attributes)
+* "re-use the same payload" feature (for manually re-transmitting failed transmissions that
+  remain in the buffer)
+* multiple payload transmissions with one function call (MUST read documentation on the
+  `send()` function)
+* context manager compatible for easily switching between different radio configurations
+  using "with" statements (not available in ``rf24_lite.py`` variant for M0 based boards)
+* configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or
+  failed transmissions (these 3 flags control the 1 IRQ pin). There's also virtual
+  representations of these interrupt flags available (see
+  :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr`,
+  :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_ds`, & `irq_df` attributes)
 * invoke sleep mode (AKA power down mode) for ultra-low current consumption
 * cyclic redundancy checking (CRC) up to 2 bytes long
-* adjust the nRF24L01's builtin automatic re-transmit feature's parameters (`arc`: number of attempts, `ard`: delay between attempts)
+* adjust the nRF24L01's builtin automatic re-transmit feature's parameters (`arc`: number
+  of attempts, `ard`: delay between attempts)
 * adjust the nRF24L01's frequency channel (2.4-2.525 GHz)
 * adjust the nRF24L01's power amplifier level (0, -6, -12, or -18 dBm)
 * adjust the nRF24L01's RF data rate (250Kbps is buggy due to hardware design, but 1Mbps and 2Mbps are reliable)

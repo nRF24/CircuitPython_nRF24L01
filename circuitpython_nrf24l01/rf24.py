@@ -110,6 +110,7 @@ class RF24:
             self.clear_status_flags()
 
     def __enter__(self):
+        self.ce_pin.value = False
         self._reg_write(CONFIGURE, self._config & 0x7C)
         self._reg_write(RF_PA_RATE, self._rf_setup)
         self._reg_write(OPEN_PIPES, self._open_pipes)
@@ -129,7 +130,8 @@ class RF24:
         return self
 
     def __exit__(self, *exc):
-        self.power = 0
+        self.ce_pin.value = False
+        self.power = False
         return False
 
     # pylint: disable=no-member
@@ -388,12 +390,12 @@ class RF24:
         )
         print(
             "IRQ - Data Fail_______{}    Data Failed__________{}".format(
-                "_True" if not bool(self._config & 0x20) else "False", self.irq_df
+                "_True" if not bool(self._config & 0x10) else "False", self.irq_df
             )
         )
         print(
             "IRQ - Data Sent_______{}    Data Sent____________{}".format(
-                "_True" if not bool(self._config & 0x10) else "False", self.irq_ds
+                "_True" if not bool(self._config & 0x20) else "False", self.irq_ds
             )
         )
         print(
@@ -608,7 +610,14 @@ class RF24:
     @data_rate.setter
     def data_rate(self, speed):
         if not speed in (1, 2, 250):
-            raise ValueError("data_rate must be 1 (Mbps), 2 (Mbps), or 250 (kbps)")
+            raise ValueError(
+                "data_rate must be 1 (Mbps), 2 (Mbps), or 250 (kbps)"
+            )
+        if self.is_plus_variant and speed == 250:
+            raise NotImplementedError(
+                "250 kbps data rate is not available for the non-plus "
+                "variants of the nRF24L01 transceivers."
+            )
         if self.data_rate != speed:
             speed = 0 if speed == 1 else (0x20 if speed != 2 else 8)
             self._rf_setup = self._rf_setup & 0xD7 | speed

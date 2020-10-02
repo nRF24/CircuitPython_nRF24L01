@@ -165,15 +165,13 @@ data_rate
 
     - ``1`` sets the frequency data rate to 1 Mbps
     - ``2`` sets the frequency data rate to 2 Mbps
-    - ``250`` sets the frequency data rate to 250 Kbps
+    - ``250`` sets the frequency data rate to 250 Kbps (see warning below)
 
     Any invalid input throws a `ValueError` exception. Default is 1 Mbps.
 
-    .. warning:: 250 Kbps can be buggy on the non-plus models of the nRF24L01 product line. If
-        you use 250 Kbps data rate, and some transmissions report failed by the transmitting
-        nRF24L01, even though the same packet in question actually reports received by the
-        receiving nRF24L01, then try a higher data rate. CAUTION: Higher data rates mean less
-        maximum distance between nRF24L01 transceivers (and vise versa).
+    .. warning:: 250 Kbps is not available for the non-plus models of the
+        nRF24L01 product line. Trying to set the data rate to 250 kpbs when
+        `is_plus_variant` is `True` will throw a `NotImplementedError`.
 
 channel
 ******************************
@@ -233,5 +231,5 @@ is_lna_enabled
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.is_lna_enabled
 
     See `pa_level` attribute about how to set this. Default is always enabled, but this
-    feature is specific to certain nRF24L01-based circuits. Check with your module's
-    manufacturer to see is it can toggle the Low Noise Amplifier feature.
+    feature is specific to non-plus variants of nRF24L01 transceivers. Use
+    `is_plus_variant` to see if it can toggle the Low Noise Amplifier feature.

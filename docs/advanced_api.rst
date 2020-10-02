@@ -1,12 +1,14 @@
 
-.. |irq note| replace::  parameter as `True` to `clear_status_flags()` and reset this. As this
-    is a virtual representation of the interrupt event, this attribute will always be updated
-    despite what the actual IRQ pin is configured to do about this event.
+.. |irq note| replace::  parameter as `True` to
+    :py:func:`~circuitpython_nrf24l01.rf24.RF24.clear_status_flags()` and reset this.
+    As this is a virtual representation of the interrupt event, this attribute will
+    always be updated despite what the actual IRQ pin is configured to do about this
+    event.
 
 .. |update manually| replace:: Calling this does not execute an SPI transaction. It only
     exposes that latest data contained in the STATUS byte that's always returned from any
-    other SPI transactions. Use the `update()` function to manually refresh this data when
-    needed.
+    other SPI transactions. Use the :py:func:`~circuitpython_nrf24l01.rf24.RF24.update()`
+    function to manually refresh this data when needed.
 
 Advanced API
 ------------

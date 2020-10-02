@@ -147,12 +147,25 @@ FakeBLE class
 
 .. autoclass:: circuitpython_nrf24l01.fake_ble.FakeBLE
 
-   Per the limitations of this technique, only the
-   :py:attr:`~circuitpython_nrf24l01.rf24.RF24.pa_level` attribute is
-   available for useful configuration when advertising BLE data.
+   Per the limitations of this technique, only some of underlying
+   :py:class:`~circuitpython_nrf24l01.rf24.RF24` functionality is
+   available for configuration when implementing BLE transmissions.
+   See the `Available RF24 functionality`_ for more details.
 
-   :param ~circuitpython_nrf24l01.rf24.RF24 nrf: The object for the nRF24L01
-      transceiver to use for fake BLE advertisements.
+
+    :param ~busio.SPI spi: The object for the SPI bus that the nRF24L01 is connected to.
+
+        .. tip:: This object is meant to be shared amongst other driver classes (like
+            adafruit_mcp3xxx.mcp3008 for example) that use the same SPI bus. Otherwise, multiple
+            devices on the same SPI bus with different spi objects may produce errors or
+            undesirable behavior.
+    :param ~digitalio.DigitalInOut csn: The digital output pin that is connected to the nRF24L01's
+        CSN (Chip Select Not) pin. This is required.
+    :param ~digitalio.DigitalInOut ce: The digital output pin that is connected to the nRF24L01's
+        CE (Chip Enable) pin. This is required.
+    :param int spi_frequency: Specify which SPI frequency (in Hz) to use on the SPI bus. This
+        parameter only applies to the instantiated object and is made persistent via
+        :py:class:`~adafruit_bus_device.spi_device`.
 
 to_iphone
 ************
@@ -283,6 +296,36 @@ advertise()
       # let `ble` be the instantiated object of the FakeBLE class
       ble.advertise(buffer)
       ble.hop_channel()
+
+Available RF24 functionality
+*****************************
+
+.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.pa_level
+
+.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.channel
+
+.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.data_rate
+
+.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.payload_length
+
+.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.power
+
+.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.is_lna_enabled
+
+.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.is_plus_variant
+
+.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.interrupt_config()
+
+.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.irq_ds
+
+.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.irq_dr
+
+.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.clear_status_flags()
+
+.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.update()
+
+.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.what_happened()
+
 
 Service related classes
 -----------------------
