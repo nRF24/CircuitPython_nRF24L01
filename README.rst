@@ -247,8 +247,8 @@ Now, once you have the virtual environment activated:
 .. code-block:: shell
 
     cd docs
-    sphinx-build -E -W -b html . _build/html
+    sphinx-build -E -W -b html . _build
 
-This will output the documentation to ``docs/_build/html``. Open the index.html in your browser to
+This will output the documentation to ``docs/_build``. Open the index.html in your browser to
 view them. It will also (due to -W) error out on any warning like the Github action, Build CI,
 does. This is a good way to locally verify it will pass.

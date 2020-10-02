@@ -47,7 +47,7 @@ This is a test to show how to use "with" statements to manage multiple different
 Working with TMRh20's Arduino library
 -------------------------------------
 
-This test is meant to prove compatibility with the popular Arduino library for the nRF24L01 by TMRh20 (available for install via the Arduino IDE's Library Manager). The following code has been designed/test with the TMRh20 library example named "GettingStarted_HandlingData.ino".
+This test is meant to prove compatibility with the popular Arduino library for the nRF24L01 by TMRh20 (available for install via the Arduino IDE's Library Manager). The following code has been designed/test with the TMRh20 library example named "GettingStarted_HandlingData.ino". If you changed the ``role`` variable in the TMRh20 sketch, you will have to adjust the addresses assigned to the pipes in this script.
 
 .. literalinclude:: ../examples/nrf24l01_2arduino_handling_data.py
     :caption: examples/nrf24l01_2arduino_handling_data.py

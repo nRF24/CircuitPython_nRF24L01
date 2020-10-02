@@ -2,7 +2,7 @@
 This example of using the nRF24L01 as a 'fake' Buetooth Beacon
 
     .. warning:: ATSAMD21 M0-based boards have memory allocation
-        error when loading fake_ble.py
+        error when loading fake_ble.mpy
 """
 import time
 import board
@@ -42,7 +42,7 @@ nrf = FakeBLE(radio)
 # instantiation of the FakeBLE object.
 # nrf.mac = b"\x19\x12\x14\x26\x09\xE0"
 
-# set the Power Amplifier level to -12 dBm since these test examples are
+# set the Power Amplifier level to -12 dBm since this test example is
 # usually run with nRF24L01 transceivers in close proximity
 radio.pa_level = -12
 

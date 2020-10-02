@@ -47,7 +47,7 @@ basicRF.arc = 15
 
 print("\nsettings configured by the nrf object")
 with nrf:
-    nrf.open_rx_pipe(5, b'1Node')  # NOTE we do this inside the "with" block
+    nrf.open_rx_pipe(5, b"1Node")  # NOTE we do this inside the "with" block
     # only the first character gets written because it is on a pipe_number > 1
     # NOTE if opening pipes outside of the "with" block, you may encounter
     # conflicts in the differences between address_length attributes.
@@ -58,7 +58,7 @@ with nrf:
 
 print("\nsettings configured by the basicRF object")
 with basicRF as nerf:  # the "as nerf" part is optional
-    nerf.open_rx_pipe(2, b'?') # again only uses the first character
+    nerf.open_rx_pipe(2, b"?")  # again only uses the first character
     nerf.what_happened(1)
 
 # if you examine the outputs from what_happened() you'll see:
