@@ -24,10 +24,8 @@ csn = dio.DigitalInOut(board.D5)
 # available SPI pins, board.SCK, board.MOSI, board.MISO
 spi = board.SPI()  # init spi bus object
 
-# initialize the nRF24L01 on the spi bus object
-radio = RF24(spi, csn, ce)
-# overlay BLE compliance on the radio object
-nrf = FakeBLE(radio)
+# initialize the nRF24L01 on the spi bus object as a BLE compliant radio
+nrf = FakeBLE(spi, csn, ce)
 
 # the name parameter is going to be its broadcasted BLE name
 # this can be changed at any time using the `name` attribute
@@ -44,7 +42,7 @@ nrf = FakeBLE(radio)
 
 # set the Power Amplifier level to -12 dBm since this test example is
 # usually run with nRF24L01 transceivers in close proximity
-radio.pa_level = -12
+nrf.pa_level = -12
 
 
 def _prompt(count, iterator):
