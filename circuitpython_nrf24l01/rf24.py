@@ -71,6 +71,17 @@ class RF24:
                 self._pipes[i] = self._reg_read_bytes(RX_ADDR_P0 + i)
             else:
                 self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
+        # test is nRF24L01 is a plus variant using a command specific to
+        # non-plus variants
+        self._is_plus_variant = False
+        b4_toggle = self._reg_read(TX_FEATURE)
+        # derelict ACTIVATE command toggles bits in the TX_FEATURE register
+        self._reg_write(0x50, 0x73)
+        after_toggle = self._reg_read(TX_FEATURE)
+        if b4_toggle == after_toggle:
+            self._is_plus_variant = True
+        if not after_toggle:  # if features are disabled
+            self._reg_write(0x50, 0x73)  # ensure they're enabled
         # init shadow copy of last RX_ADDR_P0 written to pipe 0 needed as
         # open_tx_pipe() appropriates pipe 0 for ACK packet
         self._pipe0_read_addr = None
@@ -337,6 +348,9 @@ class RF24:
         related information from the nRF24L01."""
         observer = self._reg_read(8)
         print(
+            "Is a plus variant_________{}".format(repr(self.is_plus_variant))
+        )
+        print(
             "Channel___________________{} ~ {} GHz".format(
                 self.channel, (self.channel + 2400) / 1000
             )
@@ -442,6 +456,12 @@ class RF24:
                     print("\t\texpecting", self._pl_len[i], "byte static payloads")
 
     @property
+    def is_plus_variant(self):
+        """A `bool` attribute to descibe if the nRF24L01 is a plus variant or
+        not (read-only)."""
+        return self._is_plus_variant
+
+    @property
     def dynamic_payloads(self):
         """This `bool` attribute controls the nRF24L01's dynamic payload
         length feature for each pipe."""
@@ -463,7 +483,7 @@ class RF24:
         if bool(self._features & 4) != (self._dyn_pl & 1):
             self._features = (self._features & 3) | ((self._dyn_pl & 1) << 2)
             self._reg_write(TX_FEATURE, self._features)
-        if self._dyn_pl:
+        if self._dyn_pl != (self._aa & self._dyn_pl):
             self._aa |= self._dyn_pl
             self._reg_write(AUTO_ACK, self._aa)
             self._config = self._reg_read(CONFIGURE)
@@ -754,10 +774,24 @@ class RF24:
         """Starts a continuous carrier wave test."""
         self.power = 0
         self.ce_pin.value = 0
+        self.power = 1
         self.listen = 0
         self._rf_setup |= 0x90
         self._reg_write(RF_PA_RATE, self._rf_setup)
-        self.power = 1
+        if not self.is_plus_variant:
+            self.auto_ack = False
+            self._retry_setup = 0
+            self._reg_write(SETUP_RETR, self._retry_setup)
+            self._tx_address = bytearray([0xFF] * 5)
+            self._reg_write_bytes(TX_ADDRESS, self._tx_address)
+            self._reg_write_bytes(0xA0, b"\xFF" * 32)
+            self.crc = 0
+            self.ce_pin.value = 1
+            time.sleep(0.001)
+            self.ce_pin.value = 0
+            while self._status & 0x70:
+                self.update()
+            self._reg_write(0x17, 0x40)
         self.ce_pin.value = 1
 
     def stop_carrier_wave(self):

@@ -20,6 +20,8 @@ what_happened()
 
     :prints:
 
+        - ``Is a plus variant`` True means the transceiver is a nRF24L01+. False
+          means the transceiver is a nRF24L01 (not a plus variant).
         - ``Channel`` The current setting of the `channel` attribute
         - ``RF Data Rate`` The current setting of the RF `data_rate` attribute.
         - ``RF Power Amplifier`` The current setting of the `pa_level` attribute.
@@ -70,6 +72,13 @@ what_happened()
           receive when `dynamic_payloads` is disabled for that pipe.
 
         Default is `False` and skips this extra information.
+
+is_plus_variant
+******************************
+
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.is_plus_variant
+
+    Upon instantiation, this class detirmines if the nRF24L01 is a plus variant or not.
 
 load_ack()
 ******************************
@@ -445,7 +454,17 @@ start_carrier_wave()
             print("carrier wave detected")
 
     The `pa_level`, `channel` & `data_rate` attributes are vital factors to
-    the success of this test. See also the `rpd` attribute.
+    the success of this test. Be sure these attributes are set to the desired test
+    conditions before calling this function. See also the `rpd` attribute.
+
+    .. note:: To preserve backward compatibility with non-plus variants of the
+        nRF24L01, this function will also change certain settings if `is_plus_variant`
+        is `False`. These settings changes include disabling `crc`, disabling
+        `auto_ack`, disabling `arc`, setting `ard` to 250 microseconds, changing the
+        TX address to ``b"\xFF\xFF\xFF\xFF\xFF``, and loading a dummy payload into the
+        TX FIFO buffer while continuously behaving like `resend()` to establish the
+        constant carrier wave. If `is_plus_variant` is `True`, then none of these
+        changes to settings are needed nor applied.
 
 stop_carrier_wave()
 ******************************

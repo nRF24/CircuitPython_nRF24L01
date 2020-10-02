@@ -45,10 +45,10 @@ With the `auto_ack` feature enabled, you get:
     is a way of specifying a certain radio frequency (frequency = [2400 + channel] MHz).
     Channel defaults to 76 (like the arduino library), but options range from 0 to 125 --
     that's 2.4 GHz to 2.525 GHz. The channel can be tweaked to find a less occupied frequency
-    amongst Bluetooth, WiFi, or other ambient signals that use the same spectrum of 
+    amongst Bluetooth, WiFi, or other ambient signals that use the same spectrum of
     frequencies.
 
-.. warning:: 
+.. warning::
     For successful transmissions, most of the endpoint trasceivers' settings/features must
     match. These settings/features include:
 
@@ -78,10 +78,12 @@ developed to save space on microcontrollers with limited amount of RAM and/or st
 boards using the ATSAMD21 M0). The following functionality has been removed from the lite
 version:
 
+    * `is_plus_variant` is removed, meaning the lite version is not compatibility with
+      the older non-plus variants of the nRF24L01.
     * `address()` removed.
     * `what_happened()` removed. However you can use the following function to dump all
       available registers' values (for advanced users):
-      
+
       .. code-block:: python
 
           # let `nrf` be the instantiated RF24 object
@@ -94,7 +96,7 @@ version:
     * `fifo()` removed.
     * `dynamic_payloads` applies to all pipes, not individual pipes.
     * `payload_length` applies to all pipes, not individual pipes.
-    * `read_ack()` removed. This is deprecated on next major release anyway; use `recv()` 
+    * `read_ack()` removed. This is deprecated on next major release anyway; use `recv()`
       instead.
     * `load_ack()` is available, but it will not throw exceptions for malformed ``buf`` or
       invalid ``pipe_number`` parameters.
