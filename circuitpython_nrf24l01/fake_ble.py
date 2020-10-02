@@ -37,7 +37,7 @@ def swap_bits(original):
 
 
 def reverse_bits(original):
-    """This function reverses the bit order into LSBit to MSBit for an entire
+    """This function reverses the bit order for an entire
     buffer protocol object."""
     ret = bytearray(len(original))
     for i, byte in enumerate(original):

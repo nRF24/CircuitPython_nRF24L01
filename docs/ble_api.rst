@@ -70,7 +70,7 @@ swap_bits()
 .. autofunction:: circuitpython_nrf24l01.fake_ble.swap_bits
 
    :returns:
-      An `int` containing the byte whose bits go from LSBit to MSBit
+      An `int` containing the byte whose bits are reversed
       compared to the value passed to the ``original`` parameter.
    :param int original: This should be a single unsigned byte, meaning the
       parameters value can only range from 0 to 255.
@@ -81,8 +81,8 @@ reverse_bits()
 .. autofunction:: circuitpython_nrf24l01.fake_ble.reverse_bits
 
    :returns:
-      A `bytearray` whose bytes still go from MSByte to LSByte, but each
-      byte's bits go from LSBit to MSBit.
+      A `bytearray` whose byte order remains the same, but each
+      byte's bit order is reversed.
    :param bytearray,bytes original: The original buffer whose bits are to be
       reversed.
 
