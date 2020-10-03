@@ -121,7 +121,7 @@ crc24_ble()
    This is exposed for convenience but should not be used for other buffer
    protocols that require big endian CRC24 format.
 
-   :param bytearray,byes data: The buffer of data to be uncorrupted.
+   :param bytearray,bytes data: The buffer of data to be uncorrupted.
    :param int deg_poly: A preset "degree polynomial" in which each bit
       represents a degree who's coefficient is 1. BLE specfications require
       ``0x00065b`` (default value).
