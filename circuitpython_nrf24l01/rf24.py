@@ -478,7 +478,7 @@ class RF24:
             self._dyn_pl = 0x3F if enable else 0
         elif isinstance(enable, (list, tuple)):
             for i, val in enumerate(enable):
-                if i < 6:
+                if i < 6 and val >= 0:  # skip pipe if val is negative
                     self._dyn_pl = (self._dyn_pl & ~(1 << i)) | (bool(val) << i)
         else:
             raise ValueError("dynamic_payloads: {} is an invalid input" % enable)
@@ -505,7 +505,7 @@ class RF24:
             raise ValueError("length {} is not a valid input".format(length))
         for i, val in enumerate(length):
             if i < 6:
-                if not val or val <= 32:  # don't throw exception, just skip pipe
+                if 0 < val <= 32:  # don't throw exception, just skip pipe
                     self._pl_len[i] = val
                     self._reg_write(RX_PL_LENG + i, val)
 
@@ -553,7 +553,7 @@ class RF24:
             self._aa = 0x3F if enable else 0
         elif isinstance(enable, (list, tuple)):
             for i, val in enumerate(enable):
-                if i < 6:
+                if i < 6 and val >= 0:  # skip pipe if val is negative
                     self._aa = (self._aa & ~(1 << i)) | (bool(val) << i)
         else:
             raise ValueError("auto_ack: {} is not a valid input" % enable)

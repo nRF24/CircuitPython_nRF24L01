@@ -22,7 +22,8 @@ dynamic_payloads
       disabled for any data pipes.
     - A `list` or `tuple` containing booleans or integers can be used control this feature per
       data pipe. Index 0 controls this feature on data pipe 0. Indices greater than 5 will be
-      ignored since there are only 6 data pipes.
+      ignored since there are only 6 data pipes. If any index's value is less than 0 (a
+      negative value), then the pipe corresponding to that index will remain unaffected.
 
     .. note::
         This attribute mostly relates to RX operations, but data pipe 0 applies to TX
@@ -68,7 +69,8 @@ auto_ack
       data pipes.
     - A `list` or `tuple` containing booleans or integers can be used control this feature per
       data pipe. Index 0 controls this feature on data pipe 0. Indices greater than 5 will be
-      ignored since there are only 6 data pipes.
+      ignored since there are only 6 data pipes. If any index's value is less than 0 (a
+      negative value), then the pipe corresponding to that index will remain unaffected.
 
     .. note::
         This attribute mostly relates to RX operations, but data pipe 0 applies to TX
