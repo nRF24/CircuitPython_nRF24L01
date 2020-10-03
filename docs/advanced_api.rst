@@ -91,7 +91,7 @@ load_ack()
     (ACK) packet that is sent when fresh data is received on the specified pipe. See
     `read_ack()` on how to fetch a received custom ACK payloads.
 
-    :param bytearray buf: This will be the data attached to an automatic ACK packet on the
+    :param bytearray,bytes buf: This will be the data attached to an automatic ACK packet on the
         incoming transmission about the specified ``pipe_number`` parameter. This must have a
         length in range [1, 32] bytes, otherwise a `ValueError` exception is thrown. Any ACK
         payloads will remain in the TX FIFO buffer until transmitted successfully or
