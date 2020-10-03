@@ -140,7 +140,7 @@ class RF24:
         self.clear_status_flags(True, False, False)
         return result
 
-    def send(self, buf, ask_no_ack=False, force_retry=0):
+    def send(self, buf, ask_no_ack=False, force_retry=0, send_only=False):
         self.ce_pin.value = 0
         if isinstance(buf, (list, tuple)):
             result = []
@@ -161,7 +161,7 @@ class RF24:
                 result = self.resend()
                 if result is None or result:
                     break
-        if self._status & 0x60 == 0x60:
+        if self._status & 0x60 == 0x60 and not send_only:
             result = self.recv()
         self.clear_status_flags(False)
         return result
@@ -303,7 +303,7 @@ class RF24:
     def update(self):
         self._reg_write(0xFF)
 
-    def resend(self):
+    def resend(self, send_only=False):
         result = False
         if not self._reg_read(0x17) & 0x10:
             if self.pipe is not None:
@@ -317,7 +317,7 @@ class RF24:
             while not self._status & 0x30:
                 self.update()
             result = self.irq_ds
-            if self._status & 0x60 == 0x60:
+            if self._status & 0x60 == 0x60 and not send_only:
                 result = self.recv()
             self.clear_status_flags(False)
         return result

@@ -159,7 +159,8 @@ send()
         - `True` if transmission succeeds.
         - `bytearray` or `True` when the `ack` attribute is `True`. Because the payload
           expects a responding custom ACK payload, the response is returned (upon successful
-          transmission) as a `bytearray` (or `True` if ACK payload is empty)
+          transmission) as a `bytearray` (or `True` if ACK payload is empty). This functionality
+          can be bypassed by setting the ``send_only`` parameter as `True`.
 
     :param bytearray,bytes,list,tuple buf: The payload to transmit. This bytearray must have a
         length in range [1, 32], otherwise a `ValueError` exception is thrown. This can
@@ -195,6 +196,13 @@ send()
         notes on `resend()` as using this parameter carries the same implications documented
         there. This parameter has no effect if the ``ask_no_ack`` parameter is set to `True`
         or if `arc` is disabled.
+    :param bool send_only: This parameter only applies when the `ack` attribute is set to
+        `True`. Pass this parameter as `True` if you want to handle fetching the ACK
+        payload (from the RX FIFO) seperately from the sending transmission that recieved
+        the ACK payload. Many other libraries' behave as though this parameter is `True`
+        (e.g. The popular TMRh20 Arduino RF24 library). Use `recv()` to get the ACK
+        payload (if there is any) from the RX FIFO. This parameter defaults to `False`.
+        Remember that the RX FIFO can only hold up to 3 payloads at once.
 
     .. tip:: It is highly recommended that `arc` attribute is enabled (greater than ``0``)
         when sending multiple payloads. Test results with the `arc` attribute disabled were

@@ -31,16 +31,16 @@ try:
 except ImportError:
     from adafruit_bus_device.spi_device import SPIDevice
 
-CONFIGURE = const(0x00)  # IRQ, CRC, PWR control & RX/TX roles
-AUTO_ACK = const(0x01)  # auto-ACK
-OPEN_PIPES = const(0x02)  # open/close pipes
-SETUP_RETR = const(0x04)  # auto-retry count & delay
-RF_PA_RATE = const(0x06)  # RF Power Amplifier & Data Rate
-RX_ADDR_P0 = const(0x0A)  # RX pipe addresses == [0, 5]:[0x0a, 0x0f]
+CONFIGURE = const(0x00)  # IRQ masking, CRC scheme, PWR control, & RX/TX roles
+AUTO_ACK = const(0x01)  # auto-ACK status for all pipes
+OPEN_PIPES = const(0x02)  # open/close RX status for all pipes
+SETUP_RETR = const(0x04)  # auto-retry count & delay values
+RF_PA_RATE = const(0x06)  # RF Power Amplifier & Data Rate values
+RX_ADDR_P0 = const(0x0A)  # RX pipe addresses; pipes 0-5 = 0x0A-0x0F
 TX_ADDRESS = const(0x10)  # Address used for TX transmissions
-RX_PL_LENG = const(0x11)  # RX payload widths on pipes == [0, 5]:[0x11, 0x16]
-DYN_PL_LEN = const(0x1C)  # dynamic payloads
-TX_FEATURE = const(0x1D)  # TX features dynamic payloads, ACK payloads, NO_ACK
+RX_PL_LENG = const(0x11)  # RX payload widths; pipes 0-5 = 0x11-0x16
+DYN_PL_LEN = const(0x1C)  # dynamic payloads status for all pipes
+TX_FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
 CSN_DELAY = 0.005
 """The delay time (in seconds) used to let the CSN pin settle,
 allowing a clean SPI transaction."""
@@ -274,7 +274,7 @@ class RF24:
         self.clear_status_flags(True, False, False)
         return result
 
-    def send(self, buf, ask_no_ack=False, force_retry=0):
+    def send(self, buf, ask_no_ack=False, force_retry=0, send_only=False):
         """This blocking function is used to transmit payload(s)."""
         self.ce_pin.value = 0
         if isinstance(buf, (list, tuple)):
@@ -296,7 +296,7 @@ class RF24:
                 result = self.resend()
                 if result is None or result:
                     break
-        if self._status & 0x60 == 0x60:
+        if self._status & 0x60 == 0x60 and not send_only:
             result = self.recv()
         self.clear_status_flags(False)
         return result
@@ -694,7 +694,7 @@ class RF24:
         from the nRF24L01."""
         self._reg_write(0xFF)
 
-    def resend(self):
+    def resend(self, send_only=False):
         """Use this function to maunally re-send the previous payload in the
         top level (first out) of the TX FIFO buffer."""
         result = False
@@ -710,7 +710,7 @@ class RF24:
             while not self._status & 0x30:
                 self.update()
             result = self.irq_ds
-            if self._status & 0x60 == 0x60:
+            if self._status & 0x60 == 0x60 and not send_only:
                 result = self.recv()
             self.clear_status_flags(False)
         return result

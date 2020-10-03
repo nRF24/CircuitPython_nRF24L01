@@ -264,6 +264,14 @@ resend()
     All returned data from this function follows the same patttern that `send()` returns with
     the added condition that this function will return `False` if the TX FIFO buffer is empty.
 
+    :param bool send_only: This parameter only applies when the `ack` attribute is set to
+        `True`. Pass this parameter as `True` if you want to handle fetching the ACK
+        payload (from the RX FIFO) seperately from the sending transmission that recieved
+        the ACK payload. Many other libraries' behave as though this parameter is `True`
+        (e.g. The popular TMRh20 Arduino RF24 library). Use `recv()` to get the ACK
+        payload (if there is any) from the RX FIFO. This parameter defaults to `False`.
+        Remember that the RX FIFO can only hold up to 3 payloads at once.
+
     .. note:: The nRF24L01 normally removes a payload from the TX FIFO buffer after successful
         transmission, but not when this function is called. The payload (successfully
         transmitted or not) will remain in the TX FIFO buffer until `flush_tx()` is called to
