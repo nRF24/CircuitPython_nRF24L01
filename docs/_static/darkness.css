@@ -89,7 +89,16 @@
 
 .highlight .go {
   color: #1afd00;
- }
+}
+
+td.linenos pre {
+  color: #fff;
+  background-color: #373737;
+}
+
+.highlight .fm {
+  color: #f7ef84;
+}
 
 /* ----------------------table sections---------------------------------------- */
 .wy-table thead,
@@ -182,7 +191,20 @@ body {
 }
 
 .wy-nav-content-wrap, .wy-nav-content {
- background:#242424;
+  background:#242424;
+}
+.btn-neutral {
+  background-color:#275325 !important;
+  color:#fff !important;
+}
+
+.btn-neutral:hover {
+  background-color:#006060 !important;
+  color:#fffafa
+}
+
+.btn-neutral:visited {
+  color:#fff !important;
 }
 
 /* -------------------------------------sidebar sections------------------------------------------------ */

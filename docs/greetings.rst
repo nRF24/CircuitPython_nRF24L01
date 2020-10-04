@@ -17,19 +17,21 @@
     :alt: Total PyPI downloads
     :target: https://pepy.tech/project/circuitpython-nrf24l01
 
-About this library
+Getting Started
 ==================
 
-Circuitpython driver library for the nRF24L01 transceiver
+This is a Circuitpython driver library for the nRF24L01(+) transceiver.
 
-CircuitPython port of the nRF24L01 library from Micropython.
-Original work by Damien P. George & Peter Hinch can be found `here
+Originally this code was a Micropython module written by Damien P. George
+& Peter Hinch which can still be found `here
 <https://github.com/micropython/micropython/tree/master/drivers/nrf24l01>`_
 
-The Micropython source has been rewritten to expose all the nRF24L01's features and for
-compatibilty with the Raspberry Pi and other Circuitpython compatible devices. Modified by Brendan Doherty, Rhys Thomas
+The Micropython source has since been rewritten to expose all the nRF24L01's
+features and for Circuitpython compatible devices (including linux-based
+SoC computers like the Raspberry Pi).
+Modified by Brendan Doherty & Rhys Thomas.
 
-* Author(s): Damien P. George, Peter Hinch, Rhys Thomas, Brendan Doherty
+* Authors: Damien P. George, Peter Hinch, Rhys Thomas, Brendan Doherty
 
 Features currently supported
 ----------------------------
@@ -157,7 +159,7 @@ To run the simple example, navigate to this repository's "examples" folder in th
     Transmission took 24.0 ms
 
 
-Where do I get 1?
+What to purchase
 =================
 
 See the store links on the sidebar or just google "nRF24L01+". It is worth noting that you
@@ -167,13 +169,15 @@ take Amazon or eBay for granted! There are other wireless transceivers that are 
 with this library. For instance, the esp8266-01 (also sold in packs) is NOT compatible with
 this library, but looks very similar to the nRF24L01+ and could lead to an accidental purchase.
 
-About the nRF24L01+
+Power Stability
 -------------------
 
-Stablizing the power input to the VCC and GND using parallel capacitors (100 µF + an optional
-0.1µF) provides significant performance increases. This stability is very highly recommended!
-More finite details about the nRF24L01 are available from the datasheet (referenced here in
-the documentation as the `nRF24L01+ Specification Sheet <https://www.sparkfun.com/datasheets/
+If you're not using a dedicated 3V regulator to supply power to the nRF24L01,
+then adding capcitor(s) (100 µF + an optional 0.1µF) in parrellel (& as close
+as possible) to the VCC and GND pins is highly recommended. Stablizing the power
+input provides significant performance increases. More finite details about the
+nRF24L01 are available from the datasheet (referenced here in the documentation as the
+`nRF24L01+ Specification Sheet <https://www.sparkfun.com/datasheets/
 Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf>`_)
 
 About the nRF24L01+PA+LNA modules
@@ -186,7 +190,8 @@ Low Noise Amplification (LNA) features. While they boast greater range with the 
 functionality, they are subject to a couple lesser known (and lesser advertised) drawbacks:
 
 1. Stronger power source. Below is a chart of advertised current requirements that many MCU
-   boards' 3V regulators may not be able to handle.
+   boards' 3V regulators may not be able to provide (after supplying power to internal
+   components).
 
     .. csv-table::
         :header: Specification, Value
@@ -195,8 +200,8 @@ functionality, they are subject to a couple lesser known (and lesser advertised)
         "Emission mode current(peak)", "115 mA"
         "Receive Mode current(peak)", "45 mA"
         "Power-down mode current", "4.2 µA"
-2. Needs sheilding from electromagnetic interference. Sheilding works best when it has a path
-   to ground (GND pin)
+2. Needs shielding from electromagnetic interference. Shielding usually works best when
+   it has a path to ground (GND pin), but this connection to the GND pin is not required.
 
 See also the `Testing nRF24L01+PA+LNA module <troubleshooting.html#testing-nrf24l01-pa-lna-module>`_
 

@@ -18,18 +18,21 @@
 Read The Docs
 =============
 
-Documentation for this library is hosted at `ReadTheDocs.org <http://circuitpython-nrf24l01.rtfd.io/>`_
+Documentation for this library is hosted at
+`ReadTheDocs.org <http://circuitpython-nrf24l01.rtfd.io/>`_
 
 About this Library
 ==================
 
-Circuitpython driver library for the nRF24L01 transceiver
+This is a Circuitpython driver library for the nRF24L01 transceiver.
 
-CircuitPython port of the nRF24L01 library from Micropython.
-Original work by Damien P. George & Peter Hinch can be found `here
+Originally this code was a Micropython module written by Damien P. George
+& Peter Hinch which can still be found `here
 <https://github.com/micropython/micropython/tree/master/drivers/nrf24l01>`_
 
-The Micropython source has been rewritten to expose all the nRF24L01's features and for
-compatibilty with the Raspberry Pi and other Circuitpython compatible devices. Modified by Brendan Doherty, Rhys Thomas
+The Micropython source has since been rewritten to expose all the nRF24L01's
+features and for Circuitpython compatible devices (including linux-based
+SoC computers like the Raspberry Pi).
+Modified by Brendan Doherty & Rhys Thomas.
 
 * Authors: Damien P. George, Peter Hinch, Rhys Thomas, Brendan Doherty

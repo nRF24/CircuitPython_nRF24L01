@@ -3,25 +3,25 @@ BLE Limitations
 ---------------
 
 This module uses the `RF24` class to make the nRF24L01 imitate a
-Bluetooth-Low-Emissions (BLE) beacon. A BLE beacon can send (referred to as
-advertise) data to any BLE compatible device (ie smart devices with Bluetooth
+Bluetooth-Low-Emissions (BLE) beacon. A BLE beacon can send data (referred to as
+advertisements) to any BLE compatible device (ie smart devices with Bluetooth
 4.0 or later) that is listening.
 
 Original research was done by `Dmitry Grinberg and his write-up (including C
 source code) can be found here
 <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_
 As this technique can prove invaluable in certain project designs, the code
-here is simply ported to work on CircuitPython.
+here has been adapted to work with CircuitPython.
 
 .. important:: Because the nRF24L01 wasn't designed for BLE advertising, it
     has some limitations that helps to be aware of.
 
-    1. the maximum payload length is shortened to **18** bytes (when not
+    1. The maximum payload length is shortened to **18** bytes (when not
        broadcasting a device
-       :py:attr:`~circuitpython_nrf24l01.fake_ble.FakeBLE.name`) nor
-       the nRF24L01 power amplifier level (using
+       :py:attr:`~circuitpython_nrf24l01.fake_ble.FakeBLE.name` nor
+       the nRF24L01
        :py:attr:`~circuitpython_nrf24l01.fake_ble.FakeBLE.show_pa_level`).
-       This is can be calculated as:
+       This is calculated as:
 
        **32** (nRF24L01 maximum) - **6** (MAC address) - **5** (required
        flags) - **3** (CRC checksum) = **18**
@@ -30,20 +30,21 @@ here is simply ported to work on CircuitPython.
        :py:func:`~circuitpython_nrf24l01.fake_ble.FakeBLE.available()` to
        detirmine if your payload can be transmit.
     2. the channels that BLE use are limited to the following three: 2.402
-       GHz, 2.426 GHz, and 2.480 GHz
+       GHz, 2.426 GHz, and 2.480 GHz. We have provided a tuple of these
+       specific channels for convenience (See `BLE_FREQ` and `hop_channel()`).
     3. :py:attr:`~circuitpython_nrf24l01.rf24.RF24.crc` is disabled in the
-       nRF24L01 firmware as BLE requires 3 bytes
-       (:py:func:`~circuitpython_nrf24l01.fake_ble.crc24_ble()`) and nRF24L01
-       only handles a maximum of 2. Thus, we have appended the required 3
-       bytes of CRC24 into the payload.
+       nRF24L01 firmware because BLE  specifications require 3 bytes
+       (:py:func:`~circuitpython_nrf24l01.fake_ble.crc24_ble()`), and the
+       nRF24L01 firmware can only handle a maximum of 2.
+       Thus, we have appended the required 3 bytes of CRC24 into the payload.
     4. :py:attr:`~circuitpython_nrf24l01.rf24.RF24.address_length` of BLE
        packet only uses 4 bytes, so we have set that accordingly.
     5. The :py:attr:`~circuitpython_nrf24l01.rf24.RF24.auto_ack` (automatic
        acknowledgment) feature of the nRF24L01 is useless when tranmitting to
        BLE devices, thus it is disabled as well as automatic re-transmit
        (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.arc`) and custom ACK
-       payloads (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.ack`) which both
-       depend on the automatic acknowledgments feature.
+       payloads (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.ack`) features
+       which both depend on the automatic acknowledgments feature.
     6. The :py:attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads`
        feature of the nRF24L01 isn't compatible with BLE specifications. Thus,
        we have disabled it.
@@ -54,12 +55,9 @@ here is simply ported to work on CircuitPython.
        (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_ds`) & "on data ready"
        (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr`) events will have
        an effect on the interrupt (IRQ) pin. The "on data fail"
-       (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_df`), is never
+       (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_df`) is never
        triggered because
-       :py:attr:`~circuitpython_nrf24l01.rf24.RF24.auto_ack` feature is
-       disabled.
-
-.. currentmodule:: circuitpython_nrf24l01.fake_ble
+       :py:attr:`~circuitpython_nrf24l01.rf24.RF24.arc` attribute is disabled.
 
 helpers
 ----------------
@@ -268,7 +266,7 @@ advertise()
         advertisements.
 
     .. important:: If the name and/or TX power level of the emulated BLE
-        device is also to be broadcast, then the 'name' and/or
+        device is also to be broadcast, then the `name` and/or
         `show_pa_level` attribute(s) should be set prior to calling
         `advertise()`.
 
@@ -309,11 +307,6 @@ channel
 ####################
 
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.channel
-
-data_rate
-####################
-
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.data_rate
 
 payload_length
 ####################

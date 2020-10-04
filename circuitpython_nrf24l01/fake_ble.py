@@ -239,22 +239,6 @@ class FakeBLE:
         self._radio.channel = value
 
     @property
-    def data_rate(self):
-        """See :py:attr:`~circuitpython_nrf24l01.rf24.RF24.data_rate` for
-        more details.
-
-        .. warning:: 250 kbps is not a valid data rate for BLE operations."""
-        return self._radio.data_rate
-
-    @data_rate.setter
-    def data_rate(self, value):
-        if value not in (1, 2):
-            raise ValueError(
-                "valid data rates for BLE transmissions are 1 or 2 Mbps."
-            )
-        self._radio.data_rate = value
-
-    @property
     def payload_length(self):
         """This attribute is best left at 32 bytes for all BLE
         operations."""
