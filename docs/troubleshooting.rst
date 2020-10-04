@@ -120,3 +120,52 @@ version:
     * Cannot switch between different radio configurations using context manager (the `with`
       blocks). It is advised that only one `RF24` object be instantiated when RAM is limited
       (less than or equal to 32KB).
+
+
+Testing nRF24L01+PA+LNA module
+=================================
+
+The following are semi-successful test results using a nRF24L01+PA+LNA module:
+
+The Setup
+*********************************
+
+    I wrapped the PA/LNA module with electrical tape and then foil around that (for shielding)
+    while being very careful to not let the foil touch any current carrying parts (like the GPIO pins and the soldier joints for the antenna mount). Then I wired up a PA/LNA module with a 3V
+    regulator (L4931 with a 2.2 µF capacitor between V\ :sub:`out` & GND) using my ItsyBitsy M4
+    5V (USB) pin going directly to the L4931 V\ :sub:`in` pin. The following are experiences from
+    running simple, ack, & stream examples with a reliable nRF24L01+ (no PA/LNA) on the other end (driven by a Raspberry Pi 2):
+
+Results (ordered by :py:attr:`~circuitpython_nrf24l01.rf24.RF24.pa_level` settings)
+***********************************************************************************
+
+    * 0 dBm: ``master()`` worked the first time (during simple example) then continuously failed
+      (during all examples). ``slave()`` worked on simple & stream examples, but the opposing
+      ``master()`` node reporting that ACK packets (without payloads) were **not** received from
+      the PA/LNA module; ``slave()`` failed to send ACK packet payloads during the ack example.
+    * -6 dBm: ``master()`` worked consistently on simple, ack, & stream example. ``slave()`` worked
+      reliably on simple & stream examples, but failed to transmit **any** ACK packet payloads in
+      the ack example.
+    * -12 dBm: ``master()`` worked consistently on simple, ack, & stream example. ``slave()``
+      worked reliably on simple & stream examples, but failed to transmit **some** ACK packet
+      payloads in the ack example.
+    * -18 dBm: ``master()`` worked consistently on simple, ack, & stream example. ``slave()``
+      worked reliably on simple, ack, & stream examples, meaning **all** ACK packet payloads were
+      successfully transmit in the ack example.
+
+    I should note that without shielding the PA/LNA module and using the L4931 3V regulator,
+    no TX transmissions got sent (including ACK packets for the
+    :py:attr:`~circuitpython_nrf24l01.rf24.RF24.auto-ack` feature).
+
+Conclusion
+*********************************
+
+    The PA/LNA modules seem to require quite a bit more power to transmit. The L4931 regulator
+    that I used in the tests boasts a 300 mA current limit and a typical current of 250 mA.
+    While the ItsyBitsy M4 boasts a 500 mA max, it would seem that much of that is consumed
+    internally. Since playing with the :py:attr:`~circuitpython_nrf24l01.rf24.RF24.pa_level`
+    is a current saving hack (as noted in the datasheet), I can only imagine that a higher power
+    3V regulator may enable sending transmissions (including ACK packets -- with or without ACK
+    payloads attached) from PA/LNA modules using higher
+    :py:attr:`~circuitpython_nrf24l01.rf24.RF24.pa_level` settings. More testing is called for,
+    but I don't have an oscilloscope to measure the peak current draws.

@@ -74,7 +74,7 @@ class FakeBLE:
     def __init__(self, spi, csn, ce, spi_frequency=10000000):
         self._radio = RF24(spi, csn, ce, spi_frequency=spi_frequency)
         self._chan = 0
-        self._to_iphone = 0x40
+        self._to_iphone = 0x42
         self._show_dbm = False
         self._ble_name = None
         self._mac = urandom(6)
