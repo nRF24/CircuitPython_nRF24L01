@@ -41,8 +41,8 @@ def master(timeout=5):  # will only wait 5 seconds for slave to respond
     nrf.listen = 0
 
     # on data sent test
-    print("Pinging: enslaved nRF24L01 without auto_ack")
-    nrf.write(b"ping")
+    print("\nPing slave node without auto_ack")
+    nrf.write(b"ping", ask_no_ack=True)
     time.sleep(0.00001)  # mandatory 10 microsecond pulse starts transmission
     nrf.ce_pin.value = 0  # end 10 us pulse; now in active TX
     while not nrf.irq_ds and not nrf.irq_df:
@@ -57,6 +57,7 @@ def master(timeout=5):  # will only wait 5 seconds for slave to respond
     nrf.clear_status_flags()  # clear all flags for next test
 
     # on data ready test
+    print("\nwaiting for pong from slave node.")
     nrf.listen = 1
     nrf.open_rx_pipe(0, address)
     start = time.monotonic()
@@ -81,7 +82,9 @@ def master(timeout=5):  # will only wait 5 seconds for slave to respond
     nrf.clear_status_flags()  # clear all flags for next test
 
     # on data fail test
+    print("\nsending a ping to a non-responsive slave node.")
     nrf.listen = False  # put the nRF24L01 is in TX mode
+    nrf.open_tx_pipe(b"\xe7" * 5)
     nrf.flush_tx()  # just in case the previous "on data sent" test failed
     nrf.write(b"dummy")  # slave isn't listening anymore
     time.sleep(0.00001)  # mandatory 10 microsecond pulse starts transmission
@@ -115,8 +118,9 @@ def slave(timeout=10):  # will listen for 10 seconds before timing out
     nrf.flush_rx()
     nrf.listen = 0
     nrf.open_tx_pipe(address)
+    time.sleep(1)
     # send a payload to complete the on data ready test
-    nrf.send(b"pong", force_retry=1)
+    nrf.send(b"pong", ask_no_ack=True)
     # we're done on this side
 
 

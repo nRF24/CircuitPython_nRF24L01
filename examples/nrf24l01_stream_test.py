@@ -61,7 +61,7 @@ def master(count=1):  # count = 5 will transmit the list 5 times
             successful += 1 if r else 0
     print(
         "successfully sent {}% ({}/{})".format(
-            successful / size * 100 * count, successful, size * count
+            successful / (size* count) * 100, successful, size * count
         )
     )
 

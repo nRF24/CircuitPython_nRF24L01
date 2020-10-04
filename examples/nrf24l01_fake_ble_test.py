@@ -118,7 +118,7 @@ url_service = UrlServiceData()
 # bytes object using byte codes defined by the Eddystone protocol.
 url_service.data = "http://www.google.com"
 # Eddystone protocol requires a estimated TX PA level at 1 meter
-# lower this estimate siince we lowered the actual `ble.pa_level`
+# lower this estimate since we lowered the actual `ble.pa_level`
 url_service.pa_level_at_1_meter = -45  # defaults to -25 dBm
 
 def send_url(count=50):

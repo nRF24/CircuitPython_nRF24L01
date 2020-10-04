@@ -64,4 +64,5 @@ with ble as nerf:  # the "as nerf" part is optional
 # Be sure to use 1 "with" block per RF24 object when instantiating multiple
 # RF24 objects in your program.
 # NOTE exiting a "with" block will always power down the nRF24L01
-# NOTE this library's RF24 class closes all pipes upon instantiation
+# NOTE upon instantiation, this library closes all RX pipes &
+# extracts the TX/RX addresses from the nRF24L01 registers
