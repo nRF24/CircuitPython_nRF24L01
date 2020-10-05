@@ -96,7 +96,6 @@ version:
                       print(hex(i), "=", nrf._reg_read_bytes(i))
                   elif i not in (0x18, 0x19, 0x1a, 0x1b):
                       print(hex(i), "=", hex(nrf._reg_read(i)))
-    * `fifo()` removed.
     * `dynamic_payloads` applies to all pipes, not individual pipes.
     * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length` applies to all pipes, not
       individual pipes.

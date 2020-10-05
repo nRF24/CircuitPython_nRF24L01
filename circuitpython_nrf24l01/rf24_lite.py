@@ -118,7 +118,7 @@ class RF24:
                 self._reg_write(0, (self._reg_read(0) & 0xFC) | 3)
                 time.sleep(0.00015)
                 self.flush_rx()
-                self.clear_status_flags(True, False, False)
+                self.clear_status_flags()
                 self.ce_pin.value = 1
                 time.sleep(0.00013)
             else:
@@ -344,3 +344,9 @@ class RF24:
 
     def flush_tx(self):
         self._reg_write(0xE1)
+
+    def fifo(self, about_tx=False, check_empty=None):
+        _fifo, about_tx = (self._reg_read(0x17), bool(about_tx))
+        if check_empty is None:
+            return (_fifo & (0x30 if about_tx else 0x03)) >> (4 * about_tx)
+        return bool(_fifo & ((2 - bool(check_empty)) << (4 * about_tx)))

@@ -246,7 +246,7 @@ class RF24:
                 self._reg_write(CONFIGURE, self._config)
                 time.sleep(0.00015)  # mandatory wait to power up radio
                 self.flush_rx()
-                self.clear_status_flags(True, False, False)
+                self.clear_status_flags()
                 self.ce_pin.value = 1  # mandatory pulse is > 130 µs
                 time.sleep(0.00013)
             else:
@@ -735,7 +735,7 @@ class RF24:
             if self._features & 1 == 0:
                 self._features = self._features & 0xFE | 1
                 self._reg_write(TX_FEATURE, self._features)
-        self._reg_write_bytes(0xA0 | (ask_no_ack << 4), buf)
+        self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
         self.ce_pin.value = 1
 
     def flush_rx(self):
@@ -749,18 +749,10 @@ class RF24:
     def fifo(self, about_tx=False, check_empty=None):
         """This provides some precision determining the status of the TX/RX
         FIFO buffers. (read-only)"""
-        if isinstance(about_tx, (bool, int)):
-            if check_empty is None or isinstance(check_empty, (bool, int)):
-                self._fifo = self._reg_read(0x17)
-                mask = 4 * about_tx
-                if check_empty is None:
-                    return (self._fifo & (0x30 if about_tx else 0x03)) >> mask
-                return bool(self._fifo & ((2 - check_empty) << mask))
-        raise ValueError(
-            "Argument 1 ('about_tx') must always be a bool or "
-            "int. Argument 2 ('check_empty'), if specified, must"
-            " be a bool or int"
-        )
+        self._fifo, about_tx = (self._reg_read(0x17), bool(about_tx))
+        if check_empty is None:
+            return (self._fifo & (0x30 if about_tx else 0x03)) >> (4 * about_tx)
+        return bool(self._fifo & ((2 - bool(check_empty)) << (4 * about_tx)))
 
     def address(self, index=-1):
         """Returns the current address set to a specified data pipe or the TX
