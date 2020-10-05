@@ -127,3 +127,12 @@ def slave(timeout=6):  # will listen for 6 seconds before timing out
         # so, fetching 15 bytes from the RX FIFO also flushes RX FIFO
         print("Complete RX FIFO:", nrf.recv(15))
     nrf.flush_tx()  # discard any pending ACK payloads
+
+
+print(
+    """\
+    nRF24L01 Interrupt pin test.\n\
+    Make sure the IRQ pin is connected to the MCU\n\
+    Run slave() on receiver\n\
+    Run master() on transmitter"""
+)
