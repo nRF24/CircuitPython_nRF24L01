@@ -1,22 +1,4 @@
 
-.. .. only:: html
-
-.. image:: https://readthedocs.org/projects/circuitpython-nrf24l01/badge/?version=stable
-    :target: https://circuitpython-nrf24l01.readthedocs.io/en/stable/
-    :alt: Documentation Status
-
-.. image:: https://github.com/2bndy5/CircuitPython_nRF24L01/workflows/Build%20CI/badge.svg
-    :target: https://github.com/2bndy5/CircuitPython_nRF24L01/actions?query=workflow%3A%22Build+CI%22
-    :alt: Build Status
-
-.. image:: https://img.shields.io/pypi/v/circuitpython-nrf24l01.svg
-    :alt: latest version on PyPI
-    :target: https://pypi.python.org/pypi/circuitpython-nrf24l01
-
-.. image:: https://pepy.tech/badge/circuitpython-nrf24l01?label=pypi%20downloads&logo=python
-    :alt: Total PyPI downloads
-    :target: https://pepy.tech/project/circuitpython-nrf24l01
-
 Getting Started
 ==================
 
@@ -36,36 +18,36 @@ Modified by Brendan Doherty & Rhys Thomas.
 Features currently supported
 ----------------------------
 
-* change the addresses' length (can be 3 to 5 bytes long)
-* dynamically sized payloads (max 32 bytes each) or statically sized payloads
-* automatic responding acknowledgment (ACK) for verifying transmission success
-* custom acknowledgment (ACK) payloads for bi-directional communication
-* flag a single payload for no acknowledgment (ACK) from the receiving nRF24L01
-* "re-use the same payload" feature (for manually re-transmitting failed transmissions that
-  remain in the buffer)
-* multiple payload transmissions with one function call (MUST read documentation on the
+* Change the address's length (can be 3 to 5 bytes long)
+* Dynamically sized payloads (max 32 bytes each) or statically sized payloads
+* Automatic responding acknowledgment (ACK) packets for verifying transmission success
+* Append custom payloadsto the acknowledgment (ACK) packets for instant bi-directional communication
+* Mark a single payload for no acknowledgment (ACK) from the receiving nRF24L01 (see ``ask_no_ack`` parameter for `send()` and `write()` functions)
+* Invoke the "re-use the same payload" feature (for manually re-transmitting failed transmissions that
+  remain in the TX FIFO buffer)
+* Multiple payload transmissions with one function call (MUST read documentation on the
   `send()` function)
-* context manager compatible for easily switching between different radio configurations
-  using "with" statements (not available in ``rf24_lite.py`` variant for M0 based boards)
-* configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or
-  failed transmissions (these 3 flags control the 1 IRQ pin). There's also virtual
-  representations of these interrupt flags available (see
+* Context manager compatible for easily switching between different radio configurations
+  using `with` blocks (not available in ``rf24_lite.py`` version)
+* Configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or
+  failed transmissions (these 3 events control 1 IRQ pin). There's also virtual
+  representations of these interrupt events available (see
   :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr`,
   :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_ds`, & `irq_df` attributes)
-* invoke sleep mode (AKA power down mode) for ultra-low current consumption
+* Invoke sleep mode (AKA power down mode) for ultra-low current consumption
 * cyclic redundancy checking (CRC) up to 2 bytes long
-* adjust the nRF24L01's builtin automatic re-transmit feature's parameters (`arc`: number
+* Adjust the nRF24L01's builtin automatic re-transmit feature's parameters (`arc`: number
   of attempts, `ard`: delay between attempts)
-* adjust the nRF24L01's frequency channel (2.4-2.525 GHz)
-* adjust the nRF24L01's power amplifier level (0, -6, -12, or -18 dBm)
-* adjust the nRF24L01's RF data rate (250Kbps is buggy due to hardware design, but 1Mbps and 2Mbps are reliable)
-* a nRF24L01 driven by this library can communicate with a nRF24L01 on an Arduino driven by the `TMRh20 RF24 library <http://tmrh20.github.io/RF24/>`_. See the nrf24l01_2arduino_handling_data.py code in the `examples folder of this library's repository <examples.html#working-with-tmrh20-s-arduino-library>`_
+* Adjust the nRF24L01's frequency channel (2.4-2.525 GHz)
+* Adjust the nRF24L01's power amplifier level (0, -6, -12, or -18 dBm)
+* Adjust the nRF24L01's RF data rate (250kbps, 1Mbps, or 2Mbps)
+* An nRF24L01 driven by this library can communicate with a nRF24L01 on an Arduino driven by the `TMRh20 RF24 library <http://tmrh20.github.io/RF24/>`_. See the `nrf24l01_2arduino_handling_data.py <examples.html#Working-with-TMRh20-s-arduino-library>`_ example.
 * fake BLE module for sending BLE beacon advertisments from the nRF24L01 as outlined by `Dmitry Grinberg in his write-up (including C source code) <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_.
 
 Features currently unsupported
 ------------------------------
 
-* as of yet, no [intended] implementation for Multiceiver mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). Although this might be acheived easily using the "automatic retry delay" (`ard`) and "automatic retry count" (`arc`) attributes set accordingly (varyingly high -- this has not been tested).
+* as of yet, no [intended] implementation for Multiceiver mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). Although this might be acheived easily using the "automatic retry delay" (`ard`) and "automatic retry count" (`arc`) attributes set accordingly (varyingly high), but this has not been tested.
 
 Dependencies
 --------------------------
@@ -73,7 +55,7 @@ Dependencies
 This driver depends on:
 
 * `Adafruit CircuitPython <https://github.com/adafruit/circuitpython>`_
-* `Bus Device <https://github.com/adafruit/Adafruit_CircuitPython_BusDevice>`_
+* `Bus Device <https://github.com/adafruit/Adafruit_CircuitPython_BusDevice>`_ (specifically the :py:mod:`~adafruit_bus_device.spi_device`)
 
 Please ensure all dependencies are available on the CircuitPython filesystem.
 This is easily achieved by downloading
@@ -210,20 +192,20 @@ nRF24L01(+) clones and counterfeits
 
 This library does not directly support clones/counterfeits as there is no way for the library
 to differentiate between an actual nRF24L01+ and a clone/counterfeit. To determine if your
-purchase is a counterfeit, please contact the retailer you purxhased from (`reading this
+purchase is a counterfeit, please contact the retailer you purchased from (also `reading this
 article and its links might help
 <https://hackaday.com/2015/02/23/nordic-nrf24l01-real-vs-fake/>`_). The most notable clone is the `Si24R1 <https://lcsc.com/product-detail/
 RF-Transceiver-ICs_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.html>`_. I could not find
 the `Si24R1 datasheet <https://datasheet.lcsc.com/szlcsc/
 1811142211_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.pdf>`_ in english. Troubleshooting
-the SI24R1 may require `replacing the onboard antennae with a wire
+the SI24R1 may require `replacing the onboard antenna with a wire
 <https://forum.mysensors.org/post/96871>`_. Furthermore, the Si24R1 has different power
 amplifier options as noted in the `RF_PWR section (bits 0 through 2) of the RF_SETUP register
-(hex address 6) of the datasheet <https://datasheet.lcsc.com/szlcsc/
+(address 0x06) of the datasheet <https://datasheet.lcsc.com/szlcsc/
 1811142211_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.pdf#%5B%7B%22num%22%3A329%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C0%2C755%2Cnull%5D>`_.
 While the options' values differ from those identified by this library's API, the
 underlying commands to configure those options are almost identical to the nRF24L01. Other
-known clones include the bk242x (AKA RFM7x).
+known clones include the bk242x (also known as RFM7x).
 
 Contributing
 ============

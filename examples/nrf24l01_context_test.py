@@ -33,10 +33,8 @@ ble = FakeBLE(spi, csn, ce)
 # the IRQ pin is configured to only go active on "data fail"
 # NOTE BLE operations prevent the IRQ pin going active on "data fail" events
 ble.interrupt_config(data_recv=False, data_sent=False)
-# using a different channel: 2 (default is 76)
+# using a channel 2
 ble.channel = 2
-# data rate is set to 2 Mbps
-ble.data_rate = 2
 # RF power amplifier is set to -12 dbm
 ble.pa_level = -12
 

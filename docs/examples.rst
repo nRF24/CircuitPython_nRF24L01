@@ -17,15 +17,6 @@ This is a test to show how to use custom acknowledgment payloads.
     :caption: examples/nrf24l01_ack_payload_test.py
     :linenos:
 
-IRQ Pin Example
----------------
-
-This is a test to show how to use nRF24L01's interrupt pin.
-
-.. literalinclude:: ../examples/nrf24l01_interrupt_test.py
-    :caption: examples/nrf24l01_interrupt_test.py
-    :linenos:
-
 Stream Example
 ---------------
 
@@ -33,6 +24,15 @@ This is a test to show how to use the send() to transmit multiple payloads.
 
 .. literalinclude:: ../examples/nrf24l01_stream_test.py
     :caption: examples/nrf24l01_stream_test.py
+    :linenos:
+
+Fake BLE Example
+----------------
+
+This is a test to show how to use the nRF24L01 as a BLE advertising beacon.
+
+.. literalinclude:: ../examples/nrf24l01_fake_ble_test.py
+    :caption: examples/nrf24l01_fake_ble_test.py
     :linenos:
 
 Context Example
@@ -53,11 +53,11 @@ This test is meant to prove compatibility with the popular Arduino library for t
     :caption: examples/nrf24l01_2arduino_handling_data.py
     :linenos:
 
-Fake BLE Example
-----------------
+IRQ Pin Example
+---------------
 
-This is a test to show how to use the nRF24L01 as a BLE advertising beacon.
+This is a test to show how to use nRF24L01's interrupt pin. Be aware that `send()` clears all IRQ events on exit, so we use the non-blocking `write()` instead. Also the `ack` attribute is enabled to trigger the :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr` event when the master node receives ACK payloads. Simply put, this example is the most advanced example script, and it runs VERY quickly.
 
-.. literalinclude:: ../examples/nrf24l01_fake_ble_test.py
-    :caption: examples/nrf24l01_fake_ble_test.py
+.. literalinclude:: ../examples/nrf24l01_interrupt_test.py
+    :caption: examples/nrf24l01_interrupt_test.py
     :linenos:
