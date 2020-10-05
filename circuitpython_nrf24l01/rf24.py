@@ -283,7 +283,7 @@ class RF24:
                 result.append(self.send(b, ask_no_ack, force_retry))
             return result
         self.flush_tx()
-        if self.pipe is not None:
+        if not send_only:
             self.flush_rx()
         self.write(buf, ask_no_ack)
         time.sleep(0.00001)
@@ -699,7 +699,7 @@ class RF24:
         top level (first out) of the TX FIFO buffer."""
         result = False
         if not self.fifo(True, True):
-            if self.pipe is not None:
+            if not send_only:
                 self.flush_rx()
             self.clear_status_flags()
             self._reg_write(0xE3)

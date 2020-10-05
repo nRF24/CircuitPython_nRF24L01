@@ -148,7 +148,7 @@ class RF24:
                 result.append(self.send(b, ask_no_ack, force_retry))
             return result
         self.flush_tx()
-        if self.pipe is not None:
+        if not send_only:
             self.flush_rx()
         self.write(buf, ask_no_ack)
         time.sleep(0.00001)
@@ -306,7 +306,7 @@ class RF24:
     def resend(self, send_only=False):
         result = False
         if not self._reg_read(0x17) & 0x10:
-            if self.pipe is not None:
+            if not send_only:
                 self.flush_rx()
             self.clear_status_flags()
             self._reg_write(0xE3)

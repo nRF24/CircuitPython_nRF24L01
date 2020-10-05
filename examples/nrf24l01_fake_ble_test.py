@@ -117,12 +117,12 @@ url_service = UrlServiceData()
 # the data attribute converts a URL string into a simplified
 # bytes object using byte codes defined by the Eddystone protocol.
 url_service.data = "http://www.google.com"
-# Eddystone protocol requires a estimated TX PA level at 1 meter
+# Eddystone protocol requires an estimated TX PA level at 1 meter
 # lower this estimate since we lowered the actual `ble.pa_level`
 url_service.pa_level_at_1_meter = -45  # defaults to -25 dBm
 
 def send_url(count=50):
-    """Sends out a chunk of data twice a second."""
+    """Sends out a URL twice a second."""
     with nrf as ble:
         print(
             "available bytes in next payload:",
