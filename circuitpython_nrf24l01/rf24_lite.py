@@ -145,7 +145,7 @@ class RF24:
         if isinstance(buf, (list, tuple)):
             result = []
             for b in buf:
-                result.append(self.send(b, ask_no_ack, force_retry))
+                result.append(self.send(b, ask_no_ack, force_retry, send_only))
             return result
         self.flush_tx()
         if not send_only:
@@ -153,12 +153,12 @@ class RF24:
         self.write(buf, ask_no_ack)
         time.sleep(0.00001)
         self.ce_pin.value = 0
-        while not self._status & 0x30:
+        while not self._status & 0x70:
             self.update()
         result = self.irq_ds
         if self.irq_df:
             for _ in range(force_retry):
-                result = self.resend()
+                result = self.resend(send_only)
                 if result is None or result:
                     break
         if self._status & 0x60 == 0x60 and not send_only:
@@ -305,7 +305,7 @@ class RF24:
 
     def resend(self, send_only=False):
         result = False
-        if not self._reg_read(0x17) & 0x10:
+        if not self.fifo(True, True):
             if not send_only:
                 self.flush_rx()
             self.clear_status_flags()
@@ -314,7 +314,7 @@ class RF24:
             self.ce_pin.value = 1
             time.sleep(0.00001)
             self.ce_pin.value = 0
-            while not self._status & 0x30:
+            while not self._status & 0x70:
                 self.update()
             result = self.irq_ds
             if self._status & 0x60 == 0x60 and not send_only:

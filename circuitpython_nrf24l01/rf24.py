@@ -280,7 +280,7 @@ class RF24:
         if isinstance(buf, (list, tuple)):
             result = []
             for b in buf:
-                result.append(self.send(b, ask_no_ack, force_retry))
+                result.append(self.send(b, ask_no_ack, force_retry, send_only))
             return result
         self.flush_tx()
         if not send_only:
@@ -288,12 +288,12 @@ class RF24:
         self.write(buf, ask_no_ack)
         time.sleep(0.00001)
         self.ce_pin.value = 0
-        while not self._status & 0x30:
+        while not self._status & 0x70:
             self.update()
         result = self.irq_ds
         if self.irq_df:
             for _ in range(force_retry):
-                result = self.resend()
+                result = self.resend(send_only)
                 if result is None or result:
                     break
         if self._status & 0x60 == 0x60 and not send_only:
@@ -349,9 +349,7 @@ class RF24:
         """This debuggung function aggregates and outputs all status/condition
         related information from the nRF24L01."""
         observer = self._reg_read(8)
-        print(
-            "Is a plus variant_________{}".format(repr(self.is_plus_variant))
-        )
+        print("Is a plus variant_________{}".format(repr(self.is_plus_variant)))
         print(
             "Channel___________________{} ~ {} GHz".format(
                 self.channel, (self.channel + 2400) / 1000
@@ -610,9 +608,7 @@ class RF24:
     @data_rate.setter
     def data_rate(self, speed):
         if not speed in (1, 2, 250):
-            raise ValueError(
-                "data_rate must be 1 (Mbps), 2 (Mbps), or 250 (kbps)"
-            )
+            raise ValueError("data_rate must be 1 (Mbps), 2 (Mbps), or 250 (kbps)")
         if self.is_plus_variant and speed == 250:
             raise NotImplementedError(
                 "250 kbps data rate is not available for the non-plus "
@@ -699,15 +695,15 @@ class RF24:
         top level (first out) of the TX FIFO buffer."""
         result = False
         if not self.fifo(True, True):
+            self.ce_pin.value = 0
             if not send_only:
                 self.flush_rx()
             self.clear_status_flags()
             self._reg_write(0xE3)
-            self.ce_pin.value = 0
             self.ce_pin.value = 1
             time.sleep(0.00001)
             self.ce_pin.value = 0
-            while not self._status & 0x30:
+            while not self._status & 0x70:
                 self.update()
             result = self.irq_ds
             if self._status & 0x60 == 0x60 and not send_only:
