@@ -8,6 +8,15 @@ Ensure your device works with this simple test.
     :caption: examples/nrf24l01_simple_test.py
     :linenos:
 
+Multiceiver Example
+--------------------
+
+This example shows how use a group of 6 nRF24L01 transceivers to transmit to 1 nRF24L01 transceiver. `This technique is called "Multiceiver" in the nRF24L01 Specifications sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1104474>`_
+
+.. literalinclude:: ../examples/nrf24l01_multiceiver_test.py
+    :caption: examples/nrf24l01_multiceiver_test.py
+    :linenos:
+
 ACK Payloads Example
 --------------------
 
