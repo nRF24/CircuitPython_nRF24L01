@@ -322,7 +322,7 @@ class RF24:
             self.clear_status_flags(False)
         return result
 
-    def write(self, buf, ask_no_ack=False):
+    def write(self, buf, ask_no_ack=False, write_only=False):
         if not buf or len(buf) > 32:
             raise ValueError("buffer length must be in range [1, 32]")
         self.clear_status_flags()
@@ -337,7 +337,8 @@ class RF24:
             elif len(buf) > pl_width:
                 buf = buf[:pl_width]
         self._reg_write_bytes(0xA0 | (ask_no_ack << 4), buf)
-        self.ce_pin.value = 1
+        if not write_only:
+            self.ce_pin.value = 1
 
     def flush_rx(self):
         self._reg_write(0xE2)

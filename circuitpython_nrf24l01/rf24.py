@@ -711,7 +711,7 @@ class RF24:
             self.clear_status_flags(False)
         return result
 
-    def write(self, buf, ask_no_ack=False):
+    def write(self, buf, ask_no_ack=False, write_only=False):
         """This non-blocking function (when used as alternative to `send()`)
         is meant for asynchronous applications and can only handle one
         payload at a time as it is a helper function to `send()`."""
@@ -732,7 +732,8 @@ class RF24:
                 self._features = self._features & 0xFE | 1
                 self._reg_write(TX_FEATURE, self._features)
         self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
-        self.ce_pin.value = 1
+        if not write_only:
+            self.ce_pin.value = 1
 
     def flush_rx(self):
         """A helper function to flush the nRF24L01's RX FIFO buffer."""

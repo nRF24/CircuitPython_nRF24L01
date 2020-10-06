@@ -178,8 +178,8 @@ class FakeBLE:
         """Assemble the entire packet to be transmitted as a payload."""
         if self.available(payload) < 0:
             raise ValueError(
-                "Payload exceeds maximum size. Configuration allows "
-                "{} bytes".format(self.available())
+                "Payload length exceeds maximum buffer size by "
+                "{} bytes".format(abs(self.available(payload)))
             )
         name_length = (len(self.name) + 2) if self.name is not None else 0
         pl_size = 9 + len(payload) + name_length + self._show_dbm * 3

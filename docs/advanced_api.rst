@@ -284,6 +284,10 @@ write()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.write
 
+    This function isn't completely non-blocking as we still need to wait 5 ms (`CSN_DELAY`)
+    for the CSN pin to settle (allowing an accurate SPI write transaction). Example usage of
+    this function can be seen in the `IRQ pin example <examples.html#irq-pin-example>`_
+
     :param bytearray buf: The payload to transmit. This bytearray must have a length greater
         than 0 and less than 32 bytes, otherwise a `ValueError` exception is thrown.
 
@@ -308,16 +312,19 @@ write()
             Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
             nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1136318>`_ for more
             details.
+    :param bool write_only: This function will not manipulate the nRF24L01's CE pin if this
+        parameter is `True`. The default value of `False` will ensure that the CE pin is
+        HIGH upon exiting this function. This function does not set the CE pin LOW at
+        any time. Use this parameter as `True` to fill the TX FIFO buffer before beginning
+        transmissions.
 
-    This function isn't completely non-blocking as we still need to wait just under 5 ms for
-    the CSN pin to settle (allowing a clean SPI transaction).
-
-    .. note:: The nRF24L01 doesn't initiate sending until a mandatory minimum 10 µs pulse on
-        the CE pin is acheived. That pulse is initiated before this function exits. However, we
-        have left that 10 µs wait time to be managed by the MCU in cases of asychronous
-        application, or it is managed by using `send()` instead of this function. According to
-        the Specification sheet, if the CE pin remains HIGH for longer than 10 µs, then the
-        nRF24L01 will continue to transmit all payloads found in the TX FIFO buffer.
+        .. note:: The nRF24L01 doesn't initiate sending until a mandatory minimum 10 µs pulse
+            on the CE pin is acheived. If the ``write_only`` parameter is `False`, then that
+            pulse is initiated before this function exits. However, we have left that 10 µs
+            wait time to be managed by the MCU in cases of asychronous application, or it is
+            managed by using `send()` instead of this function. According to the
+            Specification sheet, if the CE pin remains HIGH for longer than 10 µs, then the
+            nRF24L01 will continue to transmit all payloads found in the TX FIFO buffer.
 
     .. warning::
         A note paraphrased from the `nRF24L01+ Specifications Sheet
@@ -328,11 +335,11 @@ write()
         If the [`arc` attribute is] enabled, nRF24L01+ is never in TX mode longer than 4
         ms.
 
-    .. tip:: Use this function at your own risk. Because of the underlying `"Enhanced
-        ShockBurst Protocol" <https://www.sparkfun.com/datasheets/Components/SMD/
+    .. tip:: Use this function at your own risk. Because of the underlying
+        `"Enhanced ShockBurst Protocol" <https://www.sparkfun.com/datasheets/Components/SMD/
         nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132607>`_, disobeying the 4
-        ms rule is easily avoided if you enable the `auto_ack` attribute. Alternatively, you
-        MUST use interrupt flags or IRQ pin with user defined timer(s) to AVOID breaking the
+        ms rule is easily avoided if the `arc` attribute is greater than ``0``. Alternatively,
+        you MUST use nRF24L01's IRQ pin and/or user-defined timer(s) to AVOID breaking the
         4 ms rule. If the `nRF24L01+ Specifications Sheet explicitly states this
         <https://www.sparkfun.com/datasheets/Components/SMD/
         nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1121422>`_, we have to assume

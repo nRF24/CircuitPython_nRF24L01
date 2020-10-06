@@ -56,7 +56,7 @@ This test is meant to prove compatibility with the popular Arduino library for t
 IRQ Pin Example
 ---------------
 
-This is a test to show how to use nRF24L01's interrupt pin. Be aware that `send()` clears all IRQ events on exit, so we use the non-blocking `write()` instead. Also the `ack` attribute is enabled to trigger the :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr` event when the master node receives ACK payloads. Simply put, this example is the most advanced example script, and it runs VERY quickly.
+This is a test to show how to use nRF24L01's interrupt pin. Be aware that `send()` clears all IRQ events on exit, so we use the non-blocking `write()` instead. Also the `ack` attribute is enabled to trigger the :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr` event when the master node receives ACK payloads. Simply put, this example is the most advanced example script (in this library), and it runs VERY quickly.
 
 .. literalinclude:: ../examples/nrf24l01_interrupt_test.py
     :caption: examples/nrf24l01_interrupt_test.py

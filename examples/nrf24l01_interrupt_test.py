@@ -38,14 +38,15 @@ nrf.ack = True  # enable ACK payloads
 nrf.pa_level = -12
 
 
-def _ping_and_prompt(buf):
-    """transmit dummy payload, wait till irq_pin goes active, print IRQ status
+def _ping_and_prompt():
+    """transmit 1 payload, wait till irq_pin goes active, print IRQ status
     flags."""
-    nrf.write(buf)  # write payload to TX FIFO
+    ce.value = 1  # tell the nRF24L01 to prepare sending a single packet
     time.sleep(0.00001)  # mandatory 10 microsecond pulse starts transmission
-    ce.value = 0  # end 10 us pulse; now in active TX
+    ce.value = 0  # end 10 us pulse; use only 1 buffer from TX FIFO
     while irq_pin.value:  # IRQ pin is active when LOW
         pass
+    print("IRQ pin went active LOW.")
     nrf.update()  # update irq_d? status flags
     print(
         "\tirq_ds: {}, irq_dr: {}, irq_df: {}".format(
@@ -61,49 +62,52 @@ def master():
     # ensures the nRF24L01 is in TX mode
     nrf.listen = False
     # NOTE nrf.power is automatically set to True on first call to nrf.write()
+    # NOTE nrf.write() internally calls nrf.clear_status_flags() first
+
+    # load 2 buffers into the TX FIFO; write_only=True leaves CE pin LOW
+    nrf.write(b"Ping ", write_only=True)
+    nrf.write(b"Pong ", write_only=True)
 
     # on data ready test
     print("\nConfiguring IRQ pin to only ignore 'on data sent' event")
     nrf.interrupt_config(data_sent=False)
-    print("    Pinging slave node for an ACK payload.")
-    _ping_and_prompt(b"Ping ")
+    print("    Pinging slave node for an ACK payload...", end=" ")
+    _ping_and_prompt()  # CE pin is managed by this function
     if nrf.irq_dr:
         print("\t'on data ready' event test successful")
     else:
         print("\t'on data ready' event test unsucessful")
-    nrf.clear_status_flags()  # clear all irq_d? flags for next test
 
     # on data sent test
     print("\nConfiguring IRQ pin to only ignore 'on data ready' event")
     nrf.interrupt_config(data_recv=False)
-    print("    Pinging slave node again.")
-    _ping_and_prompt(b"Pong ")
+    print("    Pinging slave node again...             ", end=" ")
+    _ping_and_prompt()  # CE pin is managed by this function
     if nrf.irq_ds:
         print("\t'on data sent' event test successful")
     else:
         print("\t'on data sent' event test unsucessful")
-    nrf.clear_status_flags()  # clear all irq_d? flags for next test
 
+    # trigger slave node to exit by filling the slave node's RX FIFO
     print("\nSending one extra payload to fill RX FIFO on slave node.")
-    nrf.write(b"Radio")  # write payload to TX FIFO
-    time.sleep(0.00001)  # mandatory 10 microsecond pulse starts transmission
-    ce.value = 0  # end 10 us pulse; now in active TX
-    nrf.clear_status_flags()  # clear all irq_d? flags for next test
-    print("Slave node should not be listening anymore. Ready to continue.")
+    if nrf.send(b"Radio", send_only=True):
+        # when send_only parameter is True, send() ignores RX FIFO usage
+        print("Slave node should not be listening anymore.")
+    else:
+        print("Slave node was unresponsive.")
 
     # on data fail test
     print("\nConfiguring IRQ pin to go active for all events.")
     nrf.interrupt_config()
-    print("    Sending a ping to inactive slave node.")
-    nrf.flush_tx()  # just in case the previous "on data sent" test failed
-    _ping_and_prompt(b"Dummy")
+    print("    Sending a ping to inactive slave node...", end=" ")
+    nrf.flush_tx()  # just in case any previous tests failed
+    nrf.write(b"Dummy", write_only=True)  # CE pin is left LOW
+    _ping_and_prompt()  # CE pin is managed by this function
     if nrf.irq_df:
         print("\t'on data failed' event test successful")
     else:
         print("\t'on data failed' event test unsucessful")
-    nrf.clear_status_flags()  # clear all irq_d? flags for next test
-    # flush TX FIFO from any failed tests
-    nrf.flush_tx()
+    nrf.flush_tx()  # flush artifact payload in TX FIFO from last test
     # all 3 ACK payloads received were 4 bytes each, and RX FIFO is full
     # so, fetching 12 bytes from the RX FIFO also flushes RX FIFO
     print("\nComplete RX FIFO:", nrf.recv(12))
@@ -119,7 +123,7 @@ def slave(timeout=6):  # will listen for 6 seconds before timing out
     nrf.listen = True  # start listening & clear irq_dr flag
     start_timer = time.monotonic()  # start timer now
     while not nrf.fifo(0, 0) and time.monotonic() - start_timer < timeout:
-        # if RX FIFO is not full and timeout is not reached; keep going
+        # if RX FIFO is not full and timeout is not reached, then keep going
         pass
     nrf.listen = False  # put nRF24L01 in Standby-I mode when idling
     if not nrf.fifo(False, True):  # if RX FIFO is not empty
