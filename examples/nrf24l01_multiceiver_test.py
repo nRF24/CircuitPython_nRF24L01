@@ -43,7 +43,7 @@ def base(timeout=10):
     start_timer = time.monotonic()
     while time.monotonic() - start_timer < timeout:
         while not nrf.fifo(False, True):
-            print("payload from {} = {}".format(addresses[nrf.pipe], nrf.recv()))
+            print("received:",nrf.recv())
             start_timer = time.monotonic()
     nrf.listen = False
 
@@ -63,7 +63,7 @@ def node(node_number, count=6):
     while counter < count:
         counter += 1
         payload = b"PTX-" + bytes([node_number + 49])
-        payload += b" pl" + bytes([count + 48])
+        payload += b" pl" + bytes([counter + 48])
         print("attempt {} returned {}".format(counter, nrf.send(payload)))
         time.sleep(0.5)
 
