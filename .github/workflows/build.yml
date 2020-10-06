@@ -37,17 +37,18 @@ jobs:
     - name: Install deps
       run: |
         source actions-ci/install.sh
+
     - name: Pip install pylint, black, & Sphinx
       run: |
-        pip install --force-reinstall pylint==1.9.2 black==19.10b0 Sphinx sphinx-rtd-theme
+        pip install pylint black Sphinx sphinx-rtd-theme
     - name: Library version
       run: git describe --dirty --always --tags
     - name: PyLint
       run: |
-        pylint --disable=too-many-statements,too-many-arguments,too-many-instance-attributes,too-many-public-methods,too-many-locals circuitpython_nrf24l01/*.py
+        pylint --disable=too-many-instance-attributes,too-many-public-methods,too-many-locals circuitpython_nrf24l01/*.py
         ([[ ! -d "examples" ]] || pylint --disable=invalid-name $( find . -path "./examples/*.py" ))
     - name: Build assets
-      run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --library_location . --package_folder_prefix circuitpython_nrf24l01
+      run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --library_location . --package_folder_prefix ${{ steps.repo-name.outputs.repo-name }}
     - name: Build docs
       working-directory: docs
       run: sphinx-build -E -W -b html . _build/html

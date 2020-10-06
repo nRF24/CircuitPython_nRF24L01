@@ -40,7 +40,7 @@ jobs:
       run: |
         source actions-ci/install.sh
     - name: Build assets
-      run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --library_location . --package_folder_prefix circuitpython_nrf24l01
+      run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --library_location .  --package_folder_prefix ${{ steps.repo-name.outputs.repo-name }}
     - name: Upload Release Assets
       # the 'official' actions version does not yet support dynamically
       # supplying asset names to upload. @csexton's version chosen based on

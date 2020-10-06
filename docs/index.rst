@@ -1,13 +1,12 @@
-.. include:: ../README.rst
 
 Table of Contents
 =================
 
 .. toctree::
+    :caption: Introduction
     :maxdepth: 4
-    :hidden:
 
-    self
+    greetings
 
 .. toctree::
     :caption: Examples
@@ -15,10 +14,29 @@ Table of Contents
     examples
 
 .. toctree::
-    :caption: API Reference
+    :caption: Troubleshooting
     :maxdepth: 5
 
-    api
+    troubleshooting
+
+.. toctree::
+    :caption: RF24 API Reference
+
+    basic_api
+
+
+.. toctree::
+
+    advanced_api
+
+.. toctree::
+
+    configure_api
+
+.. toctree::
+    :caption: BLE API Reference
+
+    ble_api
 
 .. toctree::
     :caption: Store Links

@@ -5,7 +5,9 @@ and retrieve custom automatic acknowledgment payloads.
 import time
 import board
 import digitalio as dio
-from circuitpython_nrf24l01 import RF24
+# if running this on a ATSAMD21 M0 based board
+# from circuitpython_nrf24l01.rf24_lite import RF24
+from circuitpython_nrf24l01.rf24 import RF24
 
 # change these (digital output) pins accordingly
 ce = dio.DigitalInOut(board.D4)
@@ -31,15 +33,17 @@ nrf = RF24(spi, csn, ce)
 # to enable the custom ACK payload feature
 nrf.ack = True  # False disables again
 
-# addresses needs to be in a buffer protocol object (bytearray)
-address = b'1Node'
+# set the Power Amplifier level to -12 dBm since this test example is
+# usually run with nRF24L01 transceivers in close proximity
+nrf.pa_level = -12
 
-# payloads need to be in a buffer protocol object (bytearray)
-tx = b'Hello '
+# addresses needs to be in a buffer protocol object (bytearray)
+address = b"1Node"
 
 # NOTE ACK payloads (like regular payloads and addresses)
 # need to be in a buffer protocol object (bytearray)
-ACK = b'World '
+ACK = b"World "
+
 
 def master(count=5):  # count = 5 will only transmit 5 packets
     """Transmits a dummy payload every second and prints the ACK payload"""
@@ -50,7 +54,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
     nrf.open_tx_pipe(address)
 
     while count:
-        buffer = tx + bytes([count + 48])  # output buffer
+        buffer = b"Hello " + bytes([count + 48])  # output buffer
         print("Sending (raw): {}".format(repr(buffer)))
         # to read the ACK payload during TX mode we
         # pass the parameter read_ack as True.
@@ -58,19 +62,19 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         now = time.monotonic() * 1000  # start timer
         result = nrf.send(buffer)  # becomes the response buffer
         if not result:
-            print('send() failed or timed out')
+            print("send() failed or timed out")
         else:
             # print the received ACK that was automatically
             # fetched and saved to "buffer" via send()
-            print('raw ACK: {}'.format(repr(result)))
+            print("raw ACK: {}".format(repr(result)))
             # the ACK payload should now be in buffer
         # print timer results despite transmission success
-        print('Transmission took',
-              time.monotonic() * 1000 - now, 'ms')
+        print("Transmission took", time.monotonic() * 1000 - now, "ms")
         time.sleep(1)
         count -= 1
 
-def slave(count=3):
+
+def slave(count=5):
     """Prints the received value and sends a dummy ACK payload"""
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 0
@@ -90,8 +94,7 @@ def slave(count=3):
             # this will listen indefinitely till count == 0
             count -= 1
             # print details about the received packet (if any)
-            print("Found {} bytes on pipe {}\
-                ".format(repr(nrf.any()), nrf.pipe()))
+            print("Found {} bytes on pipe {}".format(nrf.any(), nrf.pipe))
             # retreive the received packet's payload
             rx = nrf.recv()  # clears flags & empties RX FIFO
             print("Received (raw): {}".format(repr(rx)))
@@ -106,7 +109,10 @@ def slave(count=3):
     nrf.listen = False  # put radio in TX mode
     nrf.flush_tx()  # flush any ACK payload
 
-print("""\
+
+print(
+    """\
     nRF24L01 ACK test\n\
     Run slave() on receiver\n\
-    Run master() on transmitter""")
+    Run master() on transmitter"""
+)
