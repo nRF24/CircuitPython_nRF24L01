@@ -43,7 +43,7 @@ def base(timeout=10):
         while not nrf.fifo(False, True):
             print(
                 "payload from {} = {}".format(
-                    nrf.address(nrf.pipe),
+                    addresses[nrf.pipe],
                     nrf.recv()
                 )
             )
