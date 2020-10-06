@@ -34,7 +34,7 @@ open_tx_pipe()
 
     :param bytearray,bytes address: The virtual address of the receiving nRF24L01. The address
         specified here must match the address set to one of the RX data pipes of the receiving
-        nRF24L01. The existing address can be altered by writting a bytearray with a length
+        nRF24L01. The existing address can be altered by writing a bytearray with a length
         less than 5. The nRF24L01 will use the first `address_length` number of bytes for the
         RX address on the specified data pipe.
 
@@ -50,19 +50,15 @@ close_rx_pipe()
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.close_rx_pipe
 
     :param int pipe_number: The data pipe to use for RX transactions. This must be in range
-        [0, 5]. Otherwise a `ValueError` exception is thrown.
+        [0, 5]. Otherwise a `IndexError` exception is thrown.
 
 open_rx_pipe()
 ******************
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.open_rx_pipe
 
-    If `dynamic_payloads` attribute is disabled for the specifed data pipe, then the
-    `payload_length` attribute is used to define the expected length of the static RX payload
-    on the specified data pipe.
-
     :param int pipe_number: The data pipe to use for RX transactions. This must be in range
-        [0, 5]. Otherwise a `ValueError` exception is thrown.
+        [0, 5]. Otherwise a `IndexError` exception is thrown.
     :param bytearray,bytes address: The virtual address to the receiving nRF24L01. If using a
         ``pipe_number`` greater than 1, then only the MSByte of the address is written, so make
         sure MSByte (first character) is unique among other simultaneously receiving addresses.
@@ -121,16 +117,16 @@ recv()
             - If this parameter is greater than the next available payload's length, then
               additional data from other payload(s) in the RX FIFO buffer are returned.
 
-            .. note::
-                The nRF24L01 will repeatedly return the last byte fetched from the RX FIFO
-                buffer when there is no data to return (even if the RX FIFO is empty). Be
-                aware that a payload is only removed from the RX FIFO buffer when the entire
-                payload has been fetched by this function. Notice that this function always
-                starts reading data from the first byte of the first available payload (if
-                any) in the RX FIFO buffer. Remember the RX FIFO buffer can hold up to 3
-                payloads at a maximum of 32 bytes each.
+        .. note::
+            The nRF24L01 will repeatedly return the last byte fetched from the RX FIFO
+            buffer when there is no data to return (even if the RX FIFO is empty). Be
+            aware that a payload is only removed from the RX FIFO buffer when the entire
+            payload has been fetched by this function. Notice that this function always
+            starts reading data from the first byte of the first available payload (if
+            any) in the RX FIFO buffer. Remember the RX FIFO buffer can hold up to 3
+            payloads at a maximum of 32 bytes each.
     :returns:
-        If the ``length`` parameter is not specified, then this function returns `bytearray`
+        If the ``length`` parameter is not specified, then this function returns a `bytearray`
         of the RX payload data or `None` if there is no payload. This also depends on the
         setting of `dynamic_payloads` & `payload_length` attributes. Consider the following
         two scenarios:
@@ -159,8 +155,8 @@ send()
         - `True` if transmission succeeds.
         - `bytearray` or `True` when the `ack` attribute is `True`. Because the payload
           expects a responding custom ACK payload, the response is returned (upon successful
-          transmission) as a `bytearray` (or `True` if ACK payload is empty). This functionality
-          can be bypassed by setting the ``send_only`` parameter as `True`.
+          transmission) as a `bytearray` (or `True` if ACK payload is empty). Returning the
+          ACK payload can be bypassed by setting the ``send_only`` parameter as `True`.
 
     :param bytearray,bytes,list,tuple buf: The payload to transmit. This bytearray must have a
         length in range [1, 32], otherwise a `ValueError` exception is thrown. This can
@@ -189,20 +185,16 @@ send()
             details.
     :param int force_retry: The number of brute-force attempts to `resend()` a failed
         transmission. Default is 0. This parameter has no affect on transmissions if `arc` is
-        ``0`` or ``ask_no_ack`` parameter is set to `True`. Each re-attempt still takes
+        ``0`` or if ``ask_no_ack`` parameter is set to `True`. Each re-attempt still takes
         advantage of `arc` & `ard` attributes. During multi-payload processing, this
         parameter is meant to slow down CircuitPython devices just enough for the Raspberry
-        Pi to catch up (due to the Raspberry Pi's seemingly slower SPI speeds). See also
-        notes on `resend()` as using this parameter carries the same implications documented
-        there. This parameter has no effect if the ``ask_no_ack`` parameter is set to `True`
-        or if `arc` is disabled.
+        Pi to catch up (due to the Raspberry Pi's seemingly slower SPI speeds).
     :param bool send_only: This parameter only applies when the `ack` attribute is set to
-        `True`. Pass this parameter as `True` if you want to handle fetching the ACK
-        payload (from the RX FIFO) seperately from the sending transmission that recieved
-        the ACK payload. Many other libraries' behave as though this parameter is `True`
-        (e.g. The popular TMRh20 Arduino RF24 library). Use `recv()` to get the ACK
-        payload (if there is any) from the RX FIFO. This parameter defaults to `False`.
-        Remember that the RX FIFO can only hold up to 3 payloads at once.
+        `True`. Pass this parameter as `True` if the RX FIFO is not to be manipulated. Many
+        other libraries' behave as though this parameter is `True`
+        (e.g. The popular TMRh20 Arduino RF24 library). This parameter defaults to `False`.
+        Use `recv()` to get the ACK payload (if there is any) from the RX FIFO.Remember that
+        the RX FIFO can only hold up to 3 payloads at once.
 
     .. tip:: It is highly recommended that `arc` attribute is enabled (greater than ``0``)
         when sending multiple payloads. Test results with the `arc` attribute disabled were
@@ -211,7 +203,5 @@ send()
     .. warning::  The nRF24L01 will block usage of the TX FIFO buffer upon failed
         transmissions. Failed transmission's payloads stay in TX FIFO buffer until the MCU
         calls `flush_tx()` and `clear_status_flags()`. Therefore, this function will discard
-        failed transmissions' payloads when sending a list or tuple of payloads, so it can
-        continue to process through the list/tuple even if any payload fails to be
-        acknowledged.
+        failed transmissions' payloads.
 

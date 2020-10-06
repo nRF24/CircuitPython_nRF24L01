@@ -203,7 +203,7 @@ class RF24:
         """This function is used to close a specific data pipe from OTA (over
         the air) RX transmissions."""
         if pipe_number < 0 or pipe_number > 5:
-            raise ValueError("pipe number must be in range [0, 5]")
+            raise IndexError("pipe number must be in range [0, 5]")
         self._open_pipes = self._reg_read(OPEN_PIPES)
         if self._open_pipes & (1 << pipe_number):
             self._open_pipes = self._open_pipes & ~(1 << pipe_number)
@@ -213,7 +213,7 @@ class RF24:
         """This function is used to open a specific data pipe for OTA (over
         the air) RX transmissions."""
         if not 0 <= pipe_number <= 5:
-            raise ValueError("pipe number must be in range [0, 5]")
+            raise IndexError("pipe number must be in range [0, 5]")
         if not address:
             raise ValueError("address length cannot be 0")
         if pipe_number < 2:
@@ -340,7 +340,7 @@ class RF24:
         self._reg_write(7, config)
 
     def interrupt_config(self, data_recv=True, data_sent=True, data_fail=True):
-        """Sets the configuration of the nRF24L01's IRQ (interrupt) pin."""
+        """Sets the configuration of the nRF24L01's IRQ pin. (write-only)"""
         self._config = (self._reg_read(CONFIGURE) & 0x0F) | (not data_recv) << 6
         self._config |= (not data_fail) << 4 | (not data_sent) << 5
         self._reg_write(CONFIGURE, self._config)
@@ -583,7 +583,7 @@ class RF24:
         """This allows the MCU to specify a payload to be allocated into the
         TX FIFO buffer for use on a specific data pipe."""
         if pipe_number < 0 or pipe_number > 5:
-            raise ValueError("pipe_number must be in range [0, 5]")
+            raise IndexError("pipe_number must be in range [0, 5]")
         if not buf or len(buf) > 32:
             raise ValueError("payload must have a byte length in range [1, 32]")
         if not bool((self._features & 6) == 6 and ((self._aa & self._dyn_pl) & 1)):
@@ -680,8 +680,8 @@ class RF24:
 
     @property
     def is_lna_enabled(self):
-        """A read-only `bool` attribute about the LNA (Low Noise Amplifier) gain
-        feature used in the nRF24L01-PA/LNA modules."""
+        """A read-only `bool` attribute about the LNA (Low Noise Amplifier)
+        gain feature."""
         self._rf_setup = self._reg_read(RF_PA_RATE)
         return bool(self._rf_setup & 1)
 
@@ -744,7 +744,7 @@ class RF24:
         self._reg_write(0xE1)
 
     def fifo(self, about_tx=False, check_empty=None):
-        """This provides some precision determining the status of the TX/RX
+        """This provides *some* precision determining the status of the TX/RX
         FIFO buffers. (read-only)"""
         self._fifo, about_tx = (self._reg_read(0x17), bool(about_tx))
         if check_empty is None:
