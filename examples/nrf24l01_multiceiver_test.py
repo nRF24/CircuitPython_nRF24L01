@@ -5,6 +5,7 @@ transceivers. This technique is called "multiceiver" in the datasheet.
 import time
 import board
 import digitalio as dio
+
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
@@ -25,11 +26,12 @@ nrf = RF24(spi, csn, ce)
 addresses = [
     b"\x78" * 5,
     b"\xF1\xB3\xB4\xB5\xB6",
-    b"\xCD",
-    b"\xA3",
-    b"\x0F",
-    b"\x05"
+    b"\xCD\xB3\xB4\xB5\xB6",
+    b"\xA3\xB3\xB4\xB5\xB6",
+    b"\x0F\xB3\xB4\xB5\xB6",
+    b"\x05\xB3\xB4\xB5\xB6"
 ]
+
 
 def base(timeout=10):
     """Use the nRF24L01 as a base station for lisening to all nodes"""
@@ -41,16 +43,12 @@ def base(timeout=10):
     start_timer = time.monotonic()
     while time.monotonic() - start_timer < timeout:
         while not nrf.fifo(False, True):
-            print(
-                "payload from {} = {}".format(
-                    addresses[nrf.pipe],
-                    nrf.recv()
-                )
-            )
+            print("payload from {} = {}".format(addresses[nrf.pipe], nrf.recv()))
             start_timer = time.monotonic()
     nrf.listen = False
 
-def node(node_number=0, count=6):
+
+def node(node_number, count=6):
     """start transmitting to the base station.
 
         :param int node_number: the node's identifying index (from the
@@ -67,3 +65,11 @@ def node(node_number=0, count=6):
         payload += b" pl" + bytes([count + 48])
         nrf.send(payload)
         time.sleep(0.5)
+
+
+print(
+    """\
+    nRF24L01 Multiceiver test.\n\
+    Run base() on receiver\n\
+    Run node(<node_number>) on transmitter"""
+)
