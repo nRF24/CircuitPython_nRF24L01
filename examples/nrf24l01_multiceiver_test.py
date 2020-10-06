@@ -61,9 +61,10 @@ def node(node_number, count=6):
     nrf.open_tx_pipe(addresses[node_number])
     counter = 0
     while counter < count:
-        payload = b"PTX-" + bytes([node_number + 1])
+        counter += 1
+        payload = b"PTX-" + bytes([node_number + 49])
         payload += b" pl" + bytes([count + 48])
-        nrf.send(payload)
+        print("attempt {} returned {}".format(counter, nrf.send(payload)))
         time.sleep(0.5)
 
 
