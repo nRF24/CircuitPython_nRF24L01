@@ -67,4 +67,3 @@ def node(node_number=0, count=6):
         payload += b" pl" + bytes([count + 48])
         nrf.send(payload)
         time.sleep(0.5)
-
