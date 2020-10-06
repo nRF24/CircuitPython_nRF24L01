@@ -50,7 +50,7 @@ def base(timeout=10):
             start_timer = time.monotonic()
     nrf.listen = False
 
-def node(node_number=0, count=6)
+def node(node_number=0, count=6):
     """start transmitting to the base station.
 
         :param int node_number: the node's identifying index (from the
