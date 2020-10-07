@@ -1,6 +1,8 @@
 """
 Simple example of using 1 nRF24L01 to receive data from up to 6 other
 transceivers. This technique is called "multiceiver" in the datasheet.
+For fun, this example also sends an ACK payload from the base station
+to the node-1 transmitter.
 """
 import time
 import board
@@ -32,19 +34,28 @@ addresses = [
     b"\x05\xB3\xB4\xB5\xB6"
 ]
 
+# to use custom ACK payloads, we must enable that feature
+nrf.ack = True
+# let this be the ACk payload
+ACK = b"Yak Back ACK"
+
 
 def base(timeout=10):
     """Use the nRF24L01 as a base station for lisening to all nodes"""
     # write the addresses to all pipes.
     for pipe_n, addr in enumerate(addresses):
         nrf.open_rx_pipe(pipe_n, addr)
-
+    # fill TX FIFO with ACK payloads
+    while nrf.fifo(True, False):
+        nrf.load_ack(ACK, 1)  # only send ACK payload to node 1
     nrf.listen = True
     start_timer = time.monotonic()
     while time.monotonic() - start_timer < timeout:
         while not nrf.fifo(False, True):
-            print("received:",nrf.recv())
+            print("node", nrf.pipe, "sent:", nrf.recv())
             start_timer = time.monotonic()
+            if nrf.load_ack(ACK, 1):
+                print("\t ACK re-loaded")
     nrf.listen = False
 
 
@@ -71,6 +82,8 @@ def node(node_number, count=6):
 print(
     """\
     nRF24L01 Multiceiver test.\n\
-    Run base() on receiver\n\
-    Run node(<node_number>) on transmitter"""
+    Run base() on the receiver\n\
+        base() sends ACK payloads to node 1\n\
+    Run node(node_number) on a transmitter\n\
+        node()'s parameter, `node_number`, must be in range [0, 5]"""
 )

@@ -8,8 +8,7 @@
 .. |update manually| replace:: Calling this does not execute an SPI transaction. It only
     exposes that latest data contained in the STATUS byte that's always returned from any
     other SPI transactions. Use the :py:func:`~circuitpython_nrf24l01.rf24.RF24.update()`
-    function to manually refresh this data when needed )especially after calling
-    :py:func:`~circuitpython_nrf24l01.rf24.RF24.clear_status_flags()`).
+    function to manually refresh this data when needed
 
 Advanced API
 ------------
@@ -141,7 +140,8 @@ irq_dr
 
     Pass ``data_recv`` |irq note|
 
-    |update manually|
+    |update manually| (especially after calling
+    :py:func:`~circuitpython_nrf24l01.rf24.RF24.clear_status_flags()`).
 
 irq_df
 ******************************
@@ -158,7 +158,8 @@ irq_df
 
     Pass ``data_fail`` |irq note|
 
-    |update manually|
+    |update manually| (especially after calling
+    :py:func:`~circuitpython_nrf24l01.rf24.RF24.clear_status_flags()`).
 
 irq_ds
 ******************************
@@ -175,7 +176,8 @@ irq_ds
 
     Pass ``data_sent`` |irq note|
 
-    |update manually|
+    |update manually| (especially after calling
+    :py:func:`~circuitpython_nrf24l01.rf24.RF24.clear_status_flags()`).
 
 clear_status_flags()
 ******************************
@@ -231,7 +233,8 @@ tx_full
 
     .
 
-    |update manually|
+    |update manually| (especially after calling
+    :py:func:`~circuitpython_nrf24l01.rf24.RF24.flush_tx()`).
 
     :returns:
 
@@ -395,7 +398,8 @@ pipe
 
     .
 
-    |update manually|
+    |update manually| (especially after calling
+    :py:func:`~circuitpython_nrf24l01.rf24.RF24.flush_rx()`).
 
     :Returns:
 

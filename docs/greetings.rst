@@ -25,8 +25,8 @@ Features currently supported
 * Mark a single payload for no acknowledgment (ACK) from the receiving nRF24L01 (see ``ask_no_ack`` parameter for `send()` and `write()` functions)
 * Invoke the "re-use the same payload" feature (for manually re-transmitting failed transmissions that
   remain in the TX FIFO buffer)
-* Multiple payload transmissions with one function call (MUST read documentation on the
-  `send()` function)
+* Multiple payload transmissions with one function call (see documentation on the
+  `send()` function and try out the `Stream example <examples.html#stream-example>`_)
 * Context manager compatible for easily switching between different radio configurations
   using `with` blocks (not available in ``rf24_lite.py`` version)
 * Configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or
@@ -41,13 +41,9 @@ Features currently supported
 * Adjust the nRF24L01's frequency channel (2.4-2.525 GHz)
 * Adjust the nRF24L01's power amplifier level (0, -6, -12, or -18 dBm)
 * Adjust the nRF24L01's RF data rate (250kbps, 1Mbps, or 2Mbps)
-* An nRF24L01 driven by this library can communicate with a nRF24L01 on an Arduino driven by the `TMRh20 RF24 library <http://tmrh20.github.io/RF24/>`_. See the `nrf24l01_2arduino_handling_data.py <examples.html#Working-with-TMRh20-s-arduino-library>`_ example.
+* An nRF24L01 driven by this library can communicate with a nRF24L01 on an Arduino driven by the `TMRh20 RF24 library <http://tmrh20.github.io/RF24/>`_. See the `nrf24l01_2arduino_handling_data.py <examples.html#TMRh20-s-arduino-library>`_ example.
 * fake BLE module for sending BLE beacon advertisments from the nRF24L01 as outlined by `Dmitry Grinberg in his write-up (including C source code) <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_.
-
-Features currently unsupported
-------------------------------
-
-* as of yet, no [intended] implementation for Multiceiver mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). Although this might be acheived easily using the "automatic retry delay" (`ard`) and "automatic retry count" (`arc`) attributes set accordingly (varyingly high), but this has not been tested.
+* Multiceiver\ :sup:`TM` mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). See the `Multiceiver Example <examples.html#multiceiver-example>`_
 
 Dependencies
 --------------------------

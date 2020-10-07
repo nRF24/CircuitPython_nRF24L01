@@ -40,7 +40,7 @@ With the `auto_ack` feature enabled, you get:
     path that connects the endpoints. When assigning addresses to a data pipe, you can use any
     5 byte long address you can think of (as long as the first byte is unique among
     simultaneously broadcasting addresses), so you're not limited to communicating with only
-    the same 6 nRF24L01 radios (more on this when we officially support "Multiciever" mode).
+    the same 6 nRF24L01 radios.
 
     Finnaly, the radio's channel is not be confused with the radio's pipes. Channel selection
     is a way of specifying a certain radio frequency (frequency = [2400 + channel] MHz).
