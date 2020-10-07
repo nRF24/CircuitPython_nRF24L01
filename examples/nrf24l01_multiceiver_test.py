@@ -80,7 +80,7 @@ def node(node_number, count=6):
     while counter < count:
         counter += 1
         # payloads will include the node_number and a payload ID character
-        payload = node_id + b" payload-ID: "
+        payload = node_id + b" payload-ID: " + bytes([node_number + 48])
         payload += bytes([counter + (65 if 0 <= counter < 26 else 71)])
         # show something to see it isn't frozen
         print("attempt {} returned {}".format(counter, nrf.send(payload)))
