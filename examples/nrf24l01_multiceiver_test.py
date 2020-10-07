@@ -24,6 +24,10 @@ spi = board.SPI()  # init spi bus object
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(spi, csn, ce)
 
+# set the Power Amplifier level to -12 dBm since this test example is
+# usually run with nRF24L01 transceivers in close proximity
+nrf.pa_level = -12
+
 # setup the addresses for all transmitting nRF24L01 nodes
 addresses = [
     b"\x78" * 5,
@@ -45,16 +49,16 @@ def base(timeout=10):
     # write the addresses to all pipes.
     for pipe_n, addr in enumerate(addresses):
         nrf.open_rx_pipe(pipe_n, addr)
-    # fill TX FIFO with ACK payloads
-    while nrf.fifo(True, False):
+    while nrf.fifo(True, False):  # fill TX FIFO with ACK payloads
         nrf.load_ack(ACK, 1)  # only send ACK payload to node 1
-    nrf.listen = True
-    start_timer = time.monotonic()
+    nrf.listen = True  # put base station into RX mode
+    start_timer = time.monotonic()  # start timer
     while time.monotonic() - start_timer < timeout:
-        while not nrf.fifo(False, True):
+        while not nrf.fifo(False, True):  # keep RX FIFO empty for reception
+            # show the pipe number that received the payload
             print("node", nrf.pipe, "sent:", nrf.recv())
-            start_timer = time.monotonic()
-            if nrf.load_ack(ACK, 1):
+            start_timer = time.monotonic()  # reset timer with every payload
+            if nrf.load_ack(ACK, 1):  # keep TX FIFO full with ACK payloads
                 print("\t ACK re-loaded")
     nrf.listen = False
 
@@ -71,12 +75,16 @@ def node(node_number, count=6):
     # set the TX address to the address of the base station.
     nrf.open_tx_pipe(addresses[node_number])
     counter = 0
+    # use the node_number to identify where the payload came from
+    node_id = b"PTX-" + bytes([node_number + 48])
     while counter < count:
         counter += 1
-        payload = b"PTX-" + bytes([node_number + 49])
-        payload += b" pl" + bytes([counter + 48])
+        # payloads will include the node_number and a payload ID character
+        payload = node_id + b" payload-ID: "
+        payload += bytes([counter + (65 if 0 <= counter < 26 else 71)])
+        # show something to see it isn't frozen
         print("attempt {} returned {}".format(counter, nrf.send(payload)))
-        time.sleep(0.5)
+        time.sleep(0.5)  # slow down the test for readability
 
 
 print(
