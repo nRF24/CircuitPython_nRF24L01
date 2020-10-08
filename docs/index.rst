@@ -39,6 +39,11 @@ Table of Contents
     ble_api
 
 .. toctree::
+    :caption: Logitech Mouse API Reference
+
+    logitech
+
+.. toctree::
     :caption: Store Links
 
     2.4GHz Transceiver IC - nRF24L01+ <https://www.sparkfun.com/products/690>

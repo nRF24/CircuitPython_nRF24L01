@@ -64,11 +64,12 @@ class Sniffer:
             match the transmitting nRF24L01's attributes. These attributes include
 
                 - `address_length`
-                - `channel`
+                - :py:attr:`~circuitpython_nrf24l01.rf24.RF24.channel`
                 - `data_rate`
                 - `crc`
                 - `dynamic_payloads`
-                - `payload_length` (only if `dynamic_payloads` is `False`)
+                - :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length`
+                  (only if `dynamic_payloads` is `False`)
                 - `auto_ack`,
                 - `ack` (only if `auto_ack` is `True`)
 
