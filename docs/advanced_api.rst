@@ -1,12 +1,14 @@
 
-.. |irq note| replace::  parameter as `True` to `clear_status_flags()` and reset this. As this
-    is a virtual representation of the interrupt event, this attribute will always be updated
-    despite what the actual IRQ pin is configured to do about this event.
-    
+.. |irq note| replace::  parameter as `True` to
+    :py:func:`~circuitpython_nrf24l01.rf24.RF24.clear_status_flags()` and reset this.
+    As this is a virtual representation of the interrupt event, this attribute will
+    always be updated despite what the actual IRQ pin is configured to do about this
+    event.
+
 .. |update manually| replace:: Calling this does not execute an SPI transaction. It only
     exposes that latest data contained in the STATUS byte that's always returned from any
-    other SPI transactions. Use the `update()` function to manually refresh this data when
-    needed.
+    other SPI transactions. Use the :py:func:`~circuitpython_nrf24l01.rf24.RF24.update()`
+    function to manually refresh this data when needed
 
 Advanced API
 ------------
@@ -20,6 +22,8 @@ what_happened()
 
     :prints:
 
+        - ``Is a plus variant`` True means the transceiver is a nRF24L01+. False
+          means the transceiver is a nRF24L01 (not a plus variant).
         - ``Channel`` The current setting of the `channel` attribute
         - ``RF Data Rate`` The current setting of the RF `data_rate` attribute.
         - ``RF Power Amplifier`` The current setting of the `pa_level` attribute.
@@ -69,7 +73,14 @@ what_happened()
           payloads`` where ``X`` is the `payload_length` (in bytes) the pipe is setup to
           receive when `dynamic_payloads` is disabled for that pipe.
 
-        Default is `False` and skips this extra information.
+        This parameter's default is `False` and skips this extra information.
+
+is_plus_variant
+******************************
+
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.is_plus_variant
+
+    This information is detirmined upon instantiation.
 
 load_ack()
 ******************************
@@ -77,17 +88,17 @@ load_ack()
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.load_ack
 
     This payload will then be appended to the automatic acknowledgment
-    (ACK) packet that is sent when fresh data is received on the specified pipe. See
-    `read_ack()` on how to fetch a received custom ACK payloads.
+    (ACK) packet that is sent when *new* data is received on the specified pipe. See
+    `recv()` on how to fetch a received custom ACK payloads.
 
-    :param bytearray buf: This will be the data attached to an automatic ACK packet on the
+    :param bytearray,bytes buf: This will be the data attached to an automatic ACK packet on the
         incoming transmission about the specified ``pipe_number`` parameter. This must have a
         length in range [1, 32] bytes, otherwise a `ValueError` exception is thrown. Any ACK
         payloads will remain in the TX FIFO buffer until transmitted successfully or
         `flush_tx()` is called.
     :param int pipe_number: This will be the pipe number to use for deciding which
         transmissions get a response with the specified ``buf`` parameter's data. This number
-        must be in range [0, 5], otherwise a `ValueError` exception is thrown.
+        must be in range [0, 5], otherwise a `IndexError` exception is thrown.
 
     :returns: `True` if payload was successfully loaded onto the TX FIFO buffer. `False` if it
         wasn't because TX FIFO buffer is full.
@@ -95,8 +106,8 @@ load_ack()
     .. note:: this function takes advantage of a special feature on the nRF24L01 and needs to
         be called for every time a customized ACK payload is to be used (not for every
         automatic ACK packet -- this just appends a payload to the ACK packet). The `ack`,
-        `auto_ack`, and `dynamic_payloads` attributes are also automatically enabled by this
-        function when necessary.
+        `auto_ack`, and `dynamic_payloads` attributes are also automatically enabled (with
+        respect to data pipe 0) by this function when necessary.
 
     .. tip:: The ACK payload must be set prior to receiving a transmission. It is also worth
         noting that the nRF24L01 can hold up to 3 ACK payloads pending transmission. Using this
@@ -109,15 +120,10 @@ read_ack()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.read_ack
 
-    This function was internally called from a blocking `send()` call if the `ack` attribute
-    is enabled. Alternatively, this function can be called directly in case of calling the
-    non-blocking `write()` function during asychronous applications. This function is an alias
-    of `recv()` and remains for backward compatibility with older versions of this library.
+    This function is an alias of `recv()` and remains for backward compatibility with older
+    versions of this library.
 
-    .. note:: See also the `ack`, `dynamic_payloads`, and `auto_ack` attributes as they must be
-        enabled to use custom ACK payloads.
-
-    .. warning:: This function will be deprecated on next major release. Use `recv()` instead. 
+    .. warning:: This function will be deprecated on next major release. Use `recv()` instead.
 
 irq_dr
 ******************************
@@ -127,14 +133,14 @@ irq_dr
     .
 
     :Returns:
-        
         - `True` represents Data is in the RX FIFO buffer
         - `False` represents anything depending on context (state/condition of FIFO buffers);
           usually this means the flag's been reset.
 
-    Pass ``dataReady`` |irq note|
+    Pass ``data_recv`` |irq note|
 
-    |update manually|
+    |update manually| (especially after calling
+    :py:func:`~circuitpython_nrf24l01.rf24.RF24.clear_status_flags()`).
 
 irq_df
 ******************************
@@ -144,14 +150,14 @@ irq_df
     .
 
     :Returns:
-        
         - `True` signifies the nRF24L01 attemped all configured retries
         - `False` represents anything depending on context (state/condition); usually this
           means the flag's been reset.
 
-    Pass ``dataFail`` |irq note|
+    Pass ``data_fail`` |irq note|
 
-    |update manually|
+    |update manually| (especially after calling
+    :py:func:`~circuitpython_nrf24l01.rf24.RF24.clear_status_flags()`).
 
 irq_ds
 ******************************
@@ -161,14 +167,14 @@ irq_ds
     .
 
     :Returns:
-        
         - `True` represents a successful transmission
         - `False` represents anything depending on context (state/condition of FIFO buffers);
           usually this means the flag's been reset.
 
-    Pass ``dataSent`` |irq note|
+    Pass ``data_sent`` |irq note|
 
-    |update manually|
+    |update manually| (especially after calling
+    :py:func:`~circuitpython_nrf24l01.rf24.RF24.clear_status_flags()`).
 
 clear_status_flags()
 ******************************
@@ -178,9 +184,12 @@ clear_status_flags()
     Internally, this is automatically called by `send()`, `write()`, `recv()`, and when
     `listen` changes from `False` to `True`.
 
-    :param bool data_recv: specifies wheather to clear the "RX Data Ready" flag.
-    :param bool data_sent: specifies wheather to clear the "TX Data Sent" flag.
-    :param bool data_fail: specifies wheather to clear the "Max Re-transmit reached" flag.
+    :param bool data_recv: specifies wheather to clear the "RX Data Ready"
+        (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr`) flag.
+    :param bool data_sent: specifies wheather to clear the "TX Data Sent"
+        (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_ds`) flag.
+    :param bool data_fail: specifies wheather to clear the "Max Re-transmit reached"
+        (`irq_df`) flag.
 
     .. note:: Clearing the ``data_fail`` flag is necessary for continued transmissions from the
         nRF24L01 (locks the TX FIFO buffer when `irq_df` is `True`) despite wheather or not the
@@ -202,22 +211,17 @@ power
     - `False` basically puts the nRF24L01 to sleep (AKA power down mode) with ultra-low
       current consumption. No transmissions are executed when sleeping, but the nRF24L01 can
       still be accessed through SPI. Upon instantiation, this driver class puts the nRF24L01
-      to sleep until the MCU invokes RX/TX transmissions. This driver class doesn't power down
-      the nRF24L01 after RX/TX transmissions are complete (avoiding the required power up/down
-      150 µs wait time), that preference is left to the application.
+      to sleep until the MCU invokes RX/TX modes. This driver class will only power down
+      the nRF24L01 after exiting a `with` block.
     - `True` powers up the nRF24L01. This is the first step towards entering RX/TX modes (see
       also `listen` attribute). Powering up is automatically handled by the `listen` attribute
       as well as the `send()` and `write()` functions.
 
     .. note:: This attribute needs to be `True` if you want to put radio on Standby-II (highest
-        current consumption) or Standby-I (moderate current consumption) modes, which Standby
-        mode depends on the state of the CE pin. TX transmissions are only executed during
-        Standby-II by calling `send()` or `write()`. RX transmissions are received during
-        Standby-II by setting `listen` attribute to `True` (see `Chapter 6.1.2-7 of the
+        current consumption) or Standby-I (moderate current consumption) modes. The state of
+        the CE pin determines which Standby mode is acheived. See `Chapter 6.1.2-7 of the
         nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
-        nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132980>`_). After using
-        `send()` or setting `listen` to `False`, the nRF24L01 is left in Standby-I mode (see
-        also notes on the `write()` function).
+        nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132980>`_ for more details.
 
 tx_full
 ******************************
@@ -225,11 +229,12 @@ tx_full
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.tx_full
 
     .
-    
-    |update manually|
+
+    |update manually| (especially after calling
+    :py:func:`~circuitpython_nrf24l01.rf24.RF24.flush_tx()`).
 
     :returns:
-        
+
         - `True` for TX FIFO buffer is full
         - `False` for TX FIFO buffer is not full. This doesn't mean the TX FIFO buffer is
           empty.
@@ -253,6 +258,13 @@ resend()
     All returned data from this function follows the same patttern that `send()` returns with
     the added condition that this function will return `False` if the TX FIFO buffer is empty.
 
+    :param bool send_only: This parameter only applies when the `ack` attribute is set to
+        `True`. Pass this parameter as `True` if the RX FIFO is not to be manipulated. Many
+        other libraries' behave as though this parameter is `True`
+        (e.g. The popular TMRh20 Arduino RF24 library). This parameter defaults to `False`.
+        Use `recv()` to get the ACK payload (if there is any) from the RX FIFO.Remember that
+        the RX FIFO can only hold up to 3 payloads at once.
+
     .. note:: The nRF24L01 normally removes a payload from the TX FIFO buffer after successful
         transmission, but not when this function is called. The payload (successfully
         transmitted or not) will remain in the TX FIFO buffer until `flush_tx()` is called to
@@ -264,6 +276,10 @@ write()
 ******************************
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.write
+
+    This function isn't completely non-blocking as we still need to wait 5 ms (`CSN_DELAY`)
+    for the CSN pin to settle (allowing an accurate SPI write transaction). Example usage of
+    this function can be seen in the `IRQ pin example <examples.html#irq-pin-example>`_
 
     :param bytearray buf: The payload to transmit. This bytearray must have a length greater
         than 0 and less than 32 bytes, otherwise a `ValueError` exception is thrown.
@@ -289,16 +305,19 @@ write()
             Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
             nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1136318>`_ for more
             details.
+    :param bool write_only: This function will not manipulate the nRF24L01's CE pin if this
+        parameter is `True`. The default value of `False` will ensure that the CE pin is
+        HIGH upon exiting this function. This function does not set the CE pin LOW at
+        any time. Use this parameter as `True` to fill the TX FIFO buffer before beginning
+        transmissions.
 
-    This function isn't completely non-blocking as we still need to wait just under 5 ms for
-    the CSN pin to settle (allowing a clean SPI transaction).
-
-    .. note:: The nRF24L01 doesn't initiate sending until a mandatory minimum 10 µs pulse on
-        the CE pin is acheived. That pulse is initiated before this function exits. However, we
-        have left that 10 µs wait time to be managed by the MCU in cases of asychronous
-        application, or it is managed by using `send()` instead of this function. According to
-        the Specification sheet, if the CE pin remains HIGH for longer than 10 µs, then the
-        nRF24L01 will continue to transmit all payloads found in the TX FIFO buffer.
+        .. note:: The nRF24L01 doesn't initiate sending until a mandatory minimum 10 µs pulse
+            on the CE pin is acheived. If the ``write_only`` parameter is `False`, then that
+            pulse is initiated before this function exits. However, we have left that 10 µs
+            wait time to be managed by the MCU in cases of asychronous application, or it is
+            managed by using `send()` instead of this function. According to the
+            Specification sheet, if the CE pin remains HIGH for longer than 10 µs, then the
+            nRF24L01 will continue to transmit all payloads found in the TX FIFO buffer.
 
     .. warning::
         A note paraphrased from the `nRF24L01+ Specifications Sheet
@@ -309,11 +328,11 @@ write()
         If the [`arc` attribute is] enabled, nRF24L01+ is never in TX mode longer than 4
         ms.
 
-    .. tip:: Use this function at your own risk. Because of the underlying `"Enhanced
-        ShockBurst Protocol" <https://www.sparkfun.com/datasheets/Components/SMD/
+    .. tip:: Use this function at your own risk. Because of the underlying
+        `"Enhanced ShockBurst Protocol" <https://www.sparkfun.com/datasheets/Components/SMD/
         nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132607>`_, disobeying the 4
-        ms rule is easily avoided if you enable the `auto_ack` attribute. Alternatively, you
-        MUST use interrupt flags or IRQ pin with user defined timer(s) to AVOID breaking the
+        ms rule is easily avoided if the `arc` attribute is greater than ``0``. Alternatively,
+        you MUST use nRF24L01's IRQ pin and/or user-defined timer(s) to AVOID breaking the
         4 ms rule. If the `nRF24L01+ Specifications Sheet explicitly states this
         <https://www.sparkfun.com/datasheets/Components/SMD/
         nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1121422>`_, we have to assume
@@ -329,7 +348,7 @@ flush_rx()
 
     .. note:: The nRF24L01 RX FIFO is 3 level stack that holds payload data. This means that
         there can be up to 3 received payloads (each of a maximum length equal to 32 bytes)
-        waiting to be read (and popped from the stack) by `recv()` or `read_ack()`. This
+        waiting to be read (and removed from the stack) by `recv()` or `read_ack()`. This
         function clears all 3 levels.
 
 flush_tx()
@@ -340,7 +359,7 @@ flush_tx()
     .. note:: The nRF24L01 TX FIFO is 3 level stack that holds payload data. This means that
         there can be up to 3 payloads (each of a maximum length equal to 32 bytes) waiting to
         be transmit by `send()`, `resend()` or `write()`. This function clears all 3 levels. It
-        is worth noting that the payload data is only popped from the TX FIFO stack upon
+        is worth noting that the payload data is only removed from the TX FIFO stack upon
         successful transmission (see also `resend()` as the handling of failed transmissions
         can be altered).
 
@@ -350,8 +369,8 @@ fifo()
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.fifo
 
     :param bool about_tx:
-        - `True` means information returned is about the TX FIFO buffer.
-        - `False` means information returned is about the RX FIFO buffer. This parameter
+        - `True` means the information returned is about the TX FIFO buffer.
+        - `False` means the information returned is about the RX FIFO buffer. This parameter
           defaults to `False` when not specified.
     :param bool check_empty:
         - `True` tests if the specified FIFO buffer is empty.
@@ -361,7 +380,8 @@ fifo()
           parameter.
     :returns:
         - A `bool` answer to the question:
-          "Is the [TX/RX]:[`True`/`False`] FIFO buffer [empty/full]:[`True`/`False`]?
+
+            "Is the [TX/RX](``about_tx``) FIFO buffer [empty/full](``check_empty``)?
         - If the ``check_empty`` parameter is not specified: an `int` in range [0,2] for which:
 
             - ``1`` means the specified FIFO buffer is full
@@ -374,11 +394,12 @@ pipe
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.pipe
 
     .
-    
-    |update manually|
+
+    |update manually| (especially after calling
+    :py:func:`~circuitpython_nrf24l01.rf24.RF24.flush_rx()`).
 
     :Returns:
-        
+
         - `None` if there is no payload in RX FIFO.
         - The `int` identifying pipe number [0,5] that received the next
           available payload in the RX FIFO buffer.
@@ -399,9 +420,9 @@ address()
     This function returns the full content of the nRF24L01's registers about RX/TX addresses
     despite what `address_length` is set to.
 
-    :param int index: the number of the data pipe whose address is to be returned. Defaults to
-        ``-1``. A valid index ranges [0,5] for RX addresses or any negative `int` for the TX
-        address. Otherwise an `IndexError` is thown.
+    :param int index: the number of the data pipe whose address is to be returned. A valid
+        index ranges [0,5] for RX addresses or any negative number for the TX address.
+        Otherwise an `IndexError` is thown. This parameter defaults to ``-1``.
 
 rpd
 ******************************
@@ -410,8 +431,8 @@ rpd
 
     The RPD flag is triggered in the following cases:
 
-        1. During RX mode (`listen` = `True`) and an arbitrary RF transmission with a gain
-           above -64 dBm threshold is/was present.
+        1. During RX mode (when `listen` is `True`) and an arbitrary RF transmission with
+           a gain above -64 dBm threshold is/was present.
         2. When a packet is received (instigated by the nRF24L01 used to detect/"listen" for
            incoming packets).
 
@@ -445,7 +466,17 @@ start_carrier_wave()
             print("carrier wave detected")
 
     The `pa_level`, `channel` & `data_rate` attributes are vital factors to
-    the success of this test. See also the `rpd` attribute.
+    the success of this test. Be sure these attributes are set to the desired test
+    conditions before calling this function. See also the `rpd` attribute.
+
+    .. note:: To preserve backward compatibility with non-plus variants of the
+        nRF24L01, this function will also change certain settings if `is_plus_variant`
+        is `False`. These settings changes include disabling `crc`, disabling
+        `auto_ack`, disabling `arc`, setting `ard` to 250 microseconds, changing the
+        TX address to ``b"\xFF\xFF\xFF\xFF\xFF"``, and loading a 32-byte payload (each
+        byte is ``0xFF``) into the TX FIFO buffer while continuously behaving like
+        `resend()` to establish the constant carrier wave. If `is_plus_variant` is
+        `True`, then none of these changes are needed nor applied.
 
 stop_carrier_wave()
 ******************************

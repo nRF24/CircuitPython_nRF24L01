@@ -23,7 +23,7 @@
 found here <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_"""
 from os import urandom
 import struct
-
+from .rf24 import RF24
 
 def swap_bits(original):
     """This function reverses the bit order for a single byte."""
@@ -37,7 +37,7 @@ def swap_bits(original):
 
 
 def reverse_bits(original):
-    """This function reverses the bit order into LSBit to MSBit for an entire
+    """This function reverses the bit order for an entire
     buffer protocol object."""
     ret = bytearray(len(original))
     for i, byte in enumerate(original):
@@ -71,39 +71,33 @@ BLE_FREQ = (2, 26, 80)  #: The BLE channel number is different from the nRF chan
 class FakeBLE:
     """A class to implement BLE advertisements using the nRF24L01."""
 
-    def __init__(self, nrf):
-        self._device = nrf
+    def __init__(self, spi, csn, ce, spi_frequency=10000000):
+        self._radio = RF24(spi, csn, ce, spi_frequency=spi_frequency)
         self._chan = 0
-        self._to_iphone = 0x40
+        self._to_iphone = 0x42
         self._show_dbm = False
         self._ble_name = None
         self._mac = urandom(6)
         with self:
-            self._device.flush_rx()
+            self._radio.dynamic_payloads = False
+            self._radio.payload_length = 32
+            self._radio.data_rate = 1
+            self._radio.arc = 0
+            self._radio.address_length = 4
+            self._radio.open_rx_pipe(0, b"\x71\x91\x7D\x6B")
+            self._radio.open_tx_pipe(b"\x71\x91\x7D\x6B")
+            self._radio.auto_ack = False
+            self._radio.crc = 0
+            self._radio.flush_rx()
 
     def __enter__(self):
-        self._device.ce_pin.value = 0
-        self._device.dynamic_payloads = False
-        self._device.payload_length = 32
-        self._device.data_rate = 1
-        self._device.arc = 0
-        self._device.address_length = 4
-        self._device.open_rx_pipe(0, b"\x71\x91\x7D\x6B")
-        self._device.open_tx_pipe(b"\x71\x91\x7D\x6B")
-        if hasattr(self._device, "auto_ack"):
-            self._device.auto_ack = False
-            self._device.crc = 0
-            self._device.power = 1
-        else:  # for rf24_lite.py
-            self._device._reg_write(1, 0)  # disable auto_ack
-            self._device._reg_write(0, 6)  # disable CRC & power up
+        self._radio = self._radio.__enter__()
         return self
 
     def __exit__(self, *exc):
         self._show_dbm = False
         self._ble_name = None
-        self._device.power = 0
-        return False
+        return self._radio.__exit__()
 
     @property
     def to_iphone(self):
@@ -163,7 +157,7 @@ class FakeBLE:
         self._chan += 1
         if self._chan > 2:
             self._chan = 0
-        self._device.channel = BLE_FREQ[self._chan]
+        self._radio.channel = BLE_FREQ[self._chan]
 
     def whiten(self, data):
         """Whitening the BLE packet data ensures there's no long repeatition
@@ -184,8 +178,8 @@ class FakeBLE:
         """Assemble the entire packet to be transmitted as a payload."""
         if self.available(payload) < 0:
             raise ValueError(
-                "Payload exceeds maximum size. Configuration allows "
-                "{} bytes".format(self.available())
+                "Payload length exceeds maximum buffer size by "
+                "{} bytes".format(abs(self.available(payload)))
             )
         name_length = (len(self.name) + 2) if self.name is not None else 0
         pl_size = 9 + len(payload) + name_length + self._show_dbm * 3
@@ -193,7 +187,7 @@ class FakeBLE:
         buf += chunk(b"\x05", 1)
         pa_level = b""
         if self._show_dbm:
-            pa_level = chunk(struct.pack(">b", self._device.pa_level), 0x0A)
+            pa_level = chunk(struct.pack(">b", self._radio.pa_level), 0x0A)
         buf += pa_level
         if name_length:
             buf += chunk(self.name, 0x08)
@@ -208,7 +202,7 @@ class FakeBLE:
         return 18 - name_length - self._show_dbm * 3 - len(hypothetical)
 
     def advertise(self, buf=b"", data_type=0xFF):
-        """This function is used to broadcast a payload."""
+        """This blocking function is used to broadcast a payload."""
         if not isinstance(buf, (bytearray, bytes, list, tuple)):
             raise ValueError("buffer is an invalid format")
         payload = b""
@@ -218,15 +212,106 @@ class FakeBLE:
         else:
             payload = chunk(buf, data_type) if buf else b""
         payload = self._make_payload(payload)
-        self._device.send(reverse_bits(self.whiten(payload)))
+        self._radio.send(reverse_bits(self.whiten(payload)))
 
+    @property
+    def pa_level(self):
+        """See :py:attr:`~circuitpython_nrf24l01.rf24.RF24.pa_level` for
+        more details."""
+        return self._radio.pa_level
+
+    @pa_level.setter
+    def pa_level(self, value):
+        self._radio.pa_level = value
+
+    @property
+    def channel(self):
+        """The only allowed channels are those contained in the `BLE_FREQ`
+        tuple."""
+        return self._radio.channel
+
+    @channel.setter
+    def channel(self, value):
+        if value not in BLE_FREQ:
+            raise ValueError(
+                "nrf channel {} is not a valid BLE frequency".format(value)
+            )
+        self._radio.channel = value
+
+    @property
+    def payload_length(self):
+        """This attribute is best left at 32 bytes for all BLE
+        operations."""
+        return self._radio.payload_length
+
+    @payload_length.setter
+    def payload_length(self, value):
+        self._radio.payload_length = value
+
+    @property
+    def power(self):
+        """See :py:attr:`~circuitpython_nrf24l01.rf24.RF24.power` for more
+        details."""
+        return self._radio.power
+
+    @power.setter
+    def power(self, is_on):
+        self._radio.power = is_on
+
+    @property
+    def is_lna_enabled(self):
+        """See :py:attr:`~circuitpython_nrf24l01.rf24.RF24.is_lna_enabled`
+        for more details."""
+        return self._radio.is_lna_enabled
+
+    @property
+    def is_plus_variant(self):
+        """See :py:attr:`~circuitpython_nrf24l01.rf24.RF24.is_plus_variant`
+        for more details."""
+        return self._radio.is_plus_variant
+
+    def interrupt_config(self, data_recv=True, data_sent=True):
+        """See :py:func:`~circuitpython_nrf24l01.rf24.RF24.interrupt_config()`
+        for more details.
+
+        .. warning:: The :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_df`
+            attribute (and also this function's  ``data_fail`` parameter) is
+            not implemented for BLE operations."""
+        self._radio.interrupt_config(data_recv=data_recv, data_sent=data_sent)
+
+    @property
+    def irq_ds(self):
+        """See :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_ds` for
+        more details."""
+        return self._radio.irq_ds
+
+    @property
+    def irq_dr(self):
+        """See :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr` for
+        more details."""
+        return self._radio.irq_dr
+
+    def clear_status_flags(self):
+        """See :py:func:`~circuitpython_nrf24l01.rf24.RF24.clear_status_flags()`
+        for more details."""
+        self._radio.clear_status_flags()
+
+    def update(self):
+        """See :py:func:`~circuitpython_nrf24l01.rf24.RF24.update()` for more
+        details."""
+        self._radio.update()
+
+    def what_happened(self, dump_pipes=False):
+        """See :py:func:`~circuitpython_nrf24l01.rf24.RF24.what_happened()`
+        for more details."""
+        self._radio.what_happened(dump_pipes=dump_pipes)
 
 class ServiceData:
     """An abstract helper class to package specific service data using
     Bluetooth SIG defined 16-bit UUID flags to describe the data type."""
 
-    def __init__(self, type_t):
-        self._type = struct.pack("<H", type_t)
+    def __init__(self, uuid):
+        self._type = struct.pack("<H", uuid)
         self._data = b""
 
     @property
@@ -295,13 +380,18 @@ class UrlServiceData(ServiceData):
 
     @property
     def pa_level_at_1_meter(self):
-        """The TX power level (in dBm) at 1 meter from the nRF24L01.
-        This defaults to -25 (due to testing) and must be a signed `int`."""
+        """The TX power level (in dBm) at 1 meter from the nRF24L01. This
+        defaults to -25 (due to testing when broadcasting with 0 dBm) and must
+        be a 1-byte signed `int`."""
         return struct.unpack(">b", self._type[-1:])[0]
 
     @pa_level_at_1_meter.setter
     def pa_level_at_1_meter(self, value):
         self._type = self._type[:-1] + struct.pack(">b", int(value))
+
+    @property
+    def uuid(self):
+        return self._type[:2]
 
     @ServiceData.data.setter
     def data(self, value):

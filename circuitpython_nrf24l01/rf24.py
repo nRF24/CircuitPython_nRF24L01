@@ -31,16 +31,16 @@ try:
 except ImportError:
     from adafruit_bus_device.spi_device import SPIDevice
 
-CONFIGURE = const(0x00)  # IRQ, CRC, PWR control & RX/TX roles
-AUTO_ACK = const(0x01)  # auto-ACK
-OPEN_PIPES = const(0x02)  # open/close pipes
-SETUP_RETR = const(0x04)  # auto-retry count & delay
-RF_PA_RATE = const(0x06)  # RF Power Amplifier & Data Rate
-RX_ADDR_P0 = const(0x0A)  # RX pipe addresses == [0, 5]:[0x0a, 0x0f]
+CONFIGURE = const(0x00)  # IRQ masking, CRC scheme, PWR control, & RX/TX roles
+AUTO_ACK = const(0x01)  # auto-ACK status for all pipes
+OPEN_PIPES = const(0x02)  # open/close RX status for all pipes
+SETUP_RETR = const(0x04)  # auto-retry count & delay values
+RF_PA_RATE = const(0x06)  # RF Power Amplifier & Data Rate values
+RX_ADDR_P0 = const(0x0A)  # RX pipe addresses; pipes 0-5 = 0x0A-0x0F
 TX_ADDRESS = const(0x10)  # Address used for TX transmissions
-RX_PL_LENG = const(0x11)  # RX payload widths on pipes == [0, 5]:[0x11, 0x16]
-DYN_PL_LEN = const(0x1C)  # dynamic payloads
-TX_FEATURE = const(0x1D)  # TX features dynamic payloads, ACK payloads, NO_ACK
+RX_PL_LENG = const(0x11)  # RX payload widths; pipes 0-5 = 0x11-0x16
+DYN_PL_LEN = const(0x1C)  # dynamic payloads status for all pipes
+TX_FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
 CSN_DELAY = 0.005
 """The delay time (in seconds) used to let the CSN pin settle,
 allowing a clean SPI transaction."""
@@ -71,6 +71,17 @@ class RF24:
                 self._pipes[i] = self._reg_read_bytes(RX_ADDR_P0 + i)
             else:
                 self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
+        # test is nRF24L01 is a plus variant using a command specific to
+        # non-plus variants
+        self._is_plus_variant = False
+        b4_toggle = self._reg_read(TX_FEATURE)
+        # derelict ACTIVATE command toggles bits in the TX_FEATURE register
+        self._reg_write(0x50, 0x73)
+        after_toggle = self._reg_read(TX_FEATURE)
+        if b4_toggle == after_toggle:
+            self._is_plus_variant = True
+        if not after_toggle:  # if features are disabled
+            self._reg_write(0x50, 0x73)  # ensure they're enabled
         # init shadow copy of last RX_ADDR_P0 written to pipe 0 needed as
         # open_tx_pipe() appropriates pipe 0 for ACK packet
         self._pipe0_read_addr = None
@@ -99,6 +110,7 @@ class RF24:
             self.clear_status_flags()
 
     def __enter__(self):
+        self.ce_pin.value = False
         self._reg_write(CONFIGURE, self._config & 0x7C)
         self._reg_write(RF_PA_RATE, self._rf_setup)
         self._reg_write(OPEN_PIPES, self._open_pipes)
@@ -118,7 +130,8 @@ class RF24:
         return self
 
     def __exit__(self, *exc):
-        self.power = 0
+        self.ce_pin.value = False
+        self.power = False
         return False
 
     # pylint: disable=no-member
@@ -190,7 +203,7 @@ class RF24:
         """This function is used to close a specific data pipe from OTA (over
         the air) RX transmissions."""
         if pipe_number < 0 or pipe_number > 5:
-            raise ValueError("pipe number must be in range [0, 5]")
+            raise IndexError("pipe number must be in range [0, 5]")
         self._open_pipes = self._reg_read(OPEN_PIPES)
         if self._open_pipes & (1 << pipe_number):
             self._open_pipes = self._open_pipes & ~(1 << pipe_number)
@@ -200,7 +213,7 @@ class RF24:
         """This function is used to open a specific data pipe for OTA (over
         the air) RX transmissions."""
         if not 0 <= pipe_number <= 5:
-            raise ValueError("pipe number must be in range [0, 5]")
+            raise IndexError("pipe number must be in range [0, 5]")
         if not address:
             raise ValueError("address length cannot be 0")
         if pipe_number < 2:
@@ -233,7 +246,7 @@ class RF24:
                 self._reg_write(CONFIGURE, self._config)
                 time.sleep(0.00015)  # mandatory wait to power up radio
                 self.flush_rx()
-                self.clear_status_flags(True, False, False)
+                self.clear_status_flags()
                 self.ce_pin.value = 1  # mandatory pulse is > 130 µs
                 time.sleep(0.00013)
             else:
@@ -261,29 +274,29 @@ class RF24:
         self.clear_status_flags(True, False, False)
         return result
 
-    def send(self, buf, ask_no_ack=False, force_retry=0):
+    def send(self, buf, ask_no_ack=False, force_retry=0, send_only=False):
         """This blocking function is used to transmit payload(s)."""
         self.ce_pin.value = 0
         if isinstance(buf, (list, tuple)):
             result = []
             for b in buf:
-                result.append(self.send(b, ask_no_ack, force_retry))
+                result.append(self.send(b, ask_no_ack, force_retry, send_only))
             return result
         self.flush_tx()
-        if self.pipe is not None:
+        if not send_only:
             self.flush_rx()
         self.write(buf, ask_no_ack)
         time.sleep(0.00001)
         self.ce_pin.value = 0
-        while not self._status & 0x30:
+        while not self._status & 0x70:
             self.update()
         result = self.irq_ds
         if self.irq_df:
             for _ in range(force_retry):
-                result = self.resend()
+                result = self.resend(send_only)
                 if result is None or result:
                     break
-        if self._status & 0x60 == 0x60:
+        if self._status & 0x60 == 0x60 and not send_only:
             result = self.recv()
         self.clear_status_flags(False)
         return result
@@ -327,7 +340,7 @@ class RF24:
         self._reg_write(7, config)
 
     def interrupt_config(self, data_recv=True, data_sent=True, data_fail=True):
-        """Sets the configuration of the nRF24L01's IRQ (interrupt) pin."""
+        """Sets the configuration of the nRF24L01's IRQ pin. (write-only)"""
         self._config = (self._reg_read(CONFIGURE) & 0x0F) | (not data_recv) << 6
         self._config |= (not data_fail) << 4 | (not data_sent) << 5
         self._reg_write(CONFIGURE, self._config)
@@ -336,6 +349,7 @@ class RF24:
         """This debuggung function aggregates and outputs all status/condition
         related information from the nRF24L01."""
         observer = self._reg_read(8)
+        print("Is a plus variant_________{}".format(repr(self.is_plus_variant)))
         print(
             "Channel___________________{} ~ {} GHz".format(
                 self.channel, (self.channel + 2400) / 1000
@@ -374,12 +388,12 @@ class RF24:
         )
         print(
             "IRQ - Data Fail_______{}    Data Failed__________{}".format(
-                "_True" if not bool(self._config & 0x20) else "False", self.irq_df
+                "_True" if not bool(self._config & 0x10) else "False", self.irq_df
             )
         )
         print(
             "IRQ - Data Sent_______{}    Data Sent____________{}".format(
-                "_True" if not bool(self._config & 0x10) else "False", self.irq_ds
+                "_True" if not bool(self._config & 0x20) else "False", self.irq_ds
             )
         )
         print(
@@ -442,6 +456,12 @@ class RF24:
                     print("\t\texpecting", self._pl_len[i], "byte static payloads")
 
     @property
+    def is_plus_variant(self):
+        """A `bool` attribute to descibe if the nRF24L01 is a plus variant or
+        not (read-only)."""
+        return self._is_plus_variant
+
+    @property
     def dynamic_payloads(self):
         """This `bool` attribute controls the nRF24L01's dynamic payload
         length feature for each pipe."""
@@ -456,14 +476,14 @@ class RF24:
             self._dyn_pl = 0x3F if enable else 0
         elif isinstance(enable, (list, tuple)):
             for i, val in enumerate(enable):
-                if i < 6:
+                if i < 6 and val >= 0:  # skip pipe if val is negative
                     self._dyn_pl = (self._dyn_pl & ~(1 << i)) | (bool(val) << i)
         else:
             raise ValueError("dynamic_payloads: {} is an invalid input" % enable)
         if bool(self._features & 4) != (self._dyn_pl & 1):
             self._features = (self._features & 3) | ((self._dyn_pl & 1) << 2)
             self._reg_write(TX_FEATURE, self._features)
-        if self._dyn_pl:
+        if self._dyn_pl != (self._aa & self._dyn_pl):
             self._aa |= self._dyn_pl
             self._reg_write(AUTO_ACK, self._aa)
             self._config = self._reg_read(CONFIGURE)
@@ -483,7 +503,7 @@ class RF24:
             raise ValueError("length {} is not a valid input".format(length))
         for i, val in enumerate(length):
             if i < 6:
-                if not val or val <= 32:  # don't throw exception, just skip pipe
+                if 0 < val <= 32:  # don't throw exception, just skip pipe
                     self._pl_len[i] = val
                     self._reg_write(RX_PL_LENG + i, val)
 
@@ -531,7 +551,7 @@ class RF24:
             self._aa = 0x3F if enable else 0
         elif isinstance(enable, (list, tuple)):
             for i, val in enumerate(enable):
-                if i < 6:
+                if i < 6 and val >= 0:  # skip pipe if val is negative
                     self._aa = (self._aa & ~(1 << i)) | (bool(val) << i)
         else:
             raise ValueError("auto_ack: {} is not a valid input" % enable)
@@ -563,7 +583,7 @@ class RF24:
         """This allows the MCU to specify a payload to be allocated into the
         TX FIFO buffer for use on a specific data pipe."""
         if pipe_number < 0 or pipe_number > 5:
-            raise ValueError("pipe_number must be in range [0, 5]")
+            raise IndexError("pipe_number must be in range [0, 5]")
         if not buf or len(buf) > 32:
             raise ValueError("payload must have a byte length in range [1, 32]")
         if not bool((self._features & 6) == 6 and ((self._aa & self._dyn_pl) & 1)):
@@ -589,6 +609,11 @@ class RF24:
     def data_rate(self, speed):
         if not speed in (1, 2, 250):
             raise ValueError("data_rate must be 1 (Mbps), 2 (Mbps), or 250 (kbps)")
+        if self.is_plus_variant and speed == 250:
+            raise NotImplementedError(
+                "250 kbps data rate is not available for the non-plus "
+                "variants of the nRF24L01 transceivers."
+            )
         if self.data_rate != speed:
             speed = 0 if speed == 1 else (0x20 if speed != 2 else 8)
             self._rf_setup = self._rf_setup & 0xD7 | speed
@@ -655,8 +680,8 @@ class RF24:
 
     @property
     def is_lna_enabled(self):
-        """A read-only `bool` attribute about the LNA (Low Noise Amplifier) gain
-        feature used in the nRF24L01-PA/LNA modules."""
+        """A read-only `bool` attribute about the LNA (Low Noise Amplifier)
+        gain feature."""
         self._rf_setup = self._reg_read(RF_PA_RATE)
         return bool(self._rf_setup & 1)
 
@@ -665,28 +690,28 @@ class RF24:
         from the nRF24L01."""
         self._reg_write(0xFF)
 
-    def resend(self):
+    def resend(self, send_only=False):
         """Use this function to maunally re-send the previous payload in the
         top level (first out) of the TX FIFO buffer."""
         result = False
         if not self.fifo(True, True):
-            if self.pipe is not None:
+            self.ce_pin.value = 0
+            if not send_only:
                 self.flush_rx()
             self.clear_status_flags()
             self._reg_write(0xE3)
-            self.ce_pin.value = 0
             self.ce_pin.value = 1
             time.sleep(0.00001)
             self.ce_pin.value = 0
-            while not self._status & 0x30:
+            while not self._status & 0x70:
                 self.update()
             result = self.irq_ds
-            if self._status & 0x60 == 0x60:
+            if self._status & 0x60 == 0x60 and not send_only:
                 result = self.recv()
             self.clear_status_flags(False)
         return result
 
-    def write(self, buf, ask_no_ack=False):
+    def write(self, buf, ask_no_ack=False, write_only=False):
         """This non-blocking function (when used as alternative to `send()`)
         is meant for asynchronous applications and can only handle one
         payload at a time as it is a helper function to `send()`."""
@@ -706,8 +731,9 @@ class RF24:
             if self._features & 1 == 0:
                 self._features = self._features & 0xFE | 1
                 self._reg_write(TX_FEATURE, self._features)
-        self._reg_write_bytes(0xA0 | (ask_no_ack << 4), buf)
-        self.ce_pin.value = 1
+        self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
+        if not write_only:
+            self.ce_pin.value = 1
 
     def flush_rx(self):
         """A helper function to flush the nRF24L01's RX FIFO buffer."""
@@ -718,20 +744,12 @@ class RF24:
         self._reg_write(0xE1)
 
     def fifo(self, about_tx=False, check_empty=None):
-        """This provides some precision determining the status of the TX/RX
+        """This provides *some* precision determining the status of the TX/RX
         FIFO buffers. (read-only)"""
-        if isinstance(about_tx, (bool, int)):
-            if check_empty is None or isinstance(check_empty, (bool, int)):
-                self._fifo = self._reg_read(0x17)
-                mask = 4 * about_tx
-                if check_empty is None:
-                    return (self._fifo & (0x30 if about_tx else 0x03)) >> mask
-                return bool(self._fifo & ((2 - check_empty) << mask))
-        raise ValueError(
-            "Argument 1 ('about_tx') must always be a bool or "
-            "int. Argument 2 ('check_empty'), if specified, must"
-            " be a bool or int"
-        )
+        self._fifo, about_tx = (self._reg_read(0x17), bool(about_tx))
+        if check_empty is None:
+            return (self._fifo & (0x30 if about_tx else 0x03)) >> (4 * about_tx)
+        return bool(self._fifo & ((2 - bool(check_empty)) << (4 * about_tx)))
 
     def address(self, index=-1):
         """Returns the current address set to a specified data pipe or the TX
@@ -754,10 +772,24 @@ class RF24:
         """Starts a continuous carrier wave test."""
         self.power = 0
         self.ce_pin.value = 0
+        self.power = 1
         self.listen = 0
         self._rf_setup |= 0x90
         self._reg_write(RF_PA_RATE, self._rf_setup)
-        self.power = 1
+        if not self.is_plus_variant:
+            self.auto_ack = False
+            self._retry_setup = 0
+            self._reg_write(SETUP_RETR, self._retry_setup)
+            self._tx_address = bytearray([0xFF] * 5)
+            self._reg_write_bytes(TX_ADDRESS, self._tx_address)
+            self._reg_write_bytes(0xA0, b"\xFF" * 32)
+            self.crc = 0
+            self.ce_pin.value = 1
+            time.sleep(0.001)
+            self.ce_pin.value = 0
+            while self._status & 0x70:
+                self.update()
+            self._reg_write(0x17, 0x40)
         self.ce_pin.value = 1
 
     def stop_carrier_wave(self):

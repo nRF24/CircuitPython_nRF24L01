@@ -1,4 +1,8 @@
 
+.. |per_data_pipe_control| replace:: can be used control this feature per data pipe. Index 0
+    controls this feature on data pipe 0. Indices greater than 5 will be
+    ignored since there are only 6 data pipes.
+
 Configuration API
 -----------------
 
@@ -15,36 +19,36 @@ dynamic_payloads
     Default setting is enabled on all pipes.
 
     - `True` or ``1`` enables nRF24L01's dynamic payload length feature for all data pipes. The
-      `payload_length` attribute is ignored when this feature is enabled for respective or all
-      data pipes.
+      `payload_length` attribute is ignored when this feature is enabled for all
+      respective data pipes.
     - `False` or ``0`` disables nRF24L01's dynamic payload length feature for all data pipes.
       Be sure to adjust the `payload_length` attribute accordingly when this feature is
-      disabled for any data pipes.
-    - A `list` or `tuple` containing booleans or integers can be used control this feature per
-      data pipe. Index 0 controls this feature on data pipe 0. Indices greater than 5 will be
-      ignored since there are only 6 data pipes.
+      disabled for any respective data pipes.
+    - A `list` or `tuple` containing booleans or integers |per_data_pipe_control| If any index's
+      value is less than 0 (a negative value), then the pipe corresponding to that index will
+      remain unaffected.
 
     .. note::
         This attribute mostly relates to RX operations, but data pipe 0 applies to TX
-        operations also.
+        operations also. The `auto_ack` attribute is automatically enabled by this attribute
+        for any data pipes that have this feature enabled. Disabling this feature for any
+        data pipe will not affect the `auto_ack` feature for the corresponding data pipes.
 
 payload_length
 ******************************
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.payload_length
 
-    If the `dynamic_payloads` attribute is enabled for a certain data pipe, this attribute has
-    no affect on that data pipe. When `dynamic_payloads` is disabled for a certain data pipe,
-    this attribute is used to specify the payload length on that data pipe in RX mode.
+    If the `dynamic_payloads` attribute is *enabled* for a certain data pipe, this attribute has
+    no affect on that data pipe. When `dynamic_payloads` is *disabled* for a certain data pipe,
+    this attribute is used to specify the payload length on that data pipe.
 
     A valid input value must be:
-    
+
         * an `int` in range [1, 32]. Otherwise a `ValueError` exception is thrown.
-        * a `list` or `tuple` containing integers can be used to control this attribute per
-          data pipe. Index 0 controls this feature on data pipe 0. Indices greater than 5 will
-          be ignored since there are only 6 data pipes. if a index's value is ``0``, then the
-          existing setting will persist (not be changed).
-        
+        * A `list` or `tuple` containing integers |per_data_pipe_control| If any index's value
+          is ``0``, then the existing setting will persist (not be changed).
+
         Default is set to the nRF24L01's maximum of 32 (on all data pipes).
 
     .. note::
@@ -59,14 +63,14 @@ auto_ack
     Default setting is enabled on all data pipes.
 
     - `True` or ``1`` enables transmitting automatic acknowledgment packets for all data pipes.
-      The CRC (cyclic redundancy checking) is enabled automatically by the nRF24L01 if the
-      `auto_ack` attribute is enabled for any data pipe (see also `crc` attribute).
+      The CRC (cyclic redundancy checking) is enabled (for all transmissions) automatically by
+      the nRF24L01 if this attribute is enabled for any data pipe (see also `crc` attribute).
     - `False` or ``0`` disables transmitting automatic acknowledgment packets for all data
       pipes. The `crc` attribute will remain unaffected when disabling this attribute for any
       data pipes.
-    - A `list` or `tuple` containing booleans or integers can be used control this feature per
-      data pipe. Index 0 controls this feature on data pipe 0. Indices greater than 5 will be
-      ignored since there are only 6 data pipes.
+    - A `list` or `tuple` containing booleans or integers |per_data_pipe_control| If any
+      index's value is less than 0 (a negative value), then the pipe corresponding to that
+      index will remain unaffected.
 
     .. note::
         This attribute mostly relates to RX operations, but data pipe 0 applies to TX
@@ -94,7 +98,7 @@ ard
 
     A valid input value must be in range [250, 4000]. Otherwise a `ValueError` exception is
     thrown. Default is 1500 for reliability. If this is set to a value that is not multiple of
-    250, then the highest multiple of 250 that is no greater than the input value is used. 
+    250, then the highest multiple of 250 that is no greater than the input value is used.
 
     .. note:: Paraphrased from nRF24L01 specifications sheet:
 
@@ -130,14 +134,14 @@ interrupt_config()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.interrupt_config
 
-    The digital signal from the nRF24L01's IRQ pin is active LOW. (write-only)
+    The digital signal from the nRF24L01's IRQ (Interrupt ReQuest) pin is active LOW.
 
-    :param bool data_recv: If this is `True`, then IRQ pin goes active when there is new data
-        to read in the RX FIFO buffer. Default setting is `True`
+    :param bool data_recv: If this is `True`, then IRQ pin goes active when new data is put
+        into the RX FIFO buffer. Default setting is `True`
     :param bool data_sent: If this is `True`, then IRQ pin goes active when a payload from TX
         buffer is successfully transmit. Default setting is `True`
-    :param bool data_fail: If this is `True`, then IRQ pin goes active when maximum number of
-        attempts to re-transmit the packet have been reached. If `auto_ack` attribute is
+    :param bool data_fail: If this is `True`, then IRQ pin goes active when the maximum number
+        of attempts to re-transmit the packet have been reached. If `arc` attribute is
         disabled, then this IRQ event is not used. Default setting is `True`
 
     .. note:: To fetch the status (not configuration) of these IRQ flags, use the `irq_df`,
@@ -145,13 +149,15 @@ interrupt_config()
 
     .. tip:: Paraphrased from nRF24L01+ Specification Sheet:
 
-        The procedure for handling ``data_recv`` IRQ should be:
+        The procedure for handling :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr` IRQ
+        should be:
 
-        1. read payload through `recv()`
-        2. clear ``dataReady`` status flag (taken care of by using `recv()` in previous step)
+        1. retreive the payload from RX FIFO using `recv()`
+        2. clear :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr` status flag (taken care
+           of by using `recv()` in previous step)
         3. read FIFO_STATUS register to check if there are more payloads available in RX FIFO
-           buffer. A call to `pipe` (may require `update()` to be called), `any()` or even
-           ``(False,True)`` as parameters to `fifo()` will get this result.
+           buffer. A call to `pipe` (may require `update()` to be called beforehand), `any()`
+           or even ``(False, True)`` as parameters to `fifo()` will get this result.
         4. if there is more data in RX FIFO, repeat from step 1
 
 data_rate
@@ -163,15 +169,13 @@ data_rate
 
     - ``1`` sets the frequency data rate to 1 Mbps
     - ``2`` sets the frequency data rate to 2 Mbps
-    - ``250`` sets the frequency data rate to 250 Kbps
+    - ``250`` sets the frequency data rate to 250 Kbps (see warning below)
 
     Any invalid input throws a `ValueError` exception. Default is 1 Mbps.
 
-    .. warning:: 250 Kbps can be buggy on the non-plus models of the nRF24L01 product line. If
-        you use 250 Kbps data rate, and some transmissions report failed by the transmitting
-        nRF24L01, even though the same packet in question actually reports received by the
-        receiving nRF24L01, then try a higher data rate. CAUTION: Higher data rates mean less
-        maximum distance between nRF24L01 transceivers (and vise versa).
+    .. warning:: 250 Kbps is not available for the non-plus variants of the
+        nRF24L01 transceivers. Trying to set the data rate to 250 kpbs when
+        `is_plus_variant` is `True` will throw a `NotImplementedError`.
 
 channel
 ******************************
@@ -197,7 +201,7 @@ crc
     Any invalid input throws a `ValueError` exception. Default is enabled using 2 bytes.
 
     .. note:: The nRF24L01 automatically enables CRC if automatic acknowledgment feature is
-        enabled (see `auto_ack` attribute).
+        enabled (see `auto_ack` attribute) for any data pipe.
 
 pa_level
 ******************************
@@ -218,10 +222,7 @@ pa_level
     desired power amplifier level (from list above) at index 0 and a `bool` to control
     the Low Noise Amplifier (LNA) feature at index 1. All other indices will be discarded.
 
-        .. note::
-            The LNA feature only applies to the nRF24L01 (non-plus variant). This
-            includes boards with the RFX24C01-based PA/LNA muxing IC attached to an
-            SMA-type detachable antenna.
+    .. note:: The LNA feature setting only applies to the nRF24L01 (non-plus variant).
 
     Any invalid input will invoke the default of 0 dBm with LNA enabled.
 
@@ -231,5 +232,5 @@ is_lna_enabled
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.is_lna_enabled
 
     See `pa_level` attribute about how to set this. Default is always enabled, but this
-    feature is specific to certain nRF24L01-based circuits. Check with your module's
-    manufacturer to see is it can toggle the Low Noise Amplifier feature.
+    feature is specific to non-plus variants of nRF24L01 transceivers. If
+    `is_plus_variant` attribute is `True`, then setting feature in any way has no affect.
