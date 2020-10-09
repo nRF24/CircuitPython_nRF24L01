@@ -74,7 +74,7 @@ class FakeBLE:
     def __init__(self, spi, csn, ce, spi_frequency=10000000):
         self._radio = RF24(spi, csn, ce, spi_frequency=spi_frequency)
         self._chan = 0
-        self._to_iphone = 0x42
+        self._to_android = 0x42
         self._show_dbm = False
         self._ble_name = None
         self._mac = urandom(6)
@@ -100,14 +100,14 @@ class FakeBLE:
         return self._radio.__exit__()
 
     @property
-    def to_iphone(self):
-        """A `bool` to specify if advertisements should be compatible with
-        the iPhone."""
-        return self._to_iphone == 0x40
+    def to_android(self):
+        """A `bool` attribute to specify if advertisements should be
+        compatible with Android smartphones."""
+        return self._to_android == 0x42
 
-    @to_iphone.setter
-    def to_iphone(self, enable):
-        self._to_iphone = 0x40 if enable else 0x42
+    @to_android.setter
+    def to_android(self, enable):
+        self._to_android = 0x42 if enable else 0x40
 
     @property
     def mac(self):
@@ -183,7 +183,7 @@ class FakeBLE:
             )
         name_length = (len(self.name) + 2) if self.name is not None else 0
         pl_size = 9 + len(payload) + name_length + self._show_dbm * 3
-        buf = bytes([self._to_iphone, pl_size]) + self.mac
+        buf = bytes([self._to_android, pl_size]) + self.mac
         buf += chunk(b"\x05", 1)
         pa_level = b""
         if self._show_dbm:

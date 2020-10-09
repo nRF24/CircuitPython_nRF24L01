@@ -165,14 +165,14 @@ FakeBLE class
         parameter only applies to the instantiated object and is made persistent via
         :py:class:`~adafruit_bus_device.spi_device.SPIDevice`.
 
-to_iphone
+to_android
 ************
 
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.to_iphone
+.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.to_android
 
-   A value of `False` should still be compatible with other
-   Apple devices. Testing with this attribute as `False` showed
-   compatibility with a Mac desktop.
+   A value of `True` allows advertisements to be compatible with Android smartphones. Setting
+   this attribute to `False` still allows advertisements to be compatible with anything else
+   except Android smartphones. Default Value is `True`.
 
 mac
 ************

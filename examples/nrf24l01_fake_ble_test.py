@@ -30,10 +30,6 @@ nrf = FakeBLE(spi, csn, ce)
 # this can be changed at any time using the `name` attribute
 # nrf.name = b"foobar"
 
-# if broadcasting to an Android, set the to_iphone attribute to False
-# if broadcasting to an iPhone, set the to_iphone attribute to True
-nrf.to_iphone = True  # default value is False
-
 # you can optionally set the arbitrary MAC address to be used as the
 # BLE device's MAC address. Otherwise this is randomly generated upon
 # instantiation of the FakeBLE object.
@@ -79,8 +75,6 @@ def master(count=50):
                 ble.advertise(battery_service.buffer, data_type=0x16)
                 # channel hoping is recommended per BLE specs
                 ble.hop_channel()
-                # alternate advertisements to target all devices
-                ble.to_iphone = not ble.to_iphone
                 time.sleep(0.5)  # wait till next broadcast
     # nrf.show_pa_level & nrf.name both are set to false when
     # exiting a with statement block
@@ -105,9 +99,7 @@ def send_temp(count=50):
                 _prompt(count, i)
                 # broadcast a temperature measurement; 0x16 means service data
                 ble.advertise(temperature_service.buffer, data_type=0x16)
-                # channel hoping is recommended per BLE specs
                 ble.hop_channel()
-                ble.to_iphone = not ble.to_iphone
                 time.sleep(0.2)
 
 
@@ -135,7 +127,6 @@ def send_url(count=50):
                 _prompt(count, i)
                 ble.advertise(url_service.buffer, 0x16)
                 ble.hop_channel()
-                ble.to_iphone = not ble.to_iphone
                 time.sleep(0.2)
 
 print(
