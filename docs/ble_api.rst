@@ -170,9 +170,13 @@ to_android
 
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.to_android
 
-   A value of `True` allows advertisements to be compatible with Android smartphones. Setting
-   this attribute to `False` still allows advertisements to be compatible with anything else
-   except Android smartphones. Default Value is `True`.
+    A value of `True` allows advertisements to be compatible with Android smartphones. Setting
+    this attribute to `False` still allows advertisements to be compatible with anything else
+    except Android smartphones. Default Value is `True`.
+
+    .. warning:: This attribute will be deprecated on the next major release because it is not
+        necessary to change this attribute. Changing this attribute to `False` only breaks
+        compatibility with Android smartphones.
 
 mac
 ************
