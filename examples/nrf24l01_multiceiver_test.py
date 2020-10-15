@@ -40,7 +40,7 @@ addresses = [
 
 # to use custom ACK payloads, we must enable that feature
 nrf.ack = True
-# let this be the ACk payload
+# let this be the ACK payload
 ACK = b"Yak Back ACK"
 
 
