@@ -94,7 +94,7 @@ ard
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.ard
 
     During this time, the nRF24L01 is listening for the ACK packet. If the
-    `auto_ack` attribute is disabled, this attribute is not applied.
+    `arc` attribute is disabled, this attribute is not applied.
 
     A valid input value must be in range [250, 4000]. Otherwise a `ValueError` exception is
     thrown. Default is 1500 for reliability. If this is set to a value that is not multiple of
