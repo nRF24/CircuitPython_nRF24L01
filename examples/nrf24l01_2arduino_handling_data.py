@@ -67,7 +67,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             while time.monotonic() * 1000 - myData.time < 200:
                 # the arbitrary 200 ms timeout value is also used in the
                 # TMRh20 library's GettingStarted_HandlingData sketch
-                if nrf.any():
+                if nrf.update() and nrf.pipe is not None:
                     end_timer = time.monotonic() * 1000  # end timer
                     rx = nrf.recv()
                     rx = struct.unpack("<Lf", rx[:8])
