@@ -164,6 +164,7 @@ class RF24Network:
     :param int channel: The RF channel used by the RF24Network
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(self, spi, csn_pin, ce_pin, node_address, channel=76):
         self._radio = RF24(spi, csn_pin, ce_pin)
         if not _is_address_valid(node_address):
@@ -185,6 +186,7 @@ class RF24Network:
         self._radio.listen = True
         self._queue = []  # each item is a 2-tuple containing header & message
 
+    # pylint: enable=too-many-arguments
     def update(self):
         """keep the network layer current; returns the next header"""
         while self._radio.pipe:
