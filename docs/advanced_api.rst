@@ -35,7 +35,7 @@ what_happened()
         - ``Auto retry attempts`` The current setting of the `arc` attribute
         - ``Packets lost on current channel`` Total amount of packets lost (transmission
           failures). This only resets when the `channel` is changed. This count will
-          only go up 15.
+          only go up to 15.
         - ``Retry attempts made for last transmission`` Amount of attempts to re-transmit
           during last transmission (resets per payload)
         - ``IRQ - Data Ready`` The current setting of the IRQ pin on "Data Ready" event
@@ -265,7 +265,7 @@ resend()
         `True`. Pass this parameter as `True` if the RX FIFO is not to be manipulated. Many
         other libraries' behave as though this parameter is `True`
         (e.g. The popular TMRh20 Arduino RF24 library). This parameter defaults to `False`.
-        Use `recv()` to get the ACK payload (if there is any) from the RX FIFO.Remember that
+        Use `recv()` to get the ACK payload (if there is any) from the RX FIFO. Remember that
         the RX FIFO can only hold up to 3 payloads at once.
 
     .. note:: The nRF24L01 normally removes a payload from the TX FIFO buffer after successful
@@ -387,8 +387,8 @@ fifo()
             "Is the [TX/RX](``about_tx``) FIFO buffer [empty/full](``check_empty``)?
         - If the ``check_empty`` parameter is not specified: an `int` in range [0,2] for which:
 
-            - ``1`` means the specified FIFO buffer is full
-            - ``2`` means the specified FIFO buffer is empty
+            - ``1`` means the specified FIFO buffer is empty
+            - ``2`` means the specified FIFO buffer is full
             - ``0`` means the specified FIFO buffer is neither full nor empty
 
 pipe
