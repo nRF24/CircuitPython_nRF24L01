@@ -94,7 +94,7 @@ def slave(count=3):
     myData.time = time.monotonic() * 1000  # in milliseconds
     while count and (time.monotonic() * 1000 - myData.time) < 6000:
         nrf.listen = True  # put radio into RX mode and power up
-        if nrf.any():
+        if nrf.update() and nrf.pipe is not None:
             # retreive the received packet's payload
             buffer = nrf.recv()  # clears flags & empties RX FIFO
             # increment floating value as part of the "HandlingData" test

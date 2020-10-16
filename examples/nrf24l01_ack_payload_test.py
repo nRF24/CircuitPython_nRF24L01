@@ -85,7 +85,7 @@ def slave(count=5):
 
     start = time.monotonic()  # start timer
     while count and (time.monotonic() - start) < 6:  # use 6 second timeout
-        if nrf.any():
+        if nrf.update() and nrf.pipe is not None:
             count -= 1
             # retreive the received packet's payload
             rx = nrf.recv()  # clears flags & empties RX FIFO
