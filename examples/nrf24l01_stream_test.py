@@ -139,7 +139,7 @@ def slave(timeout=5):
             count += 1
             # retreive the received packet's payload
             rx = nrf.recv()  # clears flags & empties RX FIFO
-            print("Received: {} - {}".format(count, rx))
+            print("Received: {} - {}".format(rx, count))
             start_timer = time.monotonic()  # reset timer on every RX payload
 
     # recommended behavior is to keep in TX mode while idle
