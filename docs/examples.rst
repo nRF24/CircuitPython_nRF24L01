@@ -85,7 +85,7 @@ This is a test to show how to use the nRF24L01 as a BLE advertising beacon using
 TMRh20's Arduino library
 ------------------------
 
-This test is meant to prove compatibility with the popular Arduino library for the nRF24L01 by TMRh20 (available for install via the Arduino IDE's Library Manager). The following code has been designed/test with the TMRh20 library example named `GettingStarted_HandlingData.ino <https://tmrh20.github.io/RF24/GettingStarted_HandlingData_8ino-example.html>`_. If you changed the ``role`` variable in the TMRh20 sketch, you will have to adjust the addresses assigned to the pipes in this script.
+This test is meant to prove compatibility with the popular Arduino library for the nRF24L01 by TMRh20 (available for install via the Arduino IDE's Library Manager). The following code has been designed/tested with the TMRh20 library example named `GettingStarted_HandlingData.ino <https://tmrh20.github.io/RF24/GettingStarted_HandlingData_8ino-example.html>`_. If you changed the ``radioNumber`` variable in the TMRh20 sketch, you will have to adjust the ``radioNumber`` variable this script so that it is opposite the value in the TMRh20 library's example.
 
 .. literalinclude:: ../examples/nrf24l01_2arduino_handling_data.py
     :caption: examples/nrf24l01_2arduino_handling_data.py

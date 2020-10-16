@@ -31,10 +31,8 @@ nrf.pa_level = -12
 
 def master(count=5):  # count = 5 will only transmit 5 packets
     """Transmits an incrementing integer every second"""
-    # set address of RX node into a TX pipe
-    nrf.open_tx_pipe(address)
-    # ensures the nRF24L01 is in TX mode
-    nrf.listen = False
+    nrf.open_tx_pipe(address)  # set address of RX node into a TX pipe
+    nrf.listen = False  # ensures the nRF24L01 is in TX mode
 
     while count:
         # use struct.pack to packetize your data
@@ -52,7 +50,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             print("send() successful")
         # print timer results despite transmission success
         print("Transmission took", end_timer - start_timer, "ms")
-        time.sleep(0.5)
+        time.sleep(1)
         count -= 1
 
 
@@ -62,7 +60,7 @@ def slave(count=5):
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX, we'll be using pipe 0
     # pipe number options range [0,5]
-    # the pipe numbers used during a transition don't have to match
+    # the pipe numbers used during a transmission don't have to match
     nrf.open_rx_pipe(0, address)
     nrf.listen = True  # put radio into RX mode and power up
 
@@ -70,7 +68,7 @@ def slave(count=5):
     while count and (time.monotonic() - start) < 6:
         if nrf.update() and nrf.pipe is not None:
             # print details about the received packet
-            print("Found {} bytes on pipe {}".format(nrf.any(), nrf.pipe))
+            print("{} bytes received on pipe {}".format(nrf.any(), nrf.pipe))
             # fetch 1 payload from RX FIFO
             rx = nrf.recv()  # also clears nrf.irq_dr status flag
             # expecting an int, thus the string format '<i'
