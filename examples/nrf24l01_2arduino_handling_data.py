@@ -153,5 +153,8 @@ print(
     nRF24L01 communicating with an Arduino running the\n\
     TMRh20 library's "GettingStarted_HandlingData.ino" example.\n\
     Run slave() to receive\n\
-    Run master() to transmit"""
+    Run master() to transmit\n\
+
+    radioNumber is {}. Change this variable to oppose the TMRh20\n\
+    example's radioNumber value.""".format(radioNumber)
 )
