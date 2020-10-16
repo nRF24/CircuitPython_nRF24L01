@@ -51,7 +51,11 @@ Library-Specific Features
 Stream Example
 ---------------
 
-This is a test to show how to use the :py:func:`~circuitpython_nrf24l01.rf24.RF24.send()` to transmit multiple payloads with 1 function call.
+This is a test to show how to stream data. The ``master()`` uses the `send()` to
+transmit multiple payloads with 1 function call. However ``master()`` only uses 1
+level of the nRF24L01's TX FIFO. An alternate function, called ``master_fifo()``
+uses all 3 levels of the nRF24L01's TX FIFO to stream data, but it uses the
+`write()` function to do so.
 
 .. literalinclude:: ../examples/nrf24l01_stream_test.py
     :caption: examples/nrf24l01_stream_test.py

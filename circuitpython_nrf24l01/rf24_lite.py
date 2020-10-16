@@ -302,6 +302,7 @@ class RF24:
 
     def update(self):
         self._reg_write(0xFF)
+        return True
 
     def resend(self, send_only=False):
         result = False
@@ -326,6 +327,8 @@ class RF24:
         if not buf or len(buf) > 32:
             raise ValueError("buffer length must be in range [1, 32]")
         self.clear_status_flags()
+        if self.tx_full:
+            return False
         config = self._reg_read(0)
         if config & 3 != 2:
             self._reg_write(0, (config & 0x7C) | 2)
@@ -339,6 +342,7 @@ class RF24:
         self._reg_write_bytes(0xA0 | (ask_no_ack << 4), buf)
         if not write_only:
             self.ce_pin.value = 1
+        return True
 
     def flush_rx(self):
         self._reg_write(0xE2)

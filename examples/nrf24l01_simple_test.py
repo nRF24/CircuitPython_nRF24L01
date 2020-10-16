@@ -43,15 +43,16 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         # 'i' means a single 4 byte int value.
         # '<' means little endian byte order. this may be optional
         print("Sending: {} as struct: {}".format(count, buffer))
-        now = time.monotonic() * 1000  # start timer
+        start_timer = time.monotonic() * 1000  # start timer
         result = nrf.send(buffer)
+        end_timer = time.monotonic() * 1000  # end timer
         if not result:
             print("send() failed or timed out")
         else:
             print("send() successful")
         # print timer results despite transmission success
-        print("Transmission took", time.monotonic() * 1000 - now, "ms")
-        time.sleep(1)
+        print("Transmission took", end_timer - start_timer, "ms")
+        time.sleep(0.5)
         count -= 1
 
 
@@ -67,20 +68,20 @@ def slave(count=5):
 
     start = time.monotonic()
     while count and (time.monotonic() - start) < 6:
-        if nrf.any():
-            # print details about the received packet (if any)
+        if nrf.update() and nrf.pipe is not None:
+            # print details about the received packet
             print("Found {} bytes on pipe {}".format(nrf.any(), nrf.pipe))
-            # retreive the received packet's payload
-            rx = nrf.recv()  # clears flags & empties RX FIFO
+            # fetch 1 payload from RX FIFO
+            rx = nrf.recv()  # also clears nrf.irq_dr status flag
             # expecting an int, thus the string format '<i'
-            buffer = struct.unpack("<i", rx[:4])
+            # the rx[:4] is just in case dynamic payloads were disabled
+            buffer = struct.unpack("<i", rx[:4])  # [:4] truncates padded 0s
             # print the only item in the resulting tuple from
             # using `struct.unpack()`
-            print("Received: {}, Raw: {}".format(buffer[0], repr(rx)))
+            print("Received: {}, Raw: {}".format(buffer[0], rx))
             start = time.monotonic()
             count -= 1
             # this will listen indefinitely till count == 0
-        time.sleep(0.25)
 
     # recommended behavior is to keep in TX mode while idle
     nrf.listen = False  # put the nRF24L01 is in TX mode

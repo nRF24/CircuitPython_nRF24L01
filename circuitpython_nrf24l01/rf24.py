@@ -257,8 +257,7 @@ class RF24:
     def any(self):
         """This function checks if the nRF24L01 has received any data at all,
         and then reports the next available payload's length (in bytes)."""
-        self.update()
-        if self.pipe is not None:
+        if self.update() and self.pipe is not None:
             if self._features & 4:
                 return self._reg_read(0x60)
             return self._pl_len[self.pipe]
@@ -349,7 +348,7 @@ class RF24:
         """This debuggung function aggregates and outputs all status/condition
         related information from the nRF24L01."""
         observer = self._reg_read(8)
-        print("Is a plus variant_________{}".format(repr(self.is_plus_variant)))
+        print("Is a plus variant_________{}".format(self.is_plus_variant))
         print(
             "Channel___________________{} ~ {} GHz".format(
                 self.channel, (self.channel + 2400) / 1000
@@ -371,6 +370,7 @@ class RF24:
         print("TX Payload lengths________{} bytes".format(self.payload_length[0]))
         print("Auto retry delay__________{} microseconds".format(self.ard))
         print("Auto retry attempts_______{} maximum".format(self.arc))
+        print("Re-use TX FIFO____________{}".format(bool(self._reg_read(0x17) & 64)))
         print(
             "Packets lost on current channel_____________________{}".format(
                 (observer & 0xF0) >> 4
@@ -689,6 +689,7 @@ class RF24:
         """This function is only used to get an updated status byte over SPI
         from the nRF24L01."""
         self._reg_write(0xFF)
+        return True
 
     def resend(self, send_only=False):
         """Use this function to maunally re-send the previous payload in the
@@ -718,6 +719,8 @@ class RF24:
         if not buf or len(buf) > 32:
             raise ValueError("buffer must have a length in range [1, 32]")
         self.clear_status_flags()
+        if self.tx_full:
+            return False
         if self._config & 3 != 2:  # is radio powered up in TX mode?
             self._config = (self._reg_read(CONFIGURE) & 0x7C) | 2
             self._reg_write(CONFIGURE, self._config)
@@ -734,6 +737,7 @@ class RF24:
         self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
         if not write_only:
             self.ce_pin.value = 1
+        return True
 
     def flush_rx(self):
         """A helper function to flush the nRF24L01's RX FIFO buffer."""

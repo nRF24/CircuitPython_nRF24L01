@@ -33,6 +33,8 @@ what_happened()
           operations (concerning data pipe 0)
         - ``Auto retry delay`` The current setting of the `ard` attribute
         - ``Auto retry attempts`` The current setting of the `arc` attribute
+        - ``Re-use TX FIFO`` Are payloads in the TX FIFO to be re-used for subsequent
+          transmissions (triggered by calling `resend()`)
         - ``Packets lost on current channel`` Total amount of packets lost (transmission
           failures). This only resets when the `channel` is changed. This count will
           only go up to 15.
@@ -253,14 +255,30 @@ update()
     `tx_full` attributes. Internally this is a helper function to `send()`, and `resend()`
     functions.
 
+    :returns: `True` for every call. This value is meant to allow this function to be used
+        in ``if`` statements in conjunction with attributes related to the refreshed status
+        byte.
+
+        .. code-block:: python
+
+            # let ``nrf`` be the instantiated object of the RF24 class
+
+            # the following if statement is faster than using ``if nrf.any():``
+            if nrf.update() and nrf.pipe is not None:
+                nrf.recv()
+
 resend()
 ******************************
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.resend
 
-    All returned data from this function follows the same patttern that `send()` returns with
-    the added condition that this function will return `False` if the TX FIFO buffer is empty.
+    This function is meant to be used for payloads that failed to transmit using the
+    `send()` function. If a payload failed to transmit using the `write()` function,
+    just call `clear_status_flags()` and re-start the pulse on the nRF24L01's CE pin.
 
+    :returns: Data returned from this function follows the same pattern that `send()`
+        returns with the added condition that this function will return `False` if the TX
+        FIFO buffer is empty.
     :param bool send_only: This parameter only applies when the `ack` attribute is set to
         `True`. Pass this parameter as `True` if the RX FIFO is not to be manipulated. Many
         other libraries' behave as though this parameter is `True`
@@ -282,8 +300,11 @@ write()
 
     This function isn't completely non-blocking as we still need to wait 5 ms (`CSN_DELAY`)
     for the CSN pin to settle (allowing an accurate SPI write transaction). Example usage of
-    this function can be seen in the `IRQ pin example <examples.html#irq-pin-example>`_
+    this function can be seen in the `IRQ pin example <examples.html#irq-pin-example>`_ and
+    in the `Stream example's "master_fifo()" function <examples.html#stream-example>`_
 
+    :returns: `True` if the payload was added to the TX FIFO buffer. `False` if the TX FIFO
+        buffer is already full, and no payload could be added to it.
     :param bytearray buf: The payload to transmit. This bytearray must have a length greater
         than 0 and less than 32 bytes, otherwise a `ValueError` exception is thrown.
 
