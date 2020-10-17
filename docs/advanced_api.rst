@@ -33,8 +33,9 @@ what_happened()
           operations (concerning data pipe 0)
         - ``Auto retry delay`` The current setting of the `ard` attribute
         - ``Auto retry attempts`` The current setting of the `arc` attribute
-        - ``Re-use TX FIFO`` Are payloads in the TX FIFO to be re-used for subsequent
-          transmissions (triggered by calling `resend()`)
+        - ``Re-use TX FIFO`` Is the first payload in the TX FIFO to be re-used for subsequent
+          transmissions (this flag is set to `True` when entering `resend()` and reset to
+          `False` when `resend()` exits)
         - ``Packets lost on current channel`` Total amount of packets lost (transmission
           failures). This only resets when the `channel` is changed. This count will
           only go up to 15.
@@ -265,7 +266,7 @@ update()
 
             # the following if statement is faster than using ``if nrf.any():``
             if nrf.update() and nrf.pipe is not None:
-                nrf.recv()
+                rx_payload = nrf.recv()
 
 resend()
 ******************************
