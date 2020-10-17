@@ -29,7 +29,7 @@ nrf.pa_level = -12
 
 
 def make_buffers(size=32):
-    """private function to construct a large list of payloads"""
+    """return a list of payloads"""
     buffers = []
     # we'll use `size` for the number of payloads in the list and the
     # payloads' length
