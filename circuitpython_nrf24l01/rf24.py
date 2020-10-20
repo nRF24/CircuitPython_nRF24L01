@@ -84,7 +84,7 @@ class RF24:
             self._reg_write(0x50, 0x73)  # ensure they're enabled
         # init shadow copy of last RX_ADDR_P0 written to pipe 0 needed as
         # open_tx_pipe() appropriates pipe 0 for ACK packet
-        self._pipe0_read_addr = None
+        self._pipe0_read_addr = self._pipes[0]
         # init shadow copy of register about FIFO info
         self._fifo = 0
         # shadow copy of the TX_ADDRESS
@@ -238,10 +238,9 @@ class RF24:
         if self.listen != bool(is_rx):
             self.ce_pin.value = 0
             if is_rx:
-                if self._pipe0_read_addr is not None:
-                    for i, val in enumerate(self._pipe0_read_addr):
-                        self._pipes[0][i] = val
-                    self._reg_write_bytes(RX_ADDR_P0, self._pipe0_read_addr)
+                for i, val in enumerate(self._pipe0_read_addr):
+                    self._pipes[0][i] = val
+                self._reg_write_bytes(RX_ADDR_P0, self._pipe0_read_addr)
                 self._config = (self._config & 0xFC) | 3
                 self._reg_write(CONFIGURE, self._config)
                 time.sleep(0.00015)  # mandatory wait to power up radio
