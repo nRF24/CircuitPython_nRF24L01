@@ -126,7 +126,7 @@ def slave(timeout=6):  # will listen for 6 seconds before timing out
         # if RX FIFO is not full and timeout is not reached, then keep going
         pass
     nrf.listen = False  # put nRF24L01 in TX mode & discard any ACK payloads
-    if nrf.pipe is not None:  # if RX FIFO is not empty
+    if self.pipe is not None:  # if RX FIFO is not empty
         # all 3 payloads received were 5 bytes each, and RX FIFO is full
         # so, fetching 15 bytes from the RX FIFO also flushes RX FIFO
         print("Complete RX FIFO:", nrf.recv(15))
