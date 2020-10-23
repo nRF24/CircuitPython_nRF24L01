@@ -245,12 +245,11 @@ class RF24:
                 self._config = (self._config & 0xFC) | 3
                 self._reg_write(CONFIGURE, self._config)
                 time.sleep(0.00015)  # mandatory wait to power up radio
+                self.flush_rx()
                 self.clear_status_flags()
                 self.ce_pin.value = 1  # mandatory pulse is > 130 µs
                 time.sleep(0.00013)
             else:
-                if self.ack:
-                    self.flush_tx()
                 self._config = self._config & 0xFE
                 self._reg_write(CONFIGURE, self._config)
                 time.sleep(0.00016)

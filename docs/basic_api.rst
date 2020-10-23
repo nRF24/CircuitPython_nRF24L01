@@ -84,13 +84,13 @@ listen
         - `True` enables RX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications
           Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
           nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this attribute
-          clears the `irq_dr` status flag and puts nRF24L01 in power up
+          flushes the RX FIFO, clears the `irq_dr` status flag, and puts nRF24L01 in power up
           mode. Notice the CE pin is be held HIGH during RX mode.
         - `False` disables RX mode. As mentioned in above link, this puts nRF24L01's power in
           Standby-I (CE pin is LOW meaning low current & no transmissions) mode which is ideal
-          for post-reception work. Disabing RX mode will only flush the TX FIFO buffers if the
-          `ack` attribute is enabled. Remember to manage your 3-level RX FIFO buffers using the
-          `flush_rx()` or `recv()` functions.
+          for post-reception work. Disabing RX mode doesn't flush the RX/TX FIFO buffers, so
+          remember to flush your 3-level FIFO buffers when appropriate using `flush_tx()` or
+          `flush_rx()` (see also the `recv()` function).
 
 any()
 ******************
