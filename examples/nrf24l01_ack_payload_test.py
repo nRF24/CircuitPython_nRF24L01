@@ -48,8 +48,7 @@ ACK = b"World "
 def master(count=5):  # count = 5 will only transmit 5 packets
     """Transmits a payload every second and prints the ACK payload"""
     nrf.listen = False  # put radio in TX mode
-    # set address of RX node into a TX pipe
-    nrf.open_tx_pipe(address)
+    nrf.open_tx_pipe(address)  # set address of RX node into a TX pipe
 
     while count:
         buffer = b"Hello " + bytes([count + 48])  # output buffer
@@ -74,8 +73,7 @@ def slave(count=5):
     # set address of TX node into an RX pipe. NOTE you MUST specify
     # which pipe number to use for RX; we'll be using pipe 0
     nrf.open_rx_pipe(0, address)
-    # put radio into RX mode, power it up
-    nrf.listen = True
+    nrf.listen = True  # put radio into RX mode, power it up
 
     # setup the first transmission's ACK payload
     buffer = ACK + bytes([count + 48])
@@ -96,8 +94,7 @@ def slave(count=5):
                 nrf.load_ack(buffer, 0)  # load ACK for next response
 
     # recommended behavior is to keep in TX mode while idle
-    nrf.listen = False  # put radio in TX mode
-    nrf.flush_tx()  # flush any ACK payloads that remain
+    nrf.listen = False  # put radio in TX mode & flush unused ACK payloads
 
 
 print(

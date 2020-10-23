@@ -60,7 +60,9 @@ def base(timeout=10):
             start_timer = time.monotonic()  # reset timer with every payload
             if nrf.load_ack(ACK, 1):  # keep TX FIFO full with ACK payloads
                 print("\t ACK re-loaded")
-    nrf.listen = False
+    # recommended behavior is to keep in TX mode while idle
+    nrf.listen = False  # put radio in TX mode & flush unused ACK payloads
+
 
 
 def node(node_number, count=6):
