@@ -23,7 +23,7 @@ class RF24:
         self._reg_write(1, 0x3F)
         self._reg_write(0x1D, 5)
         self._reg_write(4, 0x53)
-        self._pipe0_read_addr = self._reg_read_bytes(0x0A)
+        self._pipe0_read_addr = None
         self.channel = 76
         self.payload_length = 32
         self.flush_rx()
@@ -113,7 +113,8 @@ class RF24:
         if self.listen != bool(is_rx):
             self.ce_pin.value = 0
             if is_rx:
-                self._reg_write_bytes(0x0A, self._pipe0_read_addr)
+                if self._pipe0_read_addr is not None:
+                    self._reg_write_bytes(0x0A, self._pipe0_read_addr)
                 self._reg_write(0, (self._reg_read(0) & 0xFC) | 3)
                 time.sleep(0.00015)
                 self.flush_rx()
