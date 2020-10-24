@@ -163,7 +163,6 @@ class RF24:
                     break
         if self._status & 0x60 == 0x60 and not send_only:
             result = self.recv()
-        self.clear_status_flags(False)
         return result
 
     @property
@@ -320,7 +319,6 @@ class RF24:
             result = self.irq_ds
             if self._status & 0x60 == 0x60 and not send_only:
                 result = self.recv()
-            self.clear_status_flags(False)
         return result
 
     def write(self, buf, ask_no_ack=False, write_only=False):

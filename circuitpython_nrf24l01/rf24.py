@@ -298,7 +298,6 @@ class RF24:
                     break
         if self._status & 0x60 == 0x60 and not send_only:
             result = self.recv()
-        self.clear_status_flags(False)
         return result
 
     @property
@@ -503,8 +502,7 @@ class RF24:
         elif not isinstance(length, (list, tuple)):
             raise ValueError("length {} is not a valid input".format(length))
         for i, val in enumerate(length):
-            if i < 6:
-                if 0 < val <= 32:  # don't throw exception, just skip pipe
+            if i < 6 and 0 < val <= 32:  # don't throw exception; skip pipe
                     self._pl_len[i] = val
                     self._reg_write(RX_PL_LENG + i, val)
 
@@ -710,7 +708,6 @@ class RF24:
             result = self.irq_ds
             if self._status & 0x60 == 0x60 and not send_only:
                 result = self.recv()
-            self.clear_status_flags(False)
         return result
 
     def write(self, buf, ask_no_ack=False, write_only=False):
