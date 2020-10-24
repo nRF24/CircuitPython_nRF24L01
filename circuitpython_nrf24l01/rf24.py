@@ -503,8 +503,8 @@ class RF24:
             raise ValueError("length {} is not a valid input".format(length))
         for i, val in enumerate(length):
             if i < 6 and 0 < val <= 32:  # don't throw exception; skip pipe
-                    self._pl_len[i] = val
-                    self._reg_write(RX_PL_LENG + i, val)
+                self._pl_len[i] = val
+                self._reg_write(RX_PL_LENG + i, val)
 
     @property
     def arc(self):
