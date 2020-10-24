@@ -1,8 +1,6 @@
 """
 Simple example of using 1 nRF24L01 to receive data from up to 6 other
 transceivers. This technique is called "multiceiver" in the datasheet.
-For fun, this example also sends an ACK payload from the base station
-to the node-1 transmitter.
 """
 import time
 import struct
