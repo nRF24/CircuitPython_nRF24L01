@@ -136,7 +136,7 @@ class FakeBLE:
         if n is not None:
             if not isinstance(n, (bytes, bytearray)):
                 raise ValueError("name must be a bytearray or bytes object.")
-            if len(n) > (21 - self._show_dbm * 3):
+            if len(n) > (18 - self._show_dbm * 3):
                 raise ValueError("name length exceeds maximum.")
         self._ble_name = n
 
@@ -154,9 +154,7 @@ class FakeBLE:
 
     def hop_channel(self):
         """Trigger an automatic change of BLE compliant channels."""
-        self._chan += 1
-        if self._chan > 2:
-            self._chan = 0
+        self._chan += 1 if self._chan < 2 else -2
         self._radio.channel = BLE_FREQ[self._chan]
 
     def whiten(self, data):
