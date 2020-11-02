@@ -6,10 +6,12 @@
 Configuration API
 -----------------
 
-CSN_DELAY
+csn_delay
 ******************************
 
-.. autodata:: circuitpython_nrf24l01.rf24.CSN_DELAY
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.csn_delay
+
+    This time (specified in seconds) allows for a clean SPI transaction.
 
 dynamic_payloads
 ******************************

@@ -41,9 +41,6 @@ TX_ADDRESS = const(0x10)  # Address used for TX transmissions
 RX_PL_LENG = const(0x11)  # RX payload widths; pipes 0-5 = 0x11-0x16
 DYN_PL_LEN = const(0x1C)  # dynamic payloads status for all pipes
 TX_FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
-CSN_DELAY = 0.000475
-"""The delay time (in seconds) used to let the CSN pin settle,
-allowing a clean SPI transaction."""
 
 
 class RF24:
@@ -57,6 +54,7 @@ class RF24:
         # pre-configure the CONFIGURE register:
         #   0x0E = IRQs are all enabled, CRC is enabled with 2 bytes, and
         #          power up in TX mode
+        self.csn_delay = 0.000475  #: delay time to let the CSN pin settle
         self._config = 0x0E
         self._reg_write(CONFIGURE, self._config)
         if self._reg_read(CONFIGURE) & 3 != 2:
@@ -139,7 +137,7 @@ class RF24:
         out_buf = bytes([reg, 0])
         in_buf = bytearray([0, 0])
         with self._spi as spi:
-            time.sleep(CSN_DELAY)
+            time.sleep(self.csn_delay)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         return in_buf[1]
@@ -148,7 +146,7 @@ class RF24:
         in_buf = bytearray(buf_len + 1)
         out_buf = bytes([reg]) + b"\x00" * buf_len
         with self._spi as spi:
-            time.sleep(CSN_DELAY)
+            time.sleep(self.csn_delay)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         return in_buf[1:]
@@ -157,7 +155,7 @@ class RF24:
         out_buf = bytes([0x20 | reg]) + out_buf
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
-            time.sleep(CSN_DELAY)
+            time.sleep(self.csn_delay)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
 
@@ -167,7 +165,7 @@ class RF24:
             out_buf = bytes([0x20 | reg, value])
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
-            time.sleep(CSN_DELAY)
+            time.sleep(self.csn_delay)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
 

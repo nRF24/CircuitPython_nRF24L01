@@ -35,7 +35,7 @@ class RF24:
         out_buf = bytes([reg, 0])
         in_buf = bytearray([0, 0])
         with self._spi as spi:
-            time.sleep(0.005)
+            time.sleep(0.0005)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         return in_buf[1]
@@ -44,7 +44,7 @@ class RF24:
         in_buf = bytearray(buf_len + 1)
         out_buf = bytes([reg]) + b"\x00" * buf_len
         with self._spi as spi:
-            time.sleep(0.005)
+            time.sleep(0.0005)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         return in_buf[1:]
@@ -53,7 +53,7 @@ class RF24:
         out_buf = bytes([0x20 | reg]) + out_buf
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
-            time.sleep(0.005)
+            time.sleep(0.0005)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
 
@@ -63,7 +63,7 @@ class RF24:
             out_buf = bytes([0x20 | reg, val])
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
-            time.sleep(0.005)
+            time.sleep(0.0005)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
 
