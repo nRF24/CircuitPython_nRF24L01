@@ -12,6 +12,7 @@ class RF24:
         self.ce_pin = ce
         self.ce_pin.switch_to_output(value=False)
         self._status = 0
+        self.csn_delay = 0.000475
         self._reg_write(0, 0x0E)
         if self._reg_read(0) & 3 != 2:
             raise RuntimeError("nRF24L01 Hardware not responding")
@@ -35,7 +36,7 @@ class RF24:
         out_buf = bytes([reg, 0])
         in_buf = bytearray([0, 0])
         with self._spi as spi:
-            time.sleep(0.0005)
+            time.sleep(self.csn_delay)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         return in_buf[1]
@@ -44,7 +45,7 @@ class RF24:
         in_buf = bytearray(buf_len + 1)
         out_buf = bytes([reg]) + b"\x00" * buf_len
         with self._spi as spi:
-            time.sleep(0.0005)
+            time.sleep(self.csn_delay)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         return in_buf[1:]
@@ -53,7 +54,7 @@ class RF24:
         out_buf = bytes([0x20 | reg]) + out_buf
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
-            time.sleep(0.0005)
+            time.sleep(self.csn_delay)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
 
@@ -63,7 +64,7 @@ class RF24:
             out_buf = bytes([0x20 | reg, val])
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
-            time.sleep(0.0005)
+            time.sleep(self.csn_delay)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
 

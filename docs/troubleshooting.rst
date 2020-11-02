@@ -113,7 +113,6 @@ version:
       accept a `list` or `tuple`.
     * `rpd`, `start_carrier_wave()`, & `stop_carrier_wave()` removed. These only perform a
       test of the nRF24L01's hardware.
-    * `csn_delay` removed. This is hard-coded to 500 microseconds
     * All comments and docstrings removed, meaning ``help()`` will not provide any specific
       information. Exception prompts have also been reduced and adjusted accordingly.
     * Cannot switch between different radio configurations using context manager (the `with`
