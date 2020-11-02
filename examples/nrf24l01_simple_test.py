@@ -41,15 +41,15 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         # 'i' means a single 4 byte int value.
         # '<' means little endian byte order. this may be optional
         print("Sending: {} as struct: {}".format(count, buffer))
-        start_timer = time.monotonic() * 1000  # start timer
+        start_timer = time.monotonic_ns()  # start timer
         result = nrf.send(buffer)
-        end_timer = time.monotonic() * 1000  # end timer
+        end_timer = time.monotonic_ns()  # end timer
         if not result:
             print("send() failed or timed out")
         else:
             print("send() successful")
         # print timer results despite transmission success
-        print("Transmission took", end_timer - start_timer, "ms")
+        print("Transmission took", (end_timer - start_timer) / 1000, "us")
         time.sleep(1)
         count -= 1
 

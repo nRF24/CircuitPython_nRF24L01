@@ -54,7 +54,6 @@ class RF24:
         # pre-configure the CONFIGURE register:
         #   0x0E = IRQs are all enabled, CRC is enabled with 2 bytes, and
         #          power up in TX mode
-        self.csn_delay = 0.000475  #: delay time to let the CSN pin settle
         self._config = 0x0E
         self._reg_write(CONFIGURE, self._config)
         if self._reg_read(CONFIGURE) & 3 != 2:
@@ -137,7 +136,6 @@ class RF24:
         out_buf = bytes([reg, 0])
         in_buf = bytearray([0, 0])
         with self._spi as spi:
-            time.sleep(self.csn_delay)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         return in_buf[1]
@@ -146,7 +144,6 @@ class RF24:
         in_buf = bytearray(buf_len + 1)
         out_buf = bytes([reg]) + b"\x00" * buf_len
         with self._spi as spi:
-            time.sleep(self.csn_delay)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         return in_buf[1:]
@@ -155,7 +152,6 @@ class RF24:
         out_buf = bytes([0x20 | reg]) + out_buf
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
-            time.sleep(self.csn_delay)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
 
@@ -165,7 +161,6 @@ class RF24:
             out_buf = bytes([0x20 | reg, value])
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
-            time.sleep(self.csn_delay)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
 
@@ -281,10 +276,9 @@ class RF24:
                 result.append(self.send(b, ask_no_ack, force_retry, send_only))
             return result
         self.flush_tx()
-        if not send_only:
+        if not send_only and self.pipe is not None:
             self.flush_rx()
         self.write(buf, ask_no_ack)
-        time.sleep(0.00001)
         self.ce_pin.value = 0
         while not self._status & 0x70:
             self.update()

@@ -53,12 +53,12 @@ def master(count=1, size=32):  # count = 5 will transmit the list 5 times
     nrf.listen = False  # ensures the nRF24L01 is in TX mode
     successful = 0  # keep track of success rate
     for _ in range(count):
-        start_timer = time.monotonic() * 1000  # start timer
+        start_timer = time.monotonic_ns()  # start timer
         # NOTE force_retry=2 internally invokes `RF24.resend()` 2 times at
         # most for payloads that fail to transmit.
         result = nrf.send(buffers, force_retry=2)  # result is a list
-        end_timer = time.monotonic() * 1000  # end timer
-        print("Transmission took", end_timer - start_timer, "ms")
+        end_timer = time.monotonic_ns()  # end timer
+        print("Transmission took", (end_timer - start_timer) / 1000, "us")
         for r in result:  # tally the resulting success rate
             successful += 1 if r else 0
     print(

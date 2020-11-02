@@ -61,7 +61,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
     nrf.listen = False  # ensures the nRF24L01 is in TX mode
     while count:
         print("Now Sending")
-        myData.time = int(time.monotonic() * 1000)  # start timer
+        myData.time = int(time.monotonic_ns() / 1000)  # start timer
         # use struct.pack to packetize your data into a usable payload
         # '<' means little endian byte order.
         # 'L' means a single 4 byte unsigned long value.
@@ -78,7 +78,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
                 # the arbitrary 200 ms timeout value is also used in the
                 # TMRh20 library's GettingStarted_HandlingData sketch
                 if nrf.update() and nrf.pipe is not None:
-                    end_timer = time.monotonic() * 1000  # end timer
+                    end_timer = time.monotonic_ns() / 1000  # end timer
                     rx = nrf.recv(32)  # 32 mimics behavior in TMRh20 library
                     rx = struct.unpack("<Lf", rx[:8])
                     myData.value = rx[1]  # save the new float value
@@ -90,7 +90,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
                             rx
                         )
                     )
-                    print("Round-trip delay:", end_timer - myData.time, "ms")
+                    print("Round-trip delay:", end_timer - myData.time, "us")
                     break
             if timeout:
                 print("failed to get a response; timed out")

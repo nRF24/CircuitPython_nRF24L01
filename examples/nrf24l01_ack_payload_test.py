@@ -53,9 +53,9 @@ def master(count=5):  # count = 5 will only transmit 5 packets
     while count:
         buffer = b"Hello " + bytes([count + 48])  # output buffer
         print("Sent:", buffer, end=" ")
-        start_timer = time.monotonic() * 1000  # start timer
+        start_timer = time.monotonic_ns()  # start timer
         result = nrf.send(buffer)  # save the response (ACK payload)
-        end_timer = time.monotonic() * 1000  # stop timer
+        end_timer = time.monotonic_ns()  # stop timer
         if not result:
             print("send() failed or timed out")
         else:
@@ -63,7 +63,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             # fetched and saved to "result" via send()
             print("Received:", result)
         # print timer results despite transmission success
-        print("Transmission took", end_timer - start_timer, "ms")
+        print("Transmission took", (end_timer - start_timer) / 1000, "us")
         time.sleep(1)  # let the RX node prepare a new ACK payload
         count -= 1
 
