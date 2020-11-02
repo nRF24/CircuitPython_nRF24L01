@@ -41,7 +41,7 @@ TX_ADDRESS = const(0x10)  # Address used for TX transmissions
 RX_PL_LENG = const(0x11)  # RX payload widths; pipes 0-5 = 0x11-0x16
 DYN_PL_LEN = const(0x1C)  # dynamic payloads status for all pipes
 TX_FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
-CSN_DELAY = 0.000005
+CSN_DELAY = 0.000475
 """The delay time (in seconds) used to let the CSN pin settle,
 allowing a clean SPI transaction."""
 
