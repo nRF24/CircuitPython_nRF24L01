@@ -10,7 +10,18 @@ import digitalio as dio
 from circuitpython_nrf24l01.rf24 import RF24
 
 # addresses needs to be in a buffer protocol object (bytearray)
-address = b"1Node"
+address = [b"1Node", b"2Node"]
+
+# to use different addresses on a pair of radios, we need a variable to
+# uniquely identify which address this radio will use to transmit
+# 0 uses address[0] to transmit, 1 uses address[1] to transmit
+radio_number = bool(
+    int(
+        input(
+            "Which radio is this? Enter '0' or '1'. Defaults to '0' "
+        ) or 0
+    )
+)
 
 # change these (digital output) pins accordingly
 ce = dio.DigitalInOut(board.D4)
@@ -28,28 +39,40 @@ nrf = RF24(spi, csn, ce)
 # usually run with nRF24L01 transceivers in close proximity
 nrf.pa_level = -12
 
+# set TX address of RX node into the TX pipe
+nrf.open_tx_pipe(address[radio_number])  # always uses pipe 0
+
+# set RX address of TX node into an RX pipe
+nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
+
+# using the python keyword global is bad practice. Instead we'll use a 1 item
+# list to store our float number for the payloads sent
+payload = [0.0]
+
 
 def master(count=5):  # count = 5 will only transmit 5 packets
     """Transmits an incrementing integer every second"""
-    nrf.open_tx_pipe(address)  # set address of RX node into a TX pipe
     nrf.listen = False  # ensures the nRF24L01 is in TX mode
 
     while count:
         # use struct.pack to packetize your data
         # into a usable payload
-        buffer = struct.pack("<i", count)
-        # 'i' means a single 4 byte int value.
-        # '<' means little endian byte order. this may be optional
-        print("Sending: {} as struct: {}".format(count, buffer))
+        buffer = struct.pack("<f", payload[0])
+        # "<f" means a single little endian (4 byte) float value.
         start_timer = time.monotonic_ns()  # start timer
         result = nrf.send(buffer)
         end_timer = time.monotonic_ns()  # end timer
         if not result:
             print("send() failed or timed out")
         else:
-            print("send() successful")
-        # print timer results despite transmission success
-        print("Transmission took", (end_timer - start_timer) / 1000, "us")
+            print(
+                "Transmission successful! Time to Transmit: "
+                "{} us. Sent: {}".format(
+                    (end_timer - start_timer) / 1000,
+                    payload[0]
+                )
+            )
+            payload[0] += 0.01
         time.sleep(1)
         count -= 1
 
@@ -57,29 +80,28 @@ def master(count=5):  # count = 5 will only transmit 5 packets
 def slave(count=5):
     """Polls the radio and prints the received value. This method expires
     after 6 seconds of no received transmission"""
-    # set address of TX node into an RX pipe. NOTE you MUST specify
-    # which pipe number to use for RX, we'll be using pipe 0
-    # pipe number options range [0,5]
-    # the pipe numbers used during a transmission don't have to match
-    nrf.open_rx_pipe(0, address)
     nrf.listen = True  # put radio into RX mode and power up
 
     start = time.monotonic()
     while count and (time.monotonic() - start) < 6:
         if nrf.update() and nrf.pipe is not None:
-            # print details about the received packet
-            print("{} bytes received on pipe {}".format(nrf.any(), nrf.pipe))
+            # grab information about the received payload
+            payload_size, pipe_number = (nrf.any(), nrf.pipe)
             # fetch 1 payload from RX FIFO
-            rx = nrf.recv()  # also clears nrf.irq_dr status flag
-            # expecting an int, thus the string format '<i'
-            # the rx[:4] is just in case dynamic payloads were disabled
-            buffer = struct.unpack("<i", rx[:4])  # [:4] truncates padded 0s
-            # print the only item in the resulting tuple from
-            # using `struct.unpack()`
-            print("Received: {}, Raw: {}".format(buffer[0], rx))
+            buffer = nrf.recv()  # also clears nrf.irq_dr status flag
+            # expecting a little endian float, thus the format string "<f"
+            # buffer[:4] truncates padded 0s if dynamic payloads are disabled
+            payload[0] = struct.unpack("<f", buffer[:4])[0]
+            # print details about the received packet
+            print(
+                "Received {} bytes on pipe {}: {}".format(
+                    payload_size,
+                    pipe_number,
+                    payload[0]
+                )
+            )
             start = time.monotonic()
             count -= 1
-            # this will listen indefinitely till count == 0
 
     # recommended behavior is to keep in TX mode while idle
     nrf.listen = False  # put the nRF24L01 is in TX mode

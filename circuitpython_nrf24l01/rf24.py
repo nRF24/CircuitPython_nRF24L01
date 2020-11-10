@@ -47,7 +47,12 @@ class RF24:
     """A driver class for the nRF24L01(+) transceiver radios."""
 
     def __init__(self, spi, csn, ce, spi_frequency=10000000):
-        self._spi = SPIDevice(spi, chip_select=csn, baudrate=spi_frequency)
+        self._spi = SPIDevice(
+            spi,
+            chip_select=csn,
+            baudrate=spi_frequency,
+            extra_clocks=8
+        )
         self.ce_pin = ce
         self.ce_pin.switch_to_output(value=False)  # pre-empt standby-I mode
         self._status = 0  # status byte returned on all SPI transactions
@@ -182,7 +187,7 @@ class RF24:
     def open_tx_pipe(self, address):
         """This function is used to open a data pipe for OTA (over the air)
         TX transmissions."""
-        if self.arc:
+        if self._aa & 1:
             for i, val in enumerate(address):
                 self._pipes[0][i] = val
             self._reg_write_bytes(RX_ADDR_P0, address)
@@ -231,7 +236,7 @@ class RF24:
         if self.listen != bool(is_rx):
             self.ce_pin.value = 0
             if is_rx:
-                if self._pipe0_read_addr is not None:
+                if self._pipe0_read_addr is not None and self._aa & 1:
                     for i, val in enumerate(self._pipe0_read_addr):
                         self._pipes[0][i] = val
                     self._reg_write_bytes(RX_ADDR_P0, self._pipe0_read_addr)

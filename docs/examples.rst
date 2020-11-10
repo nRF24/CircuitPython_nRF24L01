@@ -24,7 +24,7 @@ Multiceiver Example
 
 This example shows how use a group of 6 nRF24L01 transceivers to transmit to 1 nRF24L01 transceiver. `This technique is called "Multiceiver" in the nRF24L01 Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1104474>`_
 
-.. note:: This example follows the diagram illistrated in `figure 12 of section 7.7 of the nRF24L01 Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#page=39>`_ Please note that if `auto_ack` (on the base station) and `arc` (on the trnasmitting nodes) are disabled, then `figure 10 of section 7.7 of the nRF24L01 Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1104474>`_ would be a better illustration.
+.. note:: This example follows the diagram illistrated in `figure 12 of section 7.7 of the nRF24L01 Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#page=39>`_ Please note that if `auto_ack` (on the base station) and `arc` (on the transmitting nodes) are disabled, then `figure 10 of section 7.7 of the nRF24L01 Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1104474>`_ would be a better illustration.
 
 .. hint:: A paraphrased note from the the nRF24L01 Specifications Sheet:
 

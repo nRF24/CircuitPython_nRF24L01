@@ -8,7 +8,12 @@ from adafruit_bus_device.spi_device import SPIDevice
 
 class RF24:
     def __init__(self, spi, csn, ce, spi_frequency=10000000):
-        self._spi = SPIDevice(spi, chip_select=csn, baudrate=spi_frequency)
+        self._spi = SPIDevice(
+            spi,
+            chip_select=csn,
+            baudrate=spi_frequency,
+            extra_clocks=8
+        )
         self.ce_pin = ce
         self.ce_pin.switch_to_output(value=False)
         self._status = 0
@@ -75,9 +80,8 @@ class RF24:
         self._reg_write(0x03, length - 2)
 
     def open_tx_pipe(self, addr):
-        if self.arc:
-            self._reg_write_bytes(0x0A, addr)
-            self._reg_write(2, self._reg_read(2) | 1)
+        self._reg_write_bytes(0x0A, addr)
+        self._reg_write(2, self._reg_read(2) | 1)
         self._reg_write_bytes(0x10, addr)
 
     def close_rx_pipe(self, pipe_num):
@@ -108,6 +112,7 @@ class RF24:
     def listen(self, is_rx):
         if self.listen != bool(is_rx):
             self.ce_pin.value = 0
+            self._reg_read()
             if is_rx:
                 if self._pipe0_read_addr is not None:
                     self._reg_write_bytes(0x0A, self._pipe0_read_addr)
@@ -119,6 +124,7 @@ class RF24:
                 time.sleep(0.00013)
             else:
                 self._reg_write(0, self._reg_read(0) & 0xFE)
+
                 time.sleep(0.00016)
 
     def any(self):

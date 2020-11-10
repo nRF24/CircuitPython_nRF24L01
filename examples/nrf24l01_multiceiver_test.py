@@ -48,13 +48,10 @@ def base(timeout=10):
     while time.monotonic() - start_timer < timeout:
         while not nrf.fifo(False, True):  # keep RX FIFO empty for reception
             # show the pipe number that received the payload
-            print("pipe", nrf.pipe, end=" ")  # recv() clears the pipe number
-            nodeID, payloadID = struct.unpack("<ii", nrf.recv())
-            print(
-                "received from node {}. PayloadID: {}".format(
-                    nodeID, payloadID
-                )
-            )
+            # NOTE recv() clears the pipe number and payload length data
+            print("Received", nrf.any(), "on pipe", nrf.pipe, end=" ")
+            node_id, payload_id = struct.unpack("<ii", nrf.recv())
+            print("from node {}. PayloadID: {}".format(node_id, payload_id))
             start_timer = time.monotonic()  # reset timer with every payload
     nrf.listen = False
 
@@ -77,7 +74,21 @@ def node(node_number, count=6):
         # payloads will include the node_number and a payload ID character
         payload = struct.pack("<ii", node_number, counter)
         # show something to see it isn't frozen
-        print("attempt {} returned {}".format(counter, nrf.send(payload)))
+        start_timer = time.monotonic_ns()
+        report = nrf.send(payload)
+        end_timer = time.monotonic_ns()
+        # show something to see it isn't frozen
+        if report:
+            print(
+                "Transmission of payloadID {} as node {} successfull! "
+                "Transmission time: {} us".format(
+                    counter,
+                    node_number,
+                    (end_timer - start_timer) / 1000
+                )
+            )
+        else:
+            print("Transmission failed or timed out")
         time.sleep(0.5)  # slow down the test for readability
 
 
