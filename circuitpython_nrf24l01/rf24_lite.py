@@ -112,7 +112,6 @@ class RF24:
     def listen(self, is_rx):
         if self.listen != bool(is_rx):
             self.ce_pin.value = 0
-            self._reg_read()
             if is_rx:
                 if self._pipe0_read_addr is not None:
                     self._reg_write_bytes(0x0A, self._pipe0_read_addr)
