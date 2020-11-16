@@ -70,6 +70,15 @@ This is a test to show how to use `with` blocks to manage multiple different nRF
     :caption: examples/nrf24l01_context_test.py
     :linenos:
 
+Manual ACK Example
+------------------
+
+This is a test to show how to use the library for acknowledgement (ACK) responses without using the automatic ACK packets (like the `ACK Payloads Example <examples.html#ack-payloads-example>`_ does). Beware, that this technique is not faster and can be more prone to communication failure. However, This technique has the advantage of using more updated information in the responding payload as information in ACK payloads are always outdated by 1 transmission.
+
+.. literalinclude:: ../examples/nrf24l01_manual_ack_test.py
+    :caption: examples/nrf24l01_manual_ack_test.py
+    :linenos:
+
 OTA compatibility
 =================
 

@@ -115,6 +115,8 @@ class RF24:
             if is_rx:
                 if self._pipe0_read_addr is not None:
                     self._reg_write_bytes(0x0A, self._pipe0_read_addr)
+                else:
+                    self.close_rx_pipe(0)
                 self._reg_write(0, (self._reg_read(0) & 0xFC) | 3)
                 time.sleep(0.00015)
                 self.flush_rx()

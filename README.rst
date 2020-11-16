@@ -8,12 +8,12 @@
     :alt: Build Status
 
 .. image:: https://img.shields.io/pypi/v/circuitpython-nrf24l01.svg
-    :alt: latest version on PyPI
     :target: https://pypi.python.org/pypi/circuitpython-nrf24l01
+    :alt: latest version on PyPI
 
-.. image:: https://pepy.tech/badge/circuitpython-nrf24l01?label=pypi%20downloads&logo=python
-    :alt: Total PyPI downloads
+.. image:: https://static.pepy.tech/personalized-badge/circuitpython-nrf24l01?period=total&units=international_system&left_color=grey&right_color=blue&left_text=PyPi%20Downloads
     :target: https://pepy.tech/project/circuitpython-nrf24l01
+    :alt: Total PyPI downloads
 
 Read The Docs
 =============
