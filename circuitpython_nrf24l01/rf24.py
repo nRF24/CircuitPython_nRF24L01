@@ -384,18 +384,27 @@ class RF24:
             )
         )
         print(
-            "IRQ - Data Ready______{}    Data Ready___________{}".format(
-                "_True" if not bool(self._config & 0x40) else "False", self.irq_dr
+            "IRQ on Data Ready__{}    Data Ready___________{}".format(
+                "_Enabled"
+                if not bool(self._config & 0x40)
+                else "Disabled",
+                self.irq_dr
             )
         )
         print(
-            "IRQ - Data Fail_______{}    Data Failed__________{}".format(
-                "_True" if not bool(self._config & 0x10) else "False", self.irq_df
+            "IRQ on Data Fail___{}    Data Failed__________{}".format(
+                "_Enabled"
+                if not bool(self._config & 0x10)
+                else "Disabled",
+                self.irq_df
             )
         )
         print(
-            "IRQ - Data Sent_______{}    Data Sent____________{}".format(
-                "_True" if not bool(self._config & 0x20) else "False", self.irq_ds
+            "IRQ on Data Sent___{}    Data Sent____________{}".format(
+                "_Enabled"
+                if not bool(self._config & 0x20)
+                else "Disabled",
+                self.irq_ds
             )
         )
         print(
