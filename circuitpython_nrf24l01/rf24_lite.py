@@ -81,7 +81,6 @@ class RF24:
 
     def open_tx_pipe(self, addr):
         self._reg_write_bytes(0x0A, addr)
-        self._reg_write(2, self._reg_read(2) | 1)
         self._reg_write_bytes(0x10, addr)
 
     def close_rx_pipe(self, pipe_num):
@@ -110,23 +109,21 @@ class RF24:
 
     @listen.setter
     def listen(self, is_rx):
-        if self.listen != bool(is_rx):
-            self.ce_pin.value = 0
-            if is_rx:
-                if self._pipe0_read_addr is not None:
-                    self._reg_write_bytes(0x0A, self._pipe0_read_addr)
-                else:
-                    self.close_rx_pipe(0)
-                self._reg_write(0, (self._reg_read(0) & 0xFC) | 3)
-                time.sleep(0.00015)
-                self.flush_rx()
-                self.clear_status_flags()
-                self.ce_pin.value = 1
-                time.sleep(0.00013)
+        self.ce_pin.value = 0
+        if is_rx:
+            if self._pipe0_read_addr is not None:
+                self._reg_write_bytes(0x0A, self._pipe0_read_addr)
             else:
-                self._reg_write(0, self._reg_read(0) & 0xFE)
-
-                time.sleep(0.00016)
+                self.close_rx_pipe(0)
+            self._reg_write(0, (self._reg_read(0) & 0xFC) | 3)
+            time.sleep(0.00015)
+            self.clear_status_flags()
+            self.ce_pin.value = 1
+            time.sleep(0.00013)
+        else:
+            self._reg_write(0, self._reg_read(0) & 0xFE | 2)
+            self._reg_write(2, self._reg_read(2) | 1)
+            time.sleep(0.00016)
 
     def any(self):
         if self._reg_read(0x1D) & 4 and self.pipe is not None:

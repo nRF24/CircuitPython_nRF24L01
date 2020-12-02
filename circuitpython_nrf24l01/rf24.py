@@ -191,8 +191,6 @@ class RF24:
             for i, val in enumerate(address):
                 self._pipes[0][i] = val
             self._reg_write_bytes(RX_ADDR_P0, address)
-            self._open_pipes = self._open_pipes | 1
-            self._reg_write(OPEN_PIPES, self._open_pipes)
         for i, val in enumerate(address):
             self._tx_address[i] = val
         self._reg_write_bytes(TX_ADDRESS, address)
@@ -233,30 +231,29 @@ class RF24:
 
     @listen.setter
     def listen(self, is_rx):
-        if self.listen != bool(is_rx):
-            self.ce_pin.value = 0
-            if is_rx:
-                if self._pipe0_read_addr is not None and self._aa & 1:
-                    for i, val in enumerate(self._pipe0_read_addr):
-                        self._pipes[0][i] = val
-                    self._reg_write_bytes(RX_ADDR_P0, self._pipe0_read_addr)
-                elif self._pipe0_read_addr is None:
-                    self.close_rx_pipe(0)
-                self._config = (self._config & 0xFC) | 3
-                self._reg_write(CONFIGURE, self._config)
-                time.sleep(0.00015)  # mandatory wait to power up radio
-                self.clear_status_flags()
-                self.ce_pin.value = 1  # mandatory pulse is > 130 µs
-                time.sleep(0.00013)
-            else:
-                if self.ack:
-                    self.flush_tx()
-                if self._aa & 1:
-                    self._open_pipes |= 1
-                    self._reg_write(OPEN_PIPES, self._open_pipes)
-                self._config = self._config & 0xFE
-                self._reg_write(CONFIGURE, self._config)
-                time.sleep(0.00016)
+        self.ce_pin.value = 0
+        if is_rx:
+            if self._pipe0_read_addr is not None and self._aa & 1:
+                for i, val in enumerate(self._pipe0_read_addr):
+                    self._pipes[0][i] = val
+                self._reg_write_bytes(RX_ADDR_P0, self._pipe0_read_addr)
+            elif self._pipe0_read_addr is None:
+                self.close_rx_pipe(0)
+            self._config = (self._config & 0xFC) | 3
+            self._reg_write(CONFIGURE, self._config)
+            time.sleep(0.00015)  # mandatory wait to power up radio
+            self.clear_status_flags()
+            self.ce_pin.value = 1  # mandatory pulse is > 130 µs
+            time.sleep(0.00013)
+        else:
+            if self.ack:
+                self.flush_tx()
+            if self._aa & 1:
+                self._open_pipes |= 1
+                self._reg_write(OPEN_PIPES, self._open_pipes)
+            self._config = self._config & 0xFE | 2
+            self._reg_write(CONFIGURE, self._config)
+            time.sleep(0.00016)
 
     def any(self):
         """This function checks if the nRF24L01 has received any data at all,

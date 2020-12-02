@@ -44,6 +44,9 @@ nrf.open_tx_pipe(address[radio_number])  # always uses pipe 0
 # set RX address of TX node into an RX pipe
 nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
 
+# uncomment the following 2 lines for compatibility with TMRh20 library
+nrf.dynamic_payloads = False
+
 
 def make_buffers(size=32):
     """return a list of payloads"""

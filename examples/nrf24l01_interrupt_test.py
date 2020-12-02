@@ -71,6 +71,7 @@ def _ping_and_prompt():
         )
     )
 
+
 def master():
     """Transmits 3 times: successfully receive ACK payload first, successfully
     transmit on second, and intentionally fail transmit on the third"""
@@ -88,7 +89,7 @@ def master():
     _ping_and_prompt()  # CE pin is managed by this function
     print(
         "\t'on data ready' event test{}successful".format(
-            ' ' if nrf.irq_dr else ' un'
+            " " if nrf.irq_dr else " un"
         )
     )
 
@@ -99,7 +100,7 @@ def master():
     _ping_and_prompt()  # CE pin is managed by this function
     print(
         "\t'on data sent' event test{}successful".format(
-            ' ' if nrf.irq_ds else ' un'
+            " " if nrf.irq_ds else " un"
         )
     )
 
@@ -107,7 +108,13 @@ def master():
     print("\nSending one extra payload to fill RX FIFO on slave node.")
     if nrf.send(b"Radio", send_only=True):
         # when send_only parameter is True, send() ignores RX FIFO usage
-        print("Slave node should not be listening anymore.")
+        if nrf.fifo(False, False):  # is RX FIFO full?
+            print("Slave node should not be listening anymore.")
+        else:
+            print(
+                "transmission succeeded, "
+                "but slave node might still be listening"
+            )
     else:
         print("Slave node was unresponsive.")
 
@@ -120,7 +127,7 @@ def master():
     _ping_and_prompt()  # CE pin is managed by this function
     print(
         "\t'on data failed' event test{}successful".format(
-            ' ' if nrf.irq_df else ' un'
+            " " if nrf.irq_df else " un"
         )
     )
     nrf.flush_tx()  # flush artifact payload in TX FIFO from last test
@@ -132,9 +139,9 @@ def master():
 def slave(timeout=6):  # will listen for 6 seconds before timing out
     """Only listen for 3 payload from the master node"""
     # setup radio to recieve pings, fill TX FIFO with ACK payloads
-    nrf.load_ack(b"Yak ", 0)
-    nrf.load_ack(b"Back", 0)
-    nrf.load_ack(b" ACK", 0)
+    nrf.load_ack(b"Yak ", 1)
+    nrf.load_ack(b"Back", 1)
+    nrf.load_ack(b" ACK", 1)
     nrf.listen = True  # start listening & clear irq_dr flag
     start_timer = time.monotonic()  # start timer now
     while not nrf.fifo(0, 0) and time.monotonic() - start_timer < timeout:

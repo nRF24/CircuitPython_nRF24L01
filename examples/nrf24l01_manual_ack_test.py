@@ -52,8 +52,8 @@ nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
 counter = [0]
 
 # uncomment the following 2 lines for compatibility with TMRh20 library
-# nrf.dynamic_payloads = False
-# nrf.payload_length = 8
+nrf.dynamic_payloads = False
+nrf.payload_length = 8
 
 
 def master(count=5):  # count = 5 will only transmit 5 packets
@@ -69,7 +69,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             print("send() failed or timed out")
         else:  # sent successful; listen for a response
             nrf.listen = True  # get radio ready to receive a response
-            timeout = time.monotonic() + 0.2  # set sentinal for timeout
+            timeout = time.monotonic() + 1  # set sentinal for timeout
             while time.monotonic() < timeout:
                 # this loop hangs for 200 ms or until response is received
                 if nrf.update() and nrf.pipe is not None:
@@ -89,13 +89,15 @@ def master(count=5):  # count = 5 will only transmit 5 packets
                 # nrf.pipe is also updated using `nrf.listen = False`
                 print("Received no response.")
             else:
+                length = nrf.any()  # reset with recv()
+                pipe_number = nrf.pipe  # reset with recv()
                 received = nrf.recv()  # grab the response
                 # save new counter from response
                 counter[0] = received[7:8][0]
                 print(
                     "Receieved {} bytes with pipe {}: {}{}".format(
-                        nrf.any(),
-                        nrf.pipe,
+                        length,
+                        pipe_number,
                         bytes(received[:6]).decode("utf-8"),  # convert to str
                         counter[0]
                     )
@@ -105,7 +107,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         time.sleep(1)
 
 
-def slave(count=3):
+def slave(count=5):
     """Polls the radio and prints the received value. This method expires
     after 6 seconds of no received transmission"""
     nrf.listen = True  # put radio into RX mode and power up

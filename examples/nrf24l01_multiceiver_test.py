@@ -37,6 +37,10 @@ addresses = [
     b"\x05\xB6\xB5\xB4\xB3"
 ]
 
+# uncomment the following 2 lines for compatibility with TMRh20 library
+nrf.dynamic_payloads = False
+nrf.payload_length = 8
+
 
 def base(timeout=10):
     """Use the nRF24L01 as a base station for lisening to all nodes"""
