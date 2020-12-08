@@ -27,6 +27,12 @@ Constructor
         parameter only applies to the instantiated object and is made persistent via
         :py:class:`~adafruit_bus_device.spi_device.SPIDevice`.
 
+    .. versionadded:: 1.2.0
+        ``spi_frequency`` parameter
+    .. versionchanged:: 1.2.0
+        removed all keyword arguments in favor of using the provided corresponding
+        attributes.
+
 open_tx_pipe()
 ******************
 
@@ -40,9 +46,9 @@ open_tx_pipe()
 
     .. note:: There is no option to specify which data pipe to use because the nRF24L01 only
         uses data pipe 0 in TX mode. Additionally, the nRF24L01 uses the same data pipe (pipe
-        0) for receiving acknowledgement (ACK) packets in TX mode when the `auto_ack` attribute
-        is enabled for data pipe 0. Thus, RX pipe 0 is appropriated with the TX address
-        (specified here) when `auto_ack` is enabled for data pipe 0.
+        0) for receiving acknowledgement (ACK) packets in TX mode when the `auto_ack`
+        attribute is enabled for data pipe 0. Thus, RX pipe 0 is appropriated with the TX
+        address (specified here) when `auto_ack` is enabled for data pipe 0.
 
 close_rx_pipe()
 ******************
@@ -51,6 +57,10 @@ close_rx_pipe()
 
     :param int pipe_number: The data pipe to use for RX transactions. This must be in range
         [0, 5]. Otherwise a `IndexError` exception is thrown.
+
+    .. versionchanged:: 1.2.0
+        removed the ``reset`` parameter. Addresses assigned to pipes will persist until
+        changed or power to the nRF24L01 is discontinued.
 
 open_rx_pipe()
 ******************
@@ -140,6 +150,9 @@ recv()
         When the ``length`` parameter is specified, this function strictly returns a `bytearray`
         of that length despite the contents of the RX FIFO.
 
+    .. versionadded:: 1.2.0
+        ``length`` parameter
+
 send()
 ******************
 
@@ -150,8 +163,8 @@ send()
           in the returned list will contain the returned status for each corresponding payload
           in the list/tuple that was passed. The return statuses will be in one of the
           following forms:
-        - `False` if transmission fails. Transmission failure can only be detected if `arc`
-          is greater than ``0``.
+        - `False` if transmission fails. Transmission failure can only be detected if
+          `auto_ack` is enabled for data pipe 0.
         - `True` if transmission succeeds.
         - `bytearray` or `True` when the `ack` attribute is `True`. Because the payload
           expects a responding custom ACK payload, the response is returned (upon successful
@@ -163,20 +176,22 @@ send()
         also be a list or tuple of payloads (`bytearray`); in which case, all items in the
         list/tuple are processed for consecutive transmissions.
 
-        - If the `dynamic_payloads` attribute is disabled for data pipe 0 and this bytearray's
-          length is less than the `payload_length` attribute for pipe 0, then this bytearray
-          is padded with zeros until its length is equal to the `payload_length` attribute for
-          pipe 0.
-        - If the `dynamic_payloads` attribute is disabled for data pipe 0 and this bytearray's
-          length is greater than `payload_length` attribute for pipe 0, then this bytearray's
-          length is truncated to equal the `payload_length` attribute for pipe 0.
-    :param bool ask_no_ack: Pass this parameter as `True` to tell the nRF24L01 not to wait for
-        an acknowledgment from the receiving nRF24L01. This parameter directly controls a
+        - If the `dynamic_payloads` attribute is disabled for data pipe 0 and this
+            bytearray's length is less than the `payload_length` attribute for pipe 0,
+            then this bytearray is padded with zeros until its length is equal to the
+            `payload_length` attribute for pipe 0.
+        - If the `dynamic_payloads` attribute is disabled for data pipe 0 and this
+            bytearray's length is greater than `payload_length` attribute for pipe 0,
+            then this bytearray's length is truncated to equal the `payload_length`
+            attribute for pipe 0.
+    :param bool ask_no_ack: Pass this parameter as `True` to tell the nRF24L01 not to wait
+        for an acknowledgment from the receiving nRF24L01. This parameter directly controls a
         ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information
         about the payload). Therefore, it takes advantage of an nRF24L01 feature specific to
         individual payloads, and its value is not saved anywhere. You do not need to specify
-        this for every payload if the `arc` attribute is disabled, however setting this
-        parameter to `True` will work despite the `arc` attribute's setting.
+        this for every payload if the `auto_ack` attribute is disabled (for data pipe 0),
+        however setting this parameter to `True` will work despite the `auto_ack`
+        attribute's setting.
 
         .. note:: Each transmission is in the form of a packet. This packet contains sections
             of data around and including the payload. `See Chapter 7.3 in the nRF24L01
@@ -184,11 +199,12 @@ send()
             nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1136318>`_ for more
             details.
     :param int force_retry: The number of brute-force attempts to `resend()` a failed
-        transmission. Default is 0. This parameter has no affect on transmissions if `arc` is
-        ``0`` or if ``ask_no_ack`` parameter is set to `True`. Each re-attempt still takes
-        advantage of `arc` & `ard` attributes. During multi-payload processing, this
-        parameter is meant to slow down CircuitPython devices just enough for the Raspberry
-        Pi to catch up (due to the Raspberry Pi's seemingly slower SPI speeds).
+        transmission. Default is 0. This parameter has no affect on transmissions if
+        `auto_ack` is disabled or if ``ask_no_ack`` parameter is set to `True`. Each
+        re-attempt still takes advantage of `arc` & `ard` attributes. During multi-payload
+        processing, this parameter is meant to slow down CircuitPython devices just enough
+        for the Raspberry Pi to catch up (due to the Raspberry Pi's seemingly slower SPI
+        speeds).
     :param bool send_only: This parameter only applies when the `ack` attribute is set to
         `True`. Pass this parameter as `True` if the RX FIFO is not to be manipulated. Many
         other libraries' behave as though this parameter is `True`
@@ -196,12 +212,16 @@ send()
         Use `recv()` to get the ACK payload (if there is any) from the RX FIFO.Remember that
         the RX FIFO can only hold up to 3 payloads at once.
 
-    .. tip:: It is highly recommended that `arc` attribute is enabled (greater than ``0``)
-        when sending multiple payloads. Test results with the `arc` attribute disabled were
-        rather poor (less than 79% received by a Raspberry Pi). This same advice applies to
-        the ``ask_no_ack`` parameter (leave it as `False` for multiple payloads).
+    .. tip:: It is highly recommended that `auto_ack` attribute is enabled (greater than
+        ``0``) when sending multiple payloads. Test results with the `auto_ack` attribute
+        disabled were rather poor (less than 79% received by a Raspberry Pi). This same
+        advice applies to the ``ask_no_ack`` parameter (leave it as `False` for multiple
+        payloads).
     .. warning::  The nRF24L01 will block usage of the TX FIFO buffer upon failed
         transmissions. Failed transmission's payloads stay in TX FIFO buffer until the MCU
         calls `flush_tx()` and `clear_status_flags()`. Therefore, this function will discard
-        failed transmissions' payloads.
-
+        any payloads in the TX FIFO when called, but failed transmissions' payloads will
+        remain in the TX FIFO until `send()` or `flush_tx()` is called after failed
+        transmissions.
+    .. versionadded:: 1.2.0
+        ``send_only`` parameter

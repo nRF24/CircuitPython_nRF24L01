@@ -4,6 +4,11 @@ nRF24L01 Features
 Simple test
 ------------
 
+.. versionchanged:: 1.2.4
+
+    - uses 2 addresses on pipes 1 & 0 to demonstrate proper addressing convention.
+    - transmits an incrementing `float` instead of an `int`
+
 Ensure your device works with this simple test.
 
 .. literalinclude:: ../examples/nrf24l01_simple_test.py
@@ -13,6 +18,11 @@ Ensure your device works with this simple test.
 ACK Payloads Example
 --------------------
 
+.. versionchanged:: 1.2.4
+
+    - uses 2 addresses on pipes 1 & 0 to demonstrate proper addressing convention.
+    - changed payloads to show use of c-strings' NULL terminating character.
+
 This is a test to show how to use custom acknowledgment payloads. See also documentation on `ack` and `load_ack()`.
 
 .. literalinclude:: ../examples/nrf24l01_ack_payload_test.py
@@ -21,6 +31,12 @@ This is a test to show how to use custom acknowledgment payloads. See also docum
 
 Multiceiver Example
 --------------------
+
+.. versionadded:: 1.2.2
+
+.. versionchanged:: 1.2.4
+    no longer uses ACK payloads for responding to node 1.
+
 
 This example shows how use a group of 6 nRF24L01 transceivers to transmit to 1 nRF24L01 transceiver. `This technique is called "Multiceiver" in the nRF24L01 Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1104474>`_
 
@@ -39,6 +55,9 @@ This example shows how use a group of 6 nRF24L01 transceivers to transmit to 1 n
 IRQ Pin Example
 ---------------
 
+.. versionchanged:: 1.2.0
+    uses ACK payloads to trigger all 3 IRQ events.
+
 This is a test to show how to use nRF24L01's interrupt pin. Be aware that :py:func:`~circuitpython_nrf24l01.rf24.RF24.send()` clears all IRQ events on exit, so we use the non-blocking :py:func:`~circuitpython_nrf24l01.rf24.RF24.write()` instead. Also the `ack` attribute is enabled to trigger the :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr` event when the master node receives ACK payloads. Simply put, this example is the most advanced example script (in this library), and it runs VERY quickly.
 
 .. literalinclude:: ../examples/nrf24l01_interrupt_test.py
@@ -50,6 +69,9 @@ Library-Specific Features
 
 Stream Example
 ---------------
+
+.. versionchanged:: 1.2.3
+    added ``master_fifo()`` to demonstrate using full TX FIFO to stream data.
 
 This is a test to show how to stream data. The ``master()`` uses the `send()` function to
 transmit multiple payloads with 1 function call. However ``master()`` only uses 1
@@ -64,6 +86,9 @@ uses all 3 levels of the nRF24L01's TX FIFO to stream data, but it uses the
 Context Example
 ---------------
 
+.. versionchanged:: 1.2.0
+    demonstrates switching between `FakeBLE` object & `RF24` object with the same nRF24L01
+
 This is a test to show how to use `with` blocks to manage multiple different nRF24L01 configurations on 1 transceiver.
 
 .. literalinclude:: ../examples/nrf24l01_context_test.py
@@ -72,6 +97,8 @@ This is a test to show how to use `with` blocks to manage multiple different nRF
 
 Manual ACK Example
 ------------------
+
+.. versionadded:: 1.2.4
 
 This is a test to show how to use the library for acknowledgement (ACK) responses without using the automatic ACK packets (like the `ACK Payloads Example <examples.html#ack-payloads-example>`_ does). Beware, that this technique is not faster and can be more prone to communication failure. However, This technique has the advantage of using more updated information in the responding payload as information in ACK payloads are always outdated by 1 transmission.
 
@@ -85,6 +112,8 @@ OTA compatibility
 Fake BLE Example
 ----------------
 
+.. versionadded:: 1.2.0
+
 This is a test to show how to use the nRF24L01 as a BLE advertising beacon using the :py:class:`~circuitpython_nrf24l01.rf24.fake_ble.FakeBLE` class.
 
 .. literalinclude:: ../examples/nrf24l01_fake_ble_test.py
@@ -93,6 +122,8 @@ This is a test to show how to use the nRF24L01 as a BLE advertising beacon using
 
 TMRh20's Arduino library
 ------------------------
+
+.. versionadded:: 1.1.2
 
 This test is meant to prove compatibility with the popular Arduino library for the nRF24L01 by TMRh20 (available for install via the Arduino IDE's Library Manager). The following code has been designed/tested with the TMRh20 library example named `GettingStarted_HandlingData.ino <https://tmrh20.github.io/RF24/GettingStarted_HandlingData_8ino-example.html>`_. If you changed the ``radioNumber`` variable in the TMRh20 sketch, you will have to adjust the ``radioNumber`` variable this script so that it is opposite the value in the TMRh20 library's example.
 

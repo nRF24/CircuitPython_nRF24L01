@@ -76,12 +76,15 @@ arc
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.arc
 
-    The `auto_ack` attribute must be enabled on the receiving nRF24L01 respective data pipe,
-    otherwise this attribute will make `send()` seem like it failed.
+    The `auto_ack` attribute must be enabled on the receiving nRF24L01's pipe 0 & the
+    RX data pipe and the transmitting nRF24L01's pipe 0 to properly use this
+    attribute. If `auto_ack` is disabled on the transmitting nRF24L01's pipe 0, then this
+    attribute is ignored when calling `send()`.
 
-    A valid input value must be in range [0, 15]. Otherwise a `ValueError` exception is thrown.
-    Default is set to 3. A value of ``0`` disables the automatic re-transmit feature and
-    considers all payload transmissions a success.
+    A valid input value must be in range [0, 15]. Otherwise a `ValueError` exception is
+    thrown. Default is set to 3. A value of ``0`` disables the automatic re-transmit feature,
+    but the sending nRF24L01 will still wait the number of microseconds specified by `ard`
+    for an Acknowledgement (ACK) packet response (assuming `auto_ack` is enabled).
 
 ard
 ******************************
@@ -89,18 +92,19 @@ ard
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.ard
 
     During this time, the nRF24L01 is listening for the ACK packet. If the
-    `arc` attribute is disabled, this attribute is not applied.
+    `auto_ack` attribute is disabled for pipe 0, then this attribute is not applied.
 
     A valid input value must be in range [250, 4000]. Otherwise a `ValueError` exception is
-    thrown. Default is 1500 for reliability. If this is set to a value that is not multiple of
-    250, then the highest multiple of 250 that is no greater than the input value is used.
+    thrown. Default is 1500 for reliability. If this is set to a value that is not multiple
+    of 250, then the highest multiple of 250 that is no greater than the input value is used.
 
     .. note:: Paraphrased from nRF24L01 specifications sheet:
 
-        Please take care when setting this parameter. If the custom ACK payload is more than 15
-        bytes in 2 Mbps data rate, the `ard` must be 500µS or more. If the custom ACK payload
-        is more than 5 bytes in 1 Mbps data rate, the `ard` must be 500µS or more. In 250kbps
-        data rate (even when there is no custom ACK payload) the `ard` must be 500µS or more.
+        Please take care when setting this parameter. If the custom ACK payload is more than
+        15 bytes in 2 Mbps data rate, the `ard` must be 500µS or more. If the custom ACK
+        payload is more than 5 bytes in 1 Mbps data rate, the `ard` must be 500µS or more.
+        In 250kbps data rate (even when there is no custom ACK payload) the `ard` must be
+        500µS or more.
 
         See `data_rate` attribute on how to set the data rate of the nRF24L01's transmissions.
 
@@ -135,9 +139,10 @@ interrupt_config()
         into the RX FIFO buffer. Default setting is `True`
     :param bool data_sent: If this is `True`, then IRQ pin goes active when a payload from TX
         buffer is successfully transmit. Default setting is `True`
-    :param bool data_fail: If this is `True`, then IRQ pin goes active when the maximum number
-        of attempts to re-transmit the packet have been reached. If `arc` attribute is
-        disabled, then this IRQ event is not used. Default setting is `True`
+    :param bool data_fail: If this is `True`, then IRQ pin goes active when the maximum
+        number of attempts to re-transmit the packet have been reached. If `auto_ack`
+        attribute is disabled for pipe 0, then this IRQ event is not used. Default setting
+        is `True`
 
     .. note:: To fetch the status (not configuration) of these IRQ flags, use the `irq_df`,
         `irq_ds`, `irq_dr` attributes respectively.

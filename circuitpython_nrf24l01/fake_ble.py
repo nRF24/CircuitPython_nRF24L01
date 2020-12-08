@@ -214,8 +214,7 @@ class FakeBLE:
 
     @property
     def pa_level(self):
-        """See :py:attr:`~circuitpython_nrf24l01.rf24.RF24.pa_level` for
-        more details."""
+        """See :py:attr:`circuitpython_nrf24l01.rf24.RF24.pa_level`"""
         return self._radio.pa_level
 
     @pa_level.setter
@@ -248,8 +247,7 @@ class FakeBLE:
 
     @property
     def power(self):
-        """See :py:attr:`~circuitpython_nrf24l01.rf24.RF24.power` for more
-        details."""
+        """See :py:attr:`circuitpython_nrf24l01.rf24.RF24.power`"""
         return self._radio.power
 
     @power.setter
@@ -258,50 +256,38 @@ class FakeBLE:
 
     @property
     def is_lna_enabled(self):
-        """See :py:attr:`~circuitpython_nrf24l01.rf24.RF24.is_lna_enabled`
-        for more details."""
+        """See :py:attr:`circuitpython_nrf24l01.rf24.RF24.is_lna_enabled`"""
         return self._radio.is_lna_enabled
 
     @property
     def is_plus_variant(self):
-        """See :py:attr:`~circuitpython_nrf24l01.rf24.RF24.is_plus_variant`
-        for more details."""
+        """See :py:attr:`circuitpython_nrf24l01.rf24.RF24.is_plus_variant`"""
         return self._radio.is_plus_variant
 
     def interrupt_config(self, data_recv=True, data_sent=True):
-        """See :py:func:`~circuitpython_nrf24l01.rf24.RF24.interrupt_config()`
-        for more details.
-
-        .. warning:: The :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_df`
-            attribute (and also this function's  ``data_fail`` parameter) is
-            not implemented for BLE operations."""
+        """See :py:func:`circuitpython_nrf24l01.rf24.RF24.interrupt_config()`"""
         self._radio.interrupt_config(data_recv=data_recv, data_sent=data_sent)
 
     @property
     def irq_ds(self):
-        """See :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_ds` for
-        more details."""
+        """See :py:attr:`circuitpython_nrf24l01.rf24.RF24.irq_ds`"""
         return self._radio.irq_ds
 
     @property
     def irq_dr(self):
-        """See :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr` for
-        more details."""
+        """See :py:attr:`circuitpython_nrf24l01.rf24.RF24.irq_dr`"""
         return self._radio.irq_dr
 
     def clear_status_flags(self):
-        """See :py:func:`~circuitpython_nrf24l01.rf24.RF24.clear_status_flags()`
-        for more details."""
+        """See :py:func:`circuitpython_nrf24l01.rf24.RF24.clear_status_flags()`"""
         self._radio.clear_status_flags()
 
     def update(self):
-        """See :py:func:`~circuitpython_nrf24l01.rf24.RF24.update()` for more
-        details."""
+        """See :py:func:`circuitpython_nrf24l01.rf24.RF24.update()`"""
         self._radio.update()
 
     def what_happened(self, dump_pipes=False):
-        """See :py:func:`~circuitpython_nrf24l01.rf24.RF24.what_happened()`
-        for more details."""
+        """See :py:func:`circuitpython_nrf24l01.rf24.RF24.what_happened()`"""
         self._radio.what_happened(dump_pipes=dump_pipes)
 
 class ServiceData:

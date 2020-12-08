@@ -1,4 +1,7 @@
 
+.. versionadded:: 1.2.0
+    BLE API added
+
 BLE Limitations
 ---------------
 
@@ -174,7 +177,10 @@ to_android
     this attribute to `False` still allows advertisements to be compatible with anything else
     except Android smartphones. Default Value is `True`.
 
-    .. warning:: This attribute will be deprecated on the next major release because it is not
+    .. versionchanged:: 1.2.2
+        in versions 1.2.0 & 1.2.1, this attribute was named ``to_iphone`` due to a misconception on the developers' behalf.
+    .. deprecated:: 1.2.2
+        This attribute will be deprecated on the next major release because it is not
         necessary to change this attribute. Changing this attribute to `False` only breaks
         compatibility with Android smartphones.
 
@@ -337,6 +343,10 @@ interrupt_config()
 
 .. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.interrupt_config()
 
+    .. warning:: The :py:attr:`circuitpython_nrf24l01.rf24.RF24.irq_df`
+        attribute (and also this function's  ``data_fail`` parameter) is
+        not implemented for BLE operations.
+
 irq_ds
 ####################
 
@@ -351,6 +361,11 @@ clear_status_flags()
 ####################
 
 .. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.clear_status_flags()
+
+    .. note:: This function takes no parameters, rather it clears all status
+        flags on every call. Be aware that only the
+        :py:attr:`circuitpython_nrf24l01.fake_ble.FakeBLE.irq_ds` attribute is
+        useful for `FakeBLE` objects.
 
 update()
 ####################
@@ -393,7 +408,7 @@ derivitive children
 .. autoclass:: circuitpython_nrf24l01.fake_ble.BatteryServiceData
     :show-inheritance:
 
-    The class's `data` attribute accepts a `int` value as
+    The class's `data` attribute accepts a 1-byte unsigned `int` value as
     input and returns a `bytes` object that conforms to the Bluetooth
     Battery Level format as defined in the `GATT Specifications
     Supplement. <https://www.bluetooth.org/DocMan/handlers/

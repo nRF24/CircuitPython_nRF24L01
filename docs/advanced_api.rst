@@ -85,6 +85,8 @@ is_plus_variant
 
     This information is detirmined upon instantiation.
 
+    .. versionadded:: 1.2.0
+
 load_ack()
 ******************************
 
@@ -126,7 +128,8 @@ read_ack()
     This function is an alias of `recv()` and remains for backward compatibility with older
     versions of this library.
 
-    .. warning:: This function will be deprecated on next major release. Use `recv()` instead.
+    .. deprecated:: 1.2.0
+        This function will be removed on next major release. Use `recv()` instead.
 
 irq_dr
 ******************************
@@ -140,6 +143,10 @@ irq_dr
         - `True` represents Data is in the RX FIFO buffer
         - `False` represents anything depending on context (state/condition of FIFO buffers);
           usually this means the flag's been reset.
+
+    .. important:: It is recommended that this flag is only used when the IRQ pin is active.
+        To detirmine if there is a payload in the RX FIFO, use `fifo()`, `any()`, or `pipe`.
+        Notice that calling `recv()` also resets this status flag.
 
     Pass ``data_recv`` |irq note|
 
@@ -158,6 +165,9 @@ irq_df
         - `True` signifies the nRF24L01 attemped all configured retries
         - `False` represents anything depending on context (state/condition); usually this
           means the flag's been reset.
+
+    .. important:: This can only return `True` if `auto_ack` is enabled, otherwise this will
+        always be `False`.
 
     Pass ``data_fail`` |irq note|
 
@@ -322,8 +332,8 @@ write()
         ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about
         the payload). Therefore, it takes advantage of an nRF24L01 feature specific to
         individual payloads, and its value is not saved anywhere. You do not need to specify
-        this for every payload if the `arc` attribute is disabled, however setting this
-        parameter to `True` will work despite the `arc` attribute's setting.
+        this for every payload if the `auto_ack` attribute is disabled, however setting this
+        parameter to `True` will work despite the `auto_ack` attribute's setting.
 
         .. note:: Each transmission is in the form of a packet. This packet contains sections
             of data around and including the payload. `See Chapter 7.3 in the nRF24L01
@@ -350,13 +360,13 @@ write()
         nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1121422>`_:
 
         It is important to NEVER to keep the nRF24L01+ in TX mode for more than 4 ms at a time.
-        If the [`arc` attribute is] enabled, nRF24L01+ is never in TX mode longer than 4
+        If the [`auto_ack` attribute is] enabled, nRF24L01+ is never in TX mode longer than 4
         ms.
 
     .. tip:: Use this function at your own risk. Because of the underlying
         `"Enhanced ShockBurst Protocol" <https://www.sparkfun.com/datasheets/Components/SMD/
         nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132607>`_, disobeying the 4
-        ms rule is easily avoided if the `arc` attribute is greater than ``0``. Alternatively,
+        ms rule is easily avoided if the `auto_ack` attribute is greater than ``0``. Alternatively,
         you MUST use nRF24L01's IRQ pin and/or user-defined timer(s) to AVOID breaking the
         4 ms rule. If the `nRF24L01+ Specifications Sheet explicitly states this
         <https://www.sparkfun.com/datasheets/Components/SMD/
@@ -365,6 +375,8 @@ write()
         in the nRF24L01 specification sheet <https://www.sparkfun.com/datasheets/Components/
         SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1123001>`_ for
         calculating an adequate transmission timeout sentinal.
+    .. versionadded:: 1.2.0
+        ``write_only`` parameter
 
 flush_rx()
 ******************************
@@ -420,6 +432,10 @@ pipe
 
     .
 
+    .. versionchanged:: 1.2.0
+        In previous versions of this library, this attribute was a read-only function
+        (``pipe()``).
+
     |update manually| (especially after calling
     :py:func:`~circuitpython_nrf24l01.rf24.RF24.flush_rx()`).
 
@@ -449,6 +465,8 @@ address()
         index ranges [0,5] for RX addresses or any negative number for the TX address.
         Otherwise an `IndexError` is thown. This parameter defaults to ``-1``.
 
+    .. versionadded:: 1.2.0
+
 rpd
 ******************************
 
@@ -467,6 +485,8 @@ rpd
         nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1160291>`_. Ambient
         temperature affects the -64 dBm threshold. The latching of this flag happens
         differently under certain conditions.
+
+    .. versionadded:: 1.2.0
 
 start_carrier_wave()
 ******************************
@@ -503,6 +523,8 @@ start_carrier_wave()
         `resend()` to establish the constant carrier wave. If `is_plus_variant` is
         `True`, then none of these changes are needed nor applied.
 
+    .. versionadded:: 1.2.0
+
 stop_carrier_wave()
 ******************************
 
@@ -512,3 +534,5 @@ stop_carrier_wave()
 
     .. note::
         Calling this function puts the nRF24L01 to sleep (AKA power down mode).
+
+    .. versionadded:: 1.2.0

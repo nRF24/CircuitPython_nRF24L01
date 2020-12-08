@@ -75,6 +75,8 @@ With the `auto_ack` feature enabled, you get:
 About the lite version
 ======================
 
+.. versionadded:: 1.2.0
+
 This library contains a "lite" version of ``rf24.py`` titled ``rf24_lite.py``. It has been
 developed to save space on microcontrollers with limited amount of RAM and/or storage (like
 boards using the ATSAMD21 M0). The following functionality has been removed from the lite
