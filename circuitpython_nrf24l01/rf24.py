@@ -95,7 +95,7 @@ class RF24:
         self._retry_setup = 0x53  # ard = 1500; arc = 3
         # pre-configure the RF_SETUP register
         self._rf_setup = 0x07  # 1 Mbps data_rate, and 0 dbm pa_level
-        # pre-configure dynamic_payloads & auto_ack for RX operations
+        # pre-configure dynamic_payloads & auto_ack
         self._dyn_pl = 0x3F  # 0x3F = enable dynamic_payloads on all pipes
         self._aa = 0x3F  # 0x3F = enable auto_ack on all pipes
         # pre-configure features for TX operations:
@@ -471,17 +471,21 @@ class RF24:
 
     @property
     def dynamic_payloads(self):
-        """This `bool` attribute controls the nRF24L01's dynamic payload
+        """This `int` attribute controls the nRF24L01's dynamic payload
         length feature for each pipe."""
         self._dyn_pl = self._reg_read(DYN_PL_LEN)
         self._features = self._reg_read(TX_FEATURE)
-        return bool(self._dyn_pl) and self._features & 4 == 4
+        if self._features & 4 == 4:
+            return self._dyn_pl
+        return 0
 
     @dynamic_payloads.setter
     def dynamic_payloads(self, enable):
         self._features = self._reg_read(TX_FEATURE)
-        if isinstance(enable, (bool, int)):
+        if isinstance(enable, bool):
             self._dyn_pl = 0x3F if enable else 0
+        elif isinstance(enable, int):
+            self._dyn_pl = 0x3F & enable
         elif isinstance(enable, (list, tuple)):
             for i, val in enumerate(enable):
                 if i < 6 and val >= 0:  # skip pipe if val is negative
@@ -499,8 +503,8 @@ class RF24:
 
     @property
     def payload_length(self):
-        """This `int` attribute specifies the length (in bytes) of static payloads for each
-        pipe."""
+        """This attribute specifies the length (in bytes) of static payloads for each
+        pipe using a `list` of integers."""
         return self._pl_len
 
     @payload_length.setter
@@ -547,15 +551,17 @@ class RF24:
 
     @property
     def auto_ack(self):
-        """This `bool` attribute controls the nRF24L01's automatic
+        """This `int` attribute controls the nRF24L01's automatic
         acknowledgment feature during the process of receiving a packet."""
         self._aa = self._reg_read(AUTO_ACK)
-        return bool(self._aa)
+        return self._aa
 
     @auto_ack.setter
     def auto_ack(self, enable):
-        if isinstance(enable, (bool, int)):
+        if isinstance(enable, bool):
             self._aa = 0x3F if enable else 0
+        elif isinstance(enable, int):
+            self._aa = 0x3F & enable
         elif isinstance(enable, (list, tuple)):
             for i, val in enumerate(enable):
                 if i < 6 and val >= 0:  # skip pipe if val is negative
@@ -709,7 +715,6 @@ class RF24:
             self.clear_status_flags()
             self._reg_write(0xE3)
             self.ce_pin.value = 1
-            time.sleep(0.00001)
             self.ce_pin.value = 0
             while not self._status & 0x70:
                 self.update()

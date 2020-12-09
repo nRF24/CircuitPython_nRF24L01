@@ -98,13 +98,15 @@ version:
                       print(hex(i), "=", nrf._reg_read_bytes(i))
                   elif i not in (0x18, 0x19, 0x1a, 0x1b):
                       print(hex(i), "=", hex(nrf._reg_read(i)))
-    * `dynamic_payloads` applies to all pipes, not individual pipes.
+    * `dynamic_payloads` applies to all pipes, not individual pipes. This attribute will return
+      a `bool` instead of an `int`
     * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length` applies to all pipes, not
-      individual pipes.
+      individual pipes. This attribute will return a single `int` instead of a `list`.
     * `read_ack()` removed. This is deprecated on next major release anyway; use `recv()`
       instead.
     * `load_ack()` is available, but it will not throw exceptions for malformed ``buf`` or
-      invalid ``pipe_number`` parameters.
+      invalid ``pipe_number`` parameters. Rather any call to `load_ack()` with invalid
+      parameters will have no affect on the TX FIFO.
     * `crc` removed. 2-bytes encoding scheme (CRC16) is always enabled.
     * `auto_ack` removed. This is always enabled for all pipes. Pass ``ask_no_ack`` parameter
       as `True` to `send()` or `write()` to disable automatic acknowledgement for TX

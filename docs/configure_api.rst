@@ -22,12 +22,26 @@ dynamic_payloads
     - A `list` or `tuple` containing booleans or integers |per_data_pipe_control| If any index's
       value is less than 0 (a negative value), then the pipe corresponding to that index will
       remain unaffected.
+    - An `int` where each bit in the integer represents the dynamic payload feature
+      per pipe. Bit position 0 controls this feature for data pipe 0, and bit position 5
+      controls this feature for data pipe 0. All bits in positions greater than 5 are ignored.
+
+    :returns:
+        An `int` (1 unsigned byte) where each bit in the integer represents the dynamic
+        payload feature per pipe.
 
     .. note::
         This attribute mostly relates to RX operations, but data pipe 0 applies to TX
         operations also. The `auto_ack` attribute is automatically enabled by this attribute
         for any data pipes that have this feature enabled. Disabling this feature for any
         data pipe will not affect the `auto_ack` feature for the corresponding data pipes.
+
+    .. versionchanged:: 1.2.0
+        accepts a list or tuple for control of the dynamic payload feature per pipe.
+    .. versionchanged:: 1.2.4
+
+        - returns a integer instead of a boolean
+        - accepts an integer for binary control of feature per pipe
 
 payload_length
 ******************************
@@ -36,7 +50,7 @@ payload_length
 
     If the `dynamic_payloads` attribute is *enabled* for a certain data pipe, this attribute has
     no affect on that data pipe. When `dynamic_payloads` is *disabled* for a certain data pipe,
-    this attribute is used to specify the payload length on that data pipe.
+    this attribute is used to specify the payload length used on that data pipe.
 
     A valid input value must be:
 
@@ -49,6 +63,18 @@ payload_length
     .. note::
         This attribute mostly relates to RX operations, but data pipe 0 applies to TX
         operations also.
+
+    .. tip:: This attribute can be used as a list to set a certain pipe's static payload length
+        .. code_block:: python
+
+            # let nrf be the instantiated RF24 object
+            nrf.payload_length[1] = 16  # set pipe 1 to expect static payload length of 16 bytes
+            nrf.payload_length[0]  # get the currently expected payload length for pipe 0
+
+    .. versionchanged:: 1.2.0
+        returns a list of all payload length settings for all pipes. Previously, this
+        attribute was a single `int` that controlled the configuration of static
+        payload lengths for all pipes.
 
 auto_ack
 ******************************
@@ -66,10 +92,24 @@ auto_ack
     - A `list` or `tuple` containing booleans or integers |per_data_pipe_control| If any
       index's value is less than 0 (a negative value), then the pipe corresponding to that
       index will remain unaffected.
+    - An `int` where each bit in the integer represents the automatic acknowledgement feature
+      per pipe. Bit position 0 controls this feature for data pipe 0, and bit position 5
+      controls this feature for data pipe 0. All bits in positions greater than 5 are ignored.
+
+    :returns:
+        An `int` (1 unsigned byte) where each bit in the integer represents the automatic
+        acknowledgement feature per pipe.
 
     .. note::
         This attribute mostly relates to RX operations, but data pipe 0 applies to TX
         operations also.
+
+    .. versionchanged:: 1.2.0
+        accepts a list or tuple for control of the automatic acknowledgement feature per pipe.
+    .. versionchanged:: 1.2.4
+
+        - returns a integer instead of a boolean
+        - accepts an integer for binary control of feature per pipe
 
 arc
 ******************************

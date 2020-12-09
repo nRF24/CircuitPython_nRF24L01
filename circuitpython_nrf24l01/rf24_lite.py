@@ -305,13 +305,12 @@ class RF24:
     def resend(self, send_only=False):
         result = False
         if not self.fifo(True, True):
+            self.ce_pin.value = 0
             if not send_only:
                 self.flush_rx()
             self.clear_status_flags()
             self._reg_write(0xE3)
-            self.ce_pin.value = 0
             self.ce_pin.value = 1
-            time.sleep(0.00001)
             self.ce_pin.value = 0
             while not self._status & 0x70:
                 self.update()
