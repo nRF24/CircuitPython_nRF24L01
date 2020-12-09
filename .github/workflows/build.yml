@@ -58,10 +58,10 @@ jobs:
     - name: Build assets
       run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --library_location . --package_folder_prefix ${{ steps.pkg-name.outputs.pkg-name }}
     - name: Upload bundles
-        uses: actions/upload-artifact@v2
-        with:
-          name: bundles
-          path: ${{ github.workspace }}/bundles/
+      uses: actions/upload-artifact@v2
+      with:
+        name: bundles
+        path: ${{ github.workspace }}/bundles/
     - name: Build docs
       working-directory: docs
       run: sphinx-build -E -W -b html . _build/html
