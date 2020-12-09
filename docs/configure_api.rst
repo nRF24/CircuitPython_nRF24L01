@@ -41,7 +41,7 @@ dynamic_payloads
     .. versionchanged:: 1.2.4
 
         - returns a integer instead of a boolean
-        - accepts an integer for binary control of feature per pipe
+        - accepts an integer for binary control of the dynamic payload feature per pipe
 
 payload_length
 ******************************
@@ -109,7 +109,8 @@ auto_ack
     .. versionchanged:: 1.2.4
 
         - returns a integer instead of a boolean
-        - accepts an integer for binary control of feature per pipe
+        - accepts an integer for binary control of the automatic acknowledgement feature
+          per pipe
 
 arc
 ******************************
