@@ -68,8 +68,8 @@ def master(count=5):  # count = 5 will only transmit 5 packets
 
     while count:
         # construct a payload to send
-        # add b"\x00" as a c-string NULL terminating char
-        buffer = b"Hello \x00" + bytes([counter[0]])
+        # add b"\0" as a c-string NULL terminating char
+        buffer = b"Hello \0" + bytes([counter[0]])
         start_timer = time.monotonic_ns()  # start timer
         result = nrf.send(buffer)  # save the response (ACK payload)
         end_timer = time.monotonic_ns()  # stop timer
@@ -109,8 +109,8 @@ def slave(count=5):
     nrf.listen = True  # put radio into RX mode, power it up
 
     # setup the first transmission's ACK payload
-    # add b"\x00" as a c-string NULL terminating char
-    buffer = b"World \x00" + bytes([counter[0]])
+    # add b"\0" as a c-string NULL terminating char
+    buffer = b"World \0" + bytes([counter[0]])
     # we must set the ACK payload data and corresponding
     # pipe number [0, 5]. We'll be acknowledging pipe 1
     nrf.load_ack(buffer, 1)  # load ACK for first response
@@ -139,7 +139,7 @@ def slave(count=5):
             )
             start = time.monotonic()  # reset timer
             if count:  # Going again?
-                buffer = b"World \x00" + bytes([counter[0]])  # build new ACK
+                buffer = b"World \0" + bytes([counter[0]])  # build new ACK
                 nrf.load_ack(buffer, 1)  # load ACK for next response
 
     # recommended behavior is to keep in TX mode while idle

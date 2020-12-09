@@ -147,7 +147,7 @@ class RF24:
 
     def _reg_read_bytes(self, reg, buf_len=5):
         in_buf = bytearray(buf_len + 1)
-        out_buf = bytes([reg]) + b"\x00" * buf_len
+        out_buf = bytes([reg]) + b"\0" * buf_len
         with self._spi as spi:
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
@@ -710,7 +710,7 @@ class RF24:
         result = False
         if not self.fifo(True, True):
             self.ce_pin.value = 0
-            if not send_only:
+            if not send_only and self.pipe is not None:
                 self.flush_rx()
             self.clear_status_flags()
             self._reg_write(0xE3)
@@ -738,13 +738,12 @@ class RF24:
             time.sleep(0.00016)
         if not bool((self._dyn_pl & 1) and (self._features & 4)):
             if len(buf) < self._pl_len[0]:
-                buf += b"\x00" * (self._pl_len[0] - len(buf))
+                buf += b"\0" * (self._pl_len[0] - len(buf))
             elif len(buf) > self._pl_len[0]:
-                buf = buf[: self._pl_len[0]]
-        if ask_no_ack:
-            if self._features & 1 == 0:
-                self._features = self._features & 0xFE | 1
-                self._reg_write(TX_FEATURE, self._features)
+                buf = buf[:self._pl_len[0]]
+        if ask_no_ack and self._features & 1 == 0:
+            self._features = self._features & 0xFE | 1
+            self._reg_write(TX_FEATURE, self._features)
         self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
         if not write_only:
             self.ce_pin.value = 1

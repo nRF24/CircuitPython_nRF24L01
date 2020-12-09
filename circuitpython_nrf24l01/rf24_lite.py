@@ -46,7 +46,7 @@ class RF24:
 
     def _reg_read_bytes(self, reg, buf_len=5):
         in_buf = bytearray(buf_len + 1)
-        out_buf = bytes([reg]) + b"\x00" * buf_len
+        out_buf = bytes([reg]) + b"\0" * buf_len
         with self._spi as spi:
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
@@ -197,7 +197,7 @@ class RF24:
 
     @property
     def dynamic_payloads(self):
-        return bool(self._reg_read(0x1C)) and self._reg_read(0x1D) & 4 == 4
+        return self._reg_read(0x1D) & 4 == 4
 
     @dynamic_payloads.setter
     def dynamic_payloads(self, enable):
@@ -306,13 +306,13 @@ class RF24:
         result = False
         if not self.fifo(True, True):
             self.ce_pin.value = 0
-            if not send_only:
+            if not send_only and self.pipe is not None:
                 self.flush_rx()
             self.clear_status_flags()
             self._reg_write(0xE3)
             self.ce_pin.value = 1
             self.ce_pin.value = 0
-            while not self._status & 0x70:
+            while not self._status & 0x30:
                 self.update()
             result = self.irq_ds
             if self._status & 0x60 == 0x60 and not send_only:
@@ -332,10 +332,10 @@ class RF24:
         if not self.dynamic_payloads:
             pl_width = self.payload_length
             if len(buf) < pl_width:
-                buf += b"\x00" * pl_width - len(buf)
+                buf += b"\0" * pl_width - len(buf)
             elif len(buf) > pl_width:
                 buf = buf[:pl_width]
-        self._reg_write_bytes(0xA0 | (ask_no_ack << 4), buf)
+        self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
         if not write_only:
             self.ce_pin.value = 1
         return True

@@ -57,7 +57,7 @@ jobs:
         ([[ ! -d "examples" ]] || pylint --disable=invalid-name $( find . -path "./examples/*.py" ))
     - name: Build assets
       run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --library_location . --package_folder_prefix ${{ steps.pkg-name.outputs.pkg-name }}
-    - name: Upload bundles
+    - name: Archive bundles
       uses: actions/upload-artifact@v2
       with:
         name: bundles

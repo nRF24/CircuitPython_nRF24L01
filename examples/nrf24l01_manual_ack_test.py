@@ -61,15 +61,15 @@ def master(count=5):  # count = 5 will only transmit 5 packets
     nrf.listen = False  # ensures the nRF24L01 is in TX mode
     while count:
         # construct a payload to send
-        # add b"\x00" as a c-string NULL terminating char
-        buffer = b"Hello \x00" + bytes([counter[0]])
+        # add b"\0" as a c-string NULL terminating char
+        buffer = b"Hello \0" + bytes([counter[0]])
         start_timer = time.monotonic_ns()  # start timer
         result = nrf.send(buffer)  # save the response (ACK payload)
         if not result:
             print("send() failed or timed out")
         else:  # sent successful; listen for a response
             nrf.listen = True  # get radio ready to receive a response
-            timeout = time.monotonic() + 1  # set sentinal for timeout
+            timeout = time.monotonic() + 0.2  # set sentinal for timeout
             while time.monotonic() < timeout:
                 # this loop hangs for 200 ms or until response is received
                 if nrf.update() and nrf.pipe is not None:
@@ -121,7 +121,7 @@ def slave(count=5):
             # increment counter before sending it back in responding payload
             counter[0] = received[7:8][0] + 1
             nrf.listen = False  # put the radio in TX mode
-            result = nrf.send(b"World \x00" + bytes([counter[0]]))
+            result = nrf.send(b"World \0" + bytes([counter[0]]))
             nrf.listen = True  # put the radio back in RX mode
             print(
                 "Received {} on pipe {}: {}{} Sent:".format(
