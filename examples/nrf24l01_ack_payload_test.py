@@ -117,7 +117,7 @@ def slave(count=5):
 
     start = time.monotonic()  # start timer
     while count and (time.monotonic() - start) < 6:  # use 6 second timeout
-        if nrf.update() and nrf.pipe is not None:
+        if nrf.available():
             count -= 1
             # grab information about the received payload
             length, pipe_number = (nrf.any(), nrf.pipe)

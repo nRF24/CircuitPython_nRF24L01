@@ -255,6 +255,10 @@ class RF24:
             self._reg_write(CONFIGURE, self._config)
             time.sleep(0.00016)
 
+    def available(self):
+        """Returns a bool describing if there is a payload in the RX FIFO"""
+        return self.update and self.pipe is not None
+
     def any(self):
         """This function checks if the nRF24L01 has received any data at all,
         and then reports the next available payload's length (in bytes)."""
@@ -461,7 +465,11 @@ class RF24:
                     self.address(i),
                 )
                 if is_open:
-                    print("\t\texpecting", self._pl_len[i], "byte static payloads")
+                    print(
+                        "\t\texpecting {} byte static payloads".format(
+                            self._reg_read(RX_PL_LENG + i)
+                        )
+                    )
 
     @property
     def is_plus_variant(self):
@@ -503,20 +511,34 @@ class RF24:
 
     @property
     def payload_length(self):
-        """This attribute specifies the length (in bytes) of static payloads for each
-        pipe using a `list` of integers."""
-        return self._pl_len
+        """This `int` attribute specifies the length (in bytes) of static
+        payloads for all pipes."""
+        return self._pl_len[0]
 
     @payload_length.setter
     def payload_length(self, length):
         if isinstance(length, int):
             length = [length] * 6
-        elif not isinstance(length, (list, tuple)):
+            for i, val in enumerate(length):
+                if 0 < val <= 32:  # don't throw an exception; skip pipe
+                    self._pl_len[i] = val
+                    self._reg_write(RX_PL_LENG + i, val)
+        else:
             raise ValueError("length {} is not a valid input".format(length))
-        for i, val in enumerate(length):
-            if i < 6 and 0 < val <= 32:  # don't throw exception; skip pipe
-                self._pl_len[i] = val
-                self._reg_write(RX_PL_LENG + i, val)
+
+    def set_payload_length(self, length, pipe_number=None):
+        """Sets the static payload length feature for each/all data pipes."""
+        if pipe_number is None:
+            self.payload_length = length
+        elif 0 <= pipe_number <= 5:
+            self._pl_len[pipe_number] = max(1, min(32, length))
+            self._reg_write(RX_PL_LENG + pipe_number, length)
+        raise IndexError("pipe {} does not exist".format(pipe_number))
+
+    def get_payload_length(self, pipe_number=0):
+        """Returns the current setting of a specified data pipe's expected
+        static payload length."""
+        return self._pl_len[pipe_number]
 
     @property
     def arc(self):

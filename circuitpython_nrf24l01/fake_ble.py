@@ -193,7 +193,7 @@ class FakeBLE:
         buf += crc24_ble(buf)
         return buf
 
-    def available(self, hypothetical=b""):
+    def len_available(self, hypothetical=b""):
         """This function will calculates how much length (in bytes) is
         available in the next payload."""
         name_length = (len(self.name) + 2) if self.name is not None else 0
@@ -285,6 +285,10 @@ class FakeBLE:
     def update(self):
         """See :py:func:`circuitpython_nrf24l01.rf24.RF24.update()`"""
         self._radio.update()
+
+    def available(self):
+        """See :py:func:`circuitpython_nrf24l01.rf24.RF24.available()`"""
+        return self._radio.available()
 
     def what_happened(self, dump_pipes=False):
         """See :py:func:`circuitpython_nrf24l01.rf24.RF24.what_happened()`"""

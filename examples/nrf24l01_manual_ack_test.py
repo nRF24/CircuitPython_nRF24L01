@@ -72,7 +72,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             timeout = time.monotonic() + 0.2  # set sentinal for timeout
             while time.monotonic() < timeout:
                 # this loop hangs for 200 ms or until response is received
-                if nrf.update() and nrf.pipe is not None:
+                if nrf.available():
                     break
             nrf.listen = False  # put the radio back in TX mode
             end_timer = time.monotonic_ns()  # stop timer
@@ -114,7 +114,7 @@ def slave(count=5):
     start_timer = time.monotonic()  # used as a timeout
     while count and (time.monotonic() - start_timer) < 6:
         # this loop waits for 6 seconds at most if nothing received
-        if nrf.update() and nrf.pipe is not None:
+        if nrf.available():
             length = nrf.any()  # grab payload length info
             pipe = nrf.pipe  # grab pipe number info
             received = nrf.recv(length)  # clears info from any() and nrf.pipe

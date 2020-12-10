@@ -13,18 +13,18 @@ dynamic_payloads
 
     Default setting is enabled on all pipes.
 
-    - `True` or ``1`` enables nRF24L01's dynamic payload length feature for all data pipes. The
-      `payload_length` attribute is ignored when this feature is enabled for all
+    - `True` or ``1`` enables nRF24L01's dynamic payload length feature for all data pipes.
+      The `payload_length` attribute is ignored when this feature is enabled for all
       respective data pipes.
     - `False` or ``0`` disables nRF24L01's dynamic payload length feature for all data pipes.
       Be sure to adjust the `payload_length` attribute accordingly when this feature is
       disabled for any respective data pipes.
-    - A `list` or `tuple` containing booleans or integers |per_data_pipe_control| If any index's
-      value is less than 0 (a negative value), then the pipe corresponding to that index will
-      remain unaffected.
+    - A `list` or `tuple` containing booleans or integers |per_data_pipe_control| If any
+      index's value is less than 0 (a negative value), then the pipe corresponding to that
+      index will remain unaffected.
     - An `int` where each bit in the integer represents the dynamic payload feature
       per pipe. Bit position 0 controls this feature for data pipe 0, and bit position 5
-      controls this feature for data pipe 0. All bits in positions greater than 5 are ignored.
+      controls this feature for data pipe 5. All bits in positions greater than 5 are ignored.
 
     :returns:
         An `int` (1 unsigned byte) where each bit in the integer represents the dynamic
@@ -35,7 +35,6 @@ dynamic_payloads
         operations also. The `auto_ack` attribute is automatically enabled by this attribute
         for any data pipes that have this feature enabled. Disabling this feature for any
         data pipe will not affect the `auto_ack` feature for the corresponding data pipes.
-
     .. versionchanged:: 1.2.0
         accepts a list or tuple for control of the dynamic payload feature per pipe.
     .. versionchanged:: 1.2.4
@@ -48,33 +47,65 @@ payload_length
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.payload_length
 
-    If the `dynamic_payloads` attribute is *enabled* for a certain data pipe, this attribute has
-    no affect on that data pipe. When `dynamic_payloads` is *disabled* for a certain data pipe,
-    this attribute is used to specify the payload length used on that data pipe.
+    This attribute can be used to specify the static payload length used for all data pipes
+    in which the `dynamic_payloads` attribute is *disabled*
 
-    A valid input value must be:
+    A valid input value must be an `int` in range [1, 32]. Otherwise a `ValueError`
+    exception is thrown. Setting this attribute to a single `int` configures all 6 data
+    pipes. Default is set to the nRF24L01's maximum of 32 (on all data pipes).
 
-        * an `int` in range [1, 32]. Otherwise a `ValueError` exception is thrown.
-        * A `list` or `tuple` containing integers |per_data_pipe_control| If any index's value
-          is ``0``, then the existing setting will persist (not be changed).
-
-        Default is set to the nRF24L01's maximum of 32 (on all data pipes).
-
-    .. note::
-        This attribute mostly relates to RX operations, but data pipe 0 applies to TX
-        operations also.
-
-    .. tip:: This attribute can be used as a list to set a certain pipe's static payload length
-        .. code_block:: python
-
-            # let nrf be the instantiated RF24 object
-            nrf.payload_length[1] = 16  # set pipe 1 to expect static payload length of 16 bytes
-            nrf.payload_length[0]  # get the currently expected payload length for pipe 0
+    :returns:
+        The current setting of the expected static payload length feature for pipe 0 only.
 
     .. versionchanged:: 1.2.0
-        returns a list of all payload length settings for all pipes. Previously, this
-        attribute was a single `int` that controlled the configuration of static
-        payload lengths for all pipes.
+        return a list of all payload length settings for all pipes. This implementation
+        introduced a couple bugs:
+
+        1. The settings could be changed improperly in a way that was not written to the
+           nRF24L01 registers.
+        2. There was no way to catch an invalid setting if configured improperly via the
+           first bug. This led to errors in using other functions that handle payloads.
+
+    .. versionchanged:: 1.2.4
+        reverted attribute behavior to original behavior that controls all pipes with one
+        setting. Specific control of the static payload length feature per pipe is now
+        provided with separate functions. (see `set_payload_length()` and
+        `get_payload_length()`)
+
+payload_length per pipe
+******************************
+
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.set_payload_length()
+
+    This function only affects data pipe(s) for which the `dynamic_payloads` attribute is
+    *disabled*.
+
+    :param int length: The number of bytes in range [1, 32] for to be used for static
+        payload lengths. If this number is not in range [1, 32], then it will be clamped to
+        that range.
+    :param int pipe_number: The specific data pipe number in range [0, 5] to apply the
+        ``length`` parameter. If this parameter is not specified the ``length`` parameter is
+        applied to all data pipes. If this parameter is not in range [0, 5], then a
+        `IndexError` exception is thrown.
+
+    .. note::
+        This function mostly relates to RX operations, but data pipe 0 applies to TX
+        operations also.
+    .. versionadded:: 1.2.4
+
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.get_payload_length()
+
+    The data returned by this function is only relevant for data pipes in which the
+    `dynamic_payloads` attribute is *disabled*.
+
+    :param int pipe_number: The specific data pipe number in range [0, 5] to fetch. If this
+        parameter is not in range [0, 5], then a `IndexError` exception is thrown. If this
+        parameter is not specified, then the data returned is about data pipe 0.
+
+    .. note::
+        This function mostly relates to RX operations, but data pipe 0 applies to TX
+        operations also.
+    .. versionadded:: 1.2.4
 
 auto_ack
 ******************************
@@ -94,7 +125,7 @@ auto_ack
       index will remain unaffected.
     - An `int` where each bit in the integer represents the automatic acknowledgement feature
       per pipe. Bit position 0 controls this feature for data pipe 0, and bit position 5
-      controls this feature for data pipe 0. All bits in positions greater than 5 are ignored.
+      controls this feature for data pipe 5. All bits in positions greater than 5 are ignored.
 
     :returns:
         An `int` (1 unsigned byte) where each bit in the integer represents the automatic
@@ -103,7 +134,6 @@ auto_ack
     .. note::
         This attribute mostly relates to RX operations, but data pipe 0 applies to TX
         operations also.
-
     .. versionchanged:: 1.2.0
         accepts a list or tuple for control of the automatic acknowledgement feature per pipe.
     .. versionchanged:: 1.2.4

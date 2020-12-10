@@ -88,7 +88,7 @@ def slave(count=5):
 
     start = time.monotonic()
     while count and (time.monotonic() - start) < 6:
-        if nrf.update() and nrf.pipe is not None:
+        if nrf.available():
             # grab information about the received payload
             payload_size, pipe_number = (nrf.any(), nrf.pipe)
             # fetch 1 payload from RX FIFO

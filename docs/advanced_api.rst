@@ -263,20 +263,15 @@ update()
     Refreshing the status byte is vital to checking status of the interrupt flags, RX pipe
     number related to current RX payload, and if the TX FIFO buffer is full. This function
     returns nothing, but internally updates the `irq_dr`, `irq_ds`, `irq_df`, `pipe`, and
-    `tx_full` attributes. Internally this is a helper function to `send()`, and `resend()`
+    `tx_full` attributes. Internally this is a helper function to `available()`, `send()`, and `resend()`
     functions.
 
     :returns: `True` for every call. This value is meant to allow this function to be used
-        in ``if`` statements in conjunction with attributes related to the refreshed status
-        byte.
+        in `if` or `while` *in conjunction with* attributes related to the
+        refreshed status byte.
 
-        .. code-block:: python
-
-            # let ``nrf`` be the instantiated object of the RF24 class
-
-            # the following if statement is faster than using ``if nrf.any():``
-            if nrf.update() and nrf.pipe is not None:
-                rx_payload = nrf.recv()
+    .. versionchanged:: 1.2.3
+        arbitrarily returns `True`
 
 resend()
 ******************************

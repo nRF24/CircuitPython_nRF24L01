@@ -150,7 +150,7 @@ def slave(timeout=5):
     count = 0  # keep track of the number of received payloads
     start_timer = time.monotonic()  # start timer
     while time.monotonic() < start_timer + timeout:
-        if nrf.update() and nrf.pipe is not None:
+        if nrf.available():
             count += 1
             # retreive the received packet's payload
             buffer = nrf.recv()  # clears flags & empties RX FIFO

@@ -77,7 +77,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             while time.monotonic() * 1000 - myData.time < 200:
                 # the arbitrary 200 ms timeout value is also used in the
                 # TMRh20 library's GettingStarted_HandlingData sketch
-                if nrf.update() and nrf.pipe is not None:
+                if nrf.available():
                     end_timer = time.monotonic_ns() / 1000  # end timer
                     rx = nrf.recv(32)  # 32 mimics behavior in TMRh20 library
                     rx = struct.unpack("<Lf", rx[:8])
@@ -113,7 +113,7 @@ def slave(count=3):
     nrf.listen = True  # put radio into RX mode and power up
     myData.time = time.monotonic() * 1000  # in milliseconds
     while count and (time.monotonic() * 1000 - myData.time) < 6000:
-        if nrf.update() and nrf.pipe is not None:
+        if nrf.available():
             # clear flags & fetch 1 payload in RX FIFO
             buffer = nrf.recv(32)  # 32 mimics behavior in TMRh20 library
             # increment floating value as part of the "HandlingData" test

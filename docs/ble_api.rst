@@ -238,10 +238,10 @@ whiten()
         `advertise()` uses this function internally to prevent such
         improper usage.
 
-available()
-*************
+len_available()
+******************
 
-.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.available
+.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.len_available
 
     This is detirmined from the current state of `name` and `show_pa_level`
     attributes.
@@ -251,6 +251,13 @@ available()
         in bytes. This parameter is optional.
     :returns: An `int` representing the length of available bytes for the
         a single payload.
+
+    .. versionchanged:: 1.2.4
+        name changed from "available" to "len_available" to avoid confusion with
+        :py:func:`circuitpython_nrf24l01.rf24.RF24.available()`. This change also
+        allows providing the underlying `RF24` class'
+        :py:func:`~circuitpython_nrf24l01.rf24.RF24.available()` method in the
+        `FakeBLE` API.
 
 advertise()
 *************
@@ -371,6 +378,13 @@ update()
 ####################
 
 .. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.update()
+
+available()
+####################
+
+.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.available()
+
+.. versionadded:: 1.2.4
 
 what_happened()
 ####################

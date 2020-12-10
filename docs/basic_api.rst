@@ -111,6 +111,26 @@ any()
         - `int` of the size (in bytes) of an available RX payload (if any).
         - ``0`` if there is no payload in the RX FIFO buffer.
 
+available()
+******************
+
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.available
+
+    This function is provided for convenience and is synonomous with the following statement:
+
+    .. code-block:: python
+
+        # let `nrf` be the instantiated RF24 object
+        nrf.update() and nrf.pipe is not None
+
+    .. versionadded:: 1.0.0-rc1
+    .. versionchanged:: 1.0.0-rc3
+        removed due to synonomous behavior with `any()`.
+    .. versionadded:: 1.2.4
+        re-introduced as convenience to simplify using
+        ``nrf.update() and nrf.pipe is not None``. This seemed appropriate since the
+        underlying behavior of `any()` has changed since version 1.0.0
+
 recv()
 ******************
 
