@@ -107,13 +107,12 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         time.sleep(1)
 
 
-def slave(count=5):
+def slave(timeout=6):
     """Polls the radio and prints the received value. This method expires
     after 6 seconds of no received transmission"""
     nrf.listen = True  # put radio into RX mode and power up
     start_timer = time.monotonic()  # used as a timeout
-    while count and (time.monotonic() - start_timer) < 6:
-        # this loop waits for 6 seconds at most if nothing received
+    while (time.monotonic() - start_timer) < timeout:
         if nrf.available():
             length = nrf.any()  # grab payload length info
             pipe = nrf.pipe  # grab pipe number info
@@ -136,8 +135,8 @@ def slave(count=5):
                 print("Response failed or timed out")
             else:
                 print("World", counter[0])
-            count -= 1
             start_timer = time.monotonic()  # reset timeout
+
     # recommended behavior is to keep in TX mode when in idle
     nrf.listen = False  # put the nRF24L01 in TX mode + Standby-I power state
 

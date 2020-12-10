@@ -99,7 +99,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         time.sleep(1)
 
 
-def slave(count=3):
+def slave(timeout=6):
     """Polls the radio and prints the received value. This method expires
     after 6 seconds of no received transmission"""
     # set address of TX node into a RX pipe, and
@@ -112,7 +112,7 @@ def slave(count=3):
         nrf.open_tx_pipe(address[0])
     nrf.listen = True  # put radio into RX mode and power up
     myData.time = time.monotonic() * 1000  # in milliseconds
-    while count and (time.monotonic() * 1000 - myData.time) < 6000:
+    while (time.monotonic() * 1000 - myData.time) < timeout * 1000:
         if nrf.available():
             # clear flags & fetch 1 payload in RX FIFO
             buffer = nrf.recv(32)  # 32 mimics behavior in TMRh20 library
@@ -141,9 +141,8 @@ def slave(count=3):
                         end_timer - myData.time
                     )
                 )
-            # this will listen indefinitely till counter == 0
-            count -= 1
             nrf.listen = True  # put nRF24L01 back into RX mode
+
     # recommended behavior is to keep in TX mode when in idle
     nrf.listen = False  # put the nRF24L01 in TX mode + Standby-I power state
 

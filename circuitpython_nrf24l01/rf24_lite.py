@@ -126,7 +126,7 @@ class RF24:
             time.sleep(0.00016)
 
     def available(self):
-        return self.update and self.pipe is not None
+        return self.update() and self.pipe is not None
 
     def any(self):
         if self._reg_read(0x1D) & 4 and self.pipe is not None:

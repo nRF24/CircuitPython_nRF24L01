@@ -104,7 +104,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         count -= 1
 
 
-def slave(count=5):
+def slave(timeout=6):
     """Prints the received value and sends an ACK payload"""
     nrf.listen = True  # put radio into RX mode, power it up
 
@@ -116,9 +116,8 @@ def slave(count=5):
     nrf.load_ack(buffer, 1)  # load ACK for first response
 
     start = time.monotonic()  # start timer
-    while count and (time.monotonic() - start) < 6:  # use 6 second timeout
+    while (time.monotonic() - start) < timeout:
         if nrf.available():
-            count -= 1
             # grab information about the received payload
             length, pipe_number = (nrf.any(), nrf.pipe)
             # retreive the received packet's payload
@@ -138,9 +137,8 @@ def slave(count=5):
                 )
             )
             start = time.monotonic()  # reset timer
-            if count:  # Going again?
-                buffer = b"World \0" + bytes([counter[0]])  # build new ACK
-                nrf.load_ack(buffer, 1)  # load ACK for next response
+            buffer = b"World \0" + bytes([counter[0]])  # build new ACK
+            nrf.load_ack(buffer, 1)  # load ACK for next response
 
     # recommended behavior is to keep in TX mode while idle
     nrf.listen = False  # put radio in TX mode & flush unused ACK payloads
