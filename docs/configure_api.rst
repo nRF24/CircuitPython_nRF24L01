@@ -13,10 +13,10 @@ dynamic_payloads
 
     Default setting is enabled on all pipes.
 
-    - `True` or ``1`` enables nRF24L01's dynamic payload length feature for all data pipes.
+    - `True` enables nRF24L01's dynamic payload length feature for all data pipes.
       The `payload_length` attribute is ignored when this feature is enabled for all
       respective data pipes.
-    - `False` or ``0`` disables nRF24L01's dynamic payload length feature for all data pipes.
+    - `False` disables nRF24L01's dynamic payload length feature for all data pipes.
       Be sure to adjust the `payload_length` attribute accordingly when this feature is
       disabled for any respective data pipes.
     - A `list` or `tuple` containing booleans or integers |per_data_pipe_control| If any
@@ -114,10 +114,10 @@ auto_ack
 
     Default setting is enabled on all data pipes.
 
-    - `True` or ``1`` enables transmitting automatic acknowledgment packets for all data pipes.
+    - `True` enables transmitting automatic acknowledgment packets for all data pipes.
       The CRC (cyclic redundancy checking) is enabled (for all transmissions) automatically by
       the nRF24L01 if this attribute is enabled for any data pipe (see also `crc` attribute).
-    - `False` or ``0`` disables transmitting automatic acknowledgment packets for all data
+    - `False` disables transmitting automatic acknowledgment packets for all data
       pipes. The `crc` attribute will remain unaffected when disabling this attribute for any
       data pipes.
     - A `list` or `tuple` containing booleans or integers |per_data_pipe_control| If any
