@@ -128,7 +128,8 @@ class RF24:
         self._reg_write_bytes(TX_ADDRESS, self._tx_address)
         self._reg_write(0x05, self._channel)
         self._reg_write(0x03, self._addr_len - 2)
-        self.payload_length = self._pl_len
+        for i, val in enumerate(self._pl_len):
+            self.set_payload_length(val, i)
         return self
 
     def __exit__(self, *exc):
@@ -517,12 +518,10 @@ class RF24:
 
     @payload_length.setter
     def payload_length(self, length):
-        if isinstance(length, int):
-            length = [length] * 6
-            for i, val in enumerate(length):
-                if 0 < val <= 32:  # don't throw an exception; skip pipe
-                    self._pl_len[i] = val
-                    self._reg_write(RX_PL_LENG + i, val)
+        if isinstance(length, int) and 0 < length <= 32:
+            for i in range(6):
+                self._pl_len[i] = length
+                self._reg_write(RX_PL_LENG + i, length)
         else:
             raise ValueError("length {} is not a valid input".format(length))
 
@@ -530,10 +529,8 @@ class RF24:
         """Sets the static payload length feature for each/all data pipes."""
         if pipe_number is None:
             self.payload_length = length
-        elif 0 <= pipe_number <= 5:
-            self._pl_len[pipe_number] = max(1, min(32, length))
-            self._reg_write(RX_PL_LENG + pipe_number, length)
-        raise IndexError("pipe {} does not exist".format(pipe_number))
+        self._pl_len[pipe_number] = max(1, min(32, length))
+        self._reg_write(RX_PL_LENG + pipe_number, length)
 
     def get_payload_length(self, pipe_number=0):
         """Returns the current setting of a specified data pipe's expected

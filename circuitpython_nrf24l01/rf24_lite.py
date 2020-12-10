@@ -213,10 +213,8 @@ class RF24:
 
     @payload_length.setter
     def payload_length(self, length):
-        if not length or length > 32:
-            raise ValueError("payload_length must be in range [1, 32]")
         for i in range(6):
-            self._reg_write(0x11 + i, length)
+            self._reg_write(0x11 + i, max(1, min(32, length)))
 
     @property
     def arc(self):
