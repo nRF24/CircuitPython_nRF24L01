@@ -263,7 +263,7 @@ class RF24:
     def any(self):
         """This function checks if the nRF24L01 has received any data at all,
         and then reports the next available payload's length (in bytes)."""
-        if self.update() and self.pipe is not None:
+        if self.available():
             if self._features & 4:
                 return self._reg_read(0x60)
             return self._pl_len[self.pipe]
@@ -371,7 +371,7 @@ class RF24:
         )
         print("CRC bytes_________________{}".format(self.crc))
         print("Address length____________{} bytes".format(self.address_length))
-        print("TX Payload lengths________{} bytes".format(self.payload_length[0]))
+        print("TX Payload lengths________{} bytes".format(self.payload_length))
         print("Auto retry delay__________{} microseconds".format(self.ard))
         print("Auto retry attempts_______{} maximum".format(self.arc))
         print("Re-use TX FIFO____________{}".format(bool(self._reg_read(0x17) & 64)))

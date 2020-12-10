@@ -125,15 +125,15 @@ class RF24:
             self._reg_write(2, self._reg_read(2) | 1)
             time.sleep(0.00016)
 
+    def available(self):
+        return self.update and self.pipe is not None
+
     def any(self):
         if self._reg_read(0x1D) & 4 and self.pipe is not None:
             return self._reg_read(0x60)
         if self.pipe is not None:
             return self._reg_read(0x11 + self.pipe)
         return 0
-
-    def available(self):
-        return self.update and self.pipe is not None
 
     def recv(self, length=None):
         ret_size = length if length is not None else self.any()
