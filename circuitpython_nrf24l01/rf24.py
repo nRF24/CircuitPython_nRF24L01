@@ -291,9 +291,9 @@ class RF24:
         if not send_only and self.pipe is not None:
             self.flush_rx()
         self.write(buf, ask_no_ack)
-        self.ce_pin.value = 0
         while not self._status & 0x70:
             self.update()
+        self.ce_pin.value = 0
         result = self.irq_ds
         if self.irq_df:
             for _ in range(force_retry):
@@ -734,9 +734,9 @@ class RF24:
             self.clear_status_flags()
             self._reg_write(0xE3)
             self.ce_pin.value = 1
-            self.ce_pin.value = 0
             while not self._status & 0x70:
                 self.update()
+            self.ce_pin.value = 0
             result = self.irq_ds
             if self._status & 0x60 == 0x60 and not send_only:
                 result = self.recv()
