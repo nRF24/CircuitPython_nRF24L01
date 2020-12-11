@@ -351,7 +351,7 @@ interrupt_config()
 .. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.interrupt_config()
 
     .. warning:: The :py:attr:`circuitpython_nrf24l01.rf24.RF24.irq_df`
-        attribute (and also this function's  ``data_fail`` parameter) is
+        attribute (and also this function's ``data_fail`` parameter) is
         not implemented for BLE operations.
 
 irq_ds

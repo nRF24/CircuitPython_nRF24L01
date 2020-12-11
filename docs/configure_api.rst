@@ -79,8 +79,8 @@ payload_length
 
     A valid input value must be:
 
-        * an `int` in range [1, 32]. Otherwise a `ValueError` exception is thrown. Setting
-          this attribute to a single `int` configures all 6 data pipes.
+        * an `int` value that is clamped to the range [1, 32]. Setting this attribute to a
+          single `int` configures all 6 data pipes.
         * A `list` or `tuple` containing integers |per_data_pipe_control| If any index's
           value is ``0``, then the existing setting for the corresponding data pipe will
           persist (not be changed).

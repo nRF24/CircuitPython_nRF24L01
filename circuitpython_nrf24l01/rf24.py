@@ -292,7 +292,7 @@ class RF24:
         if not send_only and self.pipe is not None:
             self.flush_rx()
         self.write(buf, ask_no_ack)
-        while not self._status & 0x70:
+        while not self._status & 0x30:
             self.update()
         self.ce_pin.value = 0
         result = self.irq_ds
@@ -482,7 +482,7 @@ class RF24:
     @property
     def dynamic_payloads(self):
         """This `int` attribute controls the nRF24L01's dynamic payload
-        length feature for each pipe."""
+        length feature for any or all pipes."""
         self._dyn_pl = self._reg_read(DYN_PL_LEN)
         return self._dyn_pl
 
@@ -528,7 +528,7 @@ class RF24:
     @property
     def payload_length(self):
         """This `int` attribute specifies the length (in bytes) of static
-        payloads for all pipes."""
+        payloads for any or all pipes."""
         return self._pl_len[0]
 
     @payload_length.setter
@@ -589,7 +589,7 @@ class RF24:
     @property
     def auto_ack(self):
         """This `int` attribute controls the nRF24L01's automatic
-        acknowledgment feature during the process of receiving a packet."""
+        acknowledgment feature for any or all pipes."""
         self._aa = self._reg_read(AUTO_ACK)
         return self._aa
 
