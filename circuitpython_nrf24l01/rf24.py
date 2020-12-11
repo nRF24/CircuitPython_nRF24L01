@@ -48,10 +48,7 @@ class RF24:
 
     def __init__(self, spi, csn, ce, spi_frequency=10000000):
         self._spi = SPIDevice(
-            spi,
-            chip_select=csn,
-            baudrate=spi_frequency,
-            extra_clocks=8
+            spi, chip_select=csn, baudrate=spi_frequency, extra_clocks=8
         )
         self.ce_pin = ce
         self.ce_pin.switch_to_output(value=False)  # pre-empt standby-I mode
@@ -565,8 +562,7 @@ class RF24:
 
     @arc.setter
     def arc(self, count):
-        if not 0 <= count <= 15:
-            raise ValueError("automatic re-transmit count must in range [0, 15]")
+        count = max(0, min(int(count), 15))
         self._retry_setup = (self._retry_setup & 0xF0) | count
         self._reg_write(SETUP_RETR, self._retry_setup)
 
@@ -581,8 +577,7 @@ class RF24:
 
     @ard.setter
     def ard(self, delta):
-        if not 250 <= delta <= 4000:
-            raise ValueError("automatic re-transmit delay must be in range [250, 4000]")
+        delta = max(250, min(delta, 4000))
         self._retry_setup = (self._retry_setup & 15) | int((delta - 250) / 250) << 4
         self._reg_write(SETUP_RETR, self._retry_setup)
 
@@ -718,12 +713,10 @@ class RF24:
 
     @crc.setter
     def crc(self, length):
-        if not 0 <= length <= 2:
-            raise ValueError("CRC byte length must be an int equal to 0 (off), 1, or 2")
-        if self.crc != length:
-            length = (length + 1) << 2 if length else 0
-            self._config = self._config & 0x73 | length
-            self._reg_write(0, self._config)
+        length = min(2, abs(int(length)))
+        length = (length + 1) << 2 if length else 0
+        self._config = self._config & 0x73 | length
+        self._reg_write(0, self._config)
 
     @property
     def power(self):

@@ -207,10 +207,14 @@ arc
     attribute. If `auto_ack` is disabled on the transmitting nRF24L01's pipe 0, then this
     attribute is ignored when calling `send()`.
 
-    A valid input value must be in range [0, 15]. Otherwise a `ValueError` exception is
-    thrown. Default is set to 3. A value of ``0`` disables the automatic re-transmit feature,
-    but the sending nRF24L01 will still wait the number of microseconds specified by `ard`
-    for an Acknowledgement (ACK) packet response (assuming `auto_ack` is enabled).
+    A valid input value will be clamped to range [0, 15]. Default is set to 3. A value of
+    ``0`` disables the automatic re-transmit feature, but the sending nRF24L01 will still
+    wait the number of microseconds specified by `ard` for an Acknowledgement (ACK) packet
+    response (assuming `auto_ack` is enabled).
+
+    .. versionchanged:: 1.2.4
+        invalid input values are clamped to proper range instead of throwing a `ValueError`
+        exception.
 
 ard
 ******************************
@@ -220,9 +224,9 @@ ard
     During this time, the nRF24L01 is listening for the ACK packet. If the
     `auto_ack` attribute is disabled for pipe 0, then this attribute is not applied.
 
-    A valid input value must be in range [250, 4000]. Otherwise a `ValueError` exception is
-    thrown. Default is 1500 for reliability. If this is set to a value that is not multiple
-    of 250, then the highest multiple of 250 that is no greater than the input value is used.
+    A valid input value will be clamped to range [250, 4000]. Default is 1500 for
+    reliability. If this is set to a value that is not multiple of 250, then the highest
+    multiple of 250 that is no greater than the input value is used.
 
     .. note:: Paraphrased from nRF24L01 specifications sheet:
 
@@ -233,6 +237,9 @@ ard
         500µS or more.
 
         See `data_rate` attribute on how to set the data rate of the nRF24L01's transmissions.
+    .. versionchanged:: 1.2.4
+        invalid input values are clamped to proper range instead of throwing a `ValueError`
+        exception.
 
 ack
 ******************************
@@ -324,10 +331,13 @@ crc
     - ``1`` enables CRC encoding scheme using 1 byte (weak anti-corruption of data)
     - ``2`` enables CRC encoding scheme using 2 bytes (better anti-corruption of data)
 
-    Any invalid input throws a `ValueError` exception. Default is enabled using 2 bytes.
+    Any invalid input will be clamped to range [0, 2]. Default is enabled using 2 bytes.
 
     .. note:: The nRF24L01 automatically enables CRC if automatic acknowledgment feature is
         enabled (see `auto_ack` attribute) for any data pipe.
+    .. versionchanged:: 1.2.4
+        invalid input values are clamped to proper range instead of throwing a `ValueError`
+        exception.
 
 pa_level
 ******************************

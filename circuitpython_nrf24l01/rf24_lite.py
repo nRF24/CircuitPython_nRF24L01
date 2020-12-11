@@ -9,10 +9,7 @@ from adafruit_bus_device.spi_device import SPIDevice
 class RF24:
     def __init__(self, spi, csn, ce, spi_frequency=10000000):
         self._spi = SPIDevice(
-            spi,
-            chip_select=csn,
-            baudrate=spi_frequency,
-            extra_clocks=8
+            spi, chip_select=csn, baudrate=spi_frequency, extra_clocks=8
         )
         self.ce_pin = ce
         self.ce_pin.switch_to_output(value=False)
@@ -20,7 +17,6 @@ class RF24:
         self._reg_write(0, 0x0E)
         if self._reg_read(0) & 3 != 2:
             raise RuntimeError("nRF24L01 Hardware not responding")
-        self.power = False
         self._reg_write(3, 3)
         self._reg_write(6, 7)
         self._reg_write(2, 0)
@@ -222,9 +218,7 @@ class RF24:
 
     @arc.setter
     def arc(self, cnt):
-        if not 0 <= cnt <= 15:
-            raise ValueError("arc must be in range [0, 15]")
-        self._reg_write(4, (self._reg_read(4) & 0xF0) | cnt)
+        self._reg_write(4, (self._reg_read(4) & 0xF0) | max(0, min(int(cnt), 15)))
 
     @property
     def ard(self):
@@ -232,8 +226,7 @@ class RF24:
 
     @ard.setter
     def ard(self, delta):
-        if not 250 <= delta <= 4000:
-            raise ValueError("ard must be in range [250, 4000]")
+        delta = max(250, min(delta, 4000))
         self._reg_write(4, (self._reg_read(4) & 0x0F) | int((delta - 250) / 250) << 4)
 
     @property
