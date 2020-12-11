@@ -260,6 +260,7 @@ class RF24:
         """Returns a bool describing if there is a payload in the RX FIFO"""
         return self.update() and self.pipe is not None
 
+
     def any(self):
         """This function checks if the nRF24L01 has received any data at all,
         and then reports the next available payload's length (in bytes)."""

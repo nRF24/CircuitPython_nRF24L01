@@ -141,7 +141,8 @@ def slave(timeout=6):
             nrf.load_ack(buffer, 1)  # load ACK for next response
 
     # recommended behavior is to keep in TX mode while idle
-    nrf.listen = False  # put radio in TX mode & flush unused ACK payloads
+    nrf.listen = False  # put radio in TX mode
+    nrf.flush_tx()  # flush any ACK payloads that remain
 
 
 print(
