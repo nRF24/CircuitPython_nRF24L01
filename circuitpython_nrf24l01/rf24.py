@@ -247,7 +247,7 @@ class RF24:
             self.ce_pin.value = 1  # mandatory pulse is > 130 µs
             time.sleep(0.00013)
         else:
-            if self.ack:
+            if self._features & 6 == 6 and ((self._aa & self._dyn_pl) & 1):
                 self.flush_tx()
             if self._aa & 1:
                 self._open_pipes |= 1
