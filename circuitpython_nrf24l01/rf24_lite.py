@@ -117,6 +117,8 @@ class RF24:
             self.ce_pin.value = 1
             time.sleep(0.00013)
         else:
+            if self._reg_read(0x1D) & 6 == 6:
+                self.flush_tx()
             self._reg_write(0, self._reg_read(0) & 0xFE | 2)
             self._reg_write(2, self._reg_read(2) | 1)
             time.sleep(0.00016)
