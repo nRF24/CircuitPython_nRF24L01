@@ -245,7 +245,7 @@ class RF24:
         features = self._reg_read(0x1D) & 5
         if enable:
             self._reg_write(0x1C, 0x3F)
-            features = (features & 3) | 4
+            features = features | 4
         features |= 2 if enable else 0
         self._reg_write(0x1D, features)
 

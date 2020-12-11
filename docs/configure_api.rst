@@ -3,11 +3,19 @@
     controls this feature on data pipe 0. Indices greater than 5 will be
     ignored since there are only 6 data pipes.
 
+.. |mostly_rx_but_tx0| replace:: This attribute mostly relates to RX operations, but data
+    pipe 0 applies to TX operations also.
+
 Configuration API
 -----------------
 
 dynamic_payloads
 ******************************
+
+.. note::
+    |mostly_rx_but_tx0| The `auto_ack` attribute is automatically enabled by this attribute
+    for any data pipes that have this feature enabled. Disabling this feature for any
+    data pipe will not affect the `auto_ack` feature for the corresponding data pipes.
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.dynamic_payloads
 
@@ -30,11 +38,9 @@ dynamic_payloads
         An `int` (1 unsigned byte) where each bit in the integer represents the dynamic
         payload feature per pipe.
 
-    .. note::
-        This attribute mostly relates to RX operations, but data pipe 0 applies to TX
-        operations also. The `auto_ack` attribute is automatically enabled by this attribute
-        for any data pipes that have this feature enabled. Disabling this feature for any
-        data pipe will not affect the `auto_ack` feature for the corresponding data pipes.
+    :setter: `set_dynamic_payloads()`
+    :getter: `get_dynamic_payloads()`
+
     .. versionchanged:: 1.2.0
         accepts a list or tuple for control of the dynamic payload feature per pipe.
     .. versionchanged:: 1.2.4
@@ -42,20 +48,50 @@ dynamic_payloads
         - returns a integer instead of a boolean
         - accepts an integer for binary control of the dynamic payload feature per pipe
 
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.set_dynamic_payloads
+
+    :param bool enable: The state of the dynamic payload feature about a specified
+        data pipe.
+    :param int pipe_number: The specific data pipe number in range [0, 5] to apply the
+        ``enable`` parameter. If this parameter is not specified the ``enable`` parameter is
+        applied to all data pipes. If this parameter is not in range [0, 5], then a
+        `IndexError` exception is thrown.
+
+    .. versionadded:: 1.2.4
+
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.get_dynamic_payloads
+
+    :param int pipe_number: The specific data pipe number in range [0, 5] concerning the
+        dynamic payload length feature. If this parameter is not in range [0, 5], then a
+        `IndexError` exception is thrown. If this parameter is not specified, then the data
+        returned is about data pipe 0.
+
 payload_length
 ******************************
+
+.. note::
+    |mostly_rx_but_tx0|
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.payload_length
 
     This attribute can be used to specify the static payload length used for all data pipes
     in which the `dynamic_payloads` attribute is *disabled*
 
-    A valid input value must be an `int` in range [1, 32]. Otherwise a `ValueError`
-    exception is thrown. Setting this attribute to a single `int` configures all 6 data
-    pipes. Default is set to the nRF24L01's maximum of 32 (on all data pipes).
+    A valid input value must be:
+
+        * an `int` in range [1, 32]. Otherwise a `ValueError` exception is thrown. Setting
+          this attribute to a single `int` configures all 6 data pipes.
+        * A `list` or `tuple` containing integers |per_data_pipe_control| If any index's
+          value is ``0``, then the existing setting for the corresponding data pipe will
+          persist (not be changed).
+
+        Default is set to the nRF24L01's maximum of 32 (on all data pipes).
 
     :returns:
         The current setting of the expected static payload length feature for pipe 0 only.
+
+    :setter: `set_payload_length()`
+    :getter: `get_payload_length()`
 
     .. versionchanged:: 1.2.0
         return a list of all payload length settings for all pipes. This implementation
@@ -64,20 +100,17 @@ payload_length
         1. The settings could be changed improperly in a way that was not written to the
            nRF24L01 registers.
         2. There was no way to catch an invalid setting if configured improperly via the
-           first bug. This led to errors in using other functions that handle payloads.
+           first bug. This led to errors in using other functions that handle payloads or
+           the length of payloads.
 
     .. versionchanged:: 1.2.4
-        reverted attribute behavior to original behavior that controls all pipes with one
-        setting. Specific control of the static payload length feature per pipe is now
-        provided with separate functions. (see `set_payload_length()` and
-        `get_payload_length()`)
+        this attribute returns the configuration about static payload length for data pipe 0
+        only. Use `get_payload_length()` to fetch the configuration of the static payload
+        length feature for any data pipe.
 
-payload_length per pipe
-******************************
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.set_payload_length
 
-.. automethod:: circuitpython_nrf24l01.rf24.RF24.set_payload_length()
-
-    This function only affects data pipe(s) for which the `dynamic_payloads` attribute is
+    This function only affects data pipes for which the `dynamic_payloads` attribute is
     *disabled*.
 
     :param int length: The number of bytes in range [1, 32] for to be used for static
@@ -88,27 +121,29 @@ payload_length per pipe
         applied to all data pipes. If this parameter is not in range [0, 5], then a
         `IndexError` exception is thrown.
 
-    .. note::
-        This function mostly relates to RX operations, but data pipe 0 applies to TX
-        operations also.
     .. versionadded:: 1.2.4
 
-.. automethod:: circuitpython_nrf24l01.rf24.RF24.get_payload_length()
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.get_payload_length
 
     The data returned by this function is only relevant for data pipes in which the
     `dynamic_payloads` attribute is *disabled*.
 
-    :param int pipe_number: The specific data pipe number in range [0, 5] to fetch. If this
-        parameter is not in range [0, 5], then a `IndexError` exception is thrown. If this
-        parameter is not specified, then the data returned is about data pipe 0.
+    :param int pipe_number: The specific data pipe number in range [0, 5] to concerning the
+        static payload length feature. If this parameter is not in range [0, 5], then a
+        `IndexError` exception is thrown. If this parameter is not specified, then the data
+        returned is about data pipe 0.
 
-    .. note::
-        This function mostly relates to RX operations, but data pipe 0 applies to TX
-        operations also.
     .. versionadded:: 1.2.4
 
 auto_ack
 ******************************
+
+.. note::
+    |mostly_rx_but_tx0| This attribute will intuitively:
+        - enable the automatic acknowledgement feature for pipe 0 if any other data pipe
+          is configured to use the automatic acknowledgement feature.
+        - disable the `dynamic_payloads` feature for any data pipe that is configured to
+          disable the automatic acknowledgement feature.
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.auto_ack
 
@@ -131,9 +166,9 @@ auto_ack
         An `int` (1 unsigned byte) where each bit in the integer represents the automatic
         acknowledgement feature per pipe.
 
-    .. note::
-        This attribute mostly relates to RX operations, but data pipe 0 applies to TX
-        operations also.
+    :setter: `set_auto_ack()`
+    :getter: `get_auto_ack()`
+
     .. versionchanged:: 1.2.0
         accepts a list or tuple for control of the automatic acknowledgement feature per pipe.
     .. versionchanged:: 1.2.4
@@ -141,6 +176,26 @@ auto_ack
         - returns a integer instead of a boolean
         - accepts an integer for binary control of the automatic acknowledgement feature
           per pipe
+
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.set_auto_ack
+
+    :param bool enable: The state of the automatic acknowledgement feature about a specified
+        data pipe.
+    :param int pipe_number: The specific data pipe number in range [0, 5] to apply the
+        ``enable`` parameter. If this parameter is not specified the ``enable`` parameter is
+        applied to all data pipes. If this parameter is not in range [0, 5], then a
+        `IndexError` exception is thrown.
+
+    .. versionadded:: 1.2.4
+
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.get_auto_ack
+
+    :param int pipe_number: The specific data pipe number in range [0, 5] concerning the
+        setting for the automatic acknowledgment feature. If this parameter is not in range
+        [0, 5], then a `IndexError` exception is thrown. If this parameter is not specified,
+        then the data returned is about data pipe 0.
+
+    .. versionadded:: 1.2.4
 
 arc
 ******************************
