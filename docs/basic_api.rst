@@ -213,6 +213,10 @@ send()
         however setting this parameter to `True` will work despite the `auto_ack`
         attribute's setting.
 
+        .. important:: If the `allow_ask_no_ack` attribute is disabled (set to `False`),
+            then this parameter will have no affect at all. By default the
+            `allow_ask_no_ack` attribute is enabled.
+
         .. note:: Each transmission is in the form of a packet. This packet contains sections
             of data around and including the payload. `See Chapter 7.3 in the nRF24L01
             Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
