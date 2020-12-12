@@ -102,7 +102,6 @@ version:
       a `bool` instead of an `int`. `set_dynamic_payloads()` and `get_dynamic_payloads()` have been removed.
     * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length` applies to all pipes, not
       individual pipes. `set_payload_length()` and `get_payload_length()` have been removed.
-    * `read_ack()` removed. This is deprecated on next major release anyway; use `recv()`
       instead.
     * `load_ack()` is available, but it will not throw exceptions for malformed ``buf`` or
       invalid ``pipe_number`` parameters. Rather any call to `load_ack()` with invalid

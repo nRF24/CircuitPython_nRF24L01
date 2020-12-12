@@ -38,8 +38,8 @@ addresses = [
 ]
 
 # uncomment the following 2 lines for compatibility with TMRh20 library
-nrf.dynamic_payloads = False
-nrf.payload_length = 8
+# nrf.dynamic_payloads = False
+# nrf.payload_length = 8
 
 
 def base(timeout=10):

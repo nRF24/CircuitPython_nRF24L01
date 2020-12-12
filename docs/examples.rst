@@ -4,7 +4,7 @@ nRF24L01 Features
 Simple test
 ------------
 
-.. versionchanged:: 1.2.4
+.. versionchanged:: 2.0.0
 
     - uses 2 addresses on pipes 1 & 0 to demonstrate proper addressing convention.
     - transmits an incrementing `float` instead of an `int`
@@ -18,7 +18,7 @@ Ensure your device works with this simple test.
 ACK Payloads Example
 --------------------
 
-.. versionchanged:: 1.2.4
+.. versionchanged:: 2.0.0
 
     - uses 2 addresses on pipes 1 & 0 to demonstrate proper addressing convention.
     - changed payloads to show use of c-strings' NULL terminating character.
@@ -34,7 +34,7 @@ Multiceiver Example
 
 .. versionadded:: 1.2.2
 
-.. versionchanged:: 1.2.4
+.. versionchanged:: 2.0.0
     no longer uses ACK payloads for responding to node 1.
 
 
@@ -98,7 +98,7 @@ This is a test to show how to use `with` blocks to manage multiple different nRF
 Manual ACK Example
 ------------------
 
-.. versionadded:: 1.2.4
+.. versionadded:: 2.0.0
 
 This is a test to show how to use the library for acknowledgement (ACK) responses without using the automatic ACK packets (like the `ACK Payloads Example <examples.html#ack-payloads-example>`_ does). Beware, that this technique is not faster and can be more prone to communication failure. However, This technique has the advantage of using more updated information in the responding payload as information in ACK payloads are always outdated by 1 transmission.
 
@@ -123,10 +123,40 @@ This is a test to show how to use the nRF24L01 as a BLE advertising beacon using
 TMRh20's Arduino library
 ------------------------
 
-.. versionadded:: 1.1.2
+All examples are designed to work with TMRh20's RF24 library examples.
+This Circuitpython library uses dynamic payloads enabled by default.
+TMRh20's library uses static payload lengths by default.
 
-This test is meant to prove compatibility with the popular Arduino library for the nRF24L01 by TMRh20 (available for install via the Arduino IDE's Library Manager). The following code has been designed/tested with the TMRh20 library example named `GettingStarted_HandlingData.ino <https://tmrh20.github.io/RF24/GettingStarted_HandlingData_8ino-example.html>`_. If you changed the ``radioNumber`` variable in the TMRh20 sketch, you will have to adjust the ``radioNumber`` variable this script so that it is opposite the value in the TMRh20 library's example.
+To make this circuitpython library compatible with
+`TMRh20's RF24 library <https://github.com/nRF24/RF24/>`_:
 
-.. literalinclude:: ../examples/nrf24l01_2arduino_handling_data.py
-    :caption: examples/nrf24l01_2arduino_handling_data.py
-    :linenos:
+    1. `dynamic_payloads` to `False`.
+    2. set :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length` to the value that
+       is passed to TMRh20's ``RF24::setPayloadSize()``. 32 is the default (& maximum)
+       payload length/size for both libraries.
+
+.. csv-table:: Corresponding examples
+    :header: circuitpython_nrf24l01, TMRh20 RF24
+
+    nrf24l01_simple_test, gettingStarted
+    nrf24l01_ack_payload_test, acknowledgementPayloads
+    nrf24l01_manual_ack_test, manualAcknowledgements
+    nrf24l01_multiceiver_test, multiceiverDemo
+    nrf24l01_stream_test, streamingData
+    nrf24l01_interrupt_test, interruptConfigure
+    nrf24l01_context_test, feature is not available in C++
+    nrf24l01_fake_ble_test, feature is available via `floe's BTLE library <https://github.com/floe/BTLE>`_
+
+.. note:: Each of the Circuitpython examples that are compatible with TMRh20's examples
+    contain 2 lines of code that are commented out for easy modification. These lines
+    look like this in the examples' source code:
+
+    .. code-block:: python
+
+        # uncomment the following 2 lines for compatibility with TMRh20 library
+        # nrf.dynamic_payloads = False
+        # nrf.payload_length = 4
+
+    Make sure you understand the amount of memory that different datatypes occupy in C++.
+    This will help you understand how to configure
+    :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length`.

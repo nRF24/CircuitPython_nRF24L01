@@ -168,22 +168,6 @@ FakeBLE class
         parameter only applies to the instantiated object and is made persistent via
         :py:class:`~adafruit_bus_device.spi_device.SPIDevice`.
 
-to_android
-************
-
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.to_android
-
-    A value of `True` allows advertisements to be compatible with Android smartphones. Setting
-    this attribute to `False` still allows advertisements to be compatible with anything else
-    except Android smartphones. Default Value is `True`.
-
-    .. versionchanged:: 1.2.2
-        in versions 1.2.0 & 1.2.1, this attribute was named ``to_iphone`` due to a misconception on the developers' behalf.
-    .. deprecated:: 1.2.2
-        This attribute will be deprecated on the next major release because it is not
-        necessary to change this attribute. Changing this attribute to `False` only breaks
-        compatibility with Android smartphones.
-
 mac
 ************
 
@@ -252,7 +236,7 @@ len_available()
     :returns: An `int` representing the length of available bytes for the
         a single payload.
 
-    .. versionchanged:: 1.2.4
+    .. versionchanged:: 2.0.0
         name changed from "available" to "len_available" to avoid confusion with
         :py:func:`circuitpython_nrf24l01.rf24.RF24.available()`. This change also
         allows providing the underlying `RF24` class'
@@ -384,7 +368,7 @@ available()
 
 .. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.available()
 
-.. versionadded:: 1.2.4
+.. versionadded:: 2.0.0
 
 what_happened()
 ####################

@@ -126,7 +126,7 @@ available()
     .. versionadded:: 1.0.0-rc1
     .. versionchanged:: 1.0.0-rc3
         removed due to synonomous behavior with `any()`.
-    .. versionadded:: 1.2.4
+    .. versionadded:: 2.0.0
         re-introduced as convenience to simplify using
         ``nrf.update() and nrf.pipe is not None``. This seemed appropriate since the
         underlying behavior of `any()` has changed since version 1.0.0

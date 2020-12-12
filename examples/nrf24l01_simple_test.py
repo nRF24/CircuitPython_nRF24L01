@@ -50,8 +50,8 @@ nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
 payload = [0.0]
 
 # uncomment the following 2 lines for compatibility with TMRh20 library
-nrf.dynamic_payloads = False
-nrf.payload_length = 4
+# nrf.dynamic_payloads = False
+# nrf.payload_length = 4
 
 
 def master(count=5):  # count = 5 will only transmit 5 packets

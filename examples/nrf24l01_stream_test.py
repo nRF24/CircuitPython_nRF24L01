@@ -45,7 +45,7 @@ nrf.open_tx_pipe(address[radio_number])  # always uses pipe 0
 nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
 
 # uncomment the following 2 lines for compatibility with TMRh20 library
-nrf.dynamic_payloads = False
+# nrf.dynamic_payloads = False
 
 
 def make_buffers(size=32):

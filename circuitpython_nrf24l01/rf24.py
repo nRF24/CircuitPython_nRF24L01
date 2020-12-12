@@ -666,10 +666,6 @@ class RF24:
             return True
         return False
 
-    def read_ack(self):
-        """Allows user to read the automatic acknowledgement (ACK) payload (if any)."""
-        return self.recv()
-
     @property
     def data_rate(self):
         """This `int` attribute specifies the nRF24L01's frequency data rate

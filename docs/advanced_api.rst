@@ -120,16 +120,6 @@ load_ack()
         (TX FIFO buffer) if it can. Use `flush_tx()` to discard unused ACK payloads when done
         listening.
 
-read_ack()
-******************************
-
-.. automethod:: circuitpython_nrf24l01.rf24.RF24.read_ack
-
-    This function is an alias of `recv()` and remains for backward compatibility with older
-    versions of this library.
-
-    .. deprecated:: 1.2.0
-        This function will be removed on next major release. Use `recv()` instead.
 
 irq_dr
 ******************************
@@ -380,7 +370,7 @@ flush_rx()
 
     .. note:: The nRF24L01 RX FIFO is 3 level stack that holds payload data. This means that
         there can be up to 3 received payloads (each of a maximum length equal to 32 bytes)
-        waiting to be read (and removed from the stack) by `recv()` or `read_ack()`. This
+        waiting to be read (and removed from the stack) by `recv()`. This
         function clears all 3 levels.
 
 flush_tx()

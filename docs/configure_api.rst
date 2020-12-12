@@ -43,7 +43,7 @@ dynamic_payloads
 
     .. versionchanged:: 1.2.0
         accepts a list or tuple for control of the dynamic payload feature per pipe.
-    .. versionchanged:: 1.2.4
+    .. versionchanged:: 2.0.0
 
         - returns a integer instead of a boolean
         - accepts an integer for binary control of the dynamic payload feature per pipe
@@ -57,7 +57,7 @@ dynamic_payloads
         applied to all data pipes. If this parameter is not in range [0, 5], then a
         `IndexError` exception is thrown.
 
-    .. versionadded:: 1.2.4
+    .. versionadded:: 2.0.0
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.get_dynamic_payloads
 
@@ -103,7 +103,7 @@ payload_length
            first bug. This led to errors in using other functions that handle payloads or
            the length of payloads.
 
-    .. versionchanged:: 1.2.4
+    .. versionchanged:: 2.0.0
         this attribute returns the configuration about static payload length for data pipe 0
         only. Use `get_payload_length()` to fetch the configuration of the static payload
         length feature for any data pipe.
@@ -121,7 +121,7 @@ payload_length
         applied to all data pipes. If this parameter is not in range [0, 5], then a
         `IndexError` exception is thrown.
 
-    .. versionadded:: 1.2.4
+    .. versionadded:: 2.0.0
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.get_payload_length
 
@@ -133,7 +133,7 @@ payload_length
         `IndexError` exception is thrown. If this parameter is not specified, then the data
         returned is about data pipe 0.
 
-    .. versionadded:: 1.2.4
+    .. versionadded:: 2.0.0
 
 auto_ack
 ******************************
@@ -171,7 +171,7 @@ auto_ack
 
     .. versionchanged:: 1.2.0
         accepts a list or tuple for control of the automatic acknowledgement feature per pipe.
-    .. versionchanged:: 1.2.4
+    .. versionchanged:: 2.0.0
 
         - returns a integer instead of a boolean
         - accepts an integer for binary control of the automatic acknowledgement feature
@@ -186,7 +186,7 @@ auto_ack
         applied to all data pipes. If this parameter is not in range [0, 5], then a
         `IndexError` exception is thrown.
 
-    .. versionadded:: 1.2.4
+    .. versionadded:: 2.0.0
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.get_auto_ack
 
@@ -195,7 +195,7 @@ auto_ack
         [0, 5], then a `IndexError` exception is thrown. If this parameter is not specified,
         then the data returned is about data pipe 0.
 
-    .. versionadded:: 1.2.4
+    .. versionadded:: 2.0.0
 
 arc
 ******************************
@@ -212,7 +212,7 @@ arc
     wait the number of microseconds specified by `ard` for an Acknowledgement (ACK) packet
     response (assuming `auto_ack` is enabled).
 
-    .. versionchanged:: 1.2.4
+    .. versionchanged:: 2.0.0
         invalid input values are clamped to proper range instead of throwing a `ValueError`
         exception.
 
@@ -237,7 +237,7 @@ ard
         500µS or more.
 
         See `data_rate` attribute on how to set the data rate of the nRF24L01's transmissions.
-    .. versionchanged:: 1.2.4
+    .. versionchanged:: 2.0.0
         invalid input values are clamped to proper range instead of throwing a `ValueError`
         exception.
 
@@ -335,7 +335,7 @@ crc
 
     .. note:: The nRF24L01 automatically enables CRC if automatic acknowledgment feature is
         enabled (see `auto_ack` attribute) for any data pipe.
-    .. versionchanged:: 1.2.4
+    .. versionchanged:: 2.0.0
         invalid input values are clamped to proper range instead of throwing a `ValueError`
         exception.
 
