@@ -244,7 +244,7 @@ ard
 set_retries()
 ******************************
 
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.set_retries
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.set_retries
 
     :param int delay: accepts the same input as the `ard` attribute.
     :param int count: accepts the same input as the `arc` attribute.
@@ -268,6 +268,15 @@ ack
         enable the `auto_ack` and `dynamic_payloads` features on all applicable pipes.
         Disabling this feature does not disable the `auto_ack` and `dynamic_payloads`
         attributes for any data pipe; they work just fine without this feature.
+
+allow_ask_ack
+******************************
+
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.allow_ask_no_ack
+
+    This attribute is enabled by default, and it only exists to provide support for the
+    Si24R1. The designers of the Si24R1 (a cheap chinese clone of the nRF24L01) happened to
+    clone a typo from the first version of the nRF24L01 specification sheet. Disable this attribute for the Si24R1.
 
 interrupt_config()
 ******************************

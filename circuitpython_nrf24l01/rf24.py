@@ -673,6 +673,18 @@ class RF24:
         return False
 
     @property
+    def allow_ask_no_ack(self):
+        """Allow or disallow the use of ``ask_no_ack`` parameter to `send()` &
+        `write()`."""
+        self._features = self._reg_read(TX_FEATURE)
+        return bool(self._features & 1)
+
+    @allow_ask_no_ack.setter
+    def allow_ask_no_ack(self, enable):
+        self._features = self._features & 6 | bool(enable)
+        self._reg_write(TX_FEATURE, self._features)
+
+    @property
     def data_rate(self):
         """This `int` attribute specifies the nRF24L01's frequency data rate
         for OTA (over the air) transmissions."""
