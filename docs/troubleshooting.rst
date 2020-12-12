@@ -121,7 +121,10 @@ version:
     * Cannot switch between different radio configurations using context manager (the `with`
       blocks). It is advised that only one `RF24` object be instantiated when RAM is limited
       (less than or equal to 32KB).
-
+    * `last_tx_arc` attribute removed because it is only meant for troubleshooting.
+    * `allow_ask_no_ack` attribute removed because it is only provided for the Si24R1
+      chinese clone.
+    * `set_retries()` removed. Use `ard` & `arc` attributes instead.
 
 Testing nRF24L01+PA+LNA module
 =================================

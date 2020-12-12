@@ -588,6 +588,11 @@ class RF24:
         self._reg_write(SETUP_RETR, self._retry_setup)
 
     @property
+    def last_tx_arc(self):
+        """Return the number of attempts made for last transission (read-only)."""
+        return self._reg_read(8) & 0x0F
+
+    @property
     def auto_ack(self):
         """This `int` attribute controls the nRF24L01's automatic
         acknowledgment feature for any or all pipes."""

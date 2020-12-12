@@ -452,6 +452,15 @@ address()
 
     .. versionadded:: 1.2.0
 
+last_tx_arc
+******************************
+
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.last_tx_arc
+
+    This attribute resets to 0 at the beginning of every transmission in TX mode.
+    Remember that the number of automatic retry attempts made for each transmission is
+    configured with the `arc` attribute or the `set_retries()` function.
+
 rpd
 ******************************
 
