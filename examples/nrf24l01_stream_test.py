@@ -153,7 +153,7 @@ def slave(timeout=5):
         if nrf.available():
             count += 1
             # retreive the received packet's payload
-            buffer = nrf.recv()  # clears flags & empties RX FIFO
+            buffer = nrf.read()  # clears flags & empties RX FIFO
             print("Received: {} - {}".format(buffer, count))
             start_timer = time.monotonic()  # reset timer on every RX payload
 

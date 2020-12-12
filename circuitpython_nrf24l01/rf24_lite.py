@@ -133,7 +133,7 @@ class RF24:
             return self._reg_read(0x11 + self.pipe)
         return 0
 
-    def recv(self, length=None):
+    def read(self, length=None):
         ret_size = length if length is not None else self.any()
         if not ret_size:
             return None
@@ -162,7 +162,7 @@ class RF24:
                 if result is None or result:
                     break
         if self._status & 0x60 == 0x60 and not send_only:
-            result = self.recv()
+            result = self.read()
         return result
 
     @property
@@ -312,7 +312,7 @@ class RF24:
             self.ce_pin.value = 0
             result = self.irq_ds
             if self._status & 0x60 == 0x60 and not send_only:
-                result = self.recv()
+                result = self.read()
         return result
 
     def write(self, buf, ask_no_ack=False, write_only=False):

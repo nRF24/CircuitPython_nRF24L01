@@ -89,9 +89,9 @@ def master(count=5):  # count = 5 will only transmit 5 packets
                 # nrf.pipe is also updated using `nrf.listen = False`
                 print("Received no response.")
             else:
-                length = nrf.any()  # reset with recv()
-                pipe_number = nrf.pipe  # reset with recv()
-                received = nrf.recv()  # grab the response
+                length = nrf.any()  # reset with read()
+                pipe_number = nrf.pipe  # reset with read()
+                received = nrf.read()  # grab the response
                 # save new counter from response
                 counter[0] = received[7:8][0]
                 print(
@@ -116,7 +116,7 @@ def slave(timeout=6):
         if nrf.available():
             length = nrf.any()  # grab payload length info
             pipe = nrf.pipe  # grab pipe number info
-            received = nrf.recv(length)  # clears info from any() and nrf.pipe
+            received = nrf.read(length)  # clears info from any() and nrf.pipe
             # increment counter before sending it back in responding payload
             counter[0] = received[7:8][0] + 1
             nrf.listen = False  # put the radio in TX mode

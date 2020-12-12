@@ -285,9 +285,9 @@ interrupt_config()
         The procedure for handling :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr` IRQ
         should be:
 
-        1. retreive the payload from RX FIFO using `recv()`
+        1. retreive the payload from RX FIFO using `read()`
         2. clear :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr` status flag (taken care
-           of by using `recv()` in previous step)
+           of by using `read()` in previous step)
         3. read FIFO_STATUS register to check if there are more payloads available in RX FIFO
            buffer. A call to `pipe` (may require `update()` to be called beforehand), `any()`
            or even ``(False, True)`` as parameters to `fifo()` will get this result.

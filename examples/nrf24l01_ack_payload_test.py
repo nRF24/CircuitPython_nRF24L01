@@ -121,7 +121,7 @@ def slave(timeout=6):
             # grab information about the received payload
             length, pipe_number = (nrf.any(), nrf.pipe)
             # retreive the received packet's payload
-            received = nrf.recv()
+            received = nrf.read()
             # increment counter from received payload
             # received counter is a unsigned byte, thus result[7:8][0]
             counter[0] = received[7:8][0] + 1

@@ -133,7 +133,7 @@ def master():
     nrf.flush_tx()  # flush artifact payload in TX FIFO from last test
     # all 3 ACK payloads received were 4 bytes each, and RX FIFO is full
     # so, fetching 12 bytes from the RX FIFO also flushes RX FIFO
-    print("\nComplete RX FIFO:", nrf.recv(12))
+    print("\nComplete RX FIFO:", nrf.read(12))
 
 
 def slave(timeout=6):  # will listen for 6 seconds before timing out
@@ -151,7 +151,7 @@ def slave(timeout=6):  # will listen for 6 seconds before timing out
     if not nrf.fifo(False, True):  # if RX FIFO is not empty
         # all 3 payloads received were 5 bytes each, and RX FIFO is full
         # so, fetching 15 bytes from the RX FIFO also flushes RX FIFO
-        print("Complete RX FIFO:", nrf.recv(15))
+        print("Complete RX FIFO:", nrf.read(15))
     nrf.flush_tx()  # discard any pending ACK payloads
 
 

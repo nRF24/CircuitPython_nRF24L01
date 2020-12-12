@@ -94,7 +94,7 @@ load_ack()
 
     This payload will then be appended to the automatic acknowledgment
     (ACK) packet that is sent when *new* data is received on the specified pipe. See
-    `recv()` on how to fetch a received custom ACK payloads.
+    `read()` on how to fetch a received custom ACK payloads.
 
     :param bytearray,bytes buf: This will be the data attached to an automatic ACK packet on the
         incoming transmission about the specified ``pipe_number`` parameter. This must have a
@@ -136,7 +136,7 @@ irq_dr
 
     .. important:: It is recommended that this flag is only used when the IRQ pin is active.
         To detirmine if there is a payload in the RX FIFO, use `fifo()`, `any()`, or `pipe`.
-        Notice that calling `recv()` also resets this status flag.
+        Notice that calling `read()` also resets this status flag.
 
     Pass ``data_recv`` |irq note|
 
@@ -187,7 +187,7 @@ clear_status_flags()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.clear_status_flags
 
-    Internally, this is automatically called by `send()`, `write()`, `recv()`, and when
+    Internally, this is automatically called by `send()`, `write()`, `read()`, and when
     `listen` changes from `False` to `True`.
 
     :param bool data_recv: specifies wheather to clear the "RX Data Ready"
@@ -279,7 +279,7 @@ resend()
         `True`. Pass this parameter as `True` if the RX FIFO is not to be manipulated. Many
         other libraries' behave as though this parameter is `True`
         (e.g. The popular TMRh20 Arduino RF24 library). This parameter defaults to `False`.
-        Use `recv()` to get the ACK payload (if there is any) from the RX FIFO. Remember that
+        Use `read()` to get the ACK payload (if there is any) from the RX FIFO. Remember that
         the RX FIFO can only hold up to 3 payloads at once.
 
     .. note:: The nRF24L01 normally removes a payload from the TX FIFO buffer after successful
@@ -370,7 +370,7 @@ flush_rx()
 
     .. note:: The nRF24L01 RX FIFO is 3 level stack that holds payload data. This means that
         there can be up to 3 received payloads (each of a maximum length equal to 32 bytes)
-        waiting to be read (and removed from the stack) by `recv()`. This
+        waiting to be read (and removed from the stack) by `read()`. This
         function clears all 3 levels.
 
 flush_tx()

@@ -52,9 +52,9 @@ def base(timeout=10):
     while time.monotonic() - start_timer < timeout:
         while not nrf.fifo(False, True):  # keep RX FIFO empty for reception
             # show the pipe number that received the payload
-            # NOTE recv() clears the pipe number and payload length data
+            # NOTE read() clears the pipe number and payload length data
             print("Received", nrf.any(), "on pipe", nrf.pipe, end=" ")
-            node_id, payload_id = struct.unpack("<ii", nrf.recv())
+            node_id, payload_id = struct.unpack("<ii", nrf.read())
             print("from node {}. PayloadID: {}".format(node_id, payload_id))
             start_timer = time.monotonic()  # reset timer with every payload
     nrf.listen = False

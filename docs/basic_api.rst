@@ -100,7 +100,7 @@ listen
           Standby-I (CE pin is LOW meaning low current & no transmissions) mode which is ideal
           for post-reception work. Disabing RX mode doesn't flush the RX/TX FIFO buffers, so
           remember to flush your 3-level FIFO buffers when appropriate using `flush_tx()` or
-          `flush_rx()` (see also the `recv()` function).
+          `flush_rx()` (see also the `read()` function).
 
 any()
 ******************
@@ -131,10 +131,10 @@ available()
         ``nrf.update() and nrf.pipe is not None``. This seemed appropriate since the
         underlying behavior of `any()` has changed since version 1.0.0
 
-recv()
+read()
 ******************
 
-.. automethod:: circuitpython_nrf24l01.rf24.RF24.recv
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.read
 
     This function can also be used to fetch the last ACK packet's payload if `ack` is enabled.
 
@@ -229,7 +229,7 @@ send()
         `True`. Pass this parameter as `True` if the RX FIFO is not to be manipulated. Many
         other libraries' behave as though this parameter is `True`
         (e.g. The popular TMRh20 Arduino RF24 library). This parameter defaults to `False`.
-        Use `recv()` to get the ACK payload (if there is any) from the RX FIFO.Remember that
+        Use `read()` to get the ACK payload (if there is any) from the RX FIFO.Remember that
         the RX FIFO can only hold up to 3 payloads at once.
 
     .. tip:: It is highly recommended that `auto_ack` attribute is enabled (greater than

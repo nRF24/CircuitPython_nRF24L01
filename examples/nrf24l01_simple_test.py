@@ -92,7 +92,7 @@ def slave(timeout=6):
             # grab information about the received payload
             payload_size, pipe_number = (nrf.any(), nrf.pipe)
             # fetch 1 payload from RX FIFO
-            buffer = nrf.recv()  # also clears nrf.irq_dr status flag
+            buffer = nrf.read()  # also clears nrf.irq_dr status flag
             # expecting a little endian float, thus the format string "<f"
             # buffer[:4] truncates padded 0s if dynamic payloads are disabled
             payload[0] = struct.unpack("<f", buffer[:4])[0]
