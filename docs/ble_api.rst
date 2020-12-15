@@ -139,9 +139,12 @@ BLE_FREQ
 
     This tuple contains the relative predefined channels used:
 
-    * nRF channel 2  == BLE channel 37
-    * nRF channel 26 == BLE channel 38
-    * nRF channel 80 == BLE channel 39
+    .. csv-table::
+        :header: "nRF24L01 channel", "BLE channel"
+
+        2, 37
+        26, 38
+        80, 39
 
 FakeBLE class
 -------------
@@ -151,7 +154,7 @@ FakeBLE class
     Per the limitations of this technique, only some of underlying
     :py:class:`~circuitpython_nrf24l01.rf24.RF24` functionality is
     available for configuration when implementing BLE transmissions.
-    See the `Available RF24 functionality`_ for more details.
+    See the `Unavailable RF24 functionality`_ for more details.
 
 
     :param ~busio.SPI spi: The object for the SPI bus that the nRF24L01 is connected to.
@@ -162,7 +165,7 @@ FakeBLE class
             undesirable behavior.
     :param ~digitalio.DigitalInOut csn: The digital output pin that is connected to the nRF24L01's
         CSN (Chip Select Not) pin. This is required.
-    :param ~digitalio.DigitalInOut ce: The digital output pin that is connected to the nRF24L01's
+    :param ~digitalio.DigitalInOut ce_pin: The digital output pin that is connected to the nRF24L01's
         CE (Chip Enable) pin. This is required.
     :param int spi_frequency: Specify which SPI frequency (in Hz) to use on the SPI bus. This
         parameter only applies to the instantiated object and is made persistent via
@@ -296,84 +299,36 @@ advertise()
         ble.advertise(buffers)
         ble.hop_channel()
 
-Available RF24 functionality
-*****************************
-
-pa_level
-####################
-
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.pa_level
-
 channel
 ####################
 
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.channel
 
-payload_length
-####################
-
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.payload_length
-
-power
-####################
-
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.power
-
-is_lna_enabled
-####################
-
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.is_lna_enabled
-
-is_plus_variant
-####################
-
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.is_plus_variant
-
 interrupt_config()
 ####################
 
-.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.interrupt_config()
+.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.interrupt_config
 
     .. warning:: The :py:attr:`circuitpython_nrf24l01.rf24.RF24.irq_df`
-        attribute (and also this function's ``data_fail`` parameter) is
-        not implemented for BLE operations.
+        attribute is not implemented for BLE operations.
 
-irq_ds
-####################
+    .. seealso:: :py:meth:`~circuitpython_nrf24l01.rf24.RF24.interrupt_config()`
 
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.irq_ds
+Unavailable RF24 functionality
+******************************
 
-irq_dr
-####################
+    The following `RF24` functionality is not available in `FakeBLE` objects:
 
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.irq_dr
-
-clear_status_flags()
-####################
-
-.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.clear_status_flags()
-
-    .. note:: This function takes no parameters, rather it clears all status
-        flags on every call. Be aware that only the
-        :py:attr:`circuitpython_nrf24l01.fake_ble.FakeBLE.irq_ds` attribute is
-        useful for `FakeBLE` objects.
-
-update()
-####################
-
-.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.update()
-
-available()
-####################
-
-.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.available()
-
-.. versionadded:: 2.0.0
-
-what_happened()
-####################
-
-.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.what_happened()
+    - :py:attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads`
+    - :py:meth:`~circuitpython_nrf24l01.rf24.RF24.set_dynamic_payloads()`
+    - :py:attr:`~circuitpython_nrf24l01.rf24.RF24.data_rate`
+    - :py:attr:`~circuitpython_nrf24l01.rf24.RF24.address_length`
+    - :py:attr:`~circuitpython_nrf24l01.rf24.RF24.auto_ack`
+    - :py:meth:`~circuitpython_nrf24l01.rf24.RF24.set_auto_ack()`
+    - :py:attr:`~circuitpython_nrf24l01.rf24.RF24.ack`
+    - :py:attr:`~circuitpython_nrf24l01.rf24.RF24.crc`
+    - :py:meth:`~circuitpython_nrf24l01.rf24.RF24.open_rx_pipe()`
+    - :py:meth:`~circuitpython_nrf24l01.rf24.RF24.open_tx_pipe()`
 
 
 Service related classes

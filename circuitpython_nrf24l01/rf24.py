@@ -46,11 +46,11 @@ TX_FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
 class RF24:
     """A driver class for the nRF24L01(+) transceiver radios."""
 
-    def __init__(self, spi, csn, ce, spi_frequency=10000000):
+    def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
         self._spi = SPIDevice(
             spi, chip_select=csn, baudrate=spi_frequency, extra_clocks=8
         )
-        self.ce_pin = ce
+        self.ce_pin = ce_pin
         self.ce_pin.switch_to_output(value=False)  # pre-empt standby-I mode
         self._status = 0  # status byte returned on all SPI transactions
         # pre-configure the CONFIGURE register:
@@ -84,8 +84,6 @@ class RF24:
         # init shadow copy of last RX_ADDR_P0 written to pipe 0 needed as
         # open_tx_pipe() appropriates pipe 0 for ACK packet
         self._pipe0_read_addr = None
-        # init shadow copy of register about FIFO info
-        self._fifo = 0
         # shadow copy of the TX_ADDRESS
         self._tx_address = self._reg_read_bytes(TX_ADDRESS)
         # pre-configure the SETUP_RETR register
@@ -257,7 +255,6 @@ class RF24:
         """Returns a bool describing if there is a payload in the RX FIFO"""
         return self.update() and self.pipe is not None
 
-
     def any(self):
         """This function checks if the nRF24L01 has received any data at all,
         and then reports the next available payload's length (in bytes)."""
@@ -385,41 +382,32 @@ class RF24:
         )
         print(
             "IRQ on Data Ready__{}    Data Ready___________{}".format(
-                "_Enabled"
-                if not bool(self._config & 0x40)
-                else "Disabled",
-                self.irq_dr
+                "_Enabled" if not self._config & 0x40 else "Disabled", self.irq_dr
             )
         )
         print(
             "IRQ on Data Fail___{}    Data Failed__________{}".format(
-                "_Enabled"
-                if not bool(self._config & 0x10)
-                else "Disabled",
-                self.irq_df
+                "_Enabled" if not self._config & 0x10 else "Disabled", self.irq_df
             )
         )
         print(
             "IRQ on Data Sent___{}    Data Sent____________{}".format(
-                "_Enabled"
-                if not bool(self._config & 0x20)
-                else "Disabled",
-                self.irq_ds
+                "_Enabled" if not self._config & 0x20 else "Disabled", self.irq_ds
             )
         )
         print(
             "TX FIFO full__________{}    TX FIFO empty________{}".format(
-                "_True" if bool(self.tx_full) else "False", bool(self.fifo(True, True))
+                "_True" if self.tx_full else "False", self.fifo(True, True)
             )
         )
         print(
             "RX FIFO full__________{}    RX FIFO empty________{}".format(
-                "_True" if bool(self._fifo & 2) else "False", bool(self._fifo & 1)
+                "_True" if self.fifo(False, False) else "False", self.fifo(False, True)
             )
         )
         print(
             "Ask no ACK_________{}    Custom ACK Payload___{}".format(
-                "_Allowed" if bool(self._features & 1) else "Disabled",
+                "_Allowed" if self._features & 1 else "Disabled",
                 "Enabled" if self.ack else "Disabled",
             )
         )
@@ -429,7 +417,7 @@ class RF24:
                 if self._dyn_pl == 0x3F
                 else (
                     bin(self._dyn_pl).replace(
-                        "0b", "0b" + "0" * (8 - len(bin(self._dyn_pl)))
+                        "b", "b" + "0" * (8 - len(bin(self._dyn_pl)))
                     )
                     if self._dyn_pl
                     else "Disabled"
@@ -437,7 +425,7 @@ class RF24:
                 "Enabled"
                 if self._aa == 0x3F
                 else (
-                    bin(self._aa).replace("0b", "0b" + "0" * (8 - len(bin(self._aa))))
+                    bin(self._aa).replace("b", "b" + "0" * (8 - len(bin(self._aa))))
                     if self._aa
                     else "Disabled"
                 ),
@@ -452,23 +440,20 @@ class RF24:
             )
         )
         if dump_pipes:
-            print("TX address____________", self.address())
-            self._open_pipes = self._reg_read(OPEN_PIPES)
-            for i in range(6):
-                is_open = self._open_pipes & (1 << i)
-                print(
-                    "Pipe",
-                    i,
-                    "( open )" if is_open else "(closed)",
-                    "bound:",
-                    self.address(i),
+            self._dump_pipes()
+
+    def _dump_pipes(self):
+        print("TX address____________", self.address())
+        self._open_pipes = self._reg_read(OPEN_PIPES)
+        for i in range(6):
+            is_open = self._open_pipes & (1 << i)
+            print(
+                "Pipe {} ({}) bound: {}".format(
+                    i, " open " if is_open else "closed", self.address(i)
                 )
-                if is_open:
-                    print(
-                        "\t\texpecting {} byte static payloads".format(
-                            self._reg_read(RX_PL_LENG + i)
-                        )
-                    )
+            )
+            if is_open:
+                print("\t\texpecting", self._pl_len[i], "byte static payloads")
 
     @property
     def is_plus_variant(self):
@@ -817,7 +802,7 @@ class RF24:
             if len(buf) < self._pl_len[0]:
                 buf += b"\0" * (self._pl_len[0] - len(buf))
             elif len(buf) > self._pl_len[0]:
-                buf = buf[:self._pl_len[0]]
+                buf = buf[: self._pl_len[0]]
         if ask_no_ack and self._features & 1 == 0:
             self._features = self._features & 0xFE | 1
             self._reg_write(TX_FEATURE, self._features)
@@ -837,10 +822,10 @@ class RF24:
     def fifo(self, about_tx=False, check_empty=None):
         """This provides *some* precision determining the status of the TX/RX
         FIFO buffers. (read-only)"""
-        self._fifo, about_tx = (self._reg_read(0x17), bool(about_tx))
+        _fifo, about_tx = (self._reg_read(0x17), bool(about_tx))
         if check_empty is None:
-            return (self._fifo & (0x30 if about_tx else 0x03)) >> (4 * about_tx)
-        return bool(self._fifo & ((2 - bool(check_empty)) << (4 * about_tx)))
+            return (_fifo & (0x30 if about_tx else 0x03)) >> (4 * about_tx)
+        return bool(_fifo & ((2 - bool(check_empty)) << (4 * about_tx)))
 
     def address(self, index=-1):
         """Returns the current address set to a specified data pipe or the TX

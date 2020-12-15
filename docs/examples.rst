@@ -73,7 +73,8 @@ Stream Example
 .. versionchanged:: 1.2.3
     added ``master_fifo()`` to demonstrate using full TX FIFO to stream data.
 
-This is a test to show how to stream data. The ``master()`` uses the `send()` function to
+This is a test to show how to stream data. The ``master()`` uses the
+:py:meth:`~circuitpython_nrf24l01.rf24.RF24.send()` function to
 transmit multiple payloads with 1 function call. However ``master()`` only uses 1
 level of the nRF24L01's TX FIFO. An alternate function, called ``master_fifo()``
 uses all 3 levels of the nRF24L01's TX FIFO to stream data, but it uses the

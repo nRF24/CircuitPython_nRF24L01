@@ -22,18 +22,18 @@ Features currently supported
 * Dynamically sized payloads (max 32 bytes each) or statically sized payloads
 * Automatic responding acknowledgment (ACK) packets for verifying transmission success
 * Append custom payloadsto the acknowledgment (ACK) packets for instant bi-directional communication
-* Mark a single payload for no acknowledgment (ACK) from the receiving nRF24L01 (see ``ask_no_ack`` parameter for `send()` and `write()` functions)
+* Mark a single payload for no acknowledgment (ACK) from the receiving nRF24L01 (see ``ask_no_ack``
+  parameter for :py:meth:`~circuitpython_nrf24l01.rf24.RF24.send()` and `write()` functions)
 * Invoke the "re-use the same payload" feature (for manually re-transmitting failed transmissions that
   remain in the TX FIFO buffer)
 * Multiple payload transmissions with one function call (see documentation on the
-  `send()` function and try out the `Stream example <examples.html#stream-example>`_)
+  :py:meth:`~circuitpython_nrf24l01.rf24.RF24.send()` function and try out the
+  `Stream example <examples.html#stream-example>`_)
 * Context manager compatible for easily switching between different radio configurations
   using `with` blocks (not available in ``rf24_lite.py`` version)
 * Configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or
   failed transmissions (these 3 events control 1 IRQ pin). There's also virtual
-  representations of these interrupt events available (see
-  :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr`,
-  :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_ds`, & `irq_df` attributes)
+  representations of these interrupt events available (see `irq_dr`, `irq_ds`, & `irq_df` attributes)
 * Invoke sleep mode (AKA power down mode) for ultra-low current consumption
 * cyclic redundancy checking (CRC) up to 2 bytes long
 * Adjust the nRF24L01's builtin automatic re-transmit feature's parameters (`arc`: number
