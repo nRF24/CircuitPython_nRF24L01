@@ -64,7 +64,7 @@ def _level_to_address(level):
         level_addr = 1 << ((level - 1) * 3)
     return level_addr
 
-
+# pylint: disable=too-few-public-methods
 class MessageType:
     """A collection of constants used to define
     `RF24NetworkHeader.message_type`"""
@@ -84,6 +84,7 @@ class MessageType:
     #: a gateway implementation)
 
 
+# pylint: enable=too-few-public-methods
 class RF24NetworkHeader:
     """The header information used for routing network messages.
 
