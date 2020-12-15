@@ -25,6 +25,7 @@ from os import urandom
 import struct
 from .rf24 import RF24
 
+
 def swap_bits(original):
     """This function reverses the bit order for a single byte."""
     original &= 0xFF
@@ -65,38 +66,36 @@ def crc24_ble(data, deg_poly=0x65B, init_val=0x555555):
     return reverse_bits((crc).to_bytes(3, "big"))
 
 
-BLE_FREQ = (2, 26, 80)  #: The BLE channel number is different from the nRF channel number.
+BLE_FREQ = (
+    2,
+    26,
+    80,
+)  #: The BLE channel number is different from the nRF channel number.
 
 
-class FakeBLE:
+class FakeBLE(RF24):
     """A class to implement BLE advertisements using the nRF24L01."""
 
-    def __init__(self, spi, csn, ce, spi_frequency=10000000):
-        self._radio = RF24(spi, csn, ce, spi_frequency=spi_frequency)
-        self._chan = 0
+    def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
+        super().__init__(spi, csn, ce_pin, spi_frequency=spi_frequency)
+        self._curr_freq = 0
         self._show_dbm = False
         self._ble_name = None
         self._mac = urandom(6)
+        self._config = self._config & 3 | 0x10  # disable CRC
+        # disable auto_ack, dynamic payloads, all TX features, & auto-retry
+        self._aa, self._dyn_pl, self._features, self._retry_setup = (0,) * 4
+        self._addr_len = 4  # use only 4 byte address length
+        self._tx_address = b"\x71\x91\x7D\x6B"
+        self._pipe0_read_addr = b"\x71\x91\x7D\x6B"
+        self._open_pipes = 1
         with self:
-            self._radio.dynamic_payloads = False
-            self._radio.payload_length = 32
-            self._radio.data_rate = 1
-            self._radio.arc = 0
-            self._radio.address_length = 4
-            self._radio.open_rx_pipe(0, b"\x71\x91\x7D\x6B")
-            self._radio.open_tx_pipe(b"\x71\x91\x7D\x6B")
-            self._radio.auto_ack = False
-            self._radio.crc = 0
-            self._radio.flush_rx()
-
-    def __enter__(self):
-        self._radio = self._radio.__enter__()
-        return self
+            self.payload_length = 32
 
     def __exit__(self, *exc):
         self._show_dbm = False
         self._ble_name = None
-        return self._radio.__exit__()
+        return super().__exit__()
 
     @property
     def mac(self):
@@ -143,13 +142,13 @@ class FakeBLE:
 
     def hop_channel(self):
         """Trigger an automatic change of BLE compliant channels."""
-        self._chan += 1 if self._chan < 2 else -2
-        self._radio.channel = BLE_FREQ[self._chan]
+        self._curr_freq += 1 if self._curr_freq < 2 else -2
+        self.channel = BLE_FREQ[self._curr_freq]
 
     def whiten(self, data):
         """Whitening the BLE packet data ensures there's no long repeatition
         of bits."""
-        data, coef = (bytearray(data), (self._chan + 37) | 0x40)
+        data, coef = (bytearray(data), (self._curr_freq + 37) | 0x40)
         for i, byte in enumerate(data):
             res, mask = (0, 1)
             for _ in range(8):
@@ -174,7 +173,7 @@ class FakeBLE:
         buf += chunk(b"\x05", 1)
         pa_level = b""
         if self._show_dbm:
-            pa_level = chunk(struct.pack(">b", self._radio.pa_level), 0x0A)
+            pa_level = chunk(struct.pack(">b", self.pa_level), 0x0A)
         buf += pa_level
         if name_length:
             buf += chunk(self.name, 0x08)
@@ -199,89 +198,127 @@ class FakeBLE:
         else:
             payload = chunk(buf, data_type) if buf else b""
         payload = self._make_payload(payload)
-        self._radio.send(reverse_bits(self.whiten(payload)))
-
-    @property
-    def pa_level(self):
-        """See :py:attr:`circuitpython_nrf24l01.rf24.RF24.pa_level`"""
-        return self._radio.pa_level
-
-    @pa_level.setter
-    def pa_level(self, value):
-        self._radio.pa_level = value
+        self.send(reverse_bits(self.whiten(payload)))
 
     @property
     def channel(self):
         """The only allowed channels are those contained in the `BLE_FREQ`
         tuple."""
-        return self._radio.channel
+        return self._channel
 
     @channel.setter
     def channel(self, value):
         if value not in BLE_FREQ:
-            raise ValueError(
-                "nrf channel {} is not a valid BLE frequency".format(value)
-            )
-        self._radio.channel = value
+            raise ValueError("channel {} is not a valid BLE frequency".format(value))
+        self._channel = value
+        self._reg_write(0x05, value)
+
+    # pylint: disable=missing-function-docstring
+    @property
+    def dynamic_payloads(self):
+        raise NotImplementedError(
+            "adjusting dynamic_payloads breaks BLE specifications"
+        )
+
+    def set_dynamic_payloads(self, enable, pipe_number=None):
+        raise NotImplementedError(
+            "adjusting dynamic_payloads breaks BLE specifications"
+        )
 
     @property
-    def payload_length(self):
-        """This attribute is best left at 32 bytes for all BLE
-        operations."""
-        return self._radio.payload_length
-
-    @payload_length.setter
-    def payload_length(self, value):
-        self._radio.payload_length = value
+    def data_rate(self):
+        raise NotImplementedError("adjusting data_rate breaks BLE specifications")
 
     @property
-    def power(self):
-        """See :py:attr:`circuitpython_nrf24l01.rf24.RF24.power`"""
-        return self._radio.power
-
-    @power.setter
-    def power(self, is_on):
-        self._radio.power = is_on
+    def address_length(self):
+        raise NotImplementedError("adjusting address_length breaks BLE specifications")
 
     @property
-    def is_lna_enabled(self):
-        """See :py:attr:`circuitpython_nrf24l01.rf24.RF24.is_lna_enabled`"""
-        return self._radio.is_lna_enabled
+    def auto_ack(self):
+        raise NotImplementedError("adjusting auto_ack breaks BLE specifications")
+
+    def set_auto_ack(self, enable, pipe_number=None):
+        raise NotImplementedError("adjusting auto_ack breaks BLE specifications")
 
     @property
-    def is_plus_variant(self):
-        """See :py:attr:`circuitpython_nrf24l01.rf24.RF24.is_plus_variant`"""
-        return self._radio.is_plus_variant
-
-    def interrupt_config(self, data_recv=True, data_sent=True):
-        """See :py:func:`circuitpython_nrf24l01.rf24.RF24.interrupt_config()`"""
-        self._radio.interrupt_config(data_recv=data_recv, data_sent=data_sent)
+    def ack(self):
+        raise NotImplementedError("adjusting ack breaks BLE specifications")
 
     @property
-    def irq_ds(self):
-        """See :py:attr:`circuitpython_nrf24l01.rf24.RF24.irq_ds`"""
-        return self._radio.irq_ds
+    def crc(self):
+        raise NotImplementedError("adjusting crc breaks BLE specifications")
 
-    @property
-    def irq_dr(self):
-        """See :py:attr:`circuitpython_nrf24l01.rf24.RF24.irq_dr`"""
-        return self._radio.irq_dr
+    def open_rx_pipe(self, pipe_number, address):
+        raise NotImplementedError("BLE implementation only uses 1 address on pipe 0")
 
-    def clear_status_flags(self):
-        """See :py:func:`circuitpython_nrf24l01.rf24.RF24.clear_status_flags()`"""
-        self._radio.clear_status_flags()
+    def open_tx_pipe(self, address):
+        raise NotImplementedError("BLE implentation only uses 1 address")
 
-    def update(self):
-        """See :py:func:`circuitpython_nrf24l01.rf24.RF24.update()`"""
-        self._radio.update()
-
-    def available(self):
-        """See :py:func:`circuitpython_nrf24l01.rf24.RF24.available()`"""
-        return self._radio.available()
-
+    # pylint: enable=missing-function-docstring
     def what_happened(self, dump_pipes=False):
-        """See :py:func:`circuitpython_nrf24l01.rf24.RF24.what_happened()`"""
-        self._radio.what_happened(dump_pipes=dump_pipes)
+        """This debuggung function aggregates and outputs all status/condition
+        related information from the nRF24L01."""
+        print("Is a plus variant_________{}".format(self.is_plus_variant))
+        print(
+            "Channel___________________{} ~ {} GHz".format(
+                self.channel, (self.channel + 2400) / 1000
+            )
+        )
+        print("RF Data Rate______________1 Mbps")
+        print("RF Power Amplifier________{} dbm".format(self.pa_level))
+        print(
+            "RF Low Noise Amplifier____{}".format(
+                "Enabled" if self.is_lna_enabled else "Disabled"
+            )
+        )
+        print("CRC bytes_________________3")
+        print("Address length____________4 bytes")
+        print("TX Payload lengths________{} bytes".format(self.payload_length))
+        print("Auto retry delay__________250 microseconds")
+        print("Auto retry attempts_______0 maximum")
+        print("Re-use TX FIFO____________{}".format(bool(self._reg_read(0x17) & 64)))
+        print(
+            "IRQ on Data Ready__{}    Data Ready___________{}".format(
+                "_Enabled" if not self._config & 0x40 else "Disabled", self.irq_dr
+            )
+        )
+        print(
+            "IRQ on Data Fail___{}    Data Failed__________{}".format(
+                "_Enabled" if not self._config & 0x10 else "Disabled", self.irq_df
+            )
+        )
+        print(
+            "IRQ on Data Sent___{}    Data Sent____________{}".format(
+                "_Enabled" if not self._config & 0x20 else "Disabled", self.irq_ds
+            )
+        )
+        print(
+            "TX FIFO full__________{}    TX FIFO empty________{}".format(
+                "_True" if self.tx_full else "False", self.fifo(True, True)
+            )
+        )
+        print(
+            "RX FIFO full__________{}    RX FIFO empty________{}".format(
+                "_True" if self.fifo(False, False) else "False", self.fifo(False, True)
+            )
+        )
+        print(
+            "Ask no ACK_________{}    Custom ACK Payload___Disabled".format(
+                "_Allowed" if self.allow_ask_no_ack else "Disabled",
+            )
+        )
+        print("Dynamic Payloads___Disabled    Auto Acknowledgment__Disabled")
+        print(
+            "Primary Mode_____________{}    Power Mode___________{}".format(
+                "RX" if self.listen else "TX",
+                ("Standby-II" if self.ce_pin.value else "Standby-I")
+                if self._config & 2
+                else "Off",
+            )
+        )
+        if dump_pipes:
+            self._dump_pipes()
+
 
 class ServiceData:
     """An abstract helper class to package specific service data using

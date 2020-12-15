@@ -124,7 +124,8 @@ td.linenos pre {
 
 .wy-table caption,
 .rst-content table.docutils caption,
-.rst-content table.field-list caption {
+.rst-content table.field-list caption,
+.caption-text {
   color: #fff;
 }
 
