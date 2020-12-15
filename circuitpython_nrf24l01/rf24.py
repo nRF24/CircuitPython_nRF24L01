@@ -607,8 +607,6 @@ class RF24:
             self._aa &= 1
         self._reg_write(DYN_PL_LEN, self._dyn_pl)
         self._reg_write(AUTO_ACK, self._aa)
-        if self._aa:  # refresh crc data if enabled
-            self._config = self._reg_read(CONFIGURE)
 
     def set_auto_ack(self, enable, pipe_number=None):
         """Control the automatic acknowledgement feature for a specific data
@@ -713,6 +711,9 @@ class RF24:
         """This `int` attribute specifies the nRF24L01's CRC (cyclic
         redundancy checking) encoding scheme in terms of byte length."""
         self._config = self._reg_read(CONFIGURE)
+        self._aa = self._reg_read(AUTO_ACK)
+        if self._aa:
+            return 2 if self._config & 4 else 1
         return max(0, ((self._config & 0x0C) >> 2) - 1)
 
     @crc.setter
