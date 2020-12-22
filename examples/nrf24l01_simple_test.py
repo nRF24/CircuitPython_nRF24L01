@@ -49,7 +49,8 @@ nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
 # list to store our float number for the payloads sent
 payload = [0.0]
 
-# uncomment the following 2 lines for compatibility with TMRh20 library
+# uncomment the following 3 lines for compatibility with TMRh20 library
+# nrf.allow_ask_no_ack = False
 # nrf.dynamic_payloads = False
 # nrf.payload_length = 4
 

@@ -149,7 +149,7 @@ but this Circuitpython library uses a default value of 3.
     nrf24l01_multiceiver_test, multiceiverDemo
     nrf24l01_stream_test, streamingData
     nrf24l01_interrupt_test, interruptConfigure
-    nrf24l01_context_test, feature is not available in C++
+    nrf24l01_context_test, feature is not available
     nrf24l01_fake_ble_test, feature is available via `floe's BTLE library <https://github.com/floe/BTLE>`_
 
 .. note:: Each of the Circuitpython examples that are compatible with TMRh20's examples
@@ -158,11 +158,15 @@ but this Circuitpython library uses a default value of 3.
 
     .. code-block:: python
 
-        # uncomment the following 2 lines for compatibility with TMRh20 library
+        # uncomment the following 3 lines for compatibility with TMRh20 library
         # nrf.allow_ask_no_ack = False
         # nrf.dynamic_payloads = False
         # nrf.payload_length = 4
 
+.. warning:: Certain C++ datatypes allocate a different amount of memory depending on
+    the board being used in the Arduino IDE. For example, ``uint8_t`` isn't always
+    allocated to 1 byte of memory for certain boards.
+
     Make sure you understand the amount of memory that different datatypes occupy in C++.
-    This will help you understand how to configure
+    This will help you comprehend how to configure
     :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length`.
