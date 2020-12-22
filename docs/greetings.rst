@@ -116,7 +116,7 @@ See `examples <https://circuitpython-nrf24l01.readthedocs.io/en/latest/examples.
 
 To run the simple example, navigate to this repository's "examples" folder in the terminal. If you're working with a CircuitPython device (not a Raspberry Pi), copy the file named "nrf24l01_simple_test.py" from this repository's "examples" folder to the root directory of your CircuitPython device's CIRCUITPY drive. Now you're ready to open a python REPR and run the following commands:
 
-.. code-block::
+.. code-block:: python
 
     >>> from nrf24l01_simple_test import *
     Which radio is this? Enter '0' or '1'. Defaults to '0'
