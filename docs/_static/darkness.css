@@ -1,106 +1,3 @@
-/* -----------------------------code sections------------------------------ */
-/*
-.highlight {
-  background: #202020;
-}
-
-.highlight .s1 {
-  color: #da8c00;
-}
-
-.highlight .mi {
-  color: #9ff1c6;
-}
-
-.highlight .nb {
-  color: #f7ef84;
-}
-
-.highlight .ow {
-  color: #1f95cb;
-}
-
-.highlight .kc {
-  color: #2886e4;
-}
-
-.highlight .s2 {
-  color: #da8c00;
-}
-
-.highlight .mf {
-  color: #9ff1c6;
-}
-
-.highlight .se {
-  color: #e2c458;
-}
-
-.highlight .si {
-  color: #2886e4;
-}
-
-.highlight .sa {
-  color: #2886e4;
-}
-
-.highlight .nf {
-  color: #f7ef84;
-}
-
-.highlight .k {
-  color: #af63ab;
-}
-
-.highlight .c1 {
-  color: #4bbc3f;
-}
-
-.highlight .o {
-  color: #fefefe;
-}
-
-.highlight .sd {
-  color: #da8c00;
-}
-
-.highlight .nn {
-  color: #fff;
-}
-
-.highlight .kn {
-  color: #af63ab;
-}
-
-.highlight .bp {
-  color: #1f95cb;
-}
-
-.highlight .nd {
-  color: #f7ef84;
-}
-
-.highlight .ne {
-  color: #13d297;
-}
-
-.highlight .mh {
-  color: #9ff1c6;
-}
-
-.highlight .go {
-  color: #1afd00;
-}
-
-td.linenos pre {
-  color: #fff;
-  background-color: #373737;
-}
-
-.highlight .fm {
-  color: #f7ef84;
-}
-*/
 /* ----------------------table sections---------------------------------------- */
 .wy-table thead,
 .rst-content table.docutils thead,
@@ -291,6 +188,10 @@ body {
 
 .btn-neutral:visited {
   color: #fff !important;
+}
+
+html.writer-html5 .rst-content dl.footnote>dd p {
+  color: #fcfcfc;
 }
 
 /* -------------------------------------sidebar sections------------------------------------------------ */
