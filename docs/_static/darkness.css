@@ -1,4 +1,5 @@
 /* -----------------------------code sections------------------------------ */
+/*
 .highlight {
   background: #202020;
 }
@@ -99,7 +100,7 @@ td.linenos pre {
 .highlight .fm {
   color: #f7ef84;
 }
-
+*/
 /* ----------------------table sections---------------------------------------- */
 .wy-table thead,
 .rst-content table.docutils thead,

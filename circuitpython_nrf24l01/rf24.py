@@ -481,13 +481,9 @@ class RF24:
                     self._dyn_pl = (self._dyn_pl & ~(1 << i)) | (bool(val) << i)
         else:
             raise ValueError("dynamic_payloads: {} is an invalid input" % enable)
-        if bool(self._features & 4) != (self._dyn_pl & 1):
-            self._features = (self._features & 3) | ((self._dyn_pl & 1) << 2)
+        if self._dyn_pl:
+            self._features = (self._features & 3) | (bool(self._dyn_pl) << 2)
             self._reg_write(TX_FEATURE, self._features)
-        if self._dyn_pl != (self._aa & self._dyn_pl):
-            self._aa |= self._dyn_pl
-            self._reg_write(AUTO_ACK, self._aa)
-            self._config = self._reg_read(CONFIGURE)
         self._reg_write(DYN_PL_LEN, self._dyn_pl)
 
     def set_dynamic_payloads(self, enable, pipe_number=None):
@@ -596,16 +592,8 @@ class RF24:
                     self._aa = (self._aa & ~(1 << i)) | (bool(val) << i)
         else:
             raise ValueError("auto_ack: {} is not a valid input" % enable)
-        for i in range(6):
-            mask = 1 << i
-            if self._aa & mask != mask and self._dyn_pl & mask == mask:
-                self._dyn_pl &= ~mask
-            if not i and self._features & 4 != 4 and self._dyn_pl & mask:
-                self._features |= 4
-                self._reg_write(TX_FEATURE, self._features)
         if bool(self._aa & 1) != bool(self._aa & 0x3E):
             self._aa &= 1
-        self._reg_write(DYN_PL_LEN, self._dyn_pl)
         self._reg_write(AUTO_ACK, self._aa)
 
     def set_auto_ack(self, enable, pipe_number=None):

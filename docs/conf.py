@@ -1,8 +1,23 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name,too-few-public-methods
 """This file is for `sphinx-build` configuration"""
 import os
 import sys
+import pygments.styles
+from pygments.style import Style
+from pygments.token import (
+    Text,
+    Other,
+    Comment,
+    Keyword,
+    Name,
+    Literal,
+    String,
+    Number,
+    Operator,
+    Generic,
+)
+
 
 sys.path.insert(0, os.path.abspath(".."))
 
@@ -17,7 +32,6 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
-    "hoverxref.extension",
     # "rst2pdf.pdfbuilder",  # for pdf builder support
 ]
 
@@ -85,9 +99,6 @@ default_role = "any"
 # If true, '()' will be appended to :func: etc. cross-reference text.
 add_function_parentheses = True
 
-# The name of the Pygments (syntax highlighting) style to use.
-pygments_style = "sphinx"
-
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
@@ -96,21 +107,69 @@ todo_emit_warnings = False
 
 napoleon_numpy_docstring = False
 
-# hoverxref configuration
-# -------------------------------------------------
-hoverxref_auto_ref = True
-hoverxref_domains = ["py"]
-hoverxref_roles = [
-    "option",
-    "doc",
-]
-hoverxref_role_types = {
-    "mod": "modal",  # for Python Sphinx Domain
-    "doc": "modal",  # for whole docs
-    "class": "tooltip",  # for Python Sphinx Domain
-    "ref": "tooltip",  # for hoverxref_auto_ref config
-    "confval": "tooltip",  # for custom object
-}
+# pygment custom style
+# --------------------------------------------------
+
+class DarkPlus(Style):
+    """A custom pygment highlighting scheme based on
+    VSCode's builtin `Dark Plus` theme"""
+
+    background_color = "#1E1E1E"
+    highlight_color = "#ff0000"
+    line_number_color = "#FCFCFC"
+    line_number_background_color = "#282828"
+
+    default_style = ""
+    styles = {
+        Text: "#FEFEFE",
+        Comment.Single: "#5E9955",
+        Comment.Multiline: "#5E9955",
+        Comment.Preproc: "#B369BF",
+        Other: "#FEFEFE",
+        Keyword: "#499CD6",
+        Keyword.Declaration: "#C586C0",
+        Keyword.Namespace: "#B369BF",
+        # Keyword.Pseudo: "#499CD6",
+        # Keyword.Reserved: "#499CD6",
+        Keyword.Type: "#48C999",
+        # Name: "#9CDCFE",
+        Name.Builtin: "#EAEB82",
+        Name.Builtin.Pseudo: "#499DC7",
+        Name.Class: "#48C999",
+        Name.Decorator: "#EAEB82",
+        Name.Exception: "#48C999",
+        Name.Attribute: "#569CD6",
+        Name.Variable:" #9CDCFE",
+        Name.Variable.Magic: "#EAEB82",
+        Name.Function: "#EAEB82",
+        Name.Function.Magic: "#EAEB82",
+        Literal: "#AC4C1E",
+        String: "#B88451",
+        String.Escape: "#DEA868",
+        String.Affix: "#499DC7",
+        Number: "#B3D495",
+        Operator: "#FEFEFE",
+        Operator.Word: "#499DC7",
+        # Generic.Output: "#99FFA2",
+        Generic.Prompt: "#99FFA2",
+        Generic.Traceback: "#FF0909",
+        Generic.Error: "#FF0909",
+    }
+
+
+def pygments_monkeypatch_style(mod_name, cls):
+    """ function to inject a custom pygment style """
+    cls_name = cls.__name__
+    mod = type(__import__("os"))(mod_name)
+    setattr(mod, cls_name, cls)
+    setattr(pygments.styles, mod_name, mod)
+    sys.modules["pygments.styles." + mod_name] = mod
+    pygments.styles.STYLE_MAP[mod_name] = mod_name + "::" + cls_name
+
+
+pygments_monkeypatch_style("dark_plus", DarkPlus)
+# The name of the Pygments (syntax highlighting) style to use.
+pygments_style = "dark_plus"
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -145,7 +204,7 @@ html_css_files = [
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
 #
-html_favicon = "_static/favicon.ico"
+html_favicon = "_static/new_favicon.ico"
 
 # project logo
 html_logo = "_static/Logo.png"

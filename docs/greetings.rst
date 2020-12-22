@@ -116,23 +116,19 @@ See `examples <https://circuitpython-nrf24l01.readthedocs.io/en/latest/examples.
 
 To run the simple example, navigate to this repository's "examples" folder in the terminal. If you're working with a CircuitPython device (not a Raspberry Pi), copy the file named "nrf24l01_simple_test.py" from this repository's "examples" folder to the root directory of your CircuitPython device's CIRCUITPY drive. Now you're ready to open a python REPR and run the following commands:
 
-.. code-block:: python
+.. code-block::
 
     >>> from nrf24l01_simple_test import *
+    Which radio is this? Enter '0' or '1'. Defaults to '0'
         nRF24L01 Simple test.
         Run slave() on receiver
         Run master() on transmitter
     >>> master()
-    Sending: 5 as struct: b'\x05\x00\x00\x00'
-    send() successful
-    Transmission took 36.0 ms
-    Sending: 4 as struct: b'\x04\x00\x00\x00'
-    send() successful
-    Transmission took 28.0 ms
-    Sending: 3 as struct: b'\x03\x00\x00\x00'
-    send() successful
-    Transmission took 24.0 ms
-
+    Transmission successful! Time to Transmit: 6993.972 us. Sent: 0.0
+    Transmission successful! Time to Transmit: 6563.277 us. Sent: 0.01
+    Transmission successful! Time to Transmit: 6453.385 us. Sent: 0.02
+    Transmission successful! Time to Transmit: 6338.29 us. Sent: 0.03
+    Transmission successful! Time to Transmit: 6440.163 us. Sent: 0.04
 
 What to purchase
 =================
@@ -218,7 +214,7 @@ Future Project Ideas/Additions
       html>`_ (uses custom bitbanging SPI functions and an external circuit involving a
       resistor and a capacitor)
     * network linking layer, maybe something like `TMRh20's RF24Network
-      <http://tmrh20.github.io/RF24Network/>`_
+      <http://nRF24.github.io/RF24Network/>`_
     * implement the Gazelle-based protocol used by the BBC micro-bit (`makecode.com's radio
       blocks <https://makecode.microbit.org/reference/radio>`_).
 
@@ -227,7 +223,7 @@ Sphinx documentation
 -----------------------
 
 Sphinx is used to build the documentation based on rST files and comments in the code. First,
-install dependencies (feel free to reuse the virtual environment from `above <https://circuitpython-nrf24l01.readthedocs.io/en/latest/#installing-from-pypi>`_):
+install dependencies (feel free to reuse the virtual environment from `above <greetings.html#installing-from-pypi>`_):
 
 .. code-block:: shell
 

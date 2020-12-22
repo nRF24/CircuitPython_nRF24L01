@@ -13,9 +13,7 @@ dynamic_payloads
 ******************************
 
 .. note::
-    |mostly_rx_but_tx0| The `auto_ack` attribute is automatically enabled by this attribute
-    for any data pipes that have this feature enabled. Disabling this feature for any
-    data pipe will not affect the `auto_ack` feature for the corresponding data pipes.
+    |mostly_rx_but_tx0|
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.dynamic_payloads
 
@@ -142,8 +140,8 @@ auto_ack
     |mostly_rx_but_tx0| This attribute will intuitively:
         - enable the automatic acknowledgement feature for pipe 0 if any other data pipe
           is configured to use the automatic acknowledgement feature.
-        - disable the `dynamic_payloads` feature for any data pipe that is configured to
-          disable the automatic acknowledgement feature.
+        - disable the acknowledgement payload feature (`ack` attribute) when the
+          automatic acknowledgement feature is disabled for data pipe 0.
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.auto_ack
 
