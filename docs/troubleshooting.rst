@@ -10,16 +10,16 @@ The nRF24L01 has 3 key features.
 1. `auto_ack` feature provides transmission verification by using the RX nRF24L01 to
    automatically and immediatedly send an acknowledgment (ACK) packet in response to
    received payloads. `auto_ack` does not require `dynamic_payloads` to be enabled.
-2. `dynamic_payloads` feature allows either TX/RX nRF24L01 to be able to send/receive
-   payloads with their size written into the payloads' packet. With this disabled, both
-   RX/TX nRF24L01 must use matching `payload_length` attributes. `dynamic_payloads`
-   does not require `auto_ack` to be enabled.
 
    .. note:: With the `auto_ack` feature enabled, you get:
 
        * cyclic redundancy checking (`crc`) automatically enabled
        * to change amount of automatic re-transmit attempts and the delay time between
          them. See the `arc` and `ard` attributes.
+2. `dynamic_payloads` feature allows either TX/RX nRF24L01 to be able to send/receive
+   payloads with their size written into the payloads' packet. With this disabled, both
+   RX/TX nRF24L01 must use matching `payload_length` attributes. `dynamic_payloads`
+   does not require `auto_ack` to be enabled.
 3. `ack` feature allows the MCU to append a payload to the ACK packet, thus instant
    bi-directional communication. A transmitting ACK payload must be loaded into the
    nRF24L01's TX FIFO buffer (done using `load_ack()`) BEFORE receiving the payload that
@@ -37,6 +37,8 @@ there can be up to 3 payloads waiting to be read (RX) and up to 3 payloads waiti
 transmit (TX). Notice there are seperate FIFO buffers sending & receiving (respectively mentioned
 in this documentation as TX FIFO & RX FIFO).
 
+Each of the 3 levels in the FIFO buffers can only store a *maximum* of 32 bytes. If you receive 2 payloads with a length of 4 bytes each, then there is only 1 level of the RX FIFO buffers left unoccupied.
+
 Pipes vs Addresses vs Channels
 ******************************
 
@@ -48,15 +50,15 @@ Pipes
 
 You should think of the data pipes as a "parking spot" for your payload. There are only six
 data pipes on the nRF24L01, thus it can simultaneously "listen" to a maximum of 6 other
-nRF24L01 radios. However, it can only "talk" to 1 other nRF24L01 at a time).
+nRF24L01 radios. However, it can only "talk" to 1 other nRF24L01 at a time.
 
 Addresses
 ---------
 
 The specified address is not the address of an nRF24L01 radio, rather it is more like a
 path that connects the endpoints. When assigning addresses to a data pipe, you can use any
-5 byte long address you can think of (as long as the first byte is unique among
-simultaneously broadcasting addresses), so you're not limited to communicating with only
+5 byte long address you can think of (as long as the first byte of the `bytearray` is unique
+among simultaneously broadcasting addresses), so you're not limited to communicating with only
 the same 6 nRF24L01 radios.
 
 Channels
@@ -82,8 +84,7 @@ match. These settings/features include:
 * `data_rate`
 * `dynamic_payloads`
 * `payload_length` only when `dynamic_payloads` is disabled
-* `auto_ack` on the recieving nRF24L01 must be enabled if `arc` is greater than 0 on the
-  transmitting nRF24L01
+* `auto_ack`
 * custom `ack` payloads
 * `crc`
 
