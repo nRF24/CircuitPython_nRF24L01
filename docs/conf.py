@@ -186,16 +186,16 @@ html_sidebars = {
 
 html_theme_options = {
     # Set the name of the project to appear in the navigation.
-    "nav_title": "RF24 Revamped",
+    "nav_title": "CircuitPython-nRF24L01",
     # Specify a base_url used to generate sitemap.xml. If not
     # specified, then no sitemap will be built.
-    "base_url": "https://2bndy5.github.io/RF24-Revamped/",
+    "base_url": "https://2bndy5.github.io/CircuitPython_nRF24L01/",
     # Set the color and the accent color
     "color_primary": "blue",
     "color_accent": "light-green",
     # Set the repo location to get a badge with stats
-    "repo_url": "https://github.com/2bndy5/RF24-Revamped/",
-    "repo_name": "RF24-Revamped",
+    "repo_url": "https://github.com/2bndy5/CircuitPython_nRF24L01/",
+    "repo_name": "CircuitPython_nRF24L01",
     # Visible levels of the global TOC; -1 means unlimited
     "globaltoc_depth": 1,
     # If False, expand all TOC entries
