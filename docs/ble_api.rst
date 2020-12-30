@@ -184,9 +184,9 @@ name
 
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.name
 
-   This is not required. In fact setting this attribute will subtract from
-   the available payload length (in bytes). Set this attribute to `None` to
-   disable advertising the device name.
+    This is not required. In fact setting this attribute will subtract from
+    the available payload length (in bytes). Set this attribute to `None` to
+    disable advertising the device name.
 
     .. note:: This information occupies (in the TX FIFO) an extra 2 bytes plus
         the length of the name set by this attribute.
@@ -317,18 +317,18 @@ interrupt_config()
 Unavailable RF24 functionality
 ******************************
 
-    The following `RF24` functionality is not available in `FakeBLE` objects:
+The following `RF24` functionality is not available in `FakeBLE` objects:
 
-    - :py:attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads`
-    - :py:meth:`~circuitpython_nrf24l01.rf24.RF24.set_dynamic_payloads()`
-    - :py:attr:`~circuitpython_nrf24l01.rf24.RF24.data_rate`
-    - :py:attr:`~circuitpython_nrf24l01.rf24.RF24.address_length`
-    - :py:attr:`~circuitpython_nrf24l01.rf24.RF24.auto_ack`
-    - :py:meth:`~circuitpython_nrf24l01.rf24.RF24.set_auto_ack()`
-    - :py:attr:`~circuitpython_nrf24l01.rf24.RF24.ack`
-    - :py:attr:`~circuitpython_nrf24l01.rf24.RF24.crc`
-    - :py:meth:`~circuitpython_nrf24l01.rf24.RF24.open_rx_pipe()`
-    - :py:meth:`~circuitpython_nrf24l01.rf24.RF24.open_tx_pipe()`
+- :py:attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads`
+- :py:meth:`~circuitpython_nrf24l01.rf24.RF24.set_dynamic_payloads()`
+- :py:attr:`~circuitpython_nrf24l01.rf24.RF24.data_rate`
+- :py:attr:`~circuitpython_nrf24l01.rf24.RF24.address_length`
+- :py:attr:`~circuitpython_nrf24l01.rf24.RF24.auto_ack`
+- :py:meth:`~circuitpython_nrf24l01.rf24.RF24.set_auto_ack()`
+- :py:attr:`~circuitpython_nrf24l01.rf24.RF24.ack`
+- :py:attr:`~circuitpython_nrf24l01.rf24.RF24.crc`
+- :py:meth:`~circuitpython_nrf24l01.rf24.RF24.open_rx_pipe()`
+- :py:meth:`~circuitpython_nrf24l01.rf24.RF24.open_tx_pipe()`
 
 
 Service related classes

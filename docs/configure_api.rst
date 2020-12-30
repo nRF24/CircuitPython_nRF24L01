@@ -77,13 +77,13 @@ payload_length
 
     A valid input value must be:
 
-        * an `int` value that is clamped to the range [1, 32]. Setting this attribute to a
-          single `int` configures all 6 data pipes.
-        * A `list` or `tuple` containing integers |per_data_pipe_control| If any index's
-          value is ``0``, then the existing setting for the corresponding data pipe will
-          persist (not be changed).
+    * an `int` value that is clamped to the range [1, 32]. Setting this attribute to a
+      single `int` configures all 6 data pipes.
+    * A `list` or `tuple` containing integers |per_data_pipe_control| If any index's
+      value is ``0``, then the existing setting for the corresponding data pipe will
+      persist (not be changed).
 
-        Default is set to the nRF24L01's maximum of 32 (on all data pipes).
+    Default is set to the nRF24L01's maximum of 32 (on all data pipes).
 
     :returns:
         The current setting of the expected static payload length feature for pipe 0 only.

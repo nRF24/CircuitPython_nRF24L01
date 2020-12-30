@@ -131,19 +131,18 @@ TMRh20's library uses static payload lengths by default.
 To make this circuitpython library compatible with
 `TMRh20's RF24 library <https://github.com/nRF24/RF24/>`_:
 
-    1. set `dynamic_payloads` to `False`.
-    2. set `allow_ask_no_ack` to `False`.
-    3. set :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length` to the value that
-       is passed to TMRh20's ``RF24::setPayloadSize()``. 32 is the default (& maximum)
-       payload length/size for both libraries.
+1. set `dynamic_payloads` to `False`.
+2. set `allow_ask_no_ack` to `False`.
+3. set :py:attr:`~circuitpython_nrf24l01.rf24.RF24payload_length` to the value that
+   is passed to TMRh20's ``RF24::setPayloadSize()``. 32 is the default (& maximum)
+   payload length/size for both libraries.
 
-        .. warning:: Certain C++ datatypes allocate a different amount of memory depending on
-            the board being used in the Arduino IDE. For example, ``uint8_t`` isn't always
-            allocated to 1 byte of memory for certain boards.
-
-            Make sure you understand the amount of memory that different datatypes occupy in C++.
-            This will help you comprehend how to configure
-            :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length`.
+   .. warning:: Certain C++ datatypes allocate a different amountof memory depending on
+       the board being used in the Arduino IDE. For example, ``uint8_t`` isn't always
+       allocated to 1 byte of memory for certain boards.
+       Make sure you understand the amount of memory that different datatypes occupy in C++.
+       This will help you comprehend how to configure
+       :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length`.
 
 For completness, TMRh20's RF24 library uses a default value of 15 for the `ard` attribute,
 but this Circuitpython library uses a default value of 3.

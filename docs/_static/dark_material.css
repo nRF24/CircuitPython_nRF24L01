@@ -1,0 +1,94 @@
+body {
+  color: #fcfcfc;
+  background-color: #232323;
+}
+
+.sig-name.descname {
+  color: #b4e65c;
+}
+
+.sig-prename.descclassname {
+  color: #fffefe;
+}
+
+.md-typeset {
+  background-color: unset;
+}
+
+.md-typeset .codehilitetable .linenos pre,
+.md-typeset .highlighttable .linenos pre {
+  color: #FCFCFC;
+}
+
+.md-typeset .footnote {
+  color:rgba(255, 255, 255, 0.83);
+  font-size:.64rem
+}
+
+span.highlighted {
+  background-color: #794502;
+}
+
+.sig-name.descname,
+.sig-prename.descclassname {
+  background-color: #403f3f;
+}
+
+.docutils.literal.notranslate {
+  background-color: hsla(0, 0%, 0%, 0);
+  color: #50e60c;
+}
+
+.reference.internal .docutils.literal.notranslate .pre {
+  color: #2196f3;
+}
+
+html body .md-typeset .headerlink {
+  color: rgb(94, 172, 15);
+}
+
+@media only screen and (max-width: 76.1875em) {
+  .md-nav {
+    background-color: #393939;
+  }
+}
+
+.md-nav__link[data-md-state="blur"] {
+  color: rgb(150, 125, 238);
+}
+
+.md-nav {
+  font-size:0.8rem;
+}
+
+.md-typeset h1 {
+  color: rgb(255, 255, 255);
+}
+
+html .md-nav--primary .md-nav__title--site .md-nav__button {
+  top: 0;
+  left: 0;
+  width: inherit;
+  height: auto;
+}
+
+html .md-nav--primary .md-nav__title~.md-nav__list {
+  background-color: #fff0;
+}
+
+.md-nav span.caption {
+  background-color: #172353;
+}
+
+[data-md-color-primary=blue] .md-tabs {
+  background-color: #006b09;
+}
+
+[data-md-color-primary=blue] .md-header,
+[data-md-color-primary=blue] .md-hero {
+  background-color: #006b09;
+}
+
+html [data-md-color-primary=blue] .md-nav--primary .md-nav__title--site {
+  background-color: #006B09;
+}

@@ -91,16 +91,16 @@ listen
 
     A valid input value is a `bool` in which:
 
-        - `True` enables RX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications
-          Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
-          nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this attribute
-          flushes the RX FIFO, clears the `irq_dr` status flag, and puts nRF24L01 in power up
-          mode. Notice the CE pin is be held HIGH during RX mode.
-        - `False` disables RX mode. As mentioned in above link, this puts nRF24L01's power in
-          Standby-I (CE pin is LOW meaning low current & no transmissions) mode which is ideal
-          for post-reception work. Disabing RX mode doesn't flush the RX/TX FIFO buffers, so
-          remember to flush your 3-level FIFO buffers when appropriate using `flush_tx()` or
-          `flush_rx()` (see also the `read()` function).
+    - `True` enables RX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications
+      Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
+      nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this attribute
+      flushes the RX FIFO, clears the `irq_dr` status flag, and puts nRF24L01 in power up
+      mode. Notice the CE pin is be held HIGH during RX mode.
+    - `False` disables RX mode. As mentioned in above link, this puts nRF24L01's power in
+      Standby-I (CE pin is LOW meaning low current & no transmissions) mode which is ideal
+      for post-reception work. Disabing RX mode doesn't flush the RX/TX FIFO buffers, so
+      remember to flush your 3-level FIFO buffers when appropriate using `flush_tx()` or
+      `flush_rx()` (see also the `read()` function).
 
 any()
 ******************
@@ -141,11 +141,11 @@ read()
     :param int length: An optional parameter to specify how many bytes to read from the RX
         FIFO buffer. This parameter is not constrained in any way.
 
-            - If this parameter is less than the length of the first available payload in the
-              RX FIFO buffer, then the payload will remain in the RX FIFO buffer until the
-              entire payload is fetched by this function.
-            - If this parameter is greater than the next available payload's length, then
-              additional data from other payload(s) in the RX FIFO buffer are returned.
+        - If this parameter is less than the length of the first available payload in the
+          RX FIFO buffer, then the payload will remain in the RX FIFO buffer until the
+          entire payload is fetched by this function.
+        - If this parameter is greater than the next available payload's length, then
+          additional data from other payload(s) in the RX FIFO buffer are returned.
 
         .. note::
             The nRF24L01 will repeatedly return the last byte fetched from the RX FIFO

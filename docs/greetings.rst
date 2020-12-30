@@ -164,13 +164,14 @@ functionality, they are subject to a couple lesser known (and lesser advertised)
    boards' 3V regulators may not be able to provide (after supplying power to internal
    components).
 
-    .. csv-table::
-        :header: Specification, Value
-        :widths: 10,5
+   .. csv-table::
+       :header: Specification, Value
+       :widths: 10,5
 
-        "Emission mode current(peak)", "115 mA"
-        "Receive Mode current(peak)", "45 mA"
-        "Power-down mode current", "4.2 µA"
+       "Emission mode current(peak)", "115 mA"
+       "Receive Mode current(peak)", "45 mA"
+       "Power-down mode current", "4.2 µA"
+
 2. Needs shielding from electromagnetic interference. Shielding usually works best when
    it has a path to ground (GND pin), but this connection to the GND pin is not required.
 
@@ -207,16 +208,16 @@ before contributing to help this project stay welcoming. To contribute, all you 
 Future Project Ideas/Additions
 ------------------------------
 
-    The following are only ideas; they are not currently supported by this circuitpython library.
+The following are only ideas; they are not currently supported by this circuitpython library.
 
-    * `There's a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3
-      pins <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.
-      html>`_ (uses custom bitbanging SPI functions and an external circuit involving a
-      resistor and a capacitor)
-    * network linking layer, maybe something like `TMRh20's RF24Network
-      <http://nRF24.github.io/RF24Network/>`_
-    * implement the Gazelle-based protocol used by the BBC micro-bit (`makecode.com's radio
-      blocks <https://makecode.microbit.org/reference/radio>`_).
+* `There's a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3
+  pins <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.
+  html>`_ (uses custom bitbanging SPI functions and an external circuit involving a
+  resistor and a capacitor)
+* network linking layer, maybe something like `TMRh20's RF24Network
+  <http://nRF24.github.io/RF24Network/>`_
+* implement the Gazelle-based protocol used by the BBC micro-bit (`makecode.com's radio
+  blocks <https://makecode.microbit.org/reference/radio>`_).
 
 
 Sphinx documentation

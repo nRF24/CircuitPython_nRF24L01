@@ -16,6 +16,7 @@ from pygments.token import (
     Number,
     Operator,
     Generic,
+    Punctuation,
 )
 
 
@@ -133,7 +134,7 @@ class DarkPlus(Style):
         # Keyword.Pseudo: "#499CD6",
         # Keyword.Reserved: "#499CD6",
         Keyword.Type: "#48C999",
-        # Name: "#9CDCFE",
+        Name: "#FEFEFE",
         Name.Builtin: "#EAEB82",
         Name.Builtin.Pseudo: "#499DC7",
         Name.Class: "#48C999",
@@ -155,6 +156,7 @@ class DarkPlus(Style):
         Generic.Prompt: "#99FFA2",
         Generic.Traceback: "#FF0909",
         Generic.Error: "#FF0909",
+        Punctuation: "#FEFEFE",
     }
 
 
@@ -176,20 +178,34 @@ pygments_style = "dark_plus"
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
-on_rtd = os.environ.get("READTHEDOCS", None) == "True"
+html_theme = "sphinx_material"
+# Material theme options
+html_sidebars = {
+    "**": ["logo-text.html", "globaltoc.html", "localtoc.html", "searchbox.html"]
+}
 
-if not on_rtd:  # only import and set the theme if we're building docs locally
-    try:
-        import sphinx_rtd_theme
+html_theme_options = {
+    # Set the name of the project to appear in the navigation.
+    "nav_title": "RF24 Revamped",
+    # Specify a base_url used to generate sitemap.xml. If not
+    # specified, then no sitemap will be built.
+    "base_url": "https://2bndy5.github.io/RF24-Revamped/",
+    # Set the color and the accent color
+    "color_primary": "blue",
+    "color_accent": "light-green",
+    # Set the repo location to get a badge with stats
+    "repo_url": "https://github.com/2bndy5/RF24-Revamped/",
+    "repo_name": "RF24-Revamped",
+    # Visible levels of the global TOC; -1 means unlimited
+    "globaltoc_depth": 1,
+    # If False, expand all TOC entries
+    "globaltoc_collapse": True,
+    # If True, show hidden TOC entries
+    "globaltoc_includehidden": False,
+}
 
-        html_theme = "sphinx_rtd_theme"
-        html_theme_path = [sphinx_rtd_theme.get_html_theme_path(), "."]
-    except ImportError:
-        html_theme = "default"
-        html_theme_path = ["."]
-else:
-    html_theme_path = ["."]
+# Set link name generated in the top bar.
+html_title = "CircuitPython-nRF24L01"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -199,8 +215,9 @@ html_static_path = ["_static"]
 # These paths are either relative to html_static_path
 # or fully qualified paths (eg. https://...)
 html_css_files = [
-    "darkness.css",
+    "dark_material.css",
 ]
+
 # The name of an image file (relative to this directory) to use as a favicon of
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
@@ -208,7 +225,7 @@ html_css_files = [
 html_favicon = "_static/new_favicon.ico"
 
 # project logo
-html_logo = "_static/Logo.png"
+html_logo = "_static/Logo large.png"
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = "nRF24L01_Library_doc"

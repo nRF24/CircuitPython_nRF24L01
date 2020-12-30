@@ -114,47 +114,47 @@ developed to save space on microcontrollers with limited amount of RAM and/or st
 boards using the ATSAMD21 M0). The following functionality has been removed from the lite
 version:
 
-    * The `FakeBLE` class is not compatible with the ``rf24_lite.py`` module.
-    * `is_plus_variant` is removed, meaning the
-      lite version is not compatibility with the older non-plus variants of the nRF24L01.
-    * `address()` removed.
-    * `what_happened()` removed. However you can use the following function to dump all available
-      registers' values (for advanced users):
+* The `FakeBLE` class is not compatible with the ``rf24_lite.py`` module.
+* `is_plus_variant` is removed, meaning the
+  lite version is not compatibility with the older non-plus variants of the nRF24L01.
+* `address()` removed.
+* `what_happened()` removed. However you can use the following function to dump all available
+  registers' values (for advanced users):
 
-      .. code-block:: python
+  .. code-block:: python
 
-          # let `nrf` be the instantiated RF24 object
-          def dump_registers(end=0x1e):
-              for i in range(end):
-                  if i in (0xA, 0xB, 0x10):
-                      print(hex(i), "=", nrf._reg_read_bytes(i))
-                  elif i not in (0x18, 0x19, 0x1a, 0x1b):
-                      print(hex(i), "=", hex(nrf._reg_read(i)))
-    * `dynamic_payloads` applies to all pipes, not individual pipes. This attribute will return
-      a `bool` instead of an `int`. `set_dynamic_payloads()` and `get_dynamic_payloads()` have
-      been removed.
-    * `payload_length` applies to all pipes, not individual pipes. `set_payload_length()` and
-      `get_payload_length()` have been removed.
-    * `load_ack()` is available, but it will not throw exceptions for malformed ``buf`` or
-      invalid ``pipe_number`` parameters. Rather any call to `load_ack()` with invalid
-      parameters will have no affect on the TX FIFO.
-    * `crc` removed. 2-bytes encoding scheme (CRC16) is always enabled.
-    * `auto_ack` removed. This is always enabled for all pipes. Pass ``ask_no_ack`` parameter
-      as `True` to :py:meth:`~circuitpython_nrf24l01.rf24.RF24.send()` or `write()` to disable
-      automatic acknowledgement for TX operations.
-    * `is_lna_enabled` removed as it only affects non-plus variants of the nRF24L01.
-    * `pa_level` is available, but it will not accept a `list` or `tuple`.
-    * `rpd`, `start_carrier_wave()`, & `stop_carrier_wave()` removed. These only perform a
-      test of the nRF24L01's hardware.
-    * All comments and docstrings removed, meaning ``help()`` will not provide any specific
-      information. Exception prompts have also been reduced and adjusted accordingly.
-    * Cannot switch between different radio configurations using context manager (the `with`
-      blocks). It is advised that only one `RF24` object be instantiated when RAM is limited
-      (less than or equal to 32KB).
-    * `last_tx_arc` attribute removed because it is only meant for troubleshooting.
-    * `allow_ask_no_ack` attribute removed because it is only provided for the Si24R1
-      chinese clone.
-    * `set_retries()` removed. Use `ard` & `arc` attributes instead.
+      # let `nrf` be the instantiated RF24 object
+      def dump_registers(end=0x1e):
+          for i in range(end):
+              if i in (0xA, 0xB, 0x10):
+                  print(hex(i), "=", nrf._reg_read_bytes(i))
+              elif i not in (0x18, 0x19, 0x1a, 0x1b):
+                  print(hex(i), "=", hex(nrf._reg_read(i)))
+* `dynamic_payloads` applies to all pipes, not individual pipes. This attribute will return
+  a `bool` instead of an `int`. `set_dynamic_payloads()` and `get_dynamic_payloads()` have
+  been removed.
+* `payload_length` applies to all pipes, not individual pipes. `set_payload_length()` and
+  `get_payload_length()` have been removed.
+* `load_ack()` is available, but it will not throw exceptions for malformed ``buf`` or
+  invalid ``pipe_number`` parameters. Rather any call to `load_ack()` with invalid
+  parameters will have no affect on the TX FIFO.
+* `crc` removed. 2-bytes encoding scheme (CRC16) is always enabled.
+* `auto_ack` removed. This is always enabled for all pipes. Pass ``ask_no_ack`` parameter
+  as `True` to :py:meth:`~circuitpython_nrf24l01.rf24.RF24.send()` or `write()` to disable
+  automatic acknowledgement for TX operations.
+* `is_lna_enabled` removed as it only affects non-plus variants of the nRF24L01.
+* `pa_level` is available, but it will not accept a `list` or `tuple`.
+* `rpd`, `start_carrier_wave()`, & `stop_carrier_wave()` removed. These only perform a
+  test of the nRF24L01's hardware.
+* All comments and docstrings removed, meaning ``help()`` will not provide any specific
+  information. Exception prompts have also been reduced and adjusted accordingly.
+* Cannot switch between different radio configurations using context manager (the `with`
+  blocks). It is advised that only one `RF24` object be instantiated when RAM is limited
+  (less than or equal to 32KB).
+* `last_tx_arc` attribute removed because it is only meant for troubleshooting.
+* `allow_ask_no_ack` attribute removed because it is only provided for the Si24R1
+  chinese clone.
+* `set_retries()` removed. Use `ard` & `arc` attributes instead.
 
 Testing nRF24L01+PA+LNA module
 =================================
@@ -164,41 +164,40 @@ The following are semi-successful test results using a nRF24L01+PA+LNA module:
 The Setup
 *********************************
 
-    I wrapped the PA/LNA module with electrical tape and then foil around that (for shielding)
-    while being very careful to not let the foil touch any current carrying parts (like the GPIO pins and the soldier joints for the antenna mount). Then I wired up a PA/LNA module with a 3V
-    regulator (L4931 with a 2.2 µF capacitor between V\ :sub:`out` & GND) using my ItsyBitsy M4
-    5V (USB) pin going directly to the L4931 V\ :sub:`in` pin. The following are experiences from
-    running simple, ack, & stream examples with a reliable nRF24L01+ (no PA/LNA) on the other end (driven by a Raspberry Pi 2):
+I wrapped the PA/LNA module with electrical tape and then foil around that (for shielding)
+while being very careful to not let the foil touch any current carrying parts (like the GPIO pins and the soldier joints for the antenna mount). Then I wired up a PA/LNA module with a 3V
+regulator (L4931 with a 2.2 µF capacitor between V\ :sub:`out` & GND) using my ItsyBitsy M4
+5V (USB) pin going directly to the L4931 V\ :sub:`in` pin. The following are experiences from
+running simple, ack, & stream examples with a reliable nRF24L01+ (no PA/LNA) on the other end (driven by a Raspberry Pi 2):
 
 Results (ordered by :py:attr:`~circuitpython_nrf24l01.rf24.RF24.pa_level` settings)
 ***********************************************************************************
 
-    * 0 dBm: ``master()`` worked the first time (during simple example) then continuously failed
-      (during all examples). ``slave()`` worked on simple & stream examples, but the opposing
-      ``master()`` node reporting that ACK packets (without payloads) were **not** received from
-      the PA/LNA module; ``slave()`` failed to send ACK packet payloads during the ack example.
-    * -6 dBm: ``master()`` worked consistently on simple, ack, & stream example. ``slave()`` worked
-      reliably on simple & stream examples, but failed to transmit **any** ACK packet payloads in
-      the ack example.
-    * -12 dBm: ``master()`` worked consistently on simple, ack, & stream example. ``slave()``
-      worked reliably on simple & stream examples, but failed to transmit **some** ACK packet
-      payloads in the ack example.
-    * -18 dBm: ``master()`` worked consistently on simple, ack, & stream example. ``slave()``
-      worked reliably on simple, ack, & stream examples, meaning **all** ACK packet payloads were
-      successfully transmit in the ack example.
+* 0 dBm: ``master()`` worked the first time (during simple example) then continuously failed
+  (during all examples). ``slave()`` worked on simple & stream examples, but the opposing
+  ``master()`` node reporting that ACK packets (without payloads) were **not** received from
+  the PA/LNA module; ``slave()`` failed to send ACK packet payloads during the ack example.
+* -6 dBm: ``master()`` worked consistently on simple, ack, & stream example. ``slave()`` worked
+  reliably on simple & stream examples, but failed to transmit **any** ACK packet payloads in
+  the ack example.
+* -12 dBm: ``master()`` worked consistently on simple, ack, & stream example. ``slave()``
+  worked reliably on simple & stream examples, but failed to transmit **some** ACK packet
+  payloads in the ack example.
+* -18 dBm: ``master()`` worked consistently on simple, ack, & stream example. ``slave()``
+  worked reliably on simple, ack, & stream examples, meaning **all** ACK packet payloads were
+  successfully transmit in the ack example.
 
-    I should note that without shielding the PA/LNA module and using the L4931 3V regulator,
-    no TX transmissions got sent (including ACK packets for the `auto_ack` feature).
-
+I should note that without shielding the PA/LNA module and using the L4931 3V regulator,
+no TX transmissions got sent (including ACK packets for the `auto_ack` feature).
 
 Conclusion
 *********************************
 
-    The PA/LNA modules seem to require quite a bit more power to transmit. The L4931 regulator
-    that I used in the tests boasts a 300 mA current limit and a typical current of 250 mA.
-    While the ItsyBitsy M4 boasts a 500 mA max, it would seem that much of that is consumed
-    internally. Since playing with the `pa_level` is a current saving hack (as noted in the
-    datasheet), I can only imagine that a higher power 3V regulator may enable sending
-    transmissions (including ACK packets -- with or without ACK payloads attached) from PA/LNA
-    modules using higher `pa_level` settings. More testing is called for, but I don't have an
-    oscilloscope to measure the peak current draws.
+The PA/LNA modules seem to require quite a bit more power to transmit. The L4931 regulator
+that I used in the tests boasts a 300 mA current limit and a typical current of 250 mA.
+While the ItsyBitsy M4 boasts a 500 mA max, it would seem that much of that is consumed
+internally. Since playing with the `pa_level` is a current saving hack (as noted in the
+datasheet), I can only imagine that a higher power 3V regulator may enable sending
+transmissions (including ACK packets -- with or without ACK payloads attached) from PA/LNA
+modules using higher `pa_level` settings. More testing is called for, but I don't have an
+oscilloscope to measure the peak current draws.

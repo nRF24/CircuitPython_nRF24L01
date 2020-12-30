@@ -407,12 +407,12 @@ fifo()
     :returns:
         - A `bool` answer to the question:
 
-            "Is the [TX/RX](``about_tx``) FIFO buffer [empty/full](``check_empty``)?
+          "Is the [TX/RX](``about_tx``) FIFO buffer [empty/full](``check_empty``)?
         - If the ``check_empty`` parameter is not specified: an `int` in range [0,2] for which:
 
-            - ``1`` means the specified FIFO buffer is empty
-            - ``2`` means the specified FIFO buffer is full
-            - ``0`` means the specified FIFO buffer is neither full nor empty
+          - ``1`` means the specified FIFO buffer is empty
+          - ``2`` means the specified FIFO buffer is full
+          - ``0`` means the specified FIFO buffer is neither full nor empty
 
 pipe
 ******************************
@@ -472,10 +472,10 @@ rpd
 
     The RPD flag is triggered in the following cases:
 
-        1. During RX mode (when `listen` is `True`) and an arbitrary RF transmission with
-           a gain above -64 dBm threshold is/was present.
-        2. When a packet is received (instigated by the nRF24L01 used to detect/"listen" for
-           incoming packets).
+    1. During RX mode (when `listen` is `True`) and an arbitrary RF transmission with
+       a gain above -64 dBm threshold is/was present.
+    2. When a packet is received (instigated by the nRF24L01 used to detect/"listen" for
+       incoming packets).
 
     .. note:: See also
         `section 6.4 of the Specification Sheet concerning the RPD flag
