@@ -21,12 +21,16 @@ body {
 }
 
 .md-typeset .footnote {
-  color:rgba(255, 255, 255, 0.83);
-  font-size:.64rem
+  color: rgba(255, 255, 255, 0.83);
+  font-size: .64rem
 }
 
 span.highlighted {
   background-color: #794502;
+}
+
+.highlight-shell.notranslate .highlight pre {
+  color:#fcfcfc;
 }
 
 .sig-name.descname,
@@ -53,12 +57,19 @@ html body .md-typeset .headerlink {
   }
 }
 
+@media only screen and (max-width:76.1875em) {
+  html .md-nav .md-nav--secondary .md-nav__title {
+    background-color: rgb(0, 107, 9);
+    color: rgb(255, 255, 255);
+  }
+}
+
 .md-nav__link[data-md-state="blur"] {
   color: rgb(150, 125, 238);
 }
 
 .md-nav {
-  font-size:0.8rem;
+  font-size: 0.8rem;
 }
 
 .md-typeset h1 {

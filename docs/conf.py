@@ -152,7 +152,7 @@ class DarkPlus(Style):
         Number: "#B3D495",
         Operator: "#FEFEFE",
         Operator.Word: "#499DC7",
-        # Generic.Output: "#99FFA2",
+        Generic.Output: "#F4DA8B",
         Generic.Prompt: "#99FFA2",
         Generic.Traceback: "#FF0909",
         Generic.Error: "#FF0909",
