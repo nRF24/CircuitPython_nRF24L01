@@ -267,7 +267,7 @@ ack
         Disabling this feature does not disable the `auto_ack` and `dynamic_payloads`
         attributes for any data pipe; they work just fine without this feature.
 
-allow_ask_ack
+allow_ask_no_ack
 ******************************
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.allow_ask_no_ack
