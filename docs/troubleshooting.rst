@@ -154,7 +154,7 @@ version:
 * `last_tx_arc` attribute removed because it is only meant for troubleshooting.
 * `allow_ask_no_ack` attribute removed because it is only provided for the Si24R1
   chinese clone.
-* `set_retries()` removed. Use `ard` & `arc` attributes instead.
+* `set_auto_retries()` & `get_auto_retries()` removed. Use `ard` & `arc` attributes instead.
 
 Testing nRF24L01+PA+LNA module
 =================================

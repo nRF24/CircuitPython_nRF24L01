@@ -463,7 +463,7 @@ last_tx_arc
 
     This attribute resets to 0 at the beginning of every transmission in TX mode.
     Remember that the number of automatic retry attempts made for each transmission is
-    configured with the `arc` attribute or the `set_retries()` function.
+    configured with the `arc` attribute or the `set_auto_retries()` function.
 
 rpd
 ******************************

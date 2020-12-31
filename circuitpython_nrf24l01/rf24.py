@@ -562,11 +562,15 @@ class RF24:
         self._retry_setup = (self._retry_setup & 15) | int((delta - 250) / 250) << 4
         self._reg_write(SETUP_RETR, self._retry_setup)
 
-    def set_retries(self, delay, count):
+    def set_auto_retries(self, delay, count):
         """set the `ard` & `arc` attributes with 1 function."""
         delay = int((max(250, min(delay, 4000)) - 250) / 250) << 4
         self._retry_setup = delay | max(0, min(int(count), 15))
         self._reg_write(SETUP_RETR, self._retry_setup)
+
+    def get_auto_retries(self):
+        """get the `ard` & `arc` attributes with 1 function."""
+        return (self.ard, self._retry_setup & 0x0F)
 
     @property
     def last_tx_arc(self):

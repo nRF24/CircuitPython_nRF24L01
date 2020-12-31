@@ -239,13 +239,22 @@ ard
         invalid input values are clamped to proper range instead of throwing a `ValueError`
         exception.
 
-set_retries()
+set_auto_retries()
 ******************************
 
-.. automethod:: circuitpython_nrf24l01.rf24.RF24.set_retries
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.set_auto_retries
 
     :param int delay: accepts the same input as the `ard` attribute.
     :param int count: accepts the same input as the `arc` attribute.
+
+get_auto_retries()
+******************************
+
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.get_auto_retries
+
+    :Return:
+        A tuple containing 2 items. Index 0 will be the `ard`
+        and index 1 will be the `arc`.
 
 ack
 ******************************
