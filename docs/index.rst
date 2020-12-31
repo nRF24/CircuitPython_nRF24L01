@@ -14,29 +14,22 @@ Table of Contents
     examples
 
 .. toctree::
-    :caption: Troubleshooting
-    :maxdepth: 5
-
-    troubleshooting
-
-.. toctree::
     :caption: RF24 API Reference
 
     basic_api
-
-
-.. toctree::
-
     advanced_api
-
-.. toctree::
-
     configure_api
 
 .. toctree::
     :caption: BLE API Reference
 
     ble_api
+
+.. toctree::
+    :caption: Troubleshooting
+    :maxdepth: 5
+
+    troubleshooting
 
 .. toctree::
     :caption: Store Links
