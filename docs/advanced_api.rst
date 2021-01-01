@@ -118,10 +118,10 @@ write()
     .. versionadded:: 1.2.0
         ``write_only`` parameter
 
-printDetails()
+print_details()
 ******************************
 
-.. automethod:: circuitpython_nrf24l01.rf24.RF24.printDetails
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.print_details
 
     Some information may be irrelevant depending on nRF24L01's state/condition.
 

@@ -255,7 +255,7 @@ class FakeBLE(RF24):
         raise NotImplementedError("BLE implentation only uses 1 address")
 
     # pylint: enable=missing-function-docstring
-    def printDetails(self, dump_pipes=False):
+    def print_details(self, dump_pipes=False):
         """This debuggung function aggregates and outputs all status/condition
         related information from the nRF24L01."""
         print("Is a plus variant_________{}".format(self.is_plus_variant))
