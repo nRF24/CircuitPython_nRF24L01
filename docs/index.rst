@@ -1,38 +1,35 @@
-
-Table of Contents
-=================
+.. include:: greetings.rst
 
 .. toctree::
     :caption: Introduction
-    :maxdepth: 4
+    :hidden:
 
     greetings
 
 .. toctree::
     :caption: Examples
+    :hidden:
 
     examples
 
 .. toctree::
-    :caption: RF24 API Reference
+    :caption: API Reference
+    :hidden:
 
     basic_api
     advanced_api
     configure_api
-
-.. toctree::
-    :caption: BLE API Reference
-
     ble_api
 
 .. toctree::
     :caption: Troubleshooting
-    :maxdepth: 5
+    :hidden:
 
     troubleshooting
 
 .. toctree::
     :caption: Store Links
+    :hidden:
 
     2.4GHz Transceiver IC - nRF24L01+ <https://www.sparkfun.com/products/690>
     SparkFun Transceiver Breakout - nRF24L01+ <https://www.sparkfun.com/products/691>
@@ -40,6 +37,7 @@ Table of Contents
 
 .. toctree::
     :caption: Other Links
+    :hidden:
 
     Download <https://github.com/2bndy5/CircuitPython_nRF24L01/releases/latest>
     CircuitPython Reference Documentation <https://circuitpython.readthedocs.io>
@@ -49,10 +47,8 @@ Table of Contents
     Adafruit Blog <https://blog.adafruit.com>
     Adafruit Store <https://www.adafruit.com>
 
-Indices and tables
-==================
+Site Glossary
+==============
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+:ref:`genindex`
 

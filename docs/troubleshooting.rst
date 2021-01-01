@@ -118,7 +118,7 @@ version:
 * `is_plus_variant` is removed, meaning the
   lite version is not compatibility with the older non-plus variants of the nRF24L01.
 * `address()` removed.
-* `what_happened()` removed. However you can use the following function to dump all available
+* `printDetails()` removed. However you can use the following function to dump all available
   registers' values (for advanced users):
 
   .. code-block:: python

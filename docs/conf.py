@@ -34,7 +34,8 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinx_copybutton",
-    # "rst2pdf.pdfbuilder",  # for pdf builder support
+    "sphinx_sitemap",
+    # "rst2pdf.pdfbuilder",  # for local pdf builder support
 ]
 
 # Uncomment the below if you use native CircuitPython modules such as
@@ -51,6 +52,8 @@ intersphinx_mapping = {
     ),
     "CircuitPython": ("https://circuitpython.readthedocs.io/en/latest/", None),
 }
+
+html_baseurl = "https://circuitpython-nrf24l01.readthedocs.io/"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -72,7 +75,7 @@ author = u"Brendan Doherty"
 # built documents.
 #
 # The short X.Y version.
-version = u"2.0"
+version = u"dev"
 # The full version, including alpha/beta/rc tags.
 release = u"2.0.0"
 
@@ -80,7 +83,7 @@ release = u"2.0.0"
 # for a list of supported languages.
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -187,22 +190,52 @@ html_sidebars = {
 html_theme_options = {
     # Set the name of the project to appear in the navigation.
     "nav_title": "CircuitPython-nRF24L01",
-    # Specify a base_url used to generate sitemap.xml. If not
-    # specified, then no sitemap will be built.
-    "base_url": "https://2bndy5.github.io/CircuitPython_nRF24L01/",
+    # A list of dictionaries where each has three keys:
+    #   href: The URL or pagename (str)
+    #   title: The title to appear (str)
+    #   internal: Flag indicating to use pathto (bool)
+    "nav_links": [
+        {
+            "href": "examples",
+            "title": "Examples",
+            "internal": True
+        },
+        {
+            "href": "basic_api",
+            "title": "Basic API",
+            "internal": True
+        },
+        {
+            "href": "advanced_api",
+            "title": "Advanced API",
+            "internal": True
+        },
+        {
+            "href": "configure_api",
+            "title": "Configuration API",
+            "internal": True
+        },
+        {
+            "href": "ble_api",
+            "title": "BLE API Reference",
+            "internal": True
+        },
+
+    ],
     # Set the color and the accent color
     "color_primary": "blue",
-    "color_accent": "light-green",
+    "color_accent": "light-blue",
     # Set the repo location to get a badge with stats
     "repo_url": "https://github.com/2bndy5/CircuitPython_nRF24L01/",
     "repo_name": "CircuitPython_nRF24L01",
     # Visible levels of the global TOC; -1 means unlimited
     "globaltoc_depth": 1,
     # If False, expand all TOC entries
-    "globaltoc_collapse": True,
+    "globaltoc_collapse": False,
     # If True, show hidden TOC entries
-    "globaltoc_includehidden": False,
+    "globaltoc_includehidden": True,
 }
+
 
 # Set link name generated in the top bar.
 html_title = "CircuitPython-nRF24L01"

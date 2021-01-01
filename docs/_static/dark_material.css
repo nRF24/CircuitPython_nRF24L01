@@ -33,6 +33,53 @@ span.highlighted {
   color:#fcfcfc;
 }
 
+.highlight .cpf {
+  color: #B88451;
+}
+
+.md-typeset .admonition.tip .admonition-title::before,
+.md-typeset .admonition.hint .admonition-title::before {
+  content: "\E80C";
+}
+
+.md-typeset .admonition.seealso .admonition-title::before {
+  content: "\E417";
+  color: hsl(301, 100%, 63%);
+}
+
+.md-typeset .admonition.seealso {
+  border-left:.2rem solid hsl(301, 100%, 63%);
+}
+
+.md-typeset .admonition.seealso .admonition-title {
+  background-color:hsla(287, 100%, 63%, 0.1);
+}
+
+.md-typeset .admonition.important .admonition-title::before {
+  content: "\E031";
+  color: hsl(123, 100%, 63%);
+}
+
+.md-typeset .admonition.important {
+  border-left:.2rem solid hsl(123, 100%, 63%);
+}
+
+.md-typeset .admonition.important .admonition-title {
+  background-color:hsla(123, 100%, 63%, 0.1);
+}
+
+.md-typeset .admonition.warning .admonition-title::before {
+  color: hsl(0, 100%, 63%);
+}
+
+.md-typeset .admonition.warning {
+  border-left:.2rem solid hsl(0, 100%, 63%);
+}
+
+.md-typeset .admonition.warning .admonition-title {
+  background-color:hsla(0, 100%, 63%, 0.1);
+}
+
 .sig-name.descname,
 .sig-prename.descclassname {
   background-color: #403f3f;
@@ -102,4 +149,17 @@ html .md-nav--primary .md-nav__title~.md-nav__list {
 
 html [data-md-color-primary=blue] .md-nav--primary .md-nav__title--site {
   background-color: #006B09;
+}
+
+.md-typeset table:not([class]) th {
+  background-color:rgba(23, 35, 83, 0.8);
+}
+
+.md-typeset table:not([class]) tr:hover {
+  background-color:rgba(56, 2, 81, 0.8);
+  box-shadow:inset 0 .05rem 0 #9515ff;
+}
+
+table {
+  background-color: hsl(0, 0%, 16%);
 }

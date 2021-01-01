@@ -1,6 +1,6 @@
 
-Basic API
----------
+Basic RF24 API
+--------------
 
 Constructor
 ******************
@@ -123,13 +123,7 @@ available()
         # let `nrf` be the instantiated RF24 object
         nrf.update() and nrf.pipe is not None
 
-    .. versionadded:: 1.0.0-rc1
-    .. versionchanged:: 1.0.0-rc3
-        removed due to synonomous behavior with `any()`.
     .. versionadded:: 2.0.0
-        re-introduced as convenience to simplify using
-        ``nrf.update() and nrf.pipe is not None``. This seemed appropriate since the
-        underlying behavior of `any()` has changed since version 1.0.0
 
 read()
 ******************
@@ -172,6 +166,11 @@ read()
 
     .. versionadded:: 1.2.0
         ``length`` parameter
+
+    ..versionchanged:: 2.0.0
+        renamed this method from ``recv()`` to ``read()`` beccause it isn't doing
+        any actual receiving. Rather, it is only reading data from the RX FIFO that
+        was already received.
 
 send()
 ******************
@@ -216,7 +215,6 @@ send()
         .. important:: If the `allow_ask_no_ack` attribute is disabled (set to `False`),
             then this parameter will have no affect at all. By default the
             `allow_ask_no_ack` attribute is enabled.
-
         .. note:: Each transmission is in the form of a packet. This packet contains sections
             of data around and including the payload. `See Chapter 7.3 in the nRF24L01
             Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
@@ -225,7 +223,8 @@ send()
     :param int force_retry: The number of brute-force attempts to `resend()` a failed
         transmission. Default is 0. This parameter has no affect on transmissions if
         `auto_ack` is disabled or if ``ask_no_ack`` parameter is set to `True`. Each
-        re-attempt still takes advantage of `arc` & `ard` attributes. During multi-payload
+        re-attempt still takes advantage of
+        `Auto-Retry feature <configure.html#auto-retry-feature>`_. During multi-payload
         processing, this parameter is meant to slow down CircuitPython devices just enough
         for the Raspberry Pi to catch up (due to the Raspberry Pi's seemingly slower SPI
         speeds).
@@ -233,11 +232,12 @@ send()
         `True`. Pass this parameter as `True` if the RX FIFO is not to be manipulated. Many
         other libraries' behave as though this parameter is `True`
         (e.g. The popular TMRh20 Arduino RF24 library). This parameter defaults to `False`.
-        Use `read()` to get the ACK payload (if there is any) from the RX FIFO.Remember that
-        the RX FIFO can only hold up to 3 payloads at once.
+        If this parameter is set to `True`, then use `read()` to get the ACK payload
+        (if there is any) from the RX FIFO. Remember that the RX FIFO can only hold
+        up to 3 payloads at once.
 
-    .. tip:: It is highly recommended that `auto_ack` attribute is enabled (greater than
-        ``0``) when sending multiple payloads. Test results with the `auto_ack` attribute
+    .. tip:: It is highly recommended that `auto_ack` attribute is enabled
+        when sending multiple payloads. Test results with the `auto_ack` attribute
         disabled were rather poor (less than 79% received by a Raspberry Pi). This same
         advice applies to the ``ask_no_ack`` parameter (leave it as `False` for multiple
         payloads).

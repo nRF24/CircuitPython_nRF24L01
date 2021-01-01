@@ -115,7 +115,7 @@ Fake BLE Example
 
 .. versionadded:: 1.2.0
 
-This is a test to show how to use the nRF24L01 as a BLE advertising beacon using the :py:class:`~circuitpython_nrf24l01.rf24.fake_ble.FakeBLE` class.
+This is a test to show how to use the nRF24L01 as a BLE advertising beacon using the `FakeBLE` class.
 
 .. literalinclude:: ../examples/nrf24l01_fake_ble_test.py
     :caption: examples/nrf24l01_fake_ble_test.py

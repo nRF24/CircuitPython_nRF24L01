@@ -6,8 +6,8 @@
 .. |mostly_rx_but_tx0| replace:: This attribute mostly relates to RX operations, but data
     pipe 0 applies to TX operations also.
 
-Configuration API
------------------
+Configurable RF24 API
+-----------------------
 
 dynamic_payloads
 ******************************
@@ -17,14 +17,9 @@ dynamic_payloads
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.dynamic_payloads
 
-    Default setting is enabled on all pipes.
+    Default setting is enabled on all pipes. A valid input is:
 
-    - `True` enables nRF24L01's dynamic payload length feature for all data pipes.
-      The `payload_length` attribute is ignored when this feature is enabled for all
-      respective data pipes.
-    - `False` disables nRF24L01's dynamic payload length feature for all data pipes.
-      Be sure to adjust the `payload_length` attribute accordingly when this feature is
-      disabled for any respective data pipes.
+    - A `bool` to enable (`True`) or disable (`False`) the dynamic payload length feature for all data pipes.
     - A `list` or `tuple` containing booleans or integers |per_data_pipe_control| If any
       index's value is less than 0 (a negative value), then the pipe corresponding to that
       index will remain unaffected.
@@ -32,19 +27,26 @@ dynamic_payloads
       per pipe. Bit position 0 controls this feature for data pipe 0, and bit position 5
       controls this feature for data pipe 5. All bits in positions greater than 5 are ignored.
 
+    .. note::
+        - The `payload_length` attribute is ignored when this feature is enabled
+          for any respective data pipes.
+        - Be sure to adjust the `payload_length` attribute accordingly when this
+          feature is disabled for any respective data pipes.
+
     :returns:
         An `int` (1 unsigned byte) where each bit in the integer represents the dynamic
-        payload feature per pipe.
-
-    :setter: `set_dynamic_payloads()`
-    :getter: `get_dynamic_payloads()`
+        payload length feature per pipe.
 
     .. versionchanged:: 1.2.0
-        accepts a list or tuple for control of the dynamic payload feature per pipe.
+        accepts a list or tuple for control of the dynamic payload length feature per pipe.
     .. versionchanged:: 2.0.0
 
         - returns a integer instead of a boolean
-        - accepts an integer for binary control of the dynamic payload feature per pipe
+        - accepts an integer for binary control of the dynamic payload length
+          feature per pipe
+
+set_dynamic_payloads()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.set_dynamic_payloads
 
@@ -56,6 +58,9 @@ dynamic_payloads
         `IndexError` exception is thrown.
 
     .. versionadded:: 2.0.0
+
+get_dynamic_payloads()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.get_dynamic_payloads
 
@@ -77,19 +82,16 @@ payload_length
 
     A valid input value must be:
 
-    * an `int` value that is clamped to the range [1, 32]. Setting this attribute to a
+    * an `int` in which the value that will be clamped to the range [1, 32]. Setting this attribute to a
       single `int` configures all 6 data pipes.
     * A `list` or `tuple` containing integers |per_data_pipe_control| If any index's
-      value is ``0``, then the existing setting for the corresponding data pipe will
+      value is less than or equal to``0``, then the existing setting for the corresponding data pipe will
       persist (not be changed).
 
     Default is set to the nRF24L01's maximum of 32 (on all data pipes).
 
     :returns:
         The current setting of the expected static payload length feature for pipe 0 only.
-
-    :setter: `set_payload_length()`
-    :getter: `get_payload_length()`
 
     .. versionchanged:: 1.2.0
         return a list of all payload length settings for all pipes. This implementation
@@ -106,6 +108,9 @@ payload_length
         only. Use `get_payload_length()` to fetch the configuration of the static payload
         length feature for any data pipe.
 
+set_payload_length()
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.set_payload_length
 
     This function only affects data pipes for which the `dynamic_payloads` attribute is
@@ -120,6 +125,9 @@ payload_length
         `IndexError` exception is thrown.
 
     .. versionadded:: 2.0.0
+
+get_payload_length()
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.get_payload_length
 
@@ -145,14 +153,9 @@ auto_ack
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.auto_ack
 
-    Default setting is enabled on all data pipes.
+    Default setting is enabled on all data pipes. A valid input is:
 
-    - `True` enables transmitting automatic acknowledgment packets for all data pipes.
-      The CRC (cyclic redundancy checking) is enabled (for all transmissions) automatically by
-      the nRF24L01 if this attribute is enabled for any data pipe (see also `crc` attribute).
-    - `False` disables transmitting automatic acknowledgment packets for all data
-      pipes. The `crc` attribute will remain unaffected when disabling this attribute for any
-      data pipes.
+    - A `bool` to enable (`True`) or disable (`False`) transmitting automatic acknowledgment packets for all data pipes.
     - A `list` or `tuple` containing booleans or integers |per_data_pipe_control| If any
       index's value is less than 0 (a negative value), then the pipe corresponding to that
       index will remain unaffected.
@@ -160,12 +163,14 @@ auto_ack
       per pipe. Bit position 0 controls this feature for data pipe 0, and bit position 5
       controls this feature for data pipe 5. All bits in positions greater than 5 are ignored.
 
+    .. note:: The CRC (cyclic redundancy checking) is enabled (for all
+        transmissions) automatically by the nRF24L01 if this attribute is enabled
+        for any data pipe (see also `crc` attribute). The `crc` attribute will
+        remain unaffected when disabling this attribute for any data pipes.
+
     :returns:
         An `int` (1 unsigned byte) where each bit in the integer represents the automatic
         acknowledgement feature per pipe.
-
-    :setter: `set_auto_ack()`
-    :getter: `get_auto_ack()`
 
     .. versionchanged:: 1.2.0
         accepts a list or tuple for control of the automatic acknowledgement feature per pipe.
@@ -174,6 +179,9 @@ auto_ack
         - returns a integer instead of a boolean
         - accepts an integer for binary control of the automatic acknowledgement feature
           per pipe
+
+set_auto_ack()
+^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.set_auto_ack
 
@@ -186,6 +194,9 @@ auto_ack
 
     .. versionadded:: 2.0.0
 
+get_auto_ack()
+^^^^^^^^^^^^^^^^^^^^^^^
+
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.get_auto_ack
 
     :param int pipe_number: The specific data pipe number in range [0, 5] concerning the
@@ -195,8 +206,11 @@ auto_ack
 
     .. versionadded:: 2.0.0
 
-arc
+Auto-Retry feature
 ******************************
+
+arc
+^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.arc
 
@@ -215,7 +229,7 @@ arc
         exception.
 
 ard
-******************************
+^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.ard
 
@@ -240,7 +254,7 @@ ard
         exception.
 
 set_auto_retries()
-******************************
+^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.set_auto_retries
 
@@ -248,27 +262,31 @@ set_auto_retries()
     :param int count: accepts the same input as the `arc` attribute.
 
 get_auto_retries()
-******************************
+^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.get_auto_retries
 
     :Return:
-        A tuple containing 2 items. Index 0 will be the `ard`
-        and index 1 will be the `arc`.
+        A tuple containing 2 items; index 0 will be the `ard` attribute,
+        and index 1 will be the `arc` attribute.
 
 ack
 ******************************
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.ack
 
-    Use this attribute to set/check if the custom ACK payloads feature is enabled. Default
+    Use this attribute to set/check if the custom ACK payloads feature is
+    enabled (`True`) or disabled (`False`). Default
     setting is `False`.
 
-    - `True` enables the use of custom ACK payloads in the ACK packet when responding to
-      receiving transmissions.
-    - `False` disables the use of custom ACK payloads in the ACK packet when responding to
-      receiving transmissions.
+    .. note:: This attribute differs from the `auto_ack` attribute because the
+        `auto_ack` attribute enables or disables the use of automatic ACK *packets*. By default,
+        ACK *packets* have no *payload*. This attribute enables or disables attaching
+        payloads to the ACK packets.
+    .. seealso::
+        Use `load_ack()` attach ACK payloads.
 
+        Use `read()`, `send()`, `resend()` to retrieve ACK payloads.
     .. important::
         As `dynamic_payloads` and `auto_ack` attributes are required for this feature to work,
         they are automatically enabled (on data pipe 0) as needed. However, it is required to

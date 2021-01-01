@@ -1,3 +1,5 @@
+BLE API
+=================
 
 .. versionadded:: 1.2.0
     BLE API added

@@ -343,7 +343,7 @@ class RF24:
         self._config |= (not data_fail) << 4 | (not data_sent) << 5
         self._reg_write(CONFIGURE, self._config)
 
-    def what_happened(self, dump_pipes=False):
+    def printDetails(self, dump_pipes=False):
         """This debuggung function aggregates and outputs all status/condition
         related information from the nRF24L01."""
         observer = self._reg_read(8)
