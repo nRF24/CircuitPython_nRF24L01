@@ -52,6 +52,18 @@ This example shows how use a group of 6 nRF24L01 transceivers to transmit to 1 n
     :caption: examples/nrf24l01_multiceiver_test.py
     :linenos:
 
+Scanner Example
+---------------
+
+.. versionadded:: 2.0.0
+
+This example simply scans the entire RF frquency (2.4 GHz to 2.525 GHz)
+and outputs a vertical graph of how many signals (out of 10 attempted scans per :py:attr:`~circuitpython_nrf24l01.rf24.RF24.channel`) were detected. This example can be used to find a frequency with the least ambient interference from other radio-emitting sources (i.e. WiFi, Bluetooth, or etc).
+
+.. literalinclude:: ../examples/nrf24l01_scanner_test.py
+    :caption: examples/nrf24l01_scanner_test.py
+    :linenos:
+
 IRQ Pin Example
 ---------------
 
