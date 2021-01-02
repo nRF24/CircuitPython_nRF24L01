@@ -1,10 +1,9 @@
 """
 Simple example of using 1 nRF24L01 to receive data from up to 6 other
 transceivers. This technique is called "multiceiver" in the datasheet.
-For fun, this example also sends an ACK payload from the base station
-to the node-1 transmitter.
 """
 import time
+import struct
 import board
 import digitalio as dio
 
@@ -31,17 +30,17 @@ nrf.pa_level = -12
 # setup the addresses for all transmitting nRF24L01 nodes
 addresses = [
     b"\x78" * 5,
-    b"\xF1\xB3\xB4\xB5\xB6",
-    b"\xCD\xB3\xB4\xB5\xB6",
-    b"\xA3\xB3\xB4\xB5\xB6",
-    b"\x0F\xB3\xB4\xB5\xB6",
-    b"\x05\xB3\xB4\xB5\xB6"
+    b"\xF1\xB6\xB5\xB4\xB3",
+    b"\xCD\xB6\xB5\xB4\xB3",
+    b"\xA3\xB6\xB5\xB4\xB3",
+    b"\x0F\xB6\xB5\xB4\xB3",
+    b"\x05\xB6\xB5\xB4\xB3"
 ]
 
-# to use custom ACK payloads, we must enable that feature
-nrf.ack = True
-# let this be the ACk payload
-ACK = b"Yak Back ACK"
+# uncomment the following 3 lines for compatibility with TMRh20 library
+# nrf.allow_ask_no_ack = False
+# nrf.dynamic_payloads = False
+# nrf.payload_length = 8
 
 
 def base(timeout=10):
@@ -49,17 +48,16 @@ def base(timeout=10):
     # write the addresses to all pipes.
     for pipe_n, addr in enumerate(addresses):
         nrf.open_rx_pipe(pipe_n, addr)
-    while nrf.fifo(True, False):  # fill TX FIFO with ACK payloads
-        nrf.load_ack(ACK, 1)  # only send ACK payload to node 1
     nrf.listen = True  # put base station into RX mode
     start_timer = time.monotonic()  # start timer
     while time.monotonic() - start_timer < timeout:
         while not nrf.fifo(False, True):  # keep RX FIFO empty for reception
             # show the pipe number that received the payload
-            print("node", nrf.pipe, "sent:", nrf.recv())
+            # NOTE read() clears the pipe number and payload length data
+            print("Received", nrf.any(), "on pipe", nrf.pipe, end=" ")
+            node_id, payload_id = struct.unpack("<ii", nrf.read())
+            print("from node {}. PayloadID: {}".format(node_id, payload_id))
             start_timer = time.monotonic()  # reset timer with every payload
-            if nrf.load_ack(ACK, 1):  # keep TX FIFO full with ACK payloads
-                print("\t ACK re-loaded")
     nrf.listen = False
 
 
@@ -76,14 +74,26 @@ def node(node_number, count=6):
     nrf.open_tx_pipe(addresses[node_number])
     counter = 0
     # use the node_number to identify where the payload came from
-    node_id = b"PTX-" + bytes([node_number + 48])
     while counter < count:
         counter += 1
         # payloads will include the node_number and a payload ID character
-        payload = node_id + b" payload-ID: " + bytes([node_number + 48])
-        payload += bytes([counter + (65 if 0 <= counter < 26 else 71)])
+        payload = struct.pack("<ii", node_number, counter)
         # show something to see it isn't frozen
-        print("attempt {} returned {}".format(counter, nrf.send(payload)))
+        start_timer = time.monotonic_ns()
+        report = nrf.send(payload)
+        end_timer = time.monotonic_ns()
+        # show something to see it isn't frozen
+        if report:
+            print(
+                "Transmission of payloadID {} as node {} successfull! "
+                "Transmission time: {} us".format(
+                    counter,
+                    node_number,
+                    (end_timer - start_timer) / 1000
+                )
+            )
+        else:
+            print("Transmission failed or timed out")
         time.sleep(0.5)  # slow down the test for readability
 
 
