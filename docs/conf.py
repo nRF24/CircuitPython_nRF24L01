@@ -202,17 +202,17 @@ html_theme_options = {
         },
         {
             "href": "basic_api",
-            "title": "Basic API",
+            "title": "Basic RF24 API",
             "internal": True
         },
         {
             "href": "advanced_api",
-            "title": "Advanced API",
+            "title": "Advanced RF24 API",
             "internal": True
         },
         {
             "href": "configure_api",
-            "title": "Configuration API",
+            "title": "Configurable RF24 API",
             "internal": True
         },
         {
@@ -220,7 +220,11 @@ html_theme_options = {
             "title": "BLE API Reference",
             "internal": True
         },
-
+        {
+            "href": "troubleshooting",
+            "title": "Troubleshooting",
+            "internal": True
+        },
     ],
     # Set the color and the accent color
     "color_primary": "blue",
@@ -238,7 +242,7 @@ html_theme_options = {
 
 
 # Set link name generated in the top bar.
-html_title = "CircuitPython-nRF24L01"
+html_title = "Introduction"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
