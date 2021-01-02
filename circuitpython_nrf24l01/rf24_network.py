@@ -236,7 +236,7 @@ class RF24Network(RF24):
         for i in range(6):
             self.open_rx_pipe(i, _pipe_address(node_address, i))
         self.ack = True
-        self.set_retries(((node_address % 6) + 1) * 2 + 3, 5)
+        self.set_auto_retries(((node_address % 6) + 1) * 2 + 3, 5)
         self.listen = True
         self._queue = []  # each item is a 2-tuple containing header & message
 
