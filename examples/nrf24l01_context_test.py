@@ -44,13 +44,13 @@ with nrf:
     nrf.open_rx_pipe(5, b"1Node")  # NOTE we do this inside the "with" block
 
     # display current settings of the nrf object
-    nrf.what_happened(True)  # True dumps pipe info
+    nrf.print_details(True)  # True dumps pipe info
 
 print("\nsettings configured by the ble object")
 with ble as nerf:  # the "as nerf" part is optional
-    nerf.what_happened(1)
+    nerf.print_details(1)
 
-# if you examine the outputs from what_happened() you'll see:
+# if you examine the outputs from print_details() you'll see:
 #   pipe 5 is opened using the nrf object, but closed using the ble object.
 #   pipe 0 is closed using the nrf object, but opened using the ble object.
 #   also notice the different addresses bound to the RX pipes

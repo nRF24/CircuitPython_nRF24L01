@@ -30,10 +30,6 @@ nrf = FakeBLE(spi, csn, ce)
 # this can be changed at any time using the `name` attribute
 # nrf.name = b"foobar"
 
-# if broadcasting to an Android, set the to_iphone attribute to False
-# if broadcasting to an iPhone, set the to_iphone attribute to True
-nrf.to_iphone = True  # default value is False
-
 # you can optionally set the arbitrary MAC address to be used as the
 # BLE device's MAC address. Otherwise this is randomly generated upon
 # instantiation of the FakeBLE object.
@@ -45,12 +41,12 @@ nrf.to_iphone = True  # default value is False
 nrf.pa_level = -12
 
 
-def _prompt(count, iterator):
-    if (count - iterator) % 5 == 0 or (count - iterator) < 5:
-        if count - iterator - 1:
-            print(count - iterator, "advertisments left to go!")
+def _prompt(remaining):
+    if remaining % 5 == 0 or remaining < 5:
+        if remaining - 1:
+            print(remaining, "advertisments left to go!")
         else:
-            print(count - iterator, "advertisment left to go!")
+            print(remaining, "advertisment left to go!")
 
 
 # create an object for manipulating the battery level data
@@ -69,18 +65,16 @@ def master(count=50):
         ble.show_pa_level = True
         print(
             "available bytes in next payload:",
-            ble.available(chunk(battery_service.buffer))
+            ble.len_available(chunk(battery_service.buffer))
         )  # using chunk() gives an accurate estimate of available bytes
         for i in range(count):  # advertise data this many times
-            if ble.available(chunk(battery_service.buffer)) >= 0:
-                _prompt(count, i)  # something to show that it isn't frozen
+            if ble.len_available(chunk(battery_service.buffer)) >= 0:
+                _prompt(count - i)  # something to show that it isn't frozen
                 # broadcast the device name, MAC address, &
                 # battery charge info; 0x16 means service data
                 ble.advertise(battery_service.buffer, data_type=0x16)
                 # channel hoping is recommended per BLE specs
                 ble.hop_channel()
-                # alternate advertisements to target all devices
-                ble.to_iphone = not ble.to_iphone
                 time.sleep(0.5)  # wait till next broadcast
     # nrf.show_pa_level & nrf.name both are set to false when
     # exiting a with statement block
@@ -98,16 +92,14 @@ def send_temp(count=50):
         ble.name = b"nRF24L01"
         print(
             "available bytes in next payload:",
-            ble.available(chunk(temperature_service.buffer))
+            ble.len_available(chunk(temperature_service.buffer))
         )
         for i in range(count):
-            if ble.available(chunk(temperature_service.buffer)) >= 0:
-                _prompt(count, i)
+            if ble.len_available(chunk(temperature_service.buffer)) >= 0:
+                _prompt(count - i)
                 # broadcast a temperature measurement; 0x16 means service data
                 ble.advertise(temperature_service.buffer, data_type=0x16)
-                # channel hoping is recommended per BLE specs
                 ble.hop_channel()
-                ble.to_iphone = not ble.to_iphone
                 time.sleep(0.2)
 
 
@@ -126,16 +118,15 @@ def send_url(count=50):
     with nrf as ble:
         print(
             "available bytes in next payload:",
-            ble.available(chunk(url_service.buffer))
+            ble.len_available(chunk(url_service.buffer))
         )
         # NOTE we did NOT set a device name in this with block
         for i in range(count):
             # URLs easily exceed the nRF24L01's max payload length
-            if ble.available(chunk(url_service.buffer)) >= 0:
-                _prompt(count, i)
+            if ble.len_available(chunk(url_service.buffer)) >= 0:
+                _prompt(count - i)
                 ble.advertise(url_service.buffer, 0x16)
                 ble.hop_channel()
-                ble.to_iphone = not ble.to_iphone
                 time.sleep(0.2)
 
 print(

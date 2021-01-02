@@ -28,10 +28,10 @@ jobs:
         awk -F '\/' '{ print tolower($2) }' |
         tr '-' '_'
         )
-    - name: Set up Python 3.6
+    - name: Set up Python 3.7
       uses: actions/setup-python@v1
       with:
-        python-version: 3.6
+        python-version: 3.7
     - name: Versions
       run: |
         python3 --version
@@ -82,8 +82,8 @@ jobs:
     - name: Build and publish
       if: contains(steps.need-pypi.outputs.setup-py, 'setup.py')
       env:
-        TWINE_USERNAME: ${{ secrets.pypi_username }}
-        TWINE_PASSWORD: ${{ secrets.pypi_password }}
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.pypi_token }}
       run: |
         python setup.py sdist
         twine upload dist/*

@@ -38,76 +38,111 @@ nrf.ack = True  # False disables again
 nrf.pa_level = -12
 
 # addresses needs to be in a buffer protocol object (bytearray)
-address = b"1Node"
+address = [b"1Node", b"2Node"]
 
-# NOTE ACK payloads (like regular payloads and addresses)
-# need to be in a buffer protocol object (bytearray)
-ACK = b"World "
+# to use different addresses on a pair of radios, we need a variable to
+# uniquely identify which address this radio will use to transmit
+# 0 uses address[0] to transmit, 1 uses address[1] to transmit
+radio_number = bool(
+    int(
+        input(
+            "Which radio is this? Enter '0' or '1'. Defaults to '0' "
+        ) or 0
+    )
+)
+
+# set TX address of RX node into the TX pipe
+nrf.open_tx_pipe(address[radio_number])  # always uses pipe 0
+
+# set RX address of TX node into an RX pipe
+nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
+
+# using the python keyword global is bad practice. Instead we'll use a 1 item
+# list to store our integer number for the payloads' counter
+counter = [0]
 
 
 def master(count=5):  # count = 5 will only transmit 5 packets
-    """Transmits a dummy payload every second and prints the ACK payload"""
-    # recommended behavior is to keep in TX mode while idle
+    """Transmits a payload every second and prints the ACK payload"""
     nrf.listen = False  # put radio in TX mode
 
-    # set address of RX node into a TX pipe
-    nrf.open_tx_pipe(address)
-
     while count:
-        buffer = b"Hello " + bytes([count + 48])  # output buffer
-        print("Sending (raw): {}".format(repr(buffer)))
-        # to read the ACK payload during TX mode we
-        # pass the parameter read_ack as True.
-        nrf.ack = True  # enable feature before send()
-        now = time.monotonic() * 1000  # start timer
-        result = nrf.send(buffer)  # becomes the response buffer
-        if not result:
-            print("send() failed or timed out")
-        else:
+        # construct a payload to send
+        # add b"\0" as a c-string NULL terminating char
+        buffer = b"Hello \0" + bytes([counter[0]])
+        start_timer = time.monotonic_ns()  # start timer
+        result = nrf.send(buffer)  # save the response (ACK payload)
+        end_timer = time.monotonic_ns()  # stop timer
+        if result:
             # print the received ACK that was automatically
-            # fetched and saved to "buffer" via send()
-            print("raw ACK: {}".format(repr(result)))
-            # the ACK payload should now be in buffer
-        # print timer results despite transmission success
-        print("Transmission took", time.monotonic() * 1000 - now, "ms")
-        time.sleep(1)
+            # fetched and saved to "result" via send()
+            # print timer results upon transmission success
+            print(
+                "Transmission successful! Time to transmit: "
+                "{} us. Sent: {}{}".format(
+                    int((end_timer - start_timer) / 1000),
+                    buffer[:6].decode("utf-8"),
+                    counter[0]
+                ),
+                end=" "
+            )
+            if isinstance(result, bool):
+                print(" Received an empty ACK packet")
+            else:
+                # result[:6] truncates c-string NULL termiating char
+                # received counter is a unsigned byte, thus result[7:8][0]
+                print(
+                    " Received: {}{}".format(
+                        bytes(result[:6]).decode("utf-8"),
+                        result[7:8][0]
+                    )
+                )
+            counter[0] += 1  # increment payload counter
+        elif not result:
+            print("send() failed or timed out")
+        time.sleep(1)  # let the RX node prepare a new ACK payload
         count -= 1
 
 
-def slave(count=5):
-    """Prints the received value and sends a dummy ACK payload"""
-    # set address of TX node into an RX pipe. NOTE you MUST specify
-    # which pipe number to use for RX, we'll be using pipe 0
-    nrf.open_rx_pipe(0, address)
+def slave(timeout=6):
+    """Prints the received value and sends an ACK payload"""
+    nrf.listen = True  # put radio into RX mode, power it up
 
-    # put radio into RX mode, power it up, and set the first
-    # transmission's ACK payload and pipe number
-    nrf.listen = True
-    buffer = ACK + bytes([count + 48])
+    # setup the first transmission's ACK payload
+    # add b"\0" as a c-string NULL terminating char
+    buffer = b"World \0" + bytes([counter[0]])
     # we must set the ACK payload data and corresponding
-    # pipe number [0,5]
-    nrf.load_ack(buffer, 0)  # load ACK for first response
+    # pipe number [0, 5]. We'll be acknowledging pipe 1
+    nrf.load_ack(buffer, 1)  # load ACK for first response
 
-    start = time.monotonic()
-    while count and (time.monotonic() - start) < (count * 2):
-        if nrf.any():
-            # this will listen indefinitely till count == 0
-            count -= 1
-            # print details about the received packet (if any)
-            print("Found {} bytes on pipe {}".format(nrf.any(), nrf.pipe))
+    start = time.monotonic()  # start timer
+    while (time.monotonic() - start) < timeout:
+        if nrf.available():
+            # grab information about the received payload
+            length, pipe_number = (nrf.any(), nrf.pipe)
             # retreive the received packet's payload
-            rx = nrf.recv()  # clears flags & empties RX FIFO
-            print("Received (raw): {}".format(repr(rx)))
-            start = time.monotonic()
-            if count:  # Going again?
-                # build new ACK
-                buffer = ACK + bytes([count + 48])
-                # load ACK for next response
-                nrf.load_ack(buffer, 0)
+            received = nrf.read()
+            # increment counter from received payload
+            # received counter is a unsigned byte, thus result[7:8][0]
+            counter[0] = received[7:8][0] + 1
+            # the [:6] truncates the c-string NULL termiating char
+            print(
+                "Received {} bytes on pipe {}: {}{} Sent: {}{}".format(
+                    length,
+                    pipe_number,
+                    bytes(received[:6]).decode("utf-8"),
+                    received[7:8][0],
+                    bytes(buffer[:6]).decode("utf-8"),
+                    counter[0]
+                )
+            )
+            start = time.monotonic()  # reset timer
+            buffer = b"World \0" + bytes([counter[0]])  # build new ACK
+            nrf.load_ack(buffer, 1)  # load ACK for next response
 
     # recommended behavior is to keep in TX mode while idle
     nrf.listen = False  # put radio in TX mode
-    nrf.flush_tx()  # flush any ACK payload
+    nrf.flush_tx()  # flush any ACK payloads that remain
 
 
 print(
