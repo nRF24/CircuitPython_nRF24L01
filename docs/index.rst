@@ -29,6 +29,7 @@
 
 .. toctree::
     :caption: Logitech Mouse API Reference
+    :hidden:
 
     logitech
 

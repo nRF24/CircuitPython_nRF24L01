@@ -25,29 +25,44 @@ based on original work done by `Ronan Gaillard (ronan.gaillard@live.fr)
 """
 from struct import pack  # , unpack
 
+USE_NVM = True
+try:
+    from microcontroller import nvm
+except ImportError:
+    USE_NVM = False
+except NotImplementedError:
+    USE_NVM = False
+
 # from .rf24 import RF24
 
 # Logitech unifying specific data
-PAIRING_ADDRESS = b"\xBB\x0A\xDC\xA5\x75"  # sufix = 'LL' from logitech-mouse.h
+PAIRING_ADDRESS = b"\x75\xA5\xDC\x0A\xBB"  # REVERSED 0xBB0ADCA575
 # Pre-defined pairing packets
 PAIRING_PACKETS = [
-    b"\x15\x5F\x01\x84\x5E\x3A\xA2\x57\x08\x10\x25\x04\x00\x01\x47\x00\x00\x00\x00\x00\x01\xEC",
-    b"\x15\x40\x01\x84\x26",
-    b"\x00\x5F\x02\x00\x00\x00\x00\x58\x8A\x51\xEA\x01\x07\x00\x00\x01\x00\x00\x00\x00\x00\x79",
-    b"\x00\x40\x02\x01\xbd",
-    b"\x00\x5F\x03\x01\x00\x04M510\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xB6",
-    b"\x00\x5F\x03\x01\x0f",
-    b"\x00\x0F\x06\x01\x00\x00\x00\x00\x00\xEA" + b"\x00" * 12,
+    # REVERSED 0x155F01845E3AA25708102504000147000000000001EC
+    b"\xec\x01\x00\x00\x00\x00\x00G\x01\x00\x04%\x10\x08W\xa2:^\x84\x01_\x15"
+    # REVERSED 0x1540018426
+    b"&\x84\x01@\x15",
+    # REVERSED 0x005F0200000000588A51EA0107000001000000000079
+    b"y\x00\x00\x00\x00\x00\x01\x00\x00\x07\x01\xeaQ\x8AX\x00\x00\x00\x00\x02_\x00",
+    # REVERSED 0x00400201BD
+    b"\xBD\x01\x02@\x00",
+    # REVERSED 0x005F03010004 + "M510" + 0x0000000000000000000000B6
+    b"\xB6\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00015M\x04\x00\x01\x03_\x00",
+    # REVERSED 0x005F03010f
+    b"\x0F\x01\x03_\x00",
+    # REVERSED 0x000F06010000000000EA + 0x00 * 12
+    b"\x00" * 12 + b"\xea\x00\x00\x00\x00\x00\x01\x06\x0f\x00",
 ]
 # End of pre-defined pairing packets
 
 
 class LogitechMouse:
-    """A class to emulate the behavior of a Logitech-branded wireless mouse using the
-    nRF24L01 transceiver and a Logitech Unifying USB Receiver.
+    """A class to emulate the behavior of a Logitech-branded wireless mouse
+    using the nRF24L01 transceiver and a Logitech Unifying USB Receiver.
 
-    :param ~circuitpython_nrf24l01.rf24.RF24 nrf: the instantiated object of the nRF24L01
-        radio to be used.
+    :param ~circuitpython_nrf24l01.rf24.RF24 nrf: the instantiated object of
+        the nRF24L01 radio to be used.
     """
 
     def __init__(self, nrf):
@@ -66,10 +81,19 @@ class LogitechMouse:
             writing-to-the-filesystem>`_ to re-mount the FS with write
             permission. See also important note in `pair()`.
         """
-
         with self:
             self._radio.flush_rx()
             self._radio.clear_status_flags()
+        if USE_NVM:
+            self.bonded_address = nvm[:5]
+        else:
+            try:
+                with open("logitech unify address.txt", "rb") as file:
+                    self.bonded_address = file.readline()
+            except OSError:
+                self.bonded_address = b"\xFF" * 5
+        if self.bonded_address == b"\xFF" * 5:
+            self.pair()
 
     def __enter__(self):
         self._radio.address_length = 5
@@ -94,7 +118,8 @@ class LogitechMouse:
         self._radio.open_rx_pipe(1, addr)
         self._radio.open_rx_pipe(2, b"\x00")
 
-    def _pairing_step(self, index_long, index_short=None, attempts=255, ack_payload=None):
+    def _pairing_step(self, index_long, index_short=None,
+                      attempts=255, ack_payload=None):
         keep_going = True
         while keep_going:
             result = False
@@ -139,29 +164,32 @@ class LogitechMouse:
         return attempts
 
     def pair(self, retries=255):
-        """Initiate pairing sequence with a Logitech Unifying receiver. Remember to put
-        the Unifying receiver in discovery/pairing mode using Logitech's Unifying software!
+        """Initiate pairing sequence with a Logitech Unifying receiver.
+        Remember to put the Unifying receiver in discovery/pairing mode using
+        Logitech's Unifying software!
 
-        .. important:: The unique address assigned to a particular Unifying device would
-            normally be saved to an Arduino's EEPROM to keep said address consistent when power
-            supply is disconnected. If this address is lost, then you need to re-pair with the
-            Unifying receiver. However, the CircuitPython core prohibits write access to the
-            internal FS (File System) due to unpredictable behavior when USB also has
-            simultaneous write access.
+        .. important:: The unique address assigned to a particular Unifying
+            device would normally be saved to an Arduino's EEPROM to keep said
+            address consistent when power supply is disconnected. If this
+            address is lost, then you need to re-pair with the Unifying
+            receiver. However, the CircuitPython core prohibits write access
+            to the internal FS (File System) due to unpredictable behavior
+            when USB also has simultaneous write access.
 
-            .. tip:: One could alter ``boot.py`` to load the FS with write
-                access when a dedicated pin is tied to ground. Theoretically, one could tie the
-                dedicated pin to the center of a voltage divider circuit (2 resistors of the same
-                resistance value in series) that starts from USB pin and ends on GND (ground), thus
-                the dedicated pin will only read LOW when the USB connection isn't used (meaning
-                the MCU is being powered by the BAT pin). None of this has been confirmed, and it
-                assumes the USB voltage doesn't dip below 5V.
+        .. tip:: One could alter ``boot.py`` to load the FS with write
+            access when a dedicated pin is tied to ground. Theoretically,
+            one could tie the dedicated pin to the center of a voltage
+            divider circuit (2 resistors of the same resistance value in
+            series) that starts from USB pin and ends on GND (ground),
+            thus the dedicated pin will only read LOW when the USB
+            connection isn't used (meaning the MCU is being powered by the
+            BAT pin). None of this has been confirmed, and it assumes the
+            USB voltage doesn't dip below 5V.
         """
         # length is arbitrary because recv() returns full ack payload when
         # dynamic_paylaods == True (needed for ACK payloads)
-        ack_buf = [
-            b"\x00"
-        ]  # buffer to save ACK payload (as a list obj for passing by reference)
+        # buffer to save ACK payload (as a list obj for passing by reference)
+        ack_buf = [b"\x00"]
         attempts = self._pairing_step(
             0, index_short=1, ack_payload=ack_buf, attempts=retries
         )
@@ -192,7 +220,8 @@ class LogitechMouse:
 
     def reconnect(self):
         """
-        Attempts to reconnect to a bonded Unifying receiver (if said receiver's address is saved).
+        Attempts to reconnect to a bonded Unifying receiver (if said
+        receiver's address is saved).
         """
         self._set_addr(self.bonded_address)
         print("TX address set to", self.bonded_address)
@@ -202,23 +231,30 @@ class LogitechMouse:
         return True
 
     # pylint: disable=too-many-arguments
-    def input(self, x_move=0, y_move=0, scroll_v=0, scroll_h=0, left=False, right=False):
+    def input(self, x_move=0, y_move=0, scroll_v=0,
+              scroll_h=0, left=False, right=False):
         """Sends the mouse data to the Logitech Unifying receiver
 
-        :param int x_move: a 12 bit signed int describing the velocity of the mouse on the X-axis.
-        :param int y_move: a 12 bit signed int describing the velocity of the mouse on the Y-axis.
-        :param int scroll_h: a 8 bit signed int describing the velocity of scrolling on the X-axis.
-        :param int scroll_v: a 8 bit signed int describing the velocity of scrolling on the Y-axis.
-        :param bool left: a boolean representing the state of the left mouse button.
-            `True` means the button is pressed; `False` means the button is not pressed.
-        :param bool right: a boolean representing the state of the right mouse button.
-            `True` means the button is pressed; `False` means the button is not pressed.
+        :param int x_move: a 12 bit signed int describing the velocity of the
+            mouse on the X-axis.
+        :param int y_move: a 12 bit signed int describing the velocity of the
+            mouse on the Y-axis.
+        :param int scroll_h: a 8 bit signed int describing the velocity of
+            scrolling on the X-axis.
+        :param int scroll_v: a 8 bit signed int describing the velocity of
+            scrolling on the Y-axis.
+        :param bool left: a boolean representing the state of the left mouse
+            button. `True` means the button is pressed; `False` means the
+            button is not pressed.
+        :param bool right: a boolean representing the state of the right mouse
+            button. `True` means the button is pressed; `False` means the
+            button is not pressed.
 
-        .. note:: Extra buttons such as 'browser forward' and 'browser backward' are not supperted
-            at this time.
+        .. note:: Extra buttons such as 'browser forward' and 'browser
+            backward' are not supperted at this time.
 
-        .. important:: All of the parameters are keyword arguments with defaults that resemble
-            their idle state.
+        .. important:: All of the parameters are keyword arguments with
+            defaults that resemble their idle state.
         """
         mouse_payload = b"\x00\xC2" + pack("B", (right << 1) | left)
         cursor_velocity = pack(
