@@ -123,44 +123,44 @@ class LogitechMouse:
         keep_going = True
         while keep_going:
             result = False
+            print("transmitting long pairing packet", index_long)
             while attempts and not result:
-                result = self._radio.send(PAIRING_PACKETS[index_long])
-                if isinstance(result, bool):  # transmit failed
+                result = self._radio.send(PAIRING_PACKETS[index_long], send_only=True)
+                if not result:  # transmit failed
                     attempts -= 1
-                    print("transmit pairing packet", index_long, "failed")
-                elif result is None:  # transmit success , but no ACK recv'd
+                else:  # transmit success
                     print(
-                        "transmit pairing packet",
-                        index_long,
-                        "succeeded, but with no ACK payload",
+                        "transmit pairing packet {} succeeded. Received (unused)".format(
+                            index_long
+                        ),
+                        end=""
                     )
-                    result = True
+                    # if we have ACK payload, but not the one we need
+                    print(self._radio.read() if self._radio.available() else "NO ACK")
                     break  # send next packet
-                # else we have ACK payload, but not the one we need
-                else:  # for debugging
-                    print("pairing packet", index_long, "returned", result)
             if index_short is not None and attempts:
                 # if pairing sequence is not on last step and attempts > 0
                 result = False  # discards any ACK payload from previous packet
+                print("transmitting short pairing packet", index_short)
                 while attempts and not result:
-                    result = self._radio.send(PAIRING_PACKETS[index_short])
-                    if isinstance(result, bool) or result is None:  # transmit failed
-                        print("transmit pairing packet", index_short, "failed")
+                    result = self._radio.send(PAIRING_PACKETS[index_short], send_only=True)
+                    if not result:  # transmit failed
                         attempts -= 1
-                    elif ack_payload is not None and result is not None:
-                        # if we need the ACK payload
-                        print("pairing packet", index_short, "returned", result)
-                        ack_payload[0] = result  # return ACK payload by reference
-                    else:  # we don't need the ACK payload
+                    elif self._radio.available():
+                        print("pairing packet", index_short, "returned", end="")
+                        if ack_payload is not None:
+                            # if we need the ACK payload; return ACK payload by ref
+                            ack_payload[0] = self._radio.read()
+                            print(ack_payload[0])
+                        else:  # we don't need the ACK payload
+                            print("(unused)", self._radio.read())
+                            # self._radio.flush_rx()
                         # we're done with this step in the sequence
-                        print(
-                            "pairing packet", index_short, "returned (unused)", result
-                        )
-                        result = True
                         keep_going = False  # exit function
-            else:
-                # we're already done (triggered on last step of pairing sequence)
+            else:  # should only trigger on last step of pairing sequence
+                # we're already done
                 keep_going = False
+        print("attempts remaining:", attempts)
         return attempts
 
     def pair(self, retries=255):
@@ -216,6 +216,12 @@ class LogitechMouse:
 
         # switch to bonded address now that pairing is complete
         self._set_addr(self.bonded_address)
+        # save bonded address for after next hard reset
+        if USE_NVM:
+            nvm[:5] = self.bonded_address
+        else:
+            with open("logitech unify address.txt", "wb") as file:
+                file.writelines(self.bonded_address)
         return True
 
     def reconnect(self):
@@ -224,10 +230,11 @@ class LogitechMouse:
         receiver's address is saved).
         """
         self._set_addr(self.bonded_address)
-        print("TX address set to", self.bonded_address)
+        print("TX address set to", self._radio.address())
         if not self.pair(retries=5):
             self._set_addr(PAIRING_ADDRESS)
-            return False
+            print("TX address set to", self._radio.address())
+            return self.pair(retries=20)
         return True
 
     # pylint: disable=too-many-arguments
@@ -259,9 +266,9 @@ class LogitechMouse:
         mouse_payload = b"\x00\xC2" + pack("B", (right << 1) | left)
         cursor_velocity = pack(
             "3B",
-            (y_move & 0xFF0) >> 4,
-            (y_move & 0xF) << 4 | (x_move & 0xF00) >> 8,
-            (x_move & 0xFF),
+            (int(y_move) & 0xFF0) >> 4,
+            (int(y_move) & 0xF) << 4 | (int(x_move) & 0xF00) >> 8,
+            (int(x_move) & 0xFF),
         )
         mouse_payload += cursor_velocity + b"\x00" + pack("2b", scroll_v, scroll_h)
         checksum = 0

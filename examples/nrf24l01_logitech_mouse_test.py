@@ -14,16 +14,17 @@ csn = DigitalInOut(board.D5)
 SPI = board.SPI()
 nrf = RF24(SPI, csn, ce)
 logi_mouse = LogitechMouse(nrf)
-
+CONNECTED = False
 if not logi_mouse.reconnect():
     # could not reconnect to previous address saved on nRF24L01's RX_ADDR_P0 register
     # try to pair with Logitech Unifying receiver/dongle
     # NOTE dongle must be in pairing mode using Logitech Unifying software
-    logi_mouse.pair()
+    CONNECTED = logi_mouse.pair()
 
-# move the mouse cursor in a circle
-for x in range(0, 360, 5):
-    logi_mouse.move(
-        x_move=(10.0 * cos(radians(x))),
-        y_move=(10.0 * sin(radians(x)))
+if CONNECTED:
+    # move the mouse cursor in a circle
+    for x in range(0, 360, 5):
+        logi_mouse.input(
+            x_move=(10.0 * cos(radians(x))),
+            y_move=(10.0 * sin(radians(x)))
         )
