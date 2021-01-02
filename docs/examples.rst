@@ -52,6 +52,18 @@ This example shows how use a group of 6 nRF24L01 transceivers to transmit to 1 n
     :caption: examples/nrf24l01_multiceiver_test.py
     :linenos:
 
+Scanner Example
+---------------
+
+.. versionadded:: 2.0.0
+
+This example simply scans the entire RF frquency (2.4 GHz to 2.525 GHz)
+and outputs a vertical graph of how many signals (out of 10 attempted scans per :py:attr:`~circuitpython_nrf24l01.rf24.RF24.channel`) were detected. This example can be used to find a frequency with the least ambient interference from other radio-emitting sources (i.e. WiFi, Bluetooth, or etc).
+
+.. literalinclude:: ../examples/nrf24l01_scanner_test.py
+    :caption: examples/nrf24l01_scanner_test.py
+    :linenos:
+
 IRQ Pin Example
 ---------------
 
@@ -115,7 +127,7 @@ Fake BLE Example
 
 .. versionadded:: 1.2.0
 
-This is a test to show how to use the nRF24L01 as a BLE advertising beacon using the :py:class:`~circuitpython_nrf24l01.rf24.fake_ble.FakeBLE` class.
+This is a test to show how to use the nRF24L01 as a BLE advertising beacon using the `FakeBLE` class.
 
 .. literalinclude:: ../examples/nrf24l01_fake_ble_test.py
     :caption: examples/nrf24l01_fake_ble_test.py
@@ -131,11 +143,18 @@ TMRh20's library uses static payload lengths by default.
 To make this circuitpython library compatible with
 `TMRh20's RF24 library <https://github.com/nRF24/RF24/>`_:
 
-    1. set `dynamic_payloads` to `False`.
-    2. set :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length` to the value that
-       is passed to TMRh20's ``RF24::setPayloadSize()``. 32 is the default (& maximum)
-       payload length/size for both libraries.
-    3. set `allow_ask_no_ack` to `False`.
+1. set `dynamic_payloads` to `False`.
+2. set `allow_ask_no_ack` to `False`.
+3. set :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length` to the value that
+   is passed to TMRh20's ``RF24::setPayloadSize()``. 32 is the default (& maximum)
+   payload length/size for both libraries.
+
+   .. warning:: Certain C++ datatypes allocate a different amount of memory depending on
+       the board being used in the Arduino IDE. For example, ``uint8_t`` isn't always
+       allocated to 1 byte of memory for certain boards.
+       Make sure you understand the amount of memory that different datatypes occupy in C++.
+       This will help you comprehend how to configure
+       :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length`.
 
 For completness, TMRh20's RF24 library uses a default value of 15 for the `ard` attribute,
 but this Circuitpython library uses a default value of 3.
@@ -143,26 +162,22 @@ but this Circuitpython library uses a default value of 3.
 .. csv-table:: Corresponding examples
     :header: circuitpython_nrf24l01, TMRh20 RF24
 
-    nrf24l01_simple_test, gettingStarted
+    "nrf24l01_simple_test\ [1]_ ", gettingStarted
     nrf24l01_ack_payload_test, acknowledgementPayloads
-    nrf24l01_manual_ack_test, manualAcknowledgements
-    nrf24l01_multiceiver_test, multiceiverDemo
-    nrf24l01_stream_test, streamingData
+    "nrf24l01_manual_ack_test\ [1]_ ", manualAcknowledgements
+    "nrf24l01_multiceiver_test\ [1]_ ", multiceiverDemo
+    "nrf24l01_stream_test\ [1]_ ", streamingData
     nrf24l01_interrupt_test, interruptConfigure
-    nrf24l01_context_test, feature is not available in C++
+    nrf24l01_context_test, feature is not available
     nrf24l01_fake_ble_test, feature is available via `floe's BTLE library <https://github.com/floe/BTLE>`_
 
-.. note:: Each of the Circuitpython examples that are compatible with TMRh20's examples
-    contain 2 lines of code that are commented out for easy modification. These lines
-    look like this in the examples' source code:
+.. [1] Some of the Circuitpython examples (that are compatible with TMRh20's examples)
+       contain 2 or 3 lines of code that are commented out for easy modification. These lines
+       look like this in the examples' source code:
 
-    .. code-block:: python
+       .. code-block:: python
 
-        # uncomment the following 2 lines for compatibility with TMRh20 library
-        # nrf.allow_ask_no_ack = False
-        # nrf.dynamic_payloads = False
-        # nrf.payload_length = 4
-
-    Make sure you understand the amount of memory that different datatypes occupy in C++.
-    This will help you understand how to configure
-    :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length`.
+           # uncomment the following 3 lines for compatibility with TMRh20 library
+           # nrf.allow_ask_no_ack = False
+           # nrf.dynamic_payloads = False
+           # nrf.payload_length = 4

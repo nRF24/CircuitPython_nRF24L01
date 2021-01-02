@@ -93,7 +93,7 @@ Pinout
 .. image:: https://lastminuteengineers.com/wp-content/uploads/2018/07/Pinout-nRF24L01-Wireless-Transceiver-Module.png
     :target: https://lastminuteengineers.com/nrf24l01-arduino-wireless-communication/#nrf24l01-transceiver-module-pinout
 
-The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) that can only be connected to their counterparts on the MCU (microcontroller unit). The other 2 essential pins (CE & CSN) can be connected to any digital output pins. Lastly, the only optional pin on the nRf24L01 GPIOs is the IRQ (interrupt; a digital output that's active when low) pin and is only connected to the MCU via a digital input pin during the interrupt example. The following pinout is used in the example codes of this library's `example directory <https://github.com/2bndy5/CircuitPython_nRF24L01/tree/master/examples>`_.
+The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) that can only be connected to their counterparts on the MCU (microcontroller unit). The other 2 essential pins (CE & CSN) can be connected to any digital output pins. Lastly, the only optional pin on the nRf24L01 GPIOs is the IRQ (interrupt; a digital output that's active when low) pin and is only connected to the MCU via a digital input pin during the interrupt example. The following pinout is used in the example codes of this library's `examples <examples.html>`_.
 
 .. csv-table::
     :header: nRF2401, "Raspberry Pi", "ItsyBitsy M4"
@@ -112,27 +112,23 @@ The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) t
 Using The Examples
 ==================
 
-See `examples <https://circuitpython-nrf24l01.readthedocs.io/en/latest/examples.html>`_ for testing certain features of this the library. The examples were developed and tested on both Raspberry Pi and ItsyBitsy M4. Pins have been hard coded in the examples for the corresponding device, so please adjust these accordingly to your circuitpython device if necessary.
+See `examples <examples.html>`_ for testing certain features of this the library. The examples were developed and tested on both Raspberry Pi and ItsyBitsy M4. Pins have been hard coded in the examples for the corresponding device, so please adjust these accordingly to your circuitpython device if necessary.
 
 To run the simple example, navigate to this repository's "examples" folder in the terminal. If you're working with a CircuitPython device (not a Raspberry Pi), copy the file named "nrf24l01_simple_test.py" from this repository's "examples" folder to the root directory of your CircuitPython device's CIRCUITPY drive. Now you're ready to open a python REPR and run the following commands:
 
 .. code-block:: python
 
     >>> from nrf24l01_simple_test import *
+    Which radio is this? Enter '0' or '1'. Defaults to '0'
         nRF24L01 Simple test.
         Run slave() on receiver
         Run master() on transmitter
     >>> master()
-    Sending: 5 as struct: b'\x05\x00\x00\x00'
-    send() successful
-    Transmission took 36.0 ms
-    Sending: 4 as struct: b'\x04\x00\x00\x00'
-    send() successful
-    Transmission took 28.0 ms
-    Sending: 3 as struct: b'\x03\x00\x00\x00'
-    send() successful
-    Transmission took 24.0 ms
-
+    Transmission successful! Time to Transmit: 6993.972 us. Sent: 0.0
+    Transmission successful! Time to Transmit: 6563.277 us. Sent: 0.01
+    Transmission successful! Time to Transmit: 6453.385 us. Sent: 0.02
+    Transmission successful! Time to Transmit: 6338.29 us. Sent: 0.03
+    Transmission successful! Time to Transmit: 6440.163 us. Sent: 0.04
 
 What to purchase
 =================
@@ -168,13 +164,14 @@ functionality, they are subject to a couple lesser known (and lesser advertised)
    boards' 3V regulators may not be able to provide (after supplying power to internal
    components).
 
-    .. csv-table::
-        :header: Specification, Value
-        :widths: 10,5
+   .. csv-table::
+       :header: Specification, Value
+       :widths: 10,5
 
-        "Emission mode current(peak)", "115 mA"
-        "Receive Mode current(peak)", "45 mA"
-        "Power-down mode current", "4.2 µA"
+       "Emission mode current(peak)", "115 mA"
+       "Receive Mode current(peak)", "45 mA"
+       "Power-down mode current", "4.2 µA"
+
 2. Needs shielding from electromagnetic interference. Shielding usually works best when
    it has a path to ground (GND pin), but this connection to the GND pin is not required.
 
@@ -211,23 +208,23 @@ before contributing to help this project stay welcoming. To contribute, all you 
 Future Project Ideas/Additions
 ------------------------------
 
-    The following are only ideas; they are not currently supported by this circuitpython library.
+The following are only ideas; they are not currently supported by this circuitpython library.
 
-    * `There's a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3
-      pins <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.
-      html>`_ (uses custom bitbanging SPI functions and an external circuit involving a
-      resistor and a capacitor)
-    * network linking layer, maybe something like `TMRh20's RF24Network
-      <http://tmrh20.github.io/RF24Network/>`_
-    * implement the Gazelle-based protocol used by the BBC micro-bit (`makecode.com's radio
-      blocks <https://makecode.microbit.org/reference/radio>`_).
+* `There's a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3
+  pins <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.
+  html>`_ (uses custom bitbanging SPI functions and an external circuit involving a
+  resistor and a capacitor)
+* network linking layer, maybe something like `TMRh20's RF24Network
+  <http://nRF24.github.io/RF24Network/>`_
+* implement the Gazelle-based protocol used by the BBC micro-bit (`makecode.com's radio
+  blocks <https://makecode.microbit.org/reference/radio>`_).
 
 
 Sphinx documentation
 -----------------------
 
 Sphinx is used to build the documentation based on rST files and comments in the code. First,
-install dependencies (feel free to reuse the virtual environment from `above <https://circuitpython-nrf24l01.readthedocs.io/en/latest/#installing-from-pypi>`_):
+install dependencies (feel free to reuse the virtual environment from `above <greetings.html#installing-from-pypi>`_):
 
 .. code-block:: shell
 

@@ -343,7 +343,7 @@ class RF24:
         self._config |= (not data_fail) << 4 | (not data_sent) << 5
         self._reg_write(CONFIGURE, self._config)
 
-    def what_happened(self, dump_pipes=False):
+    def print_details(self, dump_pipes=False):
         """This debuggung function aggregates and outputs all status/condition
         related information from the nRF24L01."""
         observer = self._reg_read(8)
@@ -481,13 +481,9 @@ class RF24:
                     self._dyn_pl = (self._dyn_pl & ~(1 << i)) | (bool(val) << i)
         else:
             raise ValueError("dynamic_payloads: {} is an invalid input" % enable)
-        if bool(self._features & 4) != (self._dyn_pl & 1):
-            self._features = (self._features & 3) | ((self._dyn_pl & 1) << 2)
+        if self._dyn_pl:
+            self._features = (self._features & 3) | (bool(self._dyn_pl) << 2)
             self._reg_write(TX_FEATURE, self._features)
-        if self._dyn_pl != (self._aa & self._dyn_pl):
-            self._aa |= self._dyn_pl
-            self._reg_write(AUTO_ACK, self._aa)
-            self._config = self._reg_read(CONFIGURE)
         self._reg_write(DYN_PL_LEN, self._dyn_pl)
 
     def set_dynamic_payloads(self, enable, pipe_number=None):
@@ -566,11 +562,15 @@ class RF24:
         self._retry_setup = (self._retry_setup & 15) | int((delta - 250) / 250) << 4
         self._reg_write(SETUP_RETR, self._retry_setup)
 
-    def set_retries(self, delay, count):
+    def set_auto_retries(self, delay, count):
         """set the `ard` & `arc` attributes with 1 function."""
         delay = int((max(250, min(delay, 4000)) - 250) / 250) << 4
         self._retry_setup = delay | max(0, min(int(count), 15))
         self._reg_write(SETUP_RETR, self._retry_setup)
+
+    def get_auto_retries(self):
+        """get the `ard` & `arc` attributes with 1 function."""
+        return (self.ard, self._retry_setup & 0x0F)
 
     @property
     def last_tx_arc(self):
@@ -596,19 +596,9 @@ class RF24:
                     self._aa = (self._aa & ~(1 << i)) | (bool(val) << i)
         else:
             raise ValueError("auto_ack: {} is not a valid input" % enable)
-        for i in range(6):
-            mask = 1 << i
-            if self._aa & mask != mask and self._dyn_pl & mask == mask:
-                self._dyn_pl &= ~mask
-            if not i and self._features & 4 != 4 and self._dyn_pl & mask:
-                self._features |= 4
-                self._reg_write(TX_FEATURE, self._features)
         if bool(self._aa & 1) != bool(self._aa & 0x3E):
             self._aa &= 1
-        self._reg_write(DYN_PL_LEN, self._dyn_pl)
         self._reg_write(AUTO_ACK, self._aa)
-        if self._aa:  # refresh crc data if enabled
-            self._config = self._reg_read(CONFIGURE)
 
     def set_auto_ack(self, enable, pipe_number=None):
         """Control the automatic acknowledgement feature for a specific data
@@ -713,6 +703,9 @@ class RF24:
         """This `int` attribute specifies the nRF24L01's CRC (cyclic
         redundancy checking) encoding scheme in terms of byte length."""
         self._config = self._reg_read(CONFIGURE)
+        self._aa = self._reg_read(AUTO_ACK)
+        if self._aa:
+            return 2 if self._config & 4 else 1
         return max(0, ((self._config & 0x0C) >> 2) - 1)
 
     @crc.setter
