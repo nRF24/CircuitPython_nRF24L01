@@ -7,6 +7,8 @@ carrier wave (which causes interference) for a certain RF data rate & channel.
 import time
 import board
 import digitalio as dio
+# if running this on a ATSAMD21 M0 based board
+# from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
 
 # change these (digital output) pins accordingly
@@ -60,6 +62,5 @@ def scan(timeout=20):
 print(
     """\
     nRF24L01 scanner test\n\
-    Run scan() to initiate scan for ambient signals.\n\
-    Or manually broadcast a constant carrier wave."""
+    Run scan() to initiate scan for ambient signals."""
 )

@@ -347,3 +347,7 @@ class RF24:
         if check_empty is None:
             return (_fifo & (0x30 if about_tx else 0x03)) >> (4 * about_tx)
         return bool(_fifo & ((2 - bool(check_empty)) << (4 * about_tx)))
+
+    @property
+    def rpd(self):
+        return bool(self._reg_read(0x09))

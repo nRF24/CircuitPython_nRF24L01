@@ -144,8 +144,8 @@ version:
   automatic acknowledgement for TX operations.
 * `is_lna_enabled` removed as it only affects non-plus variants of the nRF24L01.
 * `pa_level` is available, but it will not accept a `list` or `tuple`.
-* `rpd`, `start_carrier_wave()`, & `stop_carrier_wave()` removed. These only perform a
-  test of the nRF24L01's hardware.
+* `start_carrier_wave()`, & `stop_carrier_wave()` removed. These only perform a
+  test of the nRF24L01's hardware. `rpd` is still available.
 * All comments and docstrings removed, meaning ``help()`` will not provide any specific
   information. Exception prompts have also been reduced and adjusted accordingly.
 * Cannot switch between different radio configurations using context manager (the `with`
