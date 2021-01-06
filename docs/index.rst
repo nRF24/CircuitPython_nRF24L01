@@ -11,6 +11,7 @@
     :hidden:
 
     examples
+    recipes
 
 .. toctree::
     :caption: API Reference

@@ -197,6 +197,8 @@ class RF24:
         if pipe_number < 0 or pipe_number > 5:
             raise IndexError("pipe number must be in range [0, 5]")
         self._open_pipes = self._reg_read(OPEN_PIPES)
+        if not pipe_number:
+            self._pipe0_read_addr = None
         if self._open_pipes & (1 << pipe_number):
             self._open_pipes = self._open_pipes & ~(1 << pipe_number)
             self._reg_write(OPEN_PIPES, self._open_pipes)
