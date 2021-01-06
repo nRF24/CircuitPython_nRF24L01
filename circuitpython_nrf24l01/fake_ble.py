@@ -87,7 +87,7 @@ class FakeBLE(RF24):
         self._aa, self._dyn_pl, self._features, self._retry_setup = (0,) * 4
         self._addr_len = 4  # use only 4 byte address length
         self._tx_address[:4] = b"\x71\x91\x7D\x6B"
-        self._pipe0_read_addr = b"\x71\x91\x7D\x6B"
+        self._pipe0_read_addr[:4] = b"\x71\x91\x7D\x6B"
         self._open_pipes = 1
         with self:
             self.payload_length = 32

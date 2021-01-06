@@ -56,9 +56,6 @@ This driver depends on:
 * `Adafruit_CircuitPython_BusDevice
   <https://github.com/adafruit/Adafruit_CircuitPython_BusDevice>`_ (specifically the
   :py:mod:`~adafruit_bus_device.spi_device`)
-* `Adafruit_CircuitPython_binascii
-  <https://github.com/adafruit/Adafruit_CircuitPython_binascii>`_ only if your board does
-  not have micropython's or CPython's `binascii` module included.
 
 Please ensure all dependencies are available on the CircuitPython filesystem.
 This is easily achieved by downloading

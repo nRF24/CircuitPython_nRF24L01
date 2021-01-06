@@ -26,13 +26,6 @@ __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from micropython import const
 try:
-    from binascii import hexlify
-except ImportError:
-    try:
-        from micropython.binascii import hexlify
-    except ImportError:
-        from adafruit_binascii import hexlify
-try:
     from ubus_device import SPIDevice
 except ImportError:
     from adafruit_bus_device.spi_device import SPIDevice
@@ -51,10 +44,11 @@ TX_FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
 
 def address_repr(addr):
     """Convert an address into a hexlified string (in big endian)."""
-    rev_str = b""
+    rev_str = ""
     for char in range(len(addr) - 1, -1, -1):
-        rev_str += bytes([addr[char]])
-    return str(hexlify(rev_str))[2:-1]
+        rev_str += hex(addr[char])[2:]
+    return rev_str
+
 
 class RF24:
     """A driver class for the nRF24L01(+) transceiver radios."""
