@@ -25,7 +25,13 @@ __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from micropython import const
-
+try:
+    from binascii import hexlify
+except ImportError:
+    try:
+        from micropython.binascii import hexlify
+    except ImportError:
+        from adafruit_binascii import hexlify
 try:
     from ubus_device import SPIDevice
 except ImportError:
@@ -42,6 +48,13 @@ RX_PL_LENG = const(0x11)  # RX payload widths; pipes 0-5 = 0x11-0x16
 DYN_PL_LEN = const(0x1C)  # dynamic payloads status for all pipes
 TX_FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
 
+
+def address_repr(addr):
+    """Convert an address into a hexlified string (in big endian)."""
+    rev_str = b""
+    for char in range(len(addr) - 1, -1, -1):
+        rev_str += bytes([addr[char]])
+    return str(hexlify(rev_str))[2:-1]
 
 class RF24:
     """A driver class for the nRF24L01(+) transceiver radios."""
@@ -445,13 +458,15 @@ class RF24:
             self._dump_pipes()
 
     def _dump_pipes(self):
-        print("TX address____________", self.address())
+        print("TX address____________", "0x" + address_repr(self.address()))
         self._open_pipes = self._reg_read(OPEN_PIPES)
         for i in range(6):
             is_open = self._open_pipes & (1 << i)
             print(
                 "Pipe {} ({}) bound: {}".format(
-                    i, " open " if is_open else "closed", self.address(i)
+                    i,
+                    " open " if is_open else "closed",
+                    "0x" + address_repr(self.address(i))
                 )
             )
             if is_open:

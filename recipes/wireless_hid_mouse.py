@@ -80,14 +80,17 @@ def scan_and_report():
 if __name__ == "__main__":
     # initiate pairing operation
     nrf.open_tx_pipe(address[0])
+    nrf.listen = False
     pairing_timeout = time.monotonic() + 1
+    bonding_key = False
     while time.monotonic() < pairing_timeout:
-        if nrf.send(address[1], send_only=True):
-            break
+        bonding_key = nrf.send(address[1])
+        if isinstance(bonding_key, (bytearray, bytes)):
+            break  # only exit loop if ACK was received
 
-    if nrf.available():
+    if bonding_key:
         # pairing handshake completed
-        address[1][1:] = nrf.read(4)  # save bonded address
+        address[1][1:] = bonding_key  # save bonded address
         nrf.open_tx_pipe(address[1])  # set bonded address
         is_paired[0] = True
 

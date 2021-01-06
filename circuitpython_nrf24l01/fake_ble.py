@@ -86,7 +86,7 @@ class FakeBLE(RF24):
         # disable auto_ack, dynamic payloads, all TX features, & auto-retry
         self._aa, self._dyn_pl, self._features, self._retry_setup = (0,) * 4
         self._addr_len = 4  # use only 4 byte address length
-        self._tx_address = b"\x71\x91\x7D\x6B"
+        self._tx_address[:4] = b"\x71\x91\x7D\x6B"
         self._pipe0_read_addr = b"\x71\x91\x7D\x6B"
         self._open_pipes = 1
         with self:
