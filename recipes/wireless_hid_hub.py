@@ -52,10 +52,10 @@ if nvm[:4] == b"\xFF" * 4:
 # then start this script again
 
 nrf.open_rx_pipe(0, b"\x33Pair")  # pipe for pairing operations
-nrf.open_rx_pipe(1, b"\x06" + nvm[:4])  # pipe for mouse HID
-nrf.open_rx_pipe(2, b"\x02" + nvm[:4])  # pipe for keyboard HID
-nrf.open_rx_pipe(3, b"\x05" + nvm[:4])  # pipe for gamepad HID
-nrf.open_rx_pipe(4, b"\x01" + nvm[:4])  # pipe for Consumer HID
+nrf.open_rx_pipe(1, b"6" + nvm[:4])  # pipe for mouse HID
+nrf.open_rx_pipe(2, b"2" + nvm[:4])  # pipe for keyboard HID
+nrf.open_rx_pipe(3, b"5" + nvm[:4])  # pipe for gamepad HID
+nrf.open_rx_pipe(4, b"1" + nvm[:4])  # pipe for Consumer HID
 nrf.close_rx_pipe(5)  # pipe not used (reserved for future features)
 nrf.ack = True  # for returning data to peripherals in ACK payloads
 while nrf.load_ack(0, nvm[:4]):

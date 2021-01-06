@@ -11,12 +11,14 @@ from analogio import AnalogIn
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
 
+is_paired = [False]  # we should re-pair on every boot-up
 address = [b"\x33Pair"]  # only known address is the pairing address
 # bonded address after pairing will be the HID descriptor's usage +
 # 4 bytes received from pairing handshake (via ACK payload)
 # the HID descriptor's usage for a mouse is `6`, so bonded address will be
-address.append(bytearray([6, 0, 0, 0, 0]))
-is_paired = [False]  # we should re-pair on every boot-up
+address.append(bytearray([6 + 48, 0, 0, 0, 0]))  # needs to be a bytearray
+# NOTE we use `6 + 48` to avoid bad address formatting because of the
+# OTA packet's preamble (see datasheet section 7.3.1-2)
 
 hid_report_buf = [0] * 4  # use a list for storing mouse inputs
 # the report buffer has 4 bytes:
