@@ -159,8 +159,7 @@ print_details()
         - ``RX FIFO empty`` Is the RX FIFO buffer empty?
         - ``Custom ACK payload`` Is the nRF24L01 setup to use an extra (user defined) payload
           attached to the acknowledgment packet? (state of the `ack` attribute)
-        - ``Ask no ACK`` Is the nRF24L01 setup to transmit individual packets that don't
-          require acknowledgment?
+        - ``Ask no ACK`` The current setting of the `allow_ask_no_ack` attribute.
         - ``Automatic Acknowledgment`` The status of the `auto_ack` feature. If this value is a
           binary representation, then each bit represents the feature's status for each pipe.
         - ``Dynamic Payloads`` The status of the `dynamic_payloads` feature. If this value is a
