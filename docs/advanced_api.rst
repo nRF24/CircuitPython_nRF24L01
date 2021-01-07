@@ -176,7 +176,7 @@ print_details()
         - ``Pipe [#] ([open/closed]) bound: [address]`` where ``#`` represent the pipe number,
           the ``open/closed`` status is relative to the pipe's RX status, and ``address`` is
           the full value stored in the nRF24L01's RX address registers (despite what
-          `address_length` is set to.
+          `address_length` is set to).
         - if the pipe is open, then the output also prints ``expecting [X] byte static
           payloads`` where ``X`` is the `payload_length` (in bytes) the pipe is setup to
           receive when `dynamic_payloads` is disabled for that pipe.
