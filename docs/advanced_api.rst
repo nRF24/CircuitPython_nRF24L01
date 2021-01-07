@@ -183,6 +183,25 @@ print_details()
 
         This parameter's default is `False` and skips this extra information.
 
+address_repr()
+******************************
+
+.. automethod:: circuitpython_nrf24l01.rf24.address_repr()
+
+    This method is primarily used in :meth:`~RF24.print_details()` to
+    display how the address is used by the radio.
+
+    .. code-block:: python
+
+        >>> address_repr(b"1Node")
+        '65646f4e31'
+
+    :Return:
+        A string of hexidecimal characters in big endian form of the
+        specified ``address``.
+    :param bytes,bytearray addr: The address to convert into a hexlified
+        string
+
 is_plus_variant
 ******************************
 
