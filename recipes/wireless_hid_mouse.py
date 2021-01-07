@@ -59,7 +59,7 @@ def scan_and_report():
         curr_buf[0] |= button.value << i
     for i, axis in enumerate(axes):
         # scale analog inputs down to a signed 8 bits
-        curr_buf[i + 1] = (axis.value - 32768) / 512
+        curr_buf[i + 1] = (axis.value - 32768) / 256
     need_to_report = False
     for i, data in enumerate(curr_buf):
         if hid_report_buf[i] != data:
