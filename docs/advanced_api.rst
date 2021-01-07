@@ -186,19 +186,20 @@ print_details()
 address_repr()
 ******************************
 
-.. automethod:: circuitpython_nrf24l01.rf24.address_repr()
+.. automethod:: circuitpython_nrf24l01.rf24.address_repr
 
     This method is primarily used in :meth:`~RF24.print_details()` to
     display how the address is used by the radio.
 
     .. code-block:: python
 
+        >>> from circuitpython_nrf24l01.rf24 import address_repr
         >>> address_repr(b"1Node")
         '65646f4e31'
 
     :Return:
         A string of hexidecimal characters in big endian form of the
-        specified ``address``.
+        specified ``addr`` parameter.
     :param bytes,bytearray addr: The address to convert into a hexlified
         string
 
