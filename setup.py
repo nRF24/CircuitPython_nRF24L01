@@ -4,10 +4,9 @@ See:
 https://packaging.python.org/en/latest/distributing.html
 https://github.com/pypa/sampleproject
 """
-
 from os import path
 from codecs import open  # To use a consistent encoding
-from setuptools import setup  #, find_packages
+from setuptools import setup
 
 
 ROOT_DIR = path.abspath(path.dirname(__file__))
