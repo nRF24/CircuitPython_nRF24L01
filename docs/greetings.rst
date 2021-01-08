@@ -201,6 +201,11 @@ While the options' values differ from those identified by this library's API, th
 underlying commands to configure those options are almost identical to the nRF24L01. Other
 known clones include the bk242x (also known as RFM7x).
 
+.. seealso::
+  `Read this article
+  <https://ncrmnt.org/2021/01/03/nrf24l01-fixing-the-magic-finger-problem/>`_
+  about using clones with missing capacitors (includees pictures).
+
 Contributing
 ============
 
