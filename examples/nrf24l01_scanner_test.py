@@ -14,14 +14,23 @@ from circuitpython_nrf24l01.rf24 import RF24
 # change these (digital output) pins accordingly
 ce = dio.DigitalInOut(board.D4)
 csn = dio.DigitalInOut(board.D5)
-
 spi = board.SPI()
 nrf = RF24(spi, csn, ce)
+nrf.auto_ack = 0
+nrf.dynamic_payloads = 0
 
+def scan(timeout=30, passes=100):
+    """Traverse the spectrum of accessible frequencies and print any detection
+    of ambient signals.
 
-def print_header():
-    """print the vertical header of channel numbers"""
-    print("_" * 126 + "\n" + "0" * 100 + "1" * 26)
+    :param int timeout: The number of seconds for which scanning is performed.
+    :param int passes: The nuumber of accumulating passes through the entire
+        frequency spectrum.  1 pass scans a channels 1 time. 100 passes scan all
+        the channels 100 times. The lower this is set, the faster the scan is
+        performed but also less accurate picture of ambient signals.
+    """
+    # print the vertical header of channel numbers
+    print("0" * 100 + "1" * 26)
     for i in range(13):
         print(str(i % 10) * (10 if i < 12 else 6), sep="", end="")
     print("")  # endl
@@ -29,33 +38,24 @@ def print_header():
         print(str(i % 10), sep="", end="")
     print("\n" + "^" * 126)
 
-def scan(timeout=20):
-    """Traverse the spectrum of accessible frequencies and print any detection
-    of ambient signals.
-
-    :param int timeout: The number of seconds for which scanning is performed.
-    """
     # set the starting channel (2400 MHz for 1 Mbps or 2401 MHz for 2 Mbps)
     start_timer = time.monotonic()  # start the timer
-    loop_count = 0
+
     while time.monotonic() - start_timer < timeout:
-        if (loop_count % 19) == 0:
-            print_header()
         signals = [0] * 126  # store the signal count for each channel
-        for curr_channel in range(126):  # for each channel
-            for _ in range(10):  # attempt to scan channel 10 times
+        for _ in range(passes):  # attempt to scan channel 10 times
+            for curr_channel in range(126):  # for each channel
                 nrf.channel = curr_channel
+                # time.sleep(0.00013)
                 nrf.listen = 1  # start a RX session
-                time.sleep(0.00013)  # wait 130 microseconds
+                # time.sleep(0.00013)  # wait 130 microseconds
                 signals[curr_channel] += nrf.rpd * 1  # if interference is present
                 nrf.listen = 0  # reset the RDP flag
-                time.sleep(0.00013)
 
         # ouput the signal counts per channel
         for sig in signals:
-            print(sig if sig else "-", sep="", end="")
+            print(hex(min(0x0F, sig))[2:] if sig else "-", sep="", end="")
         print("")  # endl
-        loop_count += 1
 
 
 
