@@ -70,8 +70,8 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             print("send() failed or timed out")
         else:  # sent successful; listen for a response
             nrf.listen = True  # get radio ready to receive a response
-            timeout = time.monotonic() + 0.2  # set sentinal for timeout
-            while not nrf.available() and time.monotonic() < timeout:
+            timeout = time.monotonic_ns() + 200000  # set sentinal for timeout
+            while not nrf.available() and time.monotonic_ns() < timeout:
                 # this loop hangs for 200 ms or until response is received
                 pass
             nrf.listen = False  # put the radio back in TX mode
@@ -81,7 +81,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
                 "{} us. Sent: {}{}".format(
                     int((end_timer - start_timer) / 1000),
                     buffer[:6].decode("utf-8"),
-                    buffer[7:8][0]
+                    counter[0]
                 ),
                 end=" "
             )
