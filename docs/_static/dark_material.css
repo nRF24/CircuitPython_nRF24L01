@@ -37,7 +37,8 @@ span.highlighted {
   color: #B88451;
 }
 
-.md-typeset blockquote {
+blockquote .line-block,
+blockquote .line{
   border-left:.2rem solid rgb(153, 153, 153);
   color:rgb(202, 202, 202);
 }
