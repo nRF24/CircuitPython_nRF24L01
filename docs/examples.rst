@@ -69,13 +69,11 @@ Reading the scanner output
 
 The output of the scanner example is supposed to be read vertically (as columns). So, the following
 
-.. code-block::
-
-    000
-    111
-    789
-    ~~~
-    13-
+    | 000
+    | 111
+    | 789
+    | ~~~
+    | 13-
 
 should be interpreted as
 
