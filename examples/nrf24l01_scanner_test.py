@@ -7,6 +7,7 @@ carrier wave (which causes interference) for a certain RF data rate & channel.
 import time
 import board
 import digitalio as dio
+
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
@@ -19,7 +20,8 @@ nrf = RF24(spi, csn, ce)
 nrf.auto_ack = 0
 nrf.dynamic_payloads = 0
 
-def scan(timeout=30, passes=100):
+
+def scan(timeout=30):
     """Traverse the spectrum of accessible frequencies and print any detection
     of ambient signals.
 
@@ -36,27 +38,33 @@ def scan(timeout=30, passes=100):
     print("")  # endl
     for i in range(126):
         print(str(i % 10), sep="", end="")
-    print("\n" + "^" * 126)
+    print("\n" + "~" * 126)
 
     # set the starting channel (2400 MHz for 1 Mbps or 2401 MHz for 2 Mbps)
     start_timer = time.monotonic()  # start the timer
 
+    signals = [0] * 126  # store the signal count for each channel
     while time.monotonic() - start_timer < timeout:
-        signals = [0] * 126  # store the signal count for each channel
-        for _ in range(passes):  # attempt to scan channel 10 times
-            for curr_channel in range(126):  # for each channel
-                nrf.channel = curr_channel
-                # time.sleep(0.00013)
-                nrf.listen = 1  # start a RX session
-                # time.sleep(0.00013)  # wait 130 microseconds
-                signals[curr_channel] += nrf.rpd * 1  # if interference is present
-                nrf.listen = 0  # reset the RDP flag
+        for curr_channel in range(126):  # for each channel
+            nrf.channel = curr_channel
+            time.sleep(0.00013)  # let radio modulate to new channel
+            nrf.listen = 1  # start a RX session
+            time.sleep(0.00013)  # wait 130 microseconds
+            signals[curr_channel] += nrf.rpd  # if interference is present
+            nrf.listen = 0  # end the RX session
 
-        # ouput the signal counts per channel
-        for sig in signals:
-            print(hex(min(0x0F, sig))[2:] if sig else "-", sep="", end="")
-        print("")  # endl
-
+            # ouptut the signal counts per channel
+            print(
+                hex(min(0x0F, signals[curr_channel]))[2:]
+                if signals[curr_channel]
+                else "-",
+                sep="",
+                end="" if curr_channel < 125 else "\r",
+            )
+    # print results 1 last time to end with a new line
+    for sig in signals:
+        print(hex(min(0x0F, sig))[2:] if sig else "-", sep="", end="")
+    print("")
 
 
 print(
