@@ -67,6 +67,9 @@ and outputs a vertical graph of how many signals (per :py:attr:`~circuitpython_n
 Reading the scanner output
 **************************
 
+.. hint:: Make sure the terminal window used to run the scanner example is expanded
+    to fit 125 characters. Otherwise the output will look weird.
+
 The output of the scanner example is supposed to be read vertically (as columns). So, the following
 
     | 000
