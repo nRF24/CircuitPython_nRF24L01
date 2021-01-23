@@ -164,13 +164,13 @@ def set_role():
         else:
             slave()
         return True
-    elif user_input[0].upper().startswith("T"):
+    if user_input[0].upper().startswith("T"):
         if len(user_input) > 1:
             master(int(user_input[1]))
         else:
             master()
         return True
-    elif user_input[0].upper().startswith("Q"):
+    if user_input[0].upper().startswith("Q"):
         nrf.power = False
         return False
     print(user_input[0], "is an unrecognized input. Please try again.")
