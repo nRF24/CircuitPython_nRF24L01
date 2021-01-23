@@ -38,8 +38,8 @@ span.highlighted {
 }
 
 .md-typeset blockquote {
-  border-left: .2rem solid rgb(85, 84, 84);
-  color: rgb(183, 183, 183);
+  border-left:.2rem solid rgb(153, 153, 153);
+  color:rgb(202, 202, 202);
 }
 
 .md-typeset .admonition.tip .admonition-title::before,
