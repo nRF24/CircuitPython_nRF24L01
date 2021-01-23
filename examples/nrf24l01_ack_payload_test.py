@@ -133,7 +133,7 @@ def slave(timeout=6):
                     bytes(received[:6]).decode("utf-8"),
                     received[7:8][0],
                     bytes(buffer[:6]).decode("utf-8"),
-                    counter[0]
+                    buffer[7:8][0]
                 )
             )
             start = time.monotonic()  # reset timer
