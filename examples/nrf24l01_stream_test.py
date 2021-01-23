@@ -4,6 +4,7 @@ Example of library usage for streaming multiple payloads.
 import time
 import board
 import digitalio as dio
+
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
@@ -15,11 +16,7 @@ address = [b"1Node", b"2Node"]
 # uniquely identify which address this radio will use to transmit
 # 0 uses address[0] to transmit, 1 uses address[1] to transmit
 radio_number = bool(
-    int(
-        input(
-            "Which radio is this? Enter '0' or '1'. Defaults to '0' "
-        ) or 0
-    )
+    int(input("Which radio is this? Enter '0' or '1'. Defaults to '0' ") or 0)
 )
 
 # change these (digital output) pins accordingly
@@ -83,9 +80,7 @@ def master(count=1, size=32):  # count = 5 will transmit the list 5 times
             successful += 1 if r else 0
     print(
         "successfully sent {}% ({}/{})".format(
-            successful / (size * count) * 100,
-            successful,
-            size * count
+            successful / (size * count) * 100, successful, size * count
         )
     )
 
@@ -129,10 +124,9 @@ def master_fifo(count=1, size=32):
         end_timer = time.monotonic_ns()  # end timer
         print(
             "Transmission took {} us with {} failures detected.".format(
-                (end_timer - start_timer) / 1000,
-                failures
+                (end_timer - start_timer) / 1000, failures
             ),
-            end=" " if failures < 100 else "\n"
+            end=" " if failures < 100 else "\n",
         )
         if 1 <= failures < 100:
             print(
@@ -162,10 +156,67 @@ def slave(timeout=5):
     nrf.listen = False  # put the nRF24L01 is in TX mode
 
 
-print(
-    """\
-    nRF24L01 Stream test\n\
-    Run slave() on receiver\n\
-    Run master() on transmitter to use 1 level of the TX FIFO\n\
-    Run master_fifo() on transmitter to use all 3 levels of the TX FIFO."""
-)
+def set_role():
+    """Set the role using stdin stream. Timeout arg for slave() can be
+    specified using a space delimiter (e.g. 'R 10' calls `slave(10)`)
+
+    :return:
+        - True when role is complete & app should continue running.
+        - False when app should exit
+    """
+    user_input = (
+        input(
+            "*** Enter 'R' for receiver role.\n"
+            "*** Enter 'T' for transmitter role (using 1 level"
+            " of the TX FIFO).\n"
+            "*** Enter 'F' for transmitter role (using all 3 levels"
+            " of the TX FIFO).\n"
+            "*** Enter 'Q' to quit example.\n"
+        )
+        or "?"
+    )
+    user_input = user_input.split()
+    if user_input[0].upper().startswith("R"):
+        if len(user_input) > 1:
+            slave(int(user_input[1]))
+        else:
+            slave()
+        return True
+    if user_input[0].upper().startswith("T"):
+        if len(user_input) > 2:
+            master(int(user_input[1]), int(user_input[2]))
+        elif len(user_input) > 1:
+            master(int(user_input[1]))
+        else:
+            master()
+        return True
+    if user_input[0].upper().startswith("F"):
+        if len(user_input) > 2:
+            master_fifo(int(user_input[1]), int(user_input[2]))
+        elif len(user_input) > 1:
+            master_fifo(int(user_input[1]))
+        else:
+            master_fifo()
+        return True
+    if user_input[0].upper().startswith("Q"):
+        nrf.power = False
+        return False
+    print(user_input[0], "is an unrecognized input. Please try again.")
+    return set_role()
+
+
+print("    nRF24L01 Stream test")
+
+if __name__ == "__main__":
+    try:
+        while set_role():
+            pass  # continue example until 'Q' is entered
+    except KeyboardInterrupt:
+        print(" Keyboard Interrupt detected. Powering down radio...")
+        nrf.power = False
+else:
+    print(
+        "    Run slave() on receiver\n    Run master() on transmitter to use"
+        " 1 level of the TX FIFO\n    Run master_fifo() on transmitter to use"
+        " all 3 levels of the TX FIFO"
+    )

@@ -61,8 +61,43 @@ def scan(timeout=30):
     print("")
 
 
-print(
-    """\
-    nRF24L01 scanner test\n\
-    Run scan() to initiate scan for ambient signals."""
-)
+def set_role():
+    """Set the role using stdin stream. Timeout arg for scan() can be
+    specified using a space delimiter (e.g. 'S 10' calls `scan(10)`)
+
+    :return:
+        - True when role is complete & app should continue running.
+        - False when app should exit
+    """
+    user_input = (
+        input(
+            "*** Enter 'S' to perform scan.\n"
+            "*** Enter 'Q' to quit example.\n"
+        )
+        or "?"
+    )
+    user_input = user_input.split()
+    if user_input[0].upper().startswith("S"):
+        if len(user_input) > 1:
+            scan(int(user_input[1]))
+        else:
+            scan()
+        return True
+    if user_input[0].upper().startswith("Q"):
+        nrf.power = False
+        return False
+    print(user_input[0], "is an unrecognized input. Please try again.")
+    return set_role()
+
+
+print("    nRF24L01 scanner test")
+
+if __name__ == "__main__":
+    try:
+        while set_role():
+            pass  # continue example until 'Q' is entered
+    except KeyboardInterrupt:
+        print(" Keyboard Interrupt detected. Powering down radio...")
+        nrf.power = False
+else:
+    print("    Run scan() to initiate scan for ambient signals.")

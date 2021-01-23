@@ -34,7 +34,7 @@ addresses = [
     b"\xCD\xB6\xB5\xB4\xB3",
     b"\xA3\xB6\xB5\xB4\xB3",
     b"\x0F\xB6\xB5\xB4\xB3",
-    b"\x05\xB6\xB5\xB4\xB3"
+    b"\x05\xB6\xB5\xB4\xB3",
 ]
 
 # uncomment the following 3 lines for compatibility with TMRh20 library
@@ -61,13 +61,13 @@ def base(timeout=10):
     nrf.listen = False
 
 
-def node(node_number, count=6):
+def node(node_number=0, count=6):
     """start transmitting to the base station.
 
-        :param int node_number: the node's identifying index (from the
-            the `addresses` list)
-        :param int count: the number of times that the node will transmit
-            to the base station.
+    :param int node_number: the node's identifying index (from the
+        the `addresses` list)
+    :param int count: the number of times that the node will transmit
+        to the base station.
     """
     nrf.listen = False
     # set the TX address to the address of the base station.
@@ -87,9 +87,7 @@ def node(node_number, count=6):
             print(
                 "Transmission of payloadID {} as node {} successfull! "
                 "Transmission time: {} us".format(
-                    counter,
-                    node_number,
-                    (end_timer - start_timer) / 1000
+                    counter, node_number, (end_timer - start_timer) / 1000
                 )
             )
         else:
@@ -97,11 +95,56 @@ def node(node_number, count=6):
         time.sleep(0.5)  # slow down the test for readability
 
 
-print(
-    """\
-    nRF24L01 Multiceiver test.\n\
-    Run base() on the receiver\n\
-        base() sends ACK payloads to node 1\n\
-    Run node(node_number) on a transmitter\n\
-        node()'s parameter, `node_number`, must be in range [0, 5]"""
-)
+def set_role():
+    """Set the role using stdin stream. Node number arg for node() can be
+    specified using a space delimiter (e.g. 'T 0' calls `node(0)`)
+
+    :return:
+        - True when role is complete & app should continue running.
+        - False when app should exit
+    """
+    user_input = (
+        input(
+            "*** Enter 'R' for receiver role.\n"
+            "*** Enter 'T' for transmitter role.\n"
+            "*** Enter 'Q' to quit example.\n"
+        )
+        or "?"
+    )
+    user_input = user_input.split()
+    if user_input[0].upper().startswith("R"):
+        if len(user_input) > 1:
+            base(int(user_input[1]))
+        else:
+            base()
+        return True
+    if user_input[0].upper().startswith("T"):
+        if len(user_input) > 2:
+            node(int(user_input[1]), int(user_input[2]))
+        elif len(user_input) > 1:
+            node(int(user_input[1]))
+        else:
+            node()
+        return True
+    if user_input[0].upper().startswith("Q"):
+        nrf.power = False
+        return False
+    print(user_input[0], "is an unrecognized input. Please try again.")
+    return set_role()
+
+
+print("    nRF24L01 Multiceiver test")
+
+if __name__ == "__main__":
+    try:
+        while set_role():
+            pass  # continue example until 'Q' is entered
+    except KeyboardInterrupt:
+        print(" Keyboard Interrupt detected. Powering down radio...")
+        nrf.power = False
+else:
+    print(
+        "    Run base() on the receiver\n    "
+        "Run node(node_number) on a transmitter\n    "
+        "node()'s parameter, `node_number`, must be in range [0, 5]"""
+    )
