@@ -87,9 +87,9 @@ class FakeBLE(RF24):
         self._aa, self._dyn_pl, self._features, self._retry_setup = (0,) * 4
         self._addr_len = 4  # use only 4 byte address length
         self._tx_address[:4] = b"\x71\x91\x7D\x6B"
-        self._open_pipes = 1
         with self:
             self.payload_length = 32
+            super().open_rx_pipe(0, b"\x71\x91\x7D\x6B\0")
 
     def __exit__(self, *exc):
         self._show_dbm = False
@@ -258,6 +258,8 @@ class FakeBLE(RF24):
         """This debuggung function aggregates and outputs all status/condition
         related information from the nRF24L01."""
         print("Is a plus variant_________{}".format(self.is_plus_variant))
+        print("BLE device name___________{}".format(str(self.name)))
+        print("Broadcasting PA Level_____{}".format(self.show_pa_level))
         print(
             "Channel___________________{} ~ {} GHz".format(
                 self.channel, (self.channel + 2400) / 1000

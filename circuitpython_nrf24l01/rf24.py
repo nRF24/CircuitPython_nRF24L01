@@ -46,10 +46,7 @@ def address_repr(addr):
     """Convert an address into a hexlified string (in big endian)."""
     rev_str = ""
     for char in range(len(addr) - 1, -1, -1):
-        if addr[char] > 0x0F:
-            rev_str += hex(addr[char])[2:]
-        else:
-            rev_str += "0" + hex(addr[char])[2:]
+        rev_str += ("" if addr[char] > 0x0F else "0") + hex(addr[char])[2:]
     return rev_str
 
 
