@@ -69,13 +69,15 @@ Reading the scanner output
 
 The output of the scanner example is supposed to be read vertically (as columns). So, the following
 
-    | 000
-    | 111
-    | 789
-    | ~~~
-    | 13-
+.. code-block::
 
-could be interpreted as
+    000
+    111
+    789
+    ~~~
+    13-
+
+should be interpreted as
 
 - ``1`` signal detected on channel ``017``
 - ``3`` signals detected on channel ``018``
