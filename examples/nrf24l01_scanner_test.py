@@ -25,11 +25,7 @@ def scan(timeout=30):
     """Traverse the spectrum of accessible frequencies and print any detection
     of ambient signals.
 
-    :param int timeout: The number of seconds for which scanning is performed.
-    :param int passes: The nuumber of accumulating passes through the entire
-        frequency spectrum.  1 pass scans a channels 1 time. 100 passes scan all
-        the channels 100 times. The lower this is set, the faster the scan is
-        performed but also less accurate picture of ambient signals.
+    :param int timeout: The number of seconds in which scanning is performed.
     """
     # print the vertical header of channel numbers
     print("0" * 100 + "1" * 26)
@@ -40,10 +36,8 @@ def scan(timeout=30):
         print(str(i % 10), sep="", end="")
     print("\n" + "~" * 126)
 
-    # set the starting channel (2400 MHz for 1 Mbps or 2401 MHz for 2 Mbps)
-    start_timer = time.monotonic()  # start the timer
-
     signals = [0] * 126  # store the signal count for each channel
+    start_timer = time.monotonic()  # start the timer
     while time.monotonic() - start_timer < timeout:
         for curr_channel in range(126):  # for each channel
             nrf.channel = curr_channel

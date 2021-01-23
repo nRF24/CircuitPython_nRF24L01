@@ -37,6 +37,11 @@ span.highlighted {
   color: #B88451;
 }
 
+.md-typeset blockquote {
+  border-left: .2rem solid rgb(85, 84, 84);
+  color: rgb(183, 183, 183);
+}
+
 .md-typeset .admonition.tip .admonition-title::before,
 .md-typeset .admonition.hint .admonition-title::before {
   content: "\E80C";

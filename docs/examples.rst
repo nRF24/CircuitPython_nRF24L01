@@ -58,11 +58,30 @@ Scanner Example
 .. versionadded:: 2.0.0
 
 This example simply scans the entire RF frquency (2.4 GHz to 2.525 GHz)
-and outputs a vertical graph of how many signals (out of 10 attempted scans per :py:attr:`~circuitpython_nrf24l01.rf24.RF24.channel`) were detected. This example can be used to find a frequency with the least ambient interference from other radio-emitting sources (i.e. WiFi, Bluetooth, or etc).
+and outputs a vertical graph of how many signals (per :py:attr:`~circuitpython_nrf24l01.rf24.RF24.channel`) were detected. This example can be used to find a frequency with the least ambient interference from other radio-emitting sources (i.e. WiFi, Bluetooth, or etc).
 
 .. literalinclude:: ../examples/nrf24l01_scanner_test.py
     :caption: examples/nrf24l01_scanner_test.py
     :linenos:
+
+Reading the scanner output
+**************************
+
+The output of the scanner example is supposed to be read vertically (as columns). So, the following
+
+    | 000
+    | 111
+    | 789
+    | ~~~
+    | 13-
+
+could be interpreted as
+
+- ``1`` signal detected on channel ``017``
+- ``3`` signals detected on channel ``018``
+- no signal (``-``) detected on channel ``019``
+
+The ``~`` is just a divider between the vertical header and the signal counts.
 
 IRQ Pin Example
 ---------------
