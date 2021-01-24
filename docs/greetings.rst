@@ -118,21 +118,54 @@ Using The Examples
 
 See `examples <examples.html>`_ for testing certain features of this the library. The examples were developed and tested on both Raspberry Pi and ItsyBitsy M4. Pins have been hard coded in the examples for the corresponding device, so please adjust these accordingly to your circuitpython device if necessary.
 
-To run the simple example, navigate to this repository's "examples" folder in the terminal. If you're working with a CircuitPython device (not a Raspberry Pi), copy the file named "nrf24l01_simple_test.py" from this repository's "examples" folder to the root directory of your CircuitPython device's CIRCUITPY drive. Now you're ready to open a python REPR and run the following commands:
+For an interactive REPL
+---------------------------
 
-.. code-block:: python
+All examples can be imported from within an interactive python REPL.
 
-    >>> from nrf24l01_simple_test import *
-    Which radio is this? Enter '0' or '1'. Defaults to '0'
-        nRF24L01 Simple test.
-        Run slave() on receiver
-        Run master() on transmitter
-    >>> master()
-    Transmission successful! Time to Transmit: 6993.972 us. Sent: 0.0
-    Transmission successful! Time to Transmit: 6563.277 us. Sent: 0.01
-    Transmission successful! Time to Transmit: 6453.385 us. Sent: 0.02
-    Transmission successful! Time to Transmit: 6338.29 us. Sent: 0.03
-    Transmission successful! Time to Transmit: 6440.163 us. Sent: 0.04
+1. Make sure the examples are located in the current working directory.
+   On CircuitPython devices, this will be the root directory of the CIRCUITPY drive.
+2. Import everything from desired the example. The following code snippet demonstrates running the `Simple Test example <examples.html#simple-test>`_
+
+   .. code-block:: python
+
+       >>> from nrf24l01_simple_test import *
+       Which radio is this? Enter '0' or '1'. Defaults to '0'
+           nRF24L01 Simple test.
+           Run slave() on receiver
+           Run master() on transmitter
+       >>> master()
+       Transmission successful! Time to Transmit: 6993.972 us. Sent: 0.0
+       Transmission successful! Time to Transmit: 6563.277 us. Sent: 0.01
+       Transmission successful! Time to Transmit: 6453.385 us. Sent: 0.02
+       Transmission successful! Time to Transmit: 6338.29 us. Sent: 0.03
+       Transmission successful! Time to Transmit: 6440.163 us. Sent: 0.04
+
+For CircuitPython devices
+---------------------------
+
+1. Copy the examples to the root directory of the CIRCUITPY device.
+2. Rename of the example file to ``main.py``.
+3. If the REPL is not already running, then the example should start automatically.
+   If the REPL is already running in interactive mode, then press ``ctrl+d`` to do a
+   soft reset, and the example should start automatically.
+
+For CPython in Linux
+---------------------------
+
+1. Clone the library repository, then navigate to the reository's example directory.
+
+   .. code-block:: shell
+
+       git clone https://github.com/2bndy5/CircuitPython_nRF24L01.git
+       cd CircuitPython_nRF24L01/examples
+
+2. Run the example as a normal python program
+
+   .. code-block:: shell
+
+       python3 nrf24l01_simple_test.py
+
 
 What to purchase
 =================
@@ -143,6 +176,9 @@ vise versa. This library has been tested on a cheaply bought 6 pack from Amazon.
 take Amazon or eBay for granted! There are other wireless transceivers that are NOT compatible
 with this library. For instance, the esp8266-01 (also sold in packs) is NOT compatible with
 this library, but looks very similar to the nRF24L01+ and could lead to an accidental purchase.
+
+.. seealso::
+    Beware, there are also `nrf24l01(+) clones and counterfeits`_ that may not work the same.
 
 Power Stability
 -------------------
@@ -198,13 +234,16 @@ amplifier options as noted in the `RF_PWR section (bits 0 through 2) of the RF_S
 (address 0x06) of the datasheet <https://datasheet.lcsc.com/szlcsc/
 1811142211_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.pdf#%5B%7B%22num%22%3A329%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C0%2C755%2Cnull%5D>`_.
 While the options' values differ from those identified by this library's API, the
-underlying commands to configure those options are almost identical to the nRF24L01. Other
-known clones include the bk242x (also known as RFM7x).
+underlying commands to configure those options are almost identical to the nRF24L01.
+The Si24R1 is also famous for not supporting :py:attr:`~circuitpython_nrf24l01.rf24.RF24.auto_ack`
+correctly because the designers "cloned" a typo from the 1\ :sup:`st` version of the nRF24L01
+(non-plus) datasheet into the Si24R1 firmware. Other known clones include the bk242x (also known as
+RFM7x).
 
 .. seealso::
   `Read this article
   <https://ncrmnt.org/2021/01/03/nrf24l01-fixing-the-magic-finger-problem/>`_
-  about using clones with missing capacitors (includees pictures).
+  about using clones with missing capacitors (includes pictures).
 
 Contributing
 ============
