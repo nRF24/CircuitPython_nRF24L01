@@ -6,18 +6,15 @@ examples after the TMRh20 library is installed from the Arduino Library Manager.
 """
 import time
 import board
-import digitalio as dio
+import digitalio
 
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
 
-# addresses needs to be in a buffer protocol object (bytearray)
-address = [b"1Node", b"2Node"]
-
 # change these (digital output) pins accordingly
-ce = dio.DigitalInOut(board.D4)
-csn = dio.DigitalInOut(board.D5)
+ce = digitalio.DigitalInOut(board.D4)
+csn = digitalio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
 # available SPI pins, board.SCK, board.MOSI, board.MISO
@@ -29,6 +26,9 @@ nrf = RF24(spi, csn, ce)
 # set the Power Amplifier level to -12 dBm since this test example is
 # usually run with nRF24L01 transceivers in close proximity
 nrf.pa_level = -12
+
+# addresses needs to be in a buffer protocol object (bytearray)
+address = [b"1Node", b"2Node"]
 
 # to use different addresses on a pair of radios, we need a variable to
 # uniquely identify which address this radio will use to transmit

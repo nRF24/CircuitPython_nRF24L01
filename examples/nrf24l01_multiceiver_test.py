@@ -5,15 +5,15 @@ transceivers. This technique is called "multiceiver" in the datasheet.
 import time
 import struct
 import board
-import digitalio as dio
+import digitalio
 
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
 
 # change these (digital output) pins accordingly
-ce = dio.DigitalInOut(board.D4)
-csn = dio.DigitalInOut(board.D5)
+ce = digitalio.DigitalInOut(board.D4)
+csn = digitalio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
 # available SPI pins, board.SCK, board.MOSI, board.MISO

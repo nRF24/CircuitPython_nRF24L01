@@ -1,22 +1,29 @@
 """
 This is an example of how to use the nRF24L01's builtin
-Received Power Detection (RPD). This example does not require a
-counterpart node, but a master() function is provided to broadcast a constant
-carrier wave (which causes interference) for a certain RF data rate & channel.
+Received Power Detection (RPD) to scan for possible interference.
+This example does not require a counterpart node.
 """
 import time
 import board
-import digitalio as dio
+import digitalio
 
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
 
 # change these (digital output) pins accordingly
-ce = dio.DigitalInOut(board.D4)
-csn = dio.DigitalInOut(board.D5)
-spi = board.SPI()
+ce = digitalio.DigitalInOut(board.D4)
+csn = digitalio.DigitalInOut(board.D5)
+
+# using board.SPI() automatically selects the MCU's
+# available SPI pins, board.SCK, board.MOSI, board.MISO
+spi = board.SPI()  # init spi bus object
+
+# we'll be using the dynamic payload size feature (enabled by default)
+# initialize the nRF24L01 on the spi bus object
 nrf = RF24(spi, csn, ce)
+
+# turn off RX features specific to the nRF24L01 module
 nrf.auto_ack = 0
 nrf.dynamic_payloads = 0
 

@@ -6,7 +6,7 @@ This example uses the nRF24L01 as a 'fake' BLE Beacon
 """
 import time
 import board
-import digitalio as dio
+import digitalio
 from circuitpython_nrf24l01.fake_ble import (
     chunk,
     FakeBLE,
@@ -16,8 +16,8 @@ from circuitpython_nrf24l01.fake_ble import (
 )
 
 # change these (digital output) pins accordingly
-ce = dio.DigitalInOut(board.D4)
-csn = dio.DigitalInOut(board.D5)
+ce = digitalio.DigitalInOut(board.D4)
+csn = digitalio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
 # available SPI pins, board.SCK, board.MOSI, board.MISO
