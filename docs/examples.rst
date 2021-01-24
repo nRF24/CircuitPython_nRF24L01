@@ -14,6 +14,8 @@ Ensure your device works with this simple test.
 .. literalinclude:: ../examples/nrf24l01_simple_test.py
     :caption: examples/nrf24l01_simple_test.py
     :linenos:
+    :start-at: import time
+    :end-before: def set_role():
 
 ACK Payloads Example
 --------------------
@@ -28,6 +30,8 @@ This is a test to show how to use custom acknowledgment payloads. See also docum
 .. literalinclude:: ../examples/nrf24l01_ack_payload_test.py
     :caption: examples/nrf24l01_ack_payload_test.py
     :linenos:
+    :start-at: import time
+    :end-before: def set_role():
 
 Multiceiver Example
 --------------------
@@ -51,6 +55,8 @@ This example shows how use a group of 6 nRF24L01 transceivers to transmit to 1 n
 .. literalinclude:: ../examples/nrf24l01_multiceiver_test.py
     :caption: examples/nrf24l01_multiceiver_test.py
     :linenos:
+    :start-at: import time
+    :end-before: def set_role():
 
 Scanner Example
 ---------------
@@ -63,6 +69,8 @@ and outputs a vertical graph of how many signals (per :py:attr:`~circuitpython_n
 .. literalinclude:: ../examples/nrf24l01_scanner_test.py
     :caption: examples/nrf24l01_scanner_test.py
     :linenos:
+    :start-at: import time
+    :end-before: def set_role():
 
 Reading the scanner output
 **************************
@@ -97,6 +105,8 @@ This is a test to show how to use nRF24L01's interrupt pin. Be aware that :py:fu
 .. literalinclude:: ../examples/nrf24l01_interrupt_test.py
     :caption: examples/nrf24l01_interrupt_test.py
     :linenos:
+    :start-at: import time
+    :end-before: def set_role():
 
 Library-Specific Features
 =========================
@@ -117,6 +127,8 @@ uses all 3 levels of the nRF24L01's TX FIFO to stream data, but it uses the
 .. literalinclude:: ../examples/nrf24l01_stream_test.py
     :caption: examples/nrf24l01_stream_test.py
     :linenos:
+    :start-at: import time
+    :end-before: def set_role():
 
 Context Example
 ---------------
@@ -129,6 +141,7 @@ This is a test to show how to use `with` blocks to manage multiple different nRF
 .. literalinclude:: ../examples/nrf24l01_context_test.py
     :caption: examples/nrf24l01_context_test.py
     :linenos:
+    :start-at: import board
 
 Manual ACK Example
 ------------------
@@ -140,6 +153,8 @@ This is a test to show how to use the library for acknowledgement (ACK) response
 .. literalinclude:: ../examples/nrf24l01_manual_ack_test.py
     :caption: examples/nrf24l01_manual_ack_test.py
     :linenos:
+    :start-at: import time
+    :end-before: def set_role():
 
 OTA compatibility
 =================
@@ -154,6 +169,8 @@ This is a test to show how to use the nRF24L01 as a BLE advertising beacon using
 .. literalinclude:: ../examples/nrf24l01_fake_ble_test.py
     :caption: examples/nrf24l01_fake_ble_test.py
     :linenos:
+    :start-at: import time
+    :end-before: def set_role():
 
 TMRh20's Arduino library
 ------------------------
