@@ -33,6 +33,7 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinx_copybutton",
+    "sphinx_sitemap",
     # "rst2pdf.pdfbuilder",  # for local pdf builder support
 ]
 
@@ -73,7 +74,7 @@ author = u"Brendan Doherty"
 # built documents.
 #
 # The short X.Y version.
-version = u"2.0.0"
+version = u"dev"
 # The full version, including alpha/beta/rc tags.
 release = u"2.0.0"
 
@@ -325,7 +326,6 @@ texinfo_documents = [
 # ---Options for PDF output-----------------------------------------
 # requires `rst2pdf` module which is not builtin to Python 3.4 nor
 # readthedocs.org's docker)
-
 # pdf_documents = [
 #     (
 #         "index",
