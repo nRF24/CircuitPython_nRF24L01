@@ -6,13 +6,13 @@ display settings after changing contexts ( & thus configurations)
     .. warning:: This script is not compatible with the rf24_lite module
 """
 import board
-import digitalio as dio
+import digitalio
 from circuitpython_nrf24l01.rf24 import RF24
 from circuitpython_nrf24l01.fake_ble import FakeBLE
 
 # change these (digital output) pins accordingly
-ce = dio.DigitalInOut(board.D4)
-csn = dio.DigitalInOut(board.D5)
+ce = digitalio.DigitalInOut(board.D4)
+csn = digitalio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
 # available SPI pins, board.SCK, board.MOSI, board.MISO

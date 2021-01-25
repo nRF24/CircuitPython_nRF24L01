@@ -4,28 +4,15 @@ Simple example of using the RF24 class.
 import time
 import struct
 import board
-import digitalio as dio
+import digitalio
+
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
 
-# addresses needs to be in a buffer protocol object (bytearray)
-address = [b"1Node", b"2Node"]
-
-# to use different addresses on a pair of radios, we need a variable to
-# uniquely identify which address this radio will use to transmit
-# 0 uses address[0] to transmit, 1 uses address[1] to transmit
-radio_number = bool(
-    int(
-        input(
-            "Which radio is this? Enter '0' or '1'. Defaults to '0' "
-        ) or 0
-    )
-)
-
 # change these (digital output) pins accordingly
-ce = dio.DigitalInOut(board.D4)
-csn = dio.DigitalInOut(board.D5)
+ce = digitalio.DigitalInOut(board.D4)
+csn = digitalio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
 # available SPI pins, board.SCK, board.MOSI, board.MISO
@@ -38,6 +25,16 @@ nrf = RF24(spi, csn, ce)
 # set the Power Amplifier level to -12 dBm since this test example is
 # usually run with nRF24L01 transceivers in close proximity
 nrf.pa_level = -12
+
+# addresses needs to be in a buffer protocol object (bytearray)
+address = [b"1Node", b"2Node"]
+
+# to use different addresses on a pair of radios, we need a variable to
+# uniquely identify which address this radio will use to transmit
+# 0 uses address[0] to transmit, 1 uses address[1] to transmit
+radio_number = bool(
+    int(input("Which radio is this? Enter '0' or '1'. Defaults to '0' ") or 0)
+)
 
 # set TX address of RX node into the TX pipe
 nrf.open_tx_pipe(address[radio_number])  # always uses pipe 0
@@ -73,8 +70,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             print(
                 "Transmission successful! Time to Transmit: "
                 "{} us. Sent: {}".format(
-                    (end_timer - start_timer) / 1000,
-                    payload[0]
+                    (end_timer - start_timer) / 1000, payload[0]
                 )
             )
             payload[0] += 0.01
@@ -100,9 +96,7 @@ def slave(timeout=6):
             # print details about the received packet
             print(
                 "Received {} bytes on pipe {}: {}".format(
-                    payload_size,
-                    pipe_number,
-                    payload[0]
+                    payload_size, pipe_number, payload[0]
                 )
             )
             start = time.monotonic()
@@ -111,9 +105,50 @@ def slave(timeout=6):
     nrf.listen = False  # put the nRF24L01 is in TX mode
 
 
-print(
-    """\
-    nRF24L01 Simple test.\n\
-    Run slave() on receiver\n\
-    Run master() on transmitter"""
-)
+def set_role():
+    """Set the role using stdin stream. Timeout arg for slave() can be
+    specified using a space delimiter (e.g. 'R 10' calls `slave(10)`)
+
+    :return:
+        - True when role is complete & app should continue running.
+        - False when app should exit
+    """
+    user_input = (
+        input(
+            "*** Enter 'R' for receiver role.\n"
+            "*** Enter 'T' for transmitter role.\n"
+            "*** Enter 'Q' to quit example.\n"
+        )
+        or "?"
+    )
+    user_input = user_input.split()
+    if user_input[0].upper().startswith("R"):
+        if len(user_input) > 1:
+            slave(int(user_input[1]))
+        else:
+            slave()
+        return True
+    if user_input[0].upper().startswith("T"):
+        if len(user_input) > 1:
+            master(int(user_input[1]))
+        else:
+            master()
+        return True
+    if user_input[0].upper().startswith("Q"):
+        nrf.power = False
+        return False
+    print(user_input[0], "is an unrecognized input. Please try again.")
+    return set_role()
+
+
+print("    nRF24L01 Simple test")
+
+if __name__ == "__main__":
+    try:
+        while set_role():
+            pass  # continue example until 'Q' is entered
+    except KeyboardInterrupt:
+        print(" Keyboard Interrupt detected. Powering down radio...")
+        nrf.power = False
+else:
+    print("    Run slave() on receiver\n    Run master() on transmitter")

@@ -159,8 +159,7 @@ print_details()
         - ``RX FIFO empty`` Is the RX FIFO buffer empty?
         - ``Custom ACK payload`` Is the nRF24L01 setup to use an extra (user defined) payload
           attached to the acknowledgment packet? (state of the `ack` attribute)
-        - ``Ask no ACK`` Is the nRF24L01 setup to transmit individual packets that don't
-          require acknowledgment?
+        - ``Ask no ACK`` The current setting of the `allow_ask_no_ack` attribute.
         - ``Automatic Acknowledgment`` The status of the `auto_ack` feature. If this value is a
           binary representation, then each bit represents the feature's status for each pipe.
         - ``Dynamic Payloads`` The status of the `dynamic_payloads` feature. If this value is a
@@ -176,12 +175,32 @@ print_details()
         - ``Pipe [#] ([open/closed]) bound: [address]`` where ``#`` represent the pipe number,
           the ``open/closed`` status is relative to the pipe's RX status, and ``address`` is
           the full value stored in the nRF24L01's RX address registers (despite what
-          `address_length` is set to.
+          `address_length` is set to).
         - if the pipe is open, then the output also prints ``expecting [X] byte static
           payloads`` where ``X`` is the `payload_length` (in bytes) the pipe is setup to
           receive when `dynamic_payloads` is disabled for that pipe.
 
         This parameter's default is `False` and skips this extra information.
+
+address_repr()
+******************************
+
+.. automethod:: circuitpython_nrf24l01.rf24.address_repr
+
+    This method is primarily used in :meth:`~RF24.print_details()` to
+    display how the address is used by the radio.
+
+    .. code-block:: python
+
+        >>> from circuitpython_nrf24l01.rf24 import address_repr
+        >>> address_repr(b"1Node")
+        '65646f4e31'
+
+    :Return:
+        A string of hexidecimal characters in big endian form of the
+        specified ``addr`` parameter.
+    :param bytes,bytearray addr: The address to convert into a hexlified
+        string
 
 is_plus_variant
 ******************************

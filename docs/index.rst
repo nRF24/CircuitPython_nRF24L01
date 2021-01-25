@@ -27,6 +27,7 @@
 
     troubleshooting
 
+
 .. toctree::
     :caption: Network API Reference
 
@@ -52,8 +53,9 @@
     Adafruit Blog <https://blog.adafruit.com>
     Adafruit Store <https://www.adafruit.com>
 
-Site Glossary
-==============
+Indices and tables
+==================
 
-:ref:`genindex`
-
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

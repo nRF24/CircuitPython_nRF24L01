@@ -25,7 +25,6 @@ __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from micropython import const
-
 try:
     from ubus_device import SPIDevice
 except ImportError:
@@ -41,6 +40,14 @@ TX_ADDRESS = const(0x10)  # Address used for TX transmissions
 RX_PL_LENG = const(0x11)  # RX payload widths; pipes 0-5 = 0x11-0x16
 DYN_PL_LEN = const(0x1C)  # dynamic payloads status for all pipes
 TX_FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
+
+
+def address_repr(addr):
+    """Convert an address into a hexlified string (in big endian)."""
+    rev_str = ""
+    for char in range(len(addr) - 1, -1, -1):
+        rev_str += ("" if addr[char] > 0x0F else "0") + hex(addr[char])[2:]
+    return rev_str
 
 
 class RF24:
@@ -197,6 +204,8 @@ class RF24:
         if pipe_number < 0 or pipe_number > 5:
             raise IndexError("pipe number must be in range [0, 5]")
         self._open_pipes = self._reg_read(OPEN_PIPES)
+        if not pipe_number:
+            self._pipe0_read_addr = None
         if self._open_pipes & (1 << pipe_number):
             self._open_pipes = self._open_pipes & ~(1 << pipe_number)
             self._reg_write(OPEN_PIPES, self._open_pipes)
@@ -443,13 +452,15 @@ class RF24:
             self._dump_pipes()
 
     def _dump_pipes(self):
-        print("TX address____________", self.address())
+        print("TX address____________", "0x" + address_repr(self.address()))
         self._open_pipes = self._reg_read(OPEN_PIPES)
         for i in range(6):
             is_open = self._open_pipes & (1 << i)
             print(
                 "Pipe {} ({}) bound: {}".format(
-                    i, " open " if is_open else "closed", self.address(i)
+                    i,
+                    " open " if is_open else "closed",
+                    "0x" + address_repr(self.address(i))
                 )
             )
             if is_open:

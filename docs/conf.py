@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint: disable=invalid-name,too-few-public-methods
 """This file is for `sphinx-build` configuration"""
 import os
@@ -34,14 +33,13 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinx_copybutton",
-    "sphinx_sitemap",
     # "rst2pdf.pdfbuilder",  # for local pdf builder support
 ]
 
 # Uncomment the below if you use native CircuitPython modules such as
 # digitalio, micropython and busio. List the modules you use. Without it, the
 # autodoc module docs will fail to generate with a warning.
-autodoc_mock_imports = ["digitalio", "busio"]
+autodoc_mock_imports = ["digitalio", "busio", "usb_hid", "microcontroller"]
 autodoc_member_order = "bysource"
 
 intersphinx_mapping = {
@@ -75,7 +73,7 @@ author = u"Brendan Doherty"
 # built documents.
 #
 # The short X.Y version.
-version = u"dev"
+version = u"2.0.0"
 # The full version, including alpha/beta/rc tags.
 release = u"2.0.0"
 
@@ -330,6 +328,7 @@ texinfo_documents = [
 # ---Options for PDF output-----------------------------------------
 # requires `rst2pdf` module which is not builtin to Python 3.4 nor
 # readthedocs.org's docker)
+
 # pdf_documents = [
 #     (
 #         "index",
