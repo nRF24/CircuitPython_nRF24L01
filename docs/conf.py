@@ -73,7 +73,7 @@ author = u"Brendan Doherty"
 # built documents.
 #
 # The short X.Y version.
-version = u"dev"
+version = u"2.0.0"
 # The full version, including alpha/beta/rc tags.
 release = u"2.0.0"
 
