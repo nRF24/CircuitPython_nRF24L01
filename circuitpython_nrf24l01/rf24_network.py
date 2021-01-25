@@ -225,6 +225,7 @@ class RF24Network(RF24):
             raise ValueError("node_address argument is invalid or malformed")
         super().__init__(spi, csn_pin, ce_pin, spi_frequency=spi_frequency)
         # setup node_address
+        self.debug = False  #: enable (`true`) or disable (`False`) debugging prompts
         self._node_address = node_address
         self._node_mask = 0xFFFF
         self._multicast_level = 0
@@ -281,12 +282,10 @@ class RF24Network(RF24):
 
             self._queue.append(frame)
 
-    # pylint: disable=unnecessary-pass
     def available(self):
         """ is there a message for this node """
-        pass
+        return bool(len(self._queue))
 
-    # pylint: enable=unnecessary-pass
     @property
     def peek_header(self):
         """return the next available message's header from the internal queue
