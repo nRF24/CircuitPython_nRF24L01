@@ -116,7 +116,7 @@ def slave(timeout=6):
             counter[0] = received[7:8][0] + 1
             nrf.listen = False  # put the radio in TX mode
             result = False
-            ack_timeout = time.monotonic_ns() + 200000
+            ack_timeout = time.monotonic_ns() + 200000000
             while not result and time.monotonic_ns() < ack_timeout:
                 # try to send reply for 200 milliseconds (at most)
                 result = nrf.send(b"World \0" + bytes([counter[0]]))
