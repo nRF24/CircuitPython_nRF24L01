@@ -225,7 +225,7 @@ class RF24Network(RF24):
             raise ValueError("node_address argument is invalid or malformed")
         super().__init__(spi, csn_pin, ce_pin, spi_frequency=spi_frequency)
         # setup node_address
-        self.debug = False  #: enable (`true`) or disable (`False`) debugging prompts
+        self.debug = False  #: enable (`True`) or disable (`False`) debugging prompts
         self._node_address = node_address
         self._node_mask = 0xFFFF
         self._multicast_level = 0
