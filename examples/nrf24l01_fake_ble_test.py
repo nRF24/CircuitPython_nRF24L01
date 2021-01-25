@@ -6,7 +6,7 @@ This example uses the nRF24L01 as a 'fake' BLE Beacon
 """
 import time
 import board
-import digitalio as dio
+import digitalio
 from circuitpython_nrf24l01.fake_ble import (
     chunk,
     FakeBLE,
@@ -16,8 +16,8 @@ from circuitpython_nrf24l01.fake_ble import (
 )
 
 # change these (digital output) pins accordingly
-ce = dio.DigitalInOut(board.D4)
-csn = dio.DigitalInOut(board.D5)
+ce = digitalio.DigitalInOut(board.D4)
+csn = digitalio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
 # available SPI pins, board.SCK, board.MOSI, board.MISO
@@ -41,12 +41,12 @@ nrf = FakeBLE(spi, csn, ce)
 nrf.pa_level = -12
 
 
-def _prompt(count, iterator):
-    if (count - iterator) % 5 == 0 or (count - iterator) < 5:
-        if count - iterator - 1:
-            print(count - iterator, "advertisments left to go!")
+def _prompt(remaining):
+    if remaining % 5 == 0 or remaining < 5:
+        if remaining - 1:
+            print(remaining, "advertisments left to go!")
         else:
-            print(count - iterator, "advertisment left to go!")
+            print(remaining, "advertisment left to go!")
 
 
 # create an object for manipulating the battery level data
@@ -65,11 +65,11 @@ def master(count=50):
         ble.show_pa_level = True
         print(
             "available bytes in next payload:",
-            ble.available(chunk(battery_service.buffer))
+            ble.len_available(chunk(battery_service.buffer)),
         )  # using chunk() gives an accurate estimate of available bytes
         for i in range(count):  # advertise data this many times
-            if ble.available(chunk(battery_service.buffer)) >= 0:
-                _prompt(count, i)  # something to show that it isn't frozen
+            if ble.len_available(chunk(battery_service.buffer)) >= 0:
+                _prompt(count - i)  # something to show that it isn't frozen
                 # broadcast the device name, MAC address, &
                 # battery charge info; 0x16 means service data
                 ble.advertise(battery_service.buffer, data_type=0x16)
@@ -92,11 +92,11 @@ def send_temp(count=50):
         ble.name = b"nRF24L01"
         print(
             "available bytes in next payload:",
-            ble.available(chunk(temperature_service.buffer))
+            ble.len_available(chunk(temperature_service.buffer)),
         )
         for i in range(count):
-            if ble.available(chunk(temperature_service.buffer)) >= 0:
-                _prompt(count, i)
+            if ble.len_available(chunk(temperature_service.buffer)) >= 0:
+                _prompt(count - i)
                 # broadcast a temperature measurement; 0x16 means service data
                 ble.advertise(temperature_service.buffer, data_type=0x16)
                 ble.hop_channel()
@@ -113,26 +113,80 @@ url_service.data = "http://www.google.com"
 # lower this estimate since we lowered the actual `ble.pa_level`
 url_service.pa_level_at_1_meter = -45  # defaults to -25 dBm
 
+
 def send_url(count=50):
     """Sends out a URL twice a second."""
     with nrf as ble:
         print(
             "available bytes in next payload:",
-            ble.available(chunk(url_service.buffer))
+            ble.len_available(chunk(url_service.buffer)),
         )
         # NOTE we did NOT set a device name in this with block
         for i in range(count):
             # URLs easily exceed the nRF24L01's max payload length
-            if ble.available(chunk(url_service.buffer)) >= 0:
-                _prompt(count, i)
+            if ble.len_available(chunk(url_service.buffer)) >= 0:
+                _prompt(count - i)
                 ble.advertise(url_service.buffer, 0x16)
                 ble.hop_channel()
                 time.sleep(0.2)
 
-print(
-    """\
-    nRF24L01 fake BLE beacon test.\n\
-    Run master() to broadcast the device name, pa_level, & battery charge\n\
-    Run send_temp() to broadcast the device name & a temperature\n\
-    Run send_url() to broadcast a custom URL link"""
-)
+
+def set_role():
+    """Set the role using stdin stream. Count arg for all functions can be
+    specified using a space delimiter (e.g. 'T 10' calls `send_temp(10)`)
+
+    :return:
+        - True when role is complete & app should continue running.
+        - False when app should exit
+    """
+    user_input = (
+        input(
+            "*** Enter 'M' to broadcast the device name, pa_level, & battery"
+            " charge.\n"
+            "*** Enter 'T' to broadcast the device name & a temperature\n"
+            "*** Enter 'U' to broadcast a custom URL link\n"
+            "*** Enter 'Q' to quit example.\n"
+        )
+        or "?"
+    )
+    user_input = user_input.split()
+    if user_input[0].upper().startswith("M"):
+        if len(user_input) > 1:
+            master(int(user_input[1]))
+        else:
+            master()
+        return True
+    if user_input[0].upper().startswith("T"):
+        if len(user_input) > 1:
+            send_temp(int(user_input[1]))
+        else:
+            send_temp()
+        return True
+    if user_input[0].upper().startswith("U"):
+        if len(user_input) > 1:
+            send_url(int(user_input[1]))
+        else:
+            send_url()
+        return True
+    if user_input[0].upper().startswith("Q"):
+        nrf.power = False
+        return False
+    print(user_input[0], "is an unrecognized input. Please try again.")
+    return set_role()
+
+
+print("    nRF24L01 fake BLE beacon test")
+
+if __name__ == "__main__":
+    try:
+        while set_role():
+            pass  # continue example until 'Q' is entered
+    except KeyboardInterrupt:
+        print(" Keyboard Interrupt detected. Powering down radio...")
+        nrf.power = False
+else:
+    print(
+        "    Run master() to broadcast the device name, pa_level, & battery "
+        "charge\n    Run send_temp() to broadcast the device name & a "
+        "temperature\n    Run send_url() to broadcast a custom URL link"
+    )

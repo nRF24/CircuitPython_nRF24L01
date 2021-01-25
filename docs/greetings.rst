@@ -22,18 +22,18 @@ Features currently supported
 * Dynamically sized payloads (max 32 bytes each) or statically sized payloads
 * Automatic responding acknowledgment (ACK) packets for verifying transmission success
 * Append custom payloadsto the acknowledgment (ACK) packets for instant bi-directional communication
-* Mark a single payload for no acknowledgment (ACK) from the receiving nRF24L01 (see ``ask_no_ack`` parameter for `send()` and `write()` functions)
+* Mark a single payload for no acknowledgment (ACK) from the receiving nRF24L01 (see ``ask_no_ack``
+  parameter for :py:meth:`~circuitpython_nrf24l01.rf24.RF24.send()` and `write()` functions)
 * Invoke the "re-use the same payload" feature (for manually re-transmitting failed transmissions that
   remain in the TX FIFO buffer)
 * Multiple payload transmissions with one function call (see documentation on the
-  `send()` function and try out the `Stream example <examples.html#stream-example>`_)
+  :py:meth:`~circuitpython_nrf24l01.rf24.RF24.send()` function and try out the
+  `Stream example <examples.html#stream-example>`_)
 * Context manager compatible for easily switching between different radio configurations
   using `with` blocks (not available in ``rf24_lite.py`` version)
 * Configure the interrupt (IRQ) pin to trigger (active low) on received, sent, and/or
   failed transmissions (these 3 events control 1 IRQ pin). There's also virtual
-  representations of these interrupt events available (see
-  :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr`,
-  :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_ds`, & `irq_df` attributes)
+  representations of these interrupt events available (see `irq_dr`, `irq_ds`, & `irq_df` attributes)
 * Invoke sleep mode (AKA power down mode) for ultra-low current consumption
 * cyclic redundancy checking (CRC) up to 2 bytes long
 * Adjust the nRF24L01's builtin automatic re-transmit feature's parameters (`arc`: number
@@ -50,21 +50,22 @@ Dependencies
 
 This driver depends on:
 
-* `Adafruit CircuitPython <https://github.com/adafruit/circuitpython>`_
-* `Bus Device <https://github.com/adafruit/Adafruit_CircuitPython_BusDevice>`_ (specifically the :py:mod:`~adafruit_bus_device.spi_device`)
+* `Adafruit CircuitPython Firmware <https://github.com/adafruit/circuitpython>`_ or the
+  `Adafruit_Blinka library <https://github.com/adafruit/Adafruit_Blinka>`_ for Linux
+  SoC boards like Raspberry Pi
+* `Adafruit_CircuitPython_BusDevice
+  <https://github.com/adafruit/Adafruit_CircuitPython_BusDevice>`_ (specifically the
+  :py:mod:`~adafruit_bus_device.spi_device`)
 
 Please ensure all dependencies are available on the CircuitPython filesystem.
 This is easily achieved by downloading
 `the Adafruit library and driver bundle <https://github.com/adafruit/Adafruit_CircuitPython_Bundle>`_.
 
-.. note:: This library supports Python 3.4 or newer, but Python 3.7 introduced
+.. note:: This library supports Python 3.7 or newer because the examples use
     the function `time.monotonic_ns() <https://docs.python.org/3.7/library/
     time.html#time.monotonic_ns>`_ which returns an arbitrary time "counter"
-    as an `int` of nanoseconds. However, this function is not used in the
-    example scripts for backward compatibility reasons. Instead, we used
-    :py:func:`~time.monotonic()` which returns an arbitrary time "counter" as
-    a `float` of seconds. CircuitPython firmware supports both functions as of
-    v4.0.
+    as an `int` of nanoseconds. CircuitPython firmware also supports
+    :py:func:`time.monotonic_ns()`.
 
 Installing from PyPI
 --------------------
@@ -96,7 +97,7 @@ Pinout
 .. image:: https://lastminuteengineers.com/wp-content/uploads/2018/07/Pinout-nRF24L01-Wireless-Transceiver-Module.png
     :target: https://lastminuteengineers.com/nrf24l01-arduino-wireless-communication/#nrf24l01-transceiver-module-pinout
 
-The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) that can only be connected to their counterparts on the MCU (microcontroller unit). The other 2 essential pins (CE & CSN) can be connected to any digital output pins. Lastly, the only optional pin on the nRf24L01 GPIOs is the IRQ (interrupt; a digital output that's active when low) pin and is only connected to the MCU via a digital input pin during the interrupt example. The following pinout is used in the example codes of this library's `example directory <https://github.com/2bndy5/CircuitPython_nRF24L01/tree/master/examples>`_.
+The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) that can only be connected to their counterparts on the MCU (microcontroller unit). The other 2 essential pins (CE & CSN) can be connected to any digital output pins. Lastly, the only optional pin on the nRf24L01 GPIOs is the IRQ (interrupt; a digital output that's active when low) pin and is only connected to the MCU via a digital input pin during the interrupt example. The following pinout is used in the example codes of this library's `examples <examples.html>`_.
 
 .. csv-table::
     :header: nRF2401, "Raspberry Pi", "ItsyBitsy M4"
@@ -115,26 +116,55 @@ The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) t
 Using The Examples
 ==================
 
-See `examples <https://circuitpython-nrf24l01.readthedocs.io/en/latest/examples.html>`_ for testing certain features of this the library. The examples were developed and tested on both Raspberry Pi and ItsyBitsy M4. Pins have been hard coded in the examples for the corresponding device, so please adjust these accordingly to your circuitpython device if necessary.
+See `examples <examples.html>`_ for testing certain features of this the library. The examples were developed and tested on both Raspberry Pi and ItsyBitsy M4. Pins have been hard coded in the examples for the corresponding device, so please adjust these accordingly to your circuitpython device if necessary.
 
-To run the simple example, navigate to this repository's "examples" folder in the terminal. If you're working with a CircuitPython device (not a Raspberry Pi), copy the file named "nrf24l01_simple_test.py" from this repository's "examples" folder to the root directory of your CircuitPython device's CIRCUITPY drive. Now you're ready to open a python REPR and run the following commands:
+For an interactive REPL
+---------------------------
 
-.. code-block:: python
+All examples can be imported from within an interactive python REPL.
 
-    >>> from nrf24l01_simple_test import *
-        nRF24L01 Simple test.
-        Run slave() on receiver
-        Run master() on transmitter
-    >>> master()
-    Sending: 5 as struct: b'\x05\x00\x00\x00'
-    send() successful
-    Transmission took 36.0 ms
-    Sending: 4 as struct: b'\x04\x00\x00\x00'
-    send() successful
-    Transmission took 28.0 ms
-    Sending: 3 as struct: b'\x03\x00\x00\x00'
-    send() successful
-    Transmission took 24.0 ms
+1. Make sure the examples are located in the current working directory.
+   On CircuitPython devices, this will be the root directory of the CIRCUITPY drive.
+2. Import everything from desired the example. The following code snippet demonstrates running the `Simple Test example <examples.html#simple-test>`_
+
+   .. code-block:: python
+
+       >>> from nrf24l01_simple_test import *
+       Which radio is this? Enter '0' or '1'. Defaults to '0'
+           nRF24L01 Simple test.
+           Run slave() on receiver
+           Run master() on transmitter
+       >>> master()
+       Transmission successful! Time to Transmit: 6993.972 us. Sent: 0.0
+       Transmission successful! Time to Transmit: 6563.277 us. Sent: 0.01
+       Transmission successful! Time to Transmit: 6453.385 us. Sent: 0.02
+       Transmission successful! Time to Transmit: 6338.29 us. Sent: 0.03
+       Transmission successful! Time to Transmit: 6440.163 us. Sent: 0.04
+
+For CircuitPython devices
+---------------------------
+
+1. Copy the examples to the root directory of the CIRCUITPY device.
+2. Rename of the example file to ``main.py``.
+3. If the REPL is not already running, then the example should start automatically.
+   If the REPL is already running in interactive mode, then press ``ctrl+d`` to do a
+   soft reset, and the example should start automatically.
+
+For CPython in Linux
+---------------------------
+
+1. Clone the library repository, then navigate to the reository's example directory.
+
+   .. code-block:: shell
+
+       git clone https://github.com/2bndy5/CircuitPython_nRF24L01.git
+       cd CircuitPython_nRF24L01/examples
+
+2. Run the example as a normal python program
+
+   .. code-block:: shell
+
+       python3 nrf24l01_simple_test.py
 
 
 What to purchase
@@ -146,6 +176,9 @@ vise versa. This library has been tested on a cheaply bought 6 pack from Amazon.
 take Amazon or eBay for granted! There are other wireless transceivers that are NOT compatible
 with this library. For instance, the esp8266-01 (also sold in packs) is NOT compatible with
 this library, but looks very similar to the nRF24L01+ and could lead to an accidental purchase.
+
+.. seealso::
+    Beware, there are also `nrf24l01(+) clones and counterfeits`_ that may not work the same.
 
 Power Stability
 -------------------
@@ -171,13 +204,14 @@ functionality, they are subject to a couple lesser known (and lesser advertised)
    boards' 3V regulators may not be able to provide (after supplying power to internal
    components).
 
-    .. csv-table::
-        :header: Specification, Value
-        :widths: 10,5
+   .. csv-table::
+       :header: Specification, Value
+       :widths: 10,5
 
-        "Emission mode current(peak)", "115 mA"
-        "Receive Mode current(peak)", "45 mA"
-        "Power-down mode current", "4.2 µA"
+       "Emission mode current(peak)", "115 mA"
+       "Receive Mode current(peak)", "45 mA"
+       "Power-down mode current", "4.2 µA"
+
 2. Needs shielding from electromagnetic interference. Shielding usually works best when
    it has a path to ground (GND pin), but this connection to the GND pin is not required.
 
@@ -200,8 +234,16 @@ amplifier options as noted in the `RF_PWR section (bits 0 through 2) of the RF_S
 (address 0x06) of the datasheet <https://datasheet.lcsc.com/szlcsc/
 1811142211_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.pdf#%5B%7B%22num%22%3A329%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C0%2C755%2Cnull%5D>`_.
 While the options' values differ from those identified by this library's API, the
-underlying commands to configure those options are almost identical to the nRF24L01. Other
-known clones include the bk242x (also known as RFM7x).
+underlying commands to configure those options are almost identical to the nRF24L01.
+The Si24R1 is also famous for not supporting :py:attr:`~circuitpython_nrf24l01.rf24.RF24.auto_ack`
+correctly because the designers "cloned" a typo from the 1\ :sup:`st` version of the nRF24L01
+(non-plus) datasheet into the Si24R1 firmware. Other known clones include the bk242x (also known as
+RFM7x).
+
+.. seealso::
+  `Read this article
+  <https://ncrmnt.org/2021/01/03/nrf24l01-fixing-the-magic-finger-problem/>`_
+  about using clones with missing capacitors (includes pictures).
 
 Contributing
 ============
@@ -214,23 +256,23 @@ before contributing to help this project stay welcoming. To contribute, all you 
 Future Project Ideas/Additions
 ------------------------------
 
-    The following are only ideas; they are not currently supported by this circuitpython library.
+The following are only ideas; they are not currently supported by this circuitpython library.
 
-    * `There's a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3
-      pins <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.
-      html>`_ (uses custom bitbanging SPI functions and an external circuit involving a
-      resistor and a capacitor)
-    * network linking layer, maybe something like `TMRh20's RF24Network
-      <http://tmrh20.github.io/RF24Network/>`_
-    * implement the Gazelle-based protocol used by the BBC micro-bit (`makecode.com's radio
-      blocks <https://makecode.microbit.org/reference/radio>`_).
+* `There's a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3
+  pins <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.
+  html>`_ (uses custom bitbanging SPI functions and an external circuit involving a
+  resistor and a capacitor)
+* network linking layer, maybe something like `TMRh20's RF24Network
+  <http://nRF24.github.io/RF24Network/>`_
+* implement the Gazelle-based protocol used by the BBC micro-bit (`makecode.com's radio
+  blocks <https://makecode.microbit.org/reference/radio>`_).
 
 
 Sphinx documentation
 -----------------------
 
 Sphinx is used to build the documentation based on rST files and comments in the code. First,
-install dependencies (feel free to reuse the virtual environment from `above <https://circuitpython-nrf24l01.readthedocs.io/en/latest/#installing-from-pypi>`_):
+install dependencies (feel free to reuse the virtual environment from `above <greetings.html#installing-from-pypi>`_):
 
 .. code-block:: shell
 

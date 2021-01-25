@@ -26,10 +26,10 @@ jobs:
         awk -F '\/' '{ print tolower($2) }' |
         tr '-' '_'
         )
-    - name: Set up Python 3.6
+    - name: Set up Python 3.7
       uses: actions/setup-python@v1
       with:
-        python-version: 3.6
+        python-version: 3.7
     - name: Versions
       run: |
         python3 --version
@@ -46,9 +46,10 @@ jobs:
       run: |
         source actions-ci/install.sh
 
-    - name: Pip install pylint, black, & Sphinx
+    - name: Pip install pylint, black, & Sphinx stuff
       run: |
-        pip install pylint black Sphinx sphinx-rtd-theme
+        pip install pylint black
+        pip install -r docs/requirements.txt
     - name: Library version
       run: git describe --dirty --always --tags
     - name: PyLint
@@ -57,6 +58,11 @@ jobs:
         ([[ ! -d "examples" ]] || pylint --disable=invalid-name $( find . -path "./examples/*.py" ))
     - name: Build assets
       run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --library_location . --package_folder_prefix ${{ steps.pkg-name.outputs.pkg-name }}
+    - name: Archive bundles
+      uses: actions/upload-artifact@v2
+      with:
+        name: bundles
+        path: ${{ github.workspace }}/bundles/
     - name: Build docs
       working-directory: docs
       run: sphinx-build -E -W -b html . _build/html

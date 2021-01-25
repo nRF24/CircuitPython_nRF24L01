@@ -6,13 +6,13 @@ display settings after changing contexts ( & thus configurations)
     .. warning:: This script is not compatible with the rf24_lite module
 """
 import board
-import digitalio as dio
+import digitalio
 from circuitpython_nrf24l01.rf24 import RF24
 from circuitpython_nrf24l01.fake_ble import FakeBLE
 
 # change these (digital output) pins accordingly
-ce = dio.DigitalInOut(board.D4)
-csn = dio.DigitalInOut(board.D5)
+ce = digitalio.DigitalInOut(board.D4)
+csn = digitalio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
 # available SPI pins, board.SCK, board.MOSI, board.MISO
@@ -44,13 +44,13 @@ with nrf:
     nrf.open_rx_pipe(5, b"1Node")  # NOTE we do this inside the "with" block
 
     # display current settings of the nrf object
-    nrf.what_happened(True)  # True dumps pipe info
+    nrf.print_details(True)  # True dumps pipe info
 
 print("\nsettings configured by the ble object")
 with ble as nerf:  # the "as nerf" part is optional
-    nerf.what_happened(1)
+    nerf.print_details(1)
 
-# if you examine the outputs from what_happened() you'll see:
+# if you examine the outputs from print_details() you'll see:
 #   pipe 5 is opened using the nrf object, but closed using the ble object.
 #   pipe 0 is closed using the nrf object, but opened using the ble object.
 #   also notice the different addresses bound to the RX pipes
