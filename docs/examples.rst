@@ -41,7 +41,6 @@ Multiceiver Example
 .. versionchanged:: 2.0.0
     no longer uses ACK payloads for responding to node 1.
 
-
 This example shows how use a group of 6 nRF24L01 transceivers to transmit to 1 nRF24L01
 transceiver. This technique is called `"Multiceiver" in the nRF24L01 Specifications Sheet
 <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1104474>`_
@@ -117,13 +116,10 @@ IRQ Pin Example
 .. versionchanged:: 2.0.0
     uses 2 addresses on pipes 1 & 0 to demonstrate proper addressing convention.
 
-This is a test to show how to use nRF24L01's interrupt pin. Be aware that
-:py:func:`~circuitpython_nrf24l01.rf24.RF24.send()` clears all IRQ events on exit,
-so we use the non-blocking :py:func:`~circuitpython_nrf24l01.rf24.RF24.write()`
-instead. Also the `ack` attribute is enabled to trigger the
-:py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr` event when the master node
-receives ACK payloads. Simply put, this example is the most advanced example script
-(in this library), and it runs **very** quickly.
+This is a test to show how to use nRF24L01's interrupt pin using the non-blocking
+`write()`. Also the `ack` attribute is enabled to trigger the `irq_dr` event when
+the master node receives ACK payloads. Simply put, this example is the most advanced
+example script (in this library), and it runs **very** quickly.
 
 .. literalinclude:: ../examples/nrf24l01_interrupt_test.py
     :caption: examples/nrf24l01_interrupt_test.py
@@ -141,12 +137,11 @@ Stream Example
 .. versionchanged:: 2.0.0
     uses 2 addresses on pipes 1 & 0 to demonstrate proper addressing convention.
 
-This is a test to show how to stream data. The ``master()`` uses the
-:py:meth:`~circuitpython_nrf24l01.rf24.RF24.send()` function to
-transmit multiple payloads with 1 function call. However ``master()`` only uses 1
-level of the nRF24L01's TX FIFO. An alternate function, called ``master_fifo()``
-uses all 3 levels of the nRF24L01's TX FIFO to stream data, but it uses the
-`write()` function to do so.
+This is a test to show how to stream data. The ``master()`` uses the `send()`
+function to transmit multiple payloads with 1 function call. However
+``master()`` only uses 1 level of the nRF24L01's TX FIFO. An alternate function,
+called ``master_fifo()`` uses all 3 levels of the nRF24L01's TX FIFO to stream
+data, but it uses the `write()` function to do so.
 
 .. literalinclude:: ../examples/nrf24l01_stream_test.py
     :caption: examples/nrf24l01_stream_test.py
