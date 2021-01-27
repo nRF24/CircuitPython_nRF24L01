@@ -262,9 +262,6 @@ html_favicon = "_static/new_favicon.ico"
 # project logo
 html_logo = "_static/Logo large.png"
 
-# project logo
-html_logo = "_static/Logo.png"
-
 # Output file base name for HTML help builder.
 htmlhelp_basename = "nRF24L01_Library_doc"
 # html_copy_source = True

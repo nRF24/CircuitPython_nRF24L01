@@ -64,24 +64,32 @@ def _level_to_address(level):
         level_addr = 1 << ((level - 1) * 3)
     return level_addr
 
+
 # pylint: disable=too-few-public-methods
 class MessageType:
     """A collection of constants used to define
     `RF24NetworkHeader.message_type`"""
 
     PING = const(130)  #: Used for network pings
-    ADDR_REQUEST = const(195)  #: Used for requesting data from network base node
-    ADDR_RESPONSE = const(
-        128
-    )  #: Used for routing messages/responses throughout the network
-    FRAG_FIRST = const(148)  #: Used to indicate the first frame of fragmented payloads
-    FRAG_MORE = const(149)  #: Used to indicate a middle frame of fragmented payloads
-    FRAG_LAST = const(150)  #: Used to indicate the last frame of fragmented payloads
-    ACK = const(193)  #: Used to forward acknowledgements target to origin
+
+    ADDR_REQUEST = const(195)
+    #: Used for requesting data from network base node
+    ADDR_RESPONSE = const(128)
+    #: Used for routing messages/responses throughout the network
+
+    FRAG_FIRST = const(148)
+    #: Used to indicate the first frame of fragmented payloads
+    FRAG_MORE = const(149)
+    #: Used to indicate a middle frame of fragmented payloads
+    FRAG_LAST = const(150)
+    #: Used to indicate the last frame of fragmented payloads
+    ACK = const(193)
+    #: Used to forward acknowledgements directed to origin
+
     EXT_DATA = const(131)
-    #: Used for bridging different network protocols between an RF24Network
-    #: and LAN/WLAN networks (unsupported at this time as this operation requires
-    #: a gateway implementation)
+    """Used for bridging different network protocols between an RF24Network
+    and LAN/WLAN networks (unsupported at this time as this operation requires
+    a gateway implementation)"""
 
 
 # pylint: enable=too-few-public-methods
@@ -89,8 +97,6 @@ class RF24NetworkHeader:
     """The header information used for routing network messages.
 
     :param int to_node: The address designating the message's destination.
-    :param int from_node: The address designating the message's origin.
-    :param int frame_id: A 2-byte integer describing the frame of the message.
     :param MessageType message_type: The pre-defined `MessageType` describing
         the message related to this header.
 
@@ -98,16 +104,17 @@ class RF24NetworkHeader:
         header that can be augmented after instantiation.
     """
 
-    def __init__(self, to_node=None, from_node=None, frame_id=0, message_type=None):
-        self._from = from_node or 0
+    def __init__(self, to_node=None, message_type=None):
+        self._from = 0
         self._to = to_node or 0
         self._msg_t = message_type or 0
-        self._id = frame_id or 0
-        self._next = 0
+        self._id = 0
+        self._rsv = 0
+        self._next = 1
 
     @property
     def from_node(self):
-        """describe the message origin. This attribute is truncated to a
+        """Describes the message origin. This attribute is truncated to a
         2-byte `int`."""
         return self._from
 
@@ -117,7 +124,7 @@ class RF24NetworkHeader:
 
     @property
     def to_node(self):
-        """describe the message destination. This attribute is truncated to a
+        """Describes the message destination. This attribute is truncated to a
         2-byte `int`."""
         return self._to
 
@@ -146,30 +153,47 @@ class RF24NetworkHeader:
 
     @property
     def next_id(self):
-        """points to the next sequential frame of fragments. This attribute is
+        """points to the next sequential message to be sent. This attribute is
         truncated to a 2-byte `int`."""
         return self._next
 
     @next_id.setter
     def next_id(self, val):
-        self._ = val & 0xFFFF
+        self._next = val & 0xFFFF
+
+    @property
+    def reserved(self):
+        """A single byte reserved for network usage. This will be the
+        fragment_id, but on the last fragment this will be the header_type."""
+        return self._rsv
+
+    @reserved.setter
+    def reserved(self, val):
+        self._rsv = val & 0xFF
 
     def decode(self, buffer):
-        """decode frame header for first 9 bytes of the payload."""
-        (self._from, self._to, self._id, self._msg_t, self._next) = struct.unpack(
-            "hhhbbh", buffer[:9]
-        )
+        """decode frame header for first 9 bytes of the payload.
+        This function is meant for library internal usage."""
+        (
+            self._from,
+            self._to,
+            self._id,
+            self._msg_t,
+            self._rsv,
+            self._next,
+        ) = struct.unpack("hhhbbh", buffer[:9])
 
     @property
     def buffer(self):
-        """Return the entire header as a `bytes` object"""
+        """Return the entire header as a `bytes` object. This is similar to
+        TMRh20's ``RF24NetworkHeader::toString()``."""
         return struct.pack(
             "hhhbbh",
             self._from,
             self._to,
             self._id,
             self._msg_t,
-            0,  # reserved for sytem uses
+            self._rsv,
             self._next,
         )
 
@@ -226,10 +250,12 @@ class RF24Network(RF24):
         super().__init__(spi, csn_pin, ce_pin, spi_frequency=spi_frequency)
         # setup node_address
         self.debug = False  #: enable (`True`) or disable (`False`) debugging prompts
+        self.fragmentation = True
+        #: enable (`True`) or disable (`False`) message fragmentation
+        self.ret_sys_msg = False  #: for use with RF24Mesh (unsupported)
         self._node_address = node_address
         self._node_mask = 0xFFFF
         self._multicast_level = 0
-        self.ret_sys_msg = False  #: for use with RF24Mesh
         while self._node_address & self._node_mask:
             self._node_mask <<= 3
             self._multicast_level += 1
@@ -249,8 +275,12 @@ class RF24Network(RF24):
             frame = RF24NetworkFrame()
             frame.header.decode(frame_buf[: len(frame.header)])
             frame.message = frame_buf[len(frame.header) :]
+            if self.debug:
+                print("Received packet:", frame_buf)
 
             if not frame.is_valid:
+                if self.debug:
+                    print("discarding packet due to bad network addresses.")
                 del frame
                 continue
 
@@ -305,6 +335,7 @@ class RF24Network(RF24):
         message from the internal queue.
 
         :returns: A 2-item tuple containing the next available
+
             1. `RF24NetworkHeader`
             2. a `bytearray` message
         """
