@@ -66,11 +66,8 @@ def crc24_ble(data, deg_poly=0x65B, init_val=0x555555):
     return reverse_bits((crc).to_bytes(3, "big"))
 
 
-BLE_FREQ = (
-    2,
-    26,
-    80,
-)  #: The BLE channel number is different from the nRF channel number.
+BLE_FREQ = (2, 26, 80,)
+"""The BLE channel number is different from the nRF channel number."""
 
 
 class FakeBLE(RF24):
