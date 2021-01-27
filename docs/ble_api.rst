@@ -72,22 +72,22 @@ swap_bits()
 
 .. autofunction:: circuitpython_nrf24l01.fake_ble.swap_bits
 
-   :returns:
-      An `int` containing the byte whose bits are reversed
-      compared to the value passed to the ``original`` parameter.
-   :param int original: This should be a single unsigned byte, meaning the
-      parameters value can only range from 0 to 255.
+    :returns:
+        An `int` containing the byte whose bits are reversed
+        compared to the value passed to the ``original`` parameter.
+    :param int original: This is truncated to a single unsigned byte,
+        meaning this parameter's value can only range from 0 to 255.
 
 reverse_bits()
 *****************
 
 .. autofunction:: circuitpython_nrf24l01.fake_ble.reverse_bits
 
-   :returns:
-      A `bytearray` whose byte order remains the same, but each
-      byte's bit order is reversed.
-   :param bytearray,bytes original: The original buffer whose bits are to be
-      reversed.
+    :returns:
+       A `bytearray` whose byte order remains the same, but each
+       byte's bit order is reversed.
+    :param bytearray,bytes original: The original buffer whose bits are to be
+       reversed.
 
 chunk()
 *****************
@@ -121,7 +121,7 @@ crc24_ble()
 
 .. autofunction:: circuitpython_nrf24l01.fake_ble.crc24_ble
 
-    This is exposed for convenience but should not be used for other buffer
+    This is exposed for convenience and should not be used for other buffer
     protocols that require big endian CRC24 format.
 
     :param bytearray,bytes data: The buffer of data to be uncorrupted.
@@ -238,7 +238,7 @@ len_available()
     :param bytearray,bytes hypothetical: Pass a potential `chunk()` of
         data to this parameter to calculate the resulting left over length
         in bytes. This parameter is optional.
-    :returns: An `int` representing the length of available bytes for the
+    :returns: An `int` representing the length of available bytes for
         a single payload.
 
     .. versionchanged:: 2.0.0
