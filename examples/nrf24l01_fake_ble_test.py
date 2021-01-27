@@ -56,7 +56,7 @@ battery_service.data = 85
 
 
 def master(count=50):
-    """Sends out the device information twice a second."""
+    """Sends out the device information."""
     # using the "with" statement is highly recommended if the nRF24L01 is
     # to be used for more than a BLE configuration
     with nrf as ble:
@@ -87,7 +87,7 @@ temperature_service.data = 42.0
 
 
 def send_temp(count=50):
-    """Sends out a fake temperature twice a second."""
+    """Sends out a fake temperature."""
     with nrf as ble:
         ble.name = b"nRF24L01"
         print(
@@ -115,7 +115,7 @@ url_service.pa_level_at_1_meter = -45  # defaults to -25 dBm
 
 
 def send_url(count=50):
-    """Sends out a URL twice a second."""
+    """Sends out a URL."""
     with nrf as ble:
         print(
             "available bytes in next payload:",
