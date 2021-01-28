@@ -115,6 +115,7 @@ write()
         in the nRF24L01 specification sheet <https://www.sparkfun.com/datasheets/Components/
         SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1123001>`_ for
         calculating an adequate transmission timeout sentinal.
+
     .. versionadded:: 1.2.0
         ``write_only`` parameter
 
@@ -146,9 +147,9 @@ print_details()
           only go up to 15.
         - ``Retry attempts made for last transmission`` Amount of attempts to re-transmit
           during last transmission (resets per payload)
-        - ``IRQ - Data Ready`` The current setting of the IRQ pin on "Data Ready" event
-        - ``IRQ - Data Sent`` The current setting of the IRQ pin on "Data Sent" event
-        - ``IRQ - Data Fail`` The current setting of the IRQ pin on "Data Fail" event
+        - ``IRQ on Data Ready`` The current setting of the IRQ pin on "Data Ready" event
+        - ``IRQ on Data Sent`` The current setting of the IRQ pin on "Data Sent" event
+        - ``IRQ on Data Fail`` The current setting of the IRQ pin on "Data Fail" event
         - ``Data Ready`` Is there RX data ready to be read? (state of the `irq_dr` flag)
         - ``Data Sent`` Has the TX data been sent? (state of the `irq_ds` flag)
         - ``Data Failed`` Has the maximum attempts to re-transmit been reached?

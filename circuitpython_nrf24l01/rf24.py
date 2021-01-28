@@ -67,7 +67,6 @@ class RF24:
         self._reg_write(CONFIGURE, self._config)
         if self._reg_read(CONFIGURE) & 3 != 2:
             raise RuntimeError("nRF24L01 Hardware not responding")
-        self.power = False
         # init shadow copy of RX addresses for all pipes for context manager
         self._pipes = [bytearray(5), bytearray(5), 0xC3, 0xC4, 0xC5, 0xC6]
         # _open_pipes attribute reflects only RX state on each pipe
