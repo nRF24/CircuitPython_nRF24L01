@@ -4,7 +4,7 @@ nRF24L01 Features
 Simple test
 ------------
 
-.. versionchanged:: 1.2.4
+.. versionchanged:: 1.3.0
 
     - uses 2 addresses on pipes 1 & 0 to demonstrate proper addressing convention.
     - transmits an incrementing `float` instead of an `int`
@@ -20,7 +20,7 @@ Ensure your device works with this simple test.
 ACK Payloads Example
 --------------------
 
-.. versionchanged:: 1.2.4
+.. versionchanged:: 1.3.0
 
     - uses 2 addresses on pipes 1 & 0 to demonstrate proper addressing convention.
     - changed payloads to show use of c-strings' NULL terminating character.
@@ -40,7 +40,7 @@ Multiceiver Example
 
 .. versionadded:: 1.2.2
 
-.. versionchanged:: 1.2.4
+.. versionchanged:: 1.3.0
     no longer uses ACK payloads for responding to node 1.
 
 This example shows how use a group of 6 nRF24L01 transceivers to transmit to 1 nRF24L01
@@ -75,7 +75,7 @@ transceiver. This technique is called `"Multiceiver" in the nRF24L01 Specificati
 Scanner Example
 ---------------
 
-.. versionadded:: 1.2.4
+.. versionadded:: 1.3.0
 
 This example simply scans the entire RF frquency (2.4 GHz to 2.525 GHz)
 and outputs a vertical graph of how many signals (per
@@ -117,7 +117,7 @@ IRQ Pin Example
 
 .. versionchanged:: 1.2.0
     uses ACK payloads to trigger all 3 IRQ events.
-.. versionchanged:: 1.2.4
+.. versionchanged:: 1.3.0
     uses 2 addresses on pipes 1 & 0 to demonstrate proper addressing convention.
 
 This is a test to show how to use nRF24L01's interrupt pin using the non-blocking
@@ -139,7 +139,7 @@ Stream Example
 
 .. versionchanged:: 1.2.3
     added ``master_fifo()`` to demonstrate using full TX FIFO to stream data.
-.. versionchanged:: 1.2.4
+.. versionchanged:: 1.3.0
     uses 2 addresses on pipes 1 & 0 to demonstrate proper addressing convention.
     :linenos:
 
@@ -171,7 +171,7 @@ This is a test to show how to use `with` blocks to manage multiple different nRF
 Manual ACK Example
 ------------------
 
-.. versionadded:: 1.2.4
+.. versionadded:: 1.3.0
     Previously, this example was strictly made for TMRh20's RF24 library example
     titled "GettingStarted_HandlingData.ino". With the latest addition of new
     examples to the TMRh20 RF24 library, this example was renamed from

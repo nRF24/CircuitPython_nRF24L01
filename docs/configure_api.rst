@@ -52,7 +52,7 @@ set_dynamic_payloads()
         applied to all data pipes. If this parameter is not in range [0, 5], then a
         `IndexError` exception is thrown.
 
-    .. versionadded:: 1.2.4
+    .. versionadded:: 1.3.0
 
 get_dynamic_payloads()
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -64,7 +64,7 @@ get_dynamic_payloads()
         `IndexError` exception is thrown. If this parameter is not specified, then the data
         returned is about data pipe 0.
 
-    .. versionadded:: 1.2.4
+    .. versionadded:: 1.3.0
 
 payload_length
 ******************************
@@ -100,7 +100,7 @@ payload_length
            first bug. This led to errors in using other functions that handle payloads or
            the length of payloads.
 
-    .. versionchanged:: 1.2.4
+    .. versionchanged:: 1.3.0
         this attribute returns the configuration about static payload length for data pipe 0
         only. Use `get_payload_length()` to fetch the configuration of the static payload
         length feature for any data pipe.
@@ -121,7 +121,7 @@ set_payload_length()
         applied to all data pipes. If this parameter is not in range [0, 5], then a
         `IndexError` exception is thrown.
 
-    .. versionadded:: 1.2.4
+    .. versionadded:: 1.3.0
 
 get_payload_length()
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -136,7 +136,7 @@ get_payload_length()
         `IndexError` exception is thrown. If this parameter is not specified, then the data
         returned is about data pipe 0.
 
-    .. versionadded:: 1.2.4
+    .. versionadded:: 1.3.0
 
 auto_ack
 ******************************
@@ -184,7 +184,7 @@ set_auto_ack()
         applied to all data pipes. If this parameter is not in range [0, 5], then a
         `IndexError` exception is thrown.
 
-    .. versionadded:: 1.2.4
+    .. versionadded:: 1.3.0
 
 get_auto_ack()
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -196,7 +196,7 @@ get_auto_ack()
         [0, 5], then a `IndexError` exception is thrown. If this parameter is not specified,
         then the data returned is about data pipe 0.
 
-    .. versionadded:: 1.2.4
+    .. versionadded:: 1.3.0
 
 Auto-Retry feature
 ******************************
@@ -216,7 +216,7 @@ arc
     wait the number of microseconds specified by `ard` for an Acknowledgement (ACK) packet
     response (assuming `auto_ack` is enabled).
 
-    .. versionchanged:: 1.2.4
+    .. versionchanged:: 1.3.0
         invalid input values are clamped to proper range instead of throwing a `ValueError`
         exception.
 
@@ -241,7 +241,7 @@ ard
         500µS or more.
 
         See `data_rate` attribute on how to set the data rate of the nRF24L01's transmissions.
-    .. versionchanged:: 1.2.4
+    .. versionchanged:: 1.3.0
         invalid input values are clamped to proper range instead of throwing a `ValueError`
         exception.
 
@@ -295,7 +295,7 @@ allow_ask_no_ack
     Si24R1. The designers of the Si24R1 (a cheap chinese clone of the nRF24L01) happened to
     clone a typo from the first version of the nRF24L01 specification sheet. Disable this attribute for the Si24R1.
 
-    .. versionadded:: 1.2.4
+    .. versionadded:: 1.3.0
 
 interrupt_config()
 ******************************
@@ -371,7 +371,7 @@ crc
 
     .. note:: The nRF24L01 automatically enables CRC if automatic acknowledgment feature is
         enabled (see `auto_ack` attribute) for any data pipe.
-    .. versionchanged:: 1.2.4
+    .. versionchanged:: 1.3.0
         invalid input values are clamped to proper range instead of throwing a `ValueError`
         exception.
 

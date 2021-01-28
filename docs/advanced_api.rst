@@ -203,7 +203,7 @@ address_repr()
     :param bytes,bytearray addr: The address to convert into a hexlified
         string
 
-    .. versionadded:: 1.2.4
+    .. versionadded:: 1.3.0
 
 is_plus_variant
 ******************************
@@ -494,7 +494,7 @@ last_tx_arc
     Remember that the number of automatic retry attempts made for each transmission is
     configured with the `arc` attribute or the `set_auto_retries()` function.
 
-    .. versionadded:: 1.2.4
+    .. versionadded:: 1.3.0
 
 Ambiguous Signal Detection
 ******************************

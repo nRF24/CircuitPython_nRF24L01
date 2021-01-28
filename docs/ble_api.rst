@@ -241,7 +241,7 @@ available()
     :returns: An `int` representing the length of available bytes for
         a single payload.
 
-    .. versionchanged:: 1.2.4
+    .. versionchanged:: 1.3.0
         Due to inheritance this function overrides the
         :meth:`circuitpython_nrf24l01.rf24.~RF24.available()` method.
         Recommend using
