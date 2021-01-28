@@ -94,6 +94,16 @@ class FakeBLE(RF24):
         return super().__exit__()
 
     @property
+    def to_android(self):
+        """A `bool` attribute to specify if advertisements should be
+        compatible with Android smartphones."""
+        return self._to_android == 0x42
+
+    @to_android.setter
+    def to_android(self, enable):
+        self._to_android = 0x42 if enable else 0x40
+
+    @property
     def mac(self):
         """This attribute returns a 6-byte buffer that is used as the
         arbitrary mac address of the BLE device being emulated."""
@@ -165,7 +175,7 @@ class FakeBLE(RF24):
             )
         name_length = (len(self.name) + 2) if self.name is not None else 0
         pl_size = 9 + len(payload) + name_length + self._show_dbm * 3
-        buf = bytes([0x42, pl_size]) + self.mac
+        buf = bytes([self._to_android, pl_size]) + self.mac
         buf += chunk(b"\x05", 1)
         pa_level = b""
         if self._show_dbm:

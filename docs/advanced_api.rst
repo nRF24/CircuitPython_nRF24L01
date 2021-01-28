@@ -247,6 +247,16 @@ load_ack()
         (TX FIFO buffer) if it can. Use `flush_tx()` to discard unused ACK payloads when done
         listening.
 
+read_ack()
+******************************
+
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.read_ack
+
+    This function is an alias of `recv()` and remains for backward compatibility with older
+    versions of this library.
+
+    .. warning:: This function will be deprecated on next major release. Use `recv()` instead.
+
 Status Byte
 ******************************
 
