@@ -67,17 +67,17 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         # construct a payload to send
         # add b"\0" as a c-string NULL terminating char
         buffer = b"Hello \0" + bytes([counter[0]])
-        start_timer = time.monotonic_ns()  # start timer
+        start_timer = time.monotonic() * 1000  # start timer
         result = nrf.send(buffer)  # save the response (ACK payload)
-        end_timer = time.monotonic_ns()  # stop timer
+        end_timer = time.monotonic() * 1000  # stop timer
         if result:
             # print the received ACK that was automatically
             # fetched and saved to "result" via send()
             # print timer results upon transmission success
             print(
                 "Transmission successful! Time to transmit: "
-                "{} us. Sent: {}{}".format(
-                    int((end_timer - start_timer) / 1000),
+                "{} ms. Sent: {}{}".format(
+                    end_timer - start_timer,
                     buffer[:6].decode("utf-8"),
                     counter[0],
                 ),

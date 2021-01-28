@@ -61,17 +61,15 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         # into a usable payload
         buffer = struct.pack("<f", payload[0])
         # "<f" means a single little endian (4 byte) float value.
-        start_timer = time.monotonic_ns()  # start timer
+        start_timer = time.monotonic() * 1000  # start timer
         result = nrf.send(buffer)
-        end_timer = time.monotonic_ns()  # end timer
+        end_timer = time.monotonic() * 1000  # end timer
         if not result:
             print("send() failed or timed out")
         else:
             print(
                 "Transmission successful! Time to Transmit: "
-                "{} us. Sent: {}".format(
-                    (end_timer - start_timer) / 1000, payload[0]
-                )
+                "{} ms. Sent: {}".format(end_timer - start_timer, payload[0])
             )
             payload[0] += 0.01
         time.sleep(1)

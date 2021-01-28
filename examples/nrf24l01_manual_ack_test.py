@@ -59,22 +59,22 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         # construct a payload to send
         # add b"\0" as a c-string NULL terminating char
         buffer = b"Hello \0" + bytes([counter[0]])
-        start_timer = time.monotonic_ns()  # start timer
+        start_timer = time.monotonic() * 1000  # start timer
         result = nrf.send(buffer)  # save the response (ACK payload)
         if not result:
             print("send() failed or timed out")
         else:  # sent successful; listen for a response
             nrf.listen = True  # get radio ready to receive a response
-            timeout = time.monotonic_ns() + 200000000  # set sentinal for timeout
-            while not nrf.available() and time.monotonic_ns() < timeout:
+            timeout = time.monotonic() * 1000 + 0.2  # set sentinal for timeout
+            while not nrf.available() and time.monotonic() * 1000 < timeout:
                 # this loop hangs for 200 ms or until response is received
                 pass
             nrf.listen = False  # put the radio back in TX mode
-            end_timer = time.monotonic_ns()  # stop timer
+            end_timer = time.monotonic() * 1000  # stop timer
             print(
                 "Transmission successful! Time to transmit: "
-                "{} us. Sent: {}{}".format(
-                    int((end_timer - start_timer) / 1000),
+                "{} ms. Sent: {}{}".format(
+                    end_timer - start_timer,
                     buffer[:6].decode("utf-8"),
                     counter[0],
                 ),
@@ -116,8 +116,8 @@ def slave(timeout=6):
             counter[0] = received[7:8][0] + 1
             nrf.listen = False  # put the radio in TX mode
             result = False
-            ack_timeout = time.monotonic_ns() + 200000000
-            while not result and time.monotonic_ns() < ack_timeout:
+            ack_timeout = time.monotonic() * 1000 + 0.2
+            while not result and time.monotonic() * 1000 < ack_timeout:
                 # try to send reply for 200 milliseconds (at most)
                 result = nrf.send(b"World \0" + bytes([counter[0]]))
             nrf.listen = True  # put the radio back in RX mode

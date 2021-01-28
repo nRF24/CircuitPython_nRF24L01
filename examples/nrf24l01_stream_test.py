@@ -70,12 +70,12 @@ def master(count=1, size=32):  # count = 5 will transmit the list 5 times
     nrf.listen = False  # ensures the nRF24L01 is in TX mode
     successful = 0  # keep track of success rate
     for _ in range(count):
-        start_timer = time.monotonic_ns()  # start timer
+        start_timer = time.monotonic() * 1000  # start timer
         # NOTE force_retry=2 internally invokes `RF24.resend()` 2 times at
         # most for payloads that fail to transmit.
         result = nrf.send(buffers, force_retry=2)  # result is a list
-        end_timer = time.monotonic_ns()  # end timer
-        print("Transmission took", (end_timer - start_timer) / 1000, "us")
+        end_timer = time.monotonic() * 1000  # end timer
+        print("Transmission took", end_timer - start_timer, "ms")
         for r in result:  # tally the resulting success rate
             successful += 1 if r else 0
     print(
@@ -98,7 +98,7 @@ def master_fifo(count=1, size=32):
         # NOTE the write_only parameter does not initiate sending
         buf_iter = 0  # iterator of payloads for the while loop
         failures = 0  # keep track of manual retries
-        start_timer = time.monotonic_ns()  # start timer
+        start_timer = time.monotonic() * 1000  # start timer
         while buf_iter < size:  # cycle through all the payloads
             while buf_iter < size and nrf.write(buf[buf_iter], write_only=1):
                 # NOTE write() returns False if TX FIFO is already full
@@ -121,10 +121,10 @@ def master_fifo(count=1, size=32):
                     nrf.clear_status_flags()  # clear the irq_df flag
                     ce.value = True  # start re-transmitting
             ce.value = False
-        end_timer = time.monotonic_ns()  # end timer
+        end_timer = time.monotonic() * 1000  # end timer
         print(
-            "Transmission took {} us with {} failures detected.".format(
-                (end_timer - start_timer) / 1000, failures
+            "Transmission took {} ms with {} failures detected.".format(
+                end_timer - start_timer, failures
             ),
             end=" " if failures < 100 else "\n",
         )

@@ -61,11 +61,14 @@ Please ensure all dependencies are available on the CircuitPython filesystem.
 This is easily achieved by downloading
 `the Adafruit library and driver bundle <https://github.com/adafruit/Adafruit_CircuitPython_Bundle>`_.
 
-.. note:: This library supports Python 3.7 or newer because the examples use
+.. note:: This library supports Python 3.4 or newer, but Python 3.7 introduced
     the function `time.monotonic_ns() <https://docs.python.org/3.7/library/
     time.html#time.monotonic_ns>`_ which returns an arbitrary time "counter"
-    as an `int` of nanoseconds. CircuitPython firmware also supports
-    :py:func:`time.monotonic_ns()`.
+    as an `int` of nanoseconds. However, this function is not used in the
+    example scripts for backward compatibility reasons. Instead, we used
+    :py:func:`time.monotonic()` which returns an arbitrary time "counter" as
+    a `float` of seconds. CircuitPython firmware supports both functions as of
+    v4.0.
 
 Installing from PyPI
 --------------------

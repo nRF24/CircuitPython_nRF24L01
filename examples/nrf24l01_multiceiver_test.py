@@ -79,15 +79,15 @@ def node(node_number=0, count=6):
         # payloads will include the node_number and a payload ID character
         payload = struct.pack("<ii", node_number, counter)
         # show something to see it isn't frozen
-        start_timer = time.monotonic_ns()
+        start_timer = time.monotonic() * 1000
         report = nrf.send(payload)
-        end_timer = time.monotonic_ns()
+        end_timer = time.monotonic() * 1000
         # show something to see it isn't frozen
         if report:
             print(
                 "Transmission of payloadID {} as node {} successfull! "
-                "Transmission time: {} us".format(
-                    counter, node_number, (end_timer - start_timer) / 1000
+                "Transmission time: {} ms".format(
+                    counter, node_number, end_timer - start_timer
                 )
             )
         else:
