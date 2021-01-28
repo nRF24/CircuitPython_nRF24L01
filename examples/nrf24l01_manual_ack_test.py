@@ -65,7 +65,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             print("send() failed or timed out")
         else:  # sent successful; listen for a response
             nrf.listen = True  # get radio ready to receive a response
-            timeout = time.monotonic() * 1000 + 0.2  # set sentinal for timeout
+            timeout = time.monotonic() * 1000 + 200  # set sentinal for timeout
             while not nrf.available() and time.monotonic() * 1000 < timeout:
                 # this loop hangs for 200 ms or until response is received
                 pass
@@ -116,7 +116,7 @@ def slave(timeout=6):
             counter[0] = received[7:8][0] + 1
             nrf.listen = False  # put the radio in TX mode
             result = False
-            ack_timeout = time.monotonic() * 1000 + 0.2
+            ack_timeout = time.monotonic() * 1000 + 200
             while not result and time.monotonic() * 1000 < ack_timeout:
                 # try to send reply for 200 milliseconds (at most)
                 result = nrf.send(b"World \0" + bytes([counter[0]]))
