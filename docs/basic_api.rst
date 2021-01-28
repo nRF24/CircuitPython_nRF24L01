@@ -27,11 +27,11 @@ Constructor
         parameter only applies to the instantiated object and is made persistent via
         :py:class:`~adafruit_bus_device.spi_device.SPIDevice`.
 
-    .. versionadded:: 1.2.0
-        ``spi_frequency`` parameter
     .. versionchanged:: 1.2.0
-        removed all keyword arguments in favor of using the provided corresponding
-        attributes.
+
+        - new ``spi_frequency`` parameter
+        - removed all keyword arguments in favor of using the provided corresponding
+          attributes.
 
 open_tx_pipe()
 ******************
@@ -93,14 +93,18 @@ listen
 
     - `True` enables RX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications
       Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
-      nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, this attribute
-      flushes the RX FIFO, clears the `irq_dr` status flag, and puts nRF24L01 in power up
+      nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, clears the `irq_dr` status flag, and puts nRF24L01 in power up
       mode. Notice the CE pin is be held HIGH during RX mode.
     - `False` disables RX mode. As mentioned in above link, this puts nRF24L01's power in
-      Standby-I (CE pin is LOW meaning low current & no transmissions) mode which is ideal
-      for post-reception work. Disabing RX mode doesn't flush the RX/TX FIFO buffers, so
+      Standby-I mode (CE pin is LOW meaning low current & no transmissions) which is ideal
+      for post-reception work. Disabing RX mode doesn't flush the RX FIFO buffers, so
       remember to flush your 3-level FIFO buffers when appropriate using `flush_tx()` or
       `flush_rx()` (see also the `read()` function).
+
+    .. note:: When `ack` payloads are enabled, this attribute flushes the TX FIFO buffers
+        upon exiting RX mode. However, this attribute does not flush the TX FIFO buffers
+        when entering RX mode. This is done to better manage the ACK payloads loaded into
+        the TX FIFO.
 
 any()
 ******************
