@@ -62,7 +62,7 @@ here has been adapted to work with CircuitPython.
        an effect on the interrupt (IRQ) pin. The "on data fail"
        (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_df`) is never
        triggered because
-       :py:attr:`~circuitpython_nrf24l01.rf24.RF24.arc` attribute is disabled.
+       :py:attr:`~circuitpython_nrf24l01.rf24.RF24.auto_ack` attribute is disabled.
 
 helpers
 ----------------
