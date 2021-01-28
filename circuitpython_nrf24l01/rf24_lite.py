@@ -8,7 +8,9 @@ from adafruit_bus_device.spi_device import SPIDevice
 
 class RF24:
     def __init__(self, spi, csn, ce, spi_frequency=10000000):
-        self._spi = SPIDevice(spi, chip_select=csn, baudrate=spi_frequency)
+        self._spi = SPIDevice(
+            spi, chip_select=csn, baudrate=spi_frequency, extra_clocks=8,
+        )
         self.ce_pin = ce
         self.ce_pin.switch_to_output(value=False)
         self._status = 0
@@ -35,7 +37,6 @@ class RF24:
         out_buf = bytes([reg, 0])
         in_buf = bytearray([0, 0])
         with self._spi as spi:
-            time.sleep(0.005)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         return in_buf[1]
@@ -44,7 +45,6 @@ class RF24:
         in_buf = bytearray(buf_len + 1)
         out_buf = bytes([reg]) + b"\x00" * buf_len
         with self._spi as spi:
-            time.sleep(0.005)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         return in_buf[1:]
@@ -53,7 +53,6 @@ class RF24:
         out_buf = bytes([0x20 | reg]) + out_buf
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
-            time.sleep(0.005)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
 
@@ -63,7 +62,6 @@ class RF24:
             out_buf = bytes([0x20 | reg, val])
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
-            time.sleep(0.005)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
 
@@ -151,10 +149,9 @@ class RF24:
         if not send_only:
             self.flush_rx()
         self.write(buf, ask_no_ack)
-        time.sleep(0.00001)
-        self.ce_pin.value = 0
         while not self._status & 0x70:
             self.update()
+        self.ce_pin.value = 0
         result = self.irq_ds
         if self.irq_df:
             for _ in range(force_retry):
@@ -163,7 +160,6 @@ class RF24:
                     break
         if self._status & 0x60 == 0x60 and not send_only:
             result = self.recv()
-        self.clear_status_flags(False)
         return result
 
     @property
@@ -223,9 +219,7 @@ class RF24:
 
     @arc.setter
     def arc(self, cnt):
-        if not 0 <= cnt <= 15:
-            raise ValueError("arc must be in range [0, 15]")
-        self._reg_write(4, (self._reg_read(4) & 0xF0) | cnt)
+        self._reg_write(4, (self._reg_read(4) & 0xF0) | max(0, min(int(cnt), 15)))
 
     @property
     def ard(self):
@@ -233,8 +227,7 @@ class RF24:
 
     @ard.setter
     def ard(self, delta):
-        if not 250 <= delta <= 4000:
-            raise ValueError("ard must be in range [250, 4000]")
+        delta = max(250, min(delta, 4000))
         self._reg_write(4, (self._reg_read(4) & 0x0F) | int((delta - 250) / 250) << 4)
 
     @property
@@ -313,14 +306,12 @@ class RF24:
             self._reg_write(0xE3)
             self.ce_pin.value = 0
             self.ce_pin.value = 1
-            time.sleep(0.00001)
-            self.ce_pin.value = 0
             while not self._status & 0x70:
                 self.update()
+            self.ce_pin.value = 0
             result = self.irq_ds
             if self._status & 0x60 == 0x60 and not send_only:
                 result = self.recv()
-            self.clear_status_flags(False)
         return result
 
     def write(self, buf, ask_no_ack=False, write_only=False):

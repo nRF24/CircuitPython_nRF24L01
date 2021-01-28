@@ -41,16 +41,23 @@ TX_ADDRESS = const(0x10)  # Address used for TX transmissions
 RX_PL_LENG = const(0x11)  # RX payload widths; pipes 0-5 = 0x11-0x16
 DYN_PL_LEN = const(0x1C)  # dynamic payloads status for all pipes
 TX_FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
-CSN_DELAY = 0.005
-"""The delay time (in seconds) used to let the CSN pin settle,
-allowing a clean SPI transaction."""
+
+
+def address_repr(addr):
+    """Convert an address into a hexlified string (in big endian)."""
+    rev_str = ""
+    for char in range(len(addr) - 1, -1, -1):
+        rev_str += ("" if addr[char] > 0x0F else "0") + hex(addr[char])[2:]
+    return rev_str
 
 
 class RF24:
     """A driver class for the nRF24L01(+) transceiver radios."""
 
     def __init__(self, spi, csn, ce, spi_frequency=10000000):
-        self._spi = SPIDevice(spi, chip_select=csn, baudrate=spi_frequency)
+        self._spi = SPIDevice(
+            spi, chip_select=csn, baudrate=spi_frequency, extra_clocks=8,
+        )
         self.ce_pin = ce
         self.ce_pin.switch_to_output(value=False)  # pre-empt standby-I mode
         self._status = 0  # status byte returned on all SPI transactions
@@ -139,7 +146,6 @@ class RF24:
         out_buf = bytes([reg, 0])
         in_buf = bytearray([0, 0])
         with self._spi as spi:
-            time.sleep(CSN_DELAY)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         return in_buf[1]
@@ -148,7 +154,6 @@ class RF24:
         in_buf = bytearray(buf_len + 1)
         out_buf = bytes([reg]) + b"\x00" * buf_len
         with self._spi as spi:
-            time.sleep(CSN_DELAY)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         return in_buf[1:]
@@ -157,7 +162,6 @@ class RF24:
         out_buf = bytes([0x20 | reg]) + out_buf
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
-            time.sleep(CSN_DELAY)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
 
@@ -167,7 +171,6 @@ class RF24:
             out_buf = bytes([0x20 | reg, value])
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
-            time.sleep(CSN_DELAY)
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
 
@@ -285,10 +288,9 @@ class RF24:
         if not send_only:
             self.flush_rx()
         self.write(buf, ask_no_ack)
-        time.sleep(0.00001)
-        self.ce_pin.value = 0
         while not self._status & 0x70:
             self.update()
+        self.ce_pin.value = 0
         result = self.irq_ds
         if self.irq_df:
             for _ in range(force_retry):
@@ -297,7 +299,6 @@ class RF24:
                     break
         if self._status & 0x60 == 0x60 and not send_only:
             result = self.recv()
-        self.clear_status_flags(False)
         return result
 
     @property
@@ -441,19 +442,22 @@ class RF24:
             )
         )
         if dump_pipes:
-            print("TX address____________", self.address())
-            self._open_pipes = self._reg_read(OPEN_PIPES)
-            for i in range(6):
-                is_open = self._open_pipes & (1 << i)
-                print(
-                    "Pipe",
+            self._dump_pipes()
+
+    def _dump_pipes(self):
+        print("TX address____________", "0x" + address_repr(self.address()))
+        self._open_pipes = self._reg_read(OPEN_PIPES)
+        for i in range(6):
+            is_open = self._open_pipes & (1 << i)
+            print(
+                "Pipe {} ({}) bound: {}".format(
                     i,
-                    "( open )" if is_open else "(closed)",
-                    "bound:",
-                    self.address(i),
+                    " open " if is_open else "closed",
+                    "0x" + address_repr(self.address(i))
                 )
-                if is_open:
-                    print("\t\texpecting", self._pl_len[i], "byte static payloads")
+            )
+            if is_open:
+                print("\t\texpecting", self._pl_len[i], "byte static payloads")
 
     @property
     def is_plus_variant(self):
@@ -493,7 +497,7 @@ class RF24:
     def payload_length(self):
         """This `int` attribute specifies the length (in bytes) of static payloads for each
         pipe."""
-        return self._pl_len
+        return self._pl_len[0]
 
     @payload_length.setter
     def payload_length(self, length):
@@ -517,8 +521,7 @@ class RF24:
 
     @arc.setter
     def arc(self, count):
-        if not 0 <= count <= 15:
-            raise ValueError("automatic re-transmit count must in range [0, 15]")
+        count = max(0, min(int(count), 15))
         self._retry_setup = (self._retry_setup & 0xF0) | count
         self._reg_write(SETUP_RETR, self._retry_setup)
 
@@ -533,8 +536,7 @@ class RF24:
 
     @ard.setter
     def ard(self, delta):
-        if not 250 <= delta <= 4000:
-            raise ValueError("automatic re-transmit delay must be in range [250, 4000]")
+        delta = max(250, min(delta, 4000))
         self._retry_setup = (self._retry_setup & 15) | int((delta - 250) / 250) << 4
         self._reg_write(SETUP_RETR, self._retry_setup)
 
@@ -636,16 +638,16 @@ class RF24:
         """This `int` attribute specifies the nRF24L01's CRC (cyclic
         redundancy checking) encoding scheme in terms of byte length."""
         self._config = self._reg_read(CONFIGURE)
+        self._aa = self._reg_read(AUTO_ACK)
+        if self._aa:
+            return 2 if self._config & 4 else 1
         return max(0, ((self._config & 0x0C) >> 2) - 1)
 
     @crc.setter
     def crc(self, length):
-        if not 0 <= length <= 2:
-            raise ValueError("CRC byte length must be an int equal to 0 (off), 1, or 2")
-        if self.crc != length:
-            length = (length + 1) << 2 if length else 0
-            self._config = self._config & 0x73 | length
-            self._reg_write(0, self._config)
+        length = (min(2, abs(int(length))) + 1) << 2 if length else 0
+        self._config = self._config & 0x73 | length
+        self._reg_write(0, self._config)
 
     @property
     def power(self):
@@ -702,14 +704,12 @@ class RF24:
             self.clear_status_flags()
             self._reg_write(0xE3)
             self.ce_pin.value = 1
-            time.sleep(0.00001)
-            self.ce_pin.value = 0
             while not self._status & 0x70:
                 self.update()
+            self.ce_pin.value = 0
             result = self.irq_ds
             if self._status & 0x60 == 0x60 and not send_only:
                 result = self.recv()
-            self.clear_status_flags(False)
         return result
 
     def write(self, buf, ask_no_ack=False, write_only=False):
