@@ -513,7 +513,8 @@ class RF24:
         """Returns a `bool` describing the setting of the dynamic payload
         feature about a specific data pipe."""
         if 0 <= pipe_number <= 5:
-            return bool(self.dynamic_payloads & (1 << pipe_number))
+            self._dyn_pl = self._reg_read(DYN_PL_LEN)
+            return bool(self._dyn_pl & (1 << pipe_number))
         raise IndexError("pipe_number must be in range [0, 5]")
 
     @property
@@ -544,6 +545,7 @@ class RF24:
     def get_payload_length(self, pipe_number=0):
         """Returns an `int` describing the current setting of a specified data
         pipe's expected static payload length."""
+        self._pl_len[pipe_number] = self._reg_read(RX_PL_LENG + pipe_number)
         return self._pl_len[pipe_number]
 
     @property
@@ -625,6 +627,7 @@ class RF24:
         """Returns a `bool` describing the automatic acknowledgement feature
         setting about a specific data pipe."""
         if 0 <= pipe_number <= 5:
+            self._aa = self._reg_read(AUTO_ACK)
             return bool(self._aa & (1 << pipe_number))
         raise IndexError("pipe_number must be in range [0, 5]")
 
