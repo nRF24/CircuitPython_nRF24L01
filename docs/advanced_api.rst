@@ -298,9 +298,9 @@ write()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.write
 
-    This function isn't completely non-blocking as we still need to wait 5 ms (`CSN_DELAY`)
-    for the CSN pin to settle (allowing an accurate SPI write transaction). Example usage of
-    this function can be seen in the `IRQ pin example <examples.html#irq-pin-example>`_ and
+    This function isn't completely non-blocking as we still need to wait for the necessary
+    SPI transactions to complete. Example usage of this function can be seen in the
+    `IRQ pin example <examples.html#irq-pin-example>`_ and
     in the `Stream example's "master_fifo()" function <examples.html#stream-example>`_
 
     :returns: `True` if the payload was added to the TX FIFO buffer. `False` if the TX FIFO

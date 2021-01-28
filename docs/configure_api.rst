@@ -6,11 +6,6 @@
 Configuration API
 -----------------
 
-CSN_DELAY
-******************************
-
-.. autodata:: circuitpython_nrf24l01.rf24.CSN_DELAY
-
 dynamic_payloads
 ******************************
 
