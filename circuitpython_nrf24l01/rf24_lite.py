@@ -17,7 +17,6 @@ class RF24:
         self._reg_write(0, 0x0E)
         if self._reg_read(0) & 3 != 2:
             raise RuntimeError("nRF24L01 Hardware not responding")
-        self.power = False
         self._reg_write(3, 3)
         self._reg_write(6, 7)
         self._reg_write(2, 0)
@@ -43,7 +42,7 @@ class RF24:
 
     def _reg_read_bytes(self, reg, buf_len=5):
         in_buf = bytearray(buf_len + 1)
-        out_buf = bytes([reg]) + b"\x00" * buf_len
+        out_buf = bytes([reg]) + b"\0" * buf_len
         with self._spi as spi:
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
@@ -77,15 +76,15 @@ class RF24:
         self._reg_write(0x03, length - 2)
 
     def open_tx_pipe(self, addr):
-        if self.arc:
-            self._reg_write_bytes(0x0A, addr)
-            self._reg_write(2, self._reg_read(2) | 1)
+        self._reg_write_bytes(0x0A, addr)
         self._reg_write_bytes(0x10, addr)
 
     def close_rx_pipe(self, pipe_num):
         if pipe_num < 0 or pipe_num > 5:
             raise ValueError("pipe_number must be in range [0, 5]")
         open_pipes = self._reg_read(2)
+        if not pipe_num:
+            self._pipe0_read_addr = None
         if open_pipes & (1 << pipe_num):
             self._reg_write(2, open_pipes & ~(1 << pipe_num))
 
@@ -108,20 +107,26 @@ class RF24:
 
     @listen.setter
     def listen(self, is_rx):
-        if self.listen != bool(is_rx):
-            self.ce_pin.value = 0
-            if is_rx:
-                if self._pipe0_read_addr is not None:
-                    self._reg_write_bytes(0x0A, self._pipe0_read_addr)
-                self._reg_write(0, (self._reg_read(0) & 0xFC) | 3)
-                time.sleep(0.00015)
-                self.flush_rx()
-                self.clear_status_flags()
-                self.ce_pin.value = 1
-                time.sleep(0.00013)
+        self.ce_pin.value = 0
+        if is_rx:
+            if self._pipe0_read_addr is not None:
+                self._reg_write_bytes(0x0A, self._pipe0_read_addr)
             else:
-                self._reg_write(0, self._reg_read(0) & 0xFE)
-                time.sleep(0.00016)
+                self.close_rx_pipe(0)
+            self._reg_write(0, (self._reg_read(0) & 0xFC) | 3)
+            time.sleep(0.00015)
+            self.clear_status_flags()
+            self.ce_pin.value = 1
+            time.sleep(0.00013)
+        else:
+            if self._reg_read(0x1D) & 6 == 6:
+                self.flush_tx()
+            self._reg_write(0, self._reg_read(0) & 0xFE | 2)
+            self._reg_write(2, self._reg_read(2) | 1)
+            time.sleep(0.00016)
+
+    def available(self):
+        return self.update() and self.pipe is not None
 
     def any(self):
         if self._reg_read(0x1D) & 4 and self.pipe is not None:
@@ -195,7 +200,7 @@ class RF24:
 
     @property
     def dynamic_payloads(self):
-        return bool(self._reg_read(0x1C)) and self._reg_read(0x1D) & 4 == 4
+        return self._reg_read(0x1D) & 4 == 4
 
     @dynamic_payloads.setter
     def dynamic_payloads(self, enable):
@@ -211,7 +216,7 @@ class RF24:
         if not length or length > 32:
             raise ValueError("payload_length must be in range [1, 32]")
         for i in range(6):
-            self._reg_write(0x11 + i, length)
+            self._reg_write(0x11 + i, max(1, min(32, length)))
 
     @property
     def arc(self):
@@ -239,7 +244,7 @@ class RF24:
         features = self._reg_read(0x1D) & 5
         if enable:
             self._reg_write(0x1C, 0x3F)
-            features = (features & 3) | 4
+            features |= 4
         features |= 2 if enable else 0
         self._reg_write(0x1D, features)
 
@@ -300,11 +305,11 @@ class RF24:
     def resend(self, send_only=False):
         result = False
         if not self.fifo(True, True):
-            if not send_only:
+            self.ce_pin.value = 0
+            if not send_only and self.pipe is not None:
                 self.flush_rx()
             self.clear_status_flags()
             self._reg_write(0xE3)
-            self.ce_pin.value = 0
             self.ce_pin.value = 1
             while not self._status & 0x70:
                 self.update()
@@ -327,10 +332,10 @@ class RF24:
         if not self.dynamic_payloads:
             pl_width = self.payload_length
             if len(buf) < pl_width:
-                buf += b"\x00" * pl_width - len(buf)
+                buf += b"\0" * pl_width - len(buf)
             elif len(buf) > pl_width:
                 buf = buf[:pl_width]
-        self._reg_write_bytes(0xA0 | (ask_no_ack << 4), buf)
+        self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
         if not write_only:
             self.ce_pin.value = 1
         return True
@@ -346,3 +351,7 @@ class RF24:
         if check_empty is None:
             return (_fifo & (0x30 if about_tx else 0x03)) >> (4 * about_tx)
         return bool(_fifo & ((2 - bool(check_empty)) << (4 * about_tx)))
+
+    @property
+    def rpd(self):
+        return bool(self._reg_read(0x09))

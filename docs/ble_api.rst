@@ -1,3 +1,8 @@
+BLE API
+=================
+
+.. versionadded:: 1.2.0
+    BLE API added
 
 BLE Limitations
 ---------------
@@ -67,22 +72,22 @@ swap_bits()
 
 .. autofunction:: circuitpython_nrf24l01.fake_ble.swap_bits
 
-   :returns:
-      An `int` containing the byte whose bits are reversed
-      compared to the value passed to the ``original`` parameter.
-   :param int original: This should be a single unsigned byte, meaning the
-      parameters value can only range from 0 to 255.
+    :returns:
+        An `int` containing the byte whose bits are reversed
+        compared to the value passed to the ``original`` parameter.
+    :param int original: This is truncated to a single unsigned byte,
+        meaning this parameter's value can only range from 0 to 255.
 
 reverse_bits()
 *****************
 
 .. autofunction:: circuitpython_nrf24l01.fake_ble.reverse_bits
 
-   :returns:
-      A `bytearray` whose byte order remains the same, but each
-      byte's bit order is reversed.
-   :param bytearray,bytes original: The original buffer whose bits are to be
-      reversed.
+    :returns:
+       A `bytearray` whose byte order remains the same, but each
+       byte's bit order is reversed.
+    :param bytearray,bytes original: The original buffer whose bits are to be
+       reversed.
 
 chunk()
 *****************
@@ -116,7 +121,7 @@ crc24_ble()
 
 .. autofunction:: circuitpython_nrf24l01.fake_ble.crc24_ble
 
-    This is exposed for convenience but should not be used for other buffer
+    This is exposed for convenience and should not be used for other buffer
     protocols that require big endian CRC24 format.
 
     :param bytearray,bytes data: The buffer of data to be uncorrupted.
@@ -136,9 +141,12 @@ BLE_FREQ
 
     This tuple contains the relative predefined channels used:
 
-    * nRF channel 2  == BLE channel 37
-    * nRF channel 26 == BLE channel 38
-    * nRF channel 80 == BLE channel 39
+    .. csv-table::
+        :header: "nRF24L01 channel", "BLE channel"
+
+        2, 37
+        26, 38
+        80, 39
 
 FakeBLE class
 -------------
@@ -148,7 +156,7 @@ FakeBLE class
     Per the limitations of this technique, only some of underlying
     :py:class:`~circuitpython_nrf24l01.rf24.RF24` functionality is
     available for configuration when implementing BLE transmissions.
-    See the `Available RF24 functionality`_ for more details.
+    See the `Unavailable RF24 functionality`_ for more details.
 
 
     :param ~busio.SPI spi: The object for the SPI bus that the nRF24L01 is connected to.
@@ -159,24 +167,11 @@ FakeBLE class
             undesirable behavior.
     :param ~digitalio.DigitalInOut csn: The digital output pin that is connected to the nRF24L01's
         CSN (Chip Select Not) pin. This is required.
-    :param ~digitalio.DigitalInOut ce: The digital output pin that is connected to the nRF24L01's
+    :param ~digitalio.DigitalInOut ce_pin: The digital output pin that is connected to the nRF24L01's
         CE (Chip Enable) pin. This is required.
     :param int spi_frequency: Specify which SPI frequency (in Hz) to use on the SPI bus. This
         parameter only applies to the instantiated object and is made persistent via
         :py:class:`~adafruit_bus_device.spi_device.SPIDevice`.
-
-to_android
-************
-
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.to_android
-
-    A value of `True` allows advertisements to be compatible with Android smartphones. Setting
-    this attribute to `False` still allows advertisements to be compatible with anything else
-    except Android smartphones. Default Value is `True`.
-
-    .. warning:: This attribute will be deprecated on the next major release because it is not
-        necessary to change this attribute. Changing this attribute to `False` only breaks
-        compatibility with Android smartphones.
 
 mac
 ************
@@ -191,9 +186,9 @@ name
 
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.name
 
-   This is not required. In fact setting this attribute will subtract from
-   the available payload length (in bytes). Set this attribute to `None` to
-   disable advertising the device name.
+    This is not required. In fact setting this attribute will subtract from
+    the available payload length (in bytes). Set this attribute to `None` to
+    disable advertising the device name.
 
     .. note:: This information occupies (in the TX FIFO) an extra 2 bytes plus
         the length of the name set by this attribute.
@@ -233,7 +228,7 @@ whiten()
         improper usage.
 
 available()
-*************
+******************
 
 .. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.available
 
@@ -243,8 +238,18 @@ available()
     :param bytearray,bytes hypothetical: Pass a potential `chunk()` of
         data to this parameter to calculate the resulting left over length
         in bytes. This parameter is optional.
-    :returns: An `int` representing the length of available bytes for the
+    :returns: An `int` representing the length of available bytes for
         a single payload.
+
+    .. versionchanged:: 1.2.4
+        Due to inheritance this function overrides the
+        :meth:`circuitpython_nrf24l01.rf24.~RF24.available()` method.
+        Recommend using
+
+        .. code-block:: python
+
+            if nrf.update() and nrf.pipe is not None:
+                print("received data is available to read.")
 
 advertise()
 *************
@@ -299,68 +304,36 @@ advertise()
         ble.advertise(buffers)
         ble.hop_channel()
 
-Available RF24 functionality
-*****************************
-
-pa_level
-####################
-
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.pa_level
-
 channel
 ####################
 
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.channel
 
-payload_length
-####################
-
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.payload_length
-
-power
-####################
-
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.power
-
-is_lna_enabled
-####################
-
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.is_lna_enabled
-
-is_plus_variant
-####################
-
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.is_plus_variant
-
 interrupt_config()
 ####################
 
-.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.interrupt_config()
+.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.interrupt_config
 
-irq_ds
-####################
+    .. warning:: The :py:attr:`circuitpython_nrf24l01.rf24.RF24.irq_df`
+        attribute is not implemented for BLE operations.
 
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.irq_ds
+    .. seealso:: :py:meth:`~circuitpython_nrf24l01.rf24.RF24.interrupt_config()`
 
-irq_dr
-####################
+Unavailable RF24 functionality
+******************************
 
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.irq_dr
+The following `RF24` functionality is not available in `FakeBLE` objects:
 
-clear_status_flags()
-####################
-
-.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.clear_status_flags()
-
-update()
-####################
-
-.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.update()
-
-what_happened()
-####################
-
-.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.what_happened()
+- :py:attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads`
+- :py:meth:`~circuitpython_nrf24l01.rf24.RF24.set_dynamic_payloads()`
+- :py:attr:`~circuitpython_nrf24l01.rf24.RF24.data_rate`
+- :py:attr:`~circuitpython_nrf24l01.rf24.RF24.address_length`
+- :py:attr:`~circuitpython_nrf24l01.rf24.RF24.auto_ack`
+- :py:meth:`~circuitpython_nrf24l01.rf24.RF24.set_auto_ack()`
+- :py:attr:`~circuitpython_nrf24l01.rf24.RF24.ack`
+- :py:attr:`~circuitpython_nrf24l01.rf24.RF24.crc`
+- :py:meth:`~circuitpython_nrf24l01.rf24.RF24.open_rx_pipe()`
+- :py:meth:`~circuitpython_nrf24l01.rf24.RF24.open_tx_pipe()`
 
 
 Service related classes
@@ -393,7 +366,7 @@ derivitive children
 .. autoclass:: circuitpython_nrf24l01.fake_ble.BatteryServiceData
     :show-inheritance:
 
-    The class's `data` attribute accepts a `int` value as
+    The class's `data` attribute accepts a 1-byte unsigned `int` value as
     input and returns a `bytes` object that conforms to the Bluetooth
     Battery Level format as defined in the `GATT Specifications
     Supplement. <https://www.bluetooth.org/DocMan/handlers/
