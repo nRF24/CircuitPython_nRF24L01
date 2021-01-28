@@ -79,6 +79,7 @@ class FakeBLE(RF24):
         self._show_dbm = False
         self._ble_name = None
         self._mac = urandom(6)
+        self._to_android = 0x42
         self._config = self._config & 3 | 0x10  # disable CRC
         # disable auto_ack, dynamic payloads, all TX features, & auto-retry
         self._aa, self._dyn_pl, self._features, self._retry_setup = (0,) * 4
