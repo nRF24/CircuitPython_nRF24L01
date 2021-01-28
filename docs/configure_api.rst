@@ -19,13 +19,11 @@ dynamic_payloads
 
     Default setting is enabled on all pipes. A valid input is:
 
-    - A `bool` to enable (`True`) or disable (`False`) the dynamic payload length feature for all data pipes.
+    - A `bool` or `int` to enable (`True`/``1``) or disable (`False`/``0``) the dynamic
+      payload length feature for all data pipes.
     - A `list` or `tuple` containing booleans or integers |per_data_pipe_control| If any
       index's value is less than 0 (a negative value), then the pipe corresponding to that
       index will remain unaffected.
-    - An `int` where each bit in the integer represents the dynamic payload feature
-      per pipe. Bit position 0 controls this feature for data pipe 0, and bit position 5
-      controls this feature for data pipe 5. All bits in positions greater than 5 are ignored.
 
     .. note::
         - The `payload_length` attribute is ignored when this feature is enabled
@@ -34,8 +32,9 @@ dynamic_payloads
           feature is disabled for any respective data pipes.
 
     :returns:
-        An `int` (1 unsigned byte) where each bit in the integer represents the dynamic
-        payload length feature per pipe.
+        An `bool` represents the dynamic payload length feature for all pipes. This
+        will be `True` if only one pipe has this feature enabled. Use
+        `get_dynamic_payloads()` to fetch the current setting for individual pipes.
 
     .. versionchanged:: 1.2.0
         accepts a list or tuple for control of the dynamic payload length feature per pipe.
@@ -89,6 +88,7 @@ payload_length
 
     :returns:
         The current setting of the expected static payload length feature for pipe 0 only.
+        Use `get_payload_length()` to fetch the current setting for individual pipes.
 
     .. versionchanged:: 1.2.0
         return a list of all payload length settings for all pipes. This implementation
@@ -152,13 +152,11 @@ auto_ack
 
     Default setting is enabled on all data pipes. A valid input is:
 
-    - A `bool` to enable (`True`) or disable (`False`) transmitting automatic acknowledgment packets for all data pipes.
+    - A `bool` or `int` to enable (`True`/``1``) or disable (`False`/``0``) transmitting
+      automatic acknowledgment packets for all data pipes.
     - A `list` or `tuple` containing booleans or integers |per_data_pipe_control| If any
       index's value is less than 0 (a negative value), then the pipe corresponding to that
       index will remain unaffected.
-    - An `int` where each bit in the integer represents the automatic acknowledgement feature
-      per pipe. Bit position 0 controls this feature for data pipe 0, and bit position 5
-      controls this feature for data pipe 5. All bits in positions greater than 5 are ignored.
 
     .. note:: The CRC (cyclic redundancy checking) is enabled (for all
         transmissions) automatically by the nRF24L01 if this attribute is enabled
@@ -166,8 +164,9 @@ auto_ack
         remain unaffected when disabling this attribute for any data pipes.
 
     :returns:
-        An `int` (1 unsigned byte) where each bit in the integer represents the automatic
-        acknowledgement feature per pipe.
+        An `bool` represents the automatic acknowledgement feature for all pipes. This
+        will be `True` if only one pipe has this feature enabled. Use
+        `get_auto_ack()` to fetch the current setting for individual pipes.
 
     .. versionchanged:: 1.2.0
         accepts a list or tuple for control of the automatic acknowledgement feature per pipe.
