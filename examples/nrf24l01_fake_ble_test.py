@@ -65,10 +65,10 @@ def master(count=50):
         ble.show_pa_level = True
         print(
             "available bytes in next payload:",
-            ble.len_available(chunk(battery_service.buffer)),
+            ble.available(chunk(battery_service.buffer)),
         )  # using chunk() gives an accurate estimate of available bytes
         for i in range(count):  # advertise data this many times
-            if ble.len_available(chunk(battery_service.buffer)) >= 0:
+            if ble.available(chunk(battery_service.buffer)) >= 0:
                 _prompt(count - i)  # something to show that it isn't frozen
                 # broadcast the device name, MAC address, &
                 # battery charge info; 0x16 means service data
@@ -92,10 +92,10 @@ def send_temp(count=50):
         ble.name = b"nRF24L01"
         print(
             "available bytes in next payload:",
-            ble.len_available(chunk(temperature_service.buffer)),
+            ble.available(chunk(temperature_service.buffer)),
         )
         for i in range(count):
-            if ble.len_available(chunk(temperature_service.buffer)) >= 0:
+            if ble.available(chunk(temperature_service.buffer)) >= 0:
                 _prompt(count - i)
                 # broadcast a temperature measurement; 0x16 means service data
                 ble.advertise(temperature_service.buffer, data_type=0x16)
@@ -119,12 +119,12 @@ def send_url(count=50):
     with nrf as ble:
         print(
             "available bytes in next payload:",
-            ble.len_available(chunk(url_service.buffer)),
+            ble.available(chunk(url_service.buffer)),
         )
         # NOTE we did NOT set a device name in this with block
         for i in range(count):
             # URLs easily exceed the nRF24L01's max payload length
-            if ble.len_available(chunk(url_service.buffer)) >= 0:
+            if ble.available(chunk(url_service.buffer)) >= 0:
                 _prompt(count - i)
                 ble.advertise(url_service.buffer, 0x16)
                 ble.hop_channel()
