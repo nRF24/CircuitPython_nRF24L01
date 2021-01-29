@@ -485,6 +485,7 @@ class RF24:
         if isinstance(enable, (bool, int)):
             self._dyn_pl = 0x3F if enable else 0
         elif isinstance(enable, (list, tuple)):
+            self._dyn_pl = self._reg_read(DYN_PL_LEN)
             for i, val in enumerate(enable):
                 if i < 6 and val >= 0:  # skip pipe if val is negative
                     self._dyn_pl = (self._dyn_pl & ~(1 << i)) | (bool(val) << i)
@@ -500,7 +501,7 @@ class RF24:
         if pipe_number is None:
             self.dynamic_payloads = bool(enable)
         elif 0 <= pipe_number <= 5:
-            self._dyn_pl &= ~(1 << pipe_number)
+            self._dyn_pl = self._reg_read(DYN_PL_LEN) & ~(1 << pipe_number)
             self._dyn_pl |= (bool(enable) << pipe_number)
             if self._dyn_pl:
                 self._features = (self._features & 3) | (bool(self._dyn_pl) << 2)
@@ -604,11 +605,14 @@ class RF24:
         if isinstance(enable, (bool, int)):
             self._aa = 0x3F if enable else 0
         elif isinstance(enable, (list, tuple)):
+            self._aa = self._reg_read(AUTO_ACK)
             for i, val in enumerate(enable):
                 if i < 6 and val >= 0:  # skip pipe if val is negative
                     self._aa = (self._aa & ~(1 << i)) | (bool(val) << i)
         else:
             raise ValueError("auto_ack: {} is not a valid input" % enable)
+        if self._aa & 1 != bool(self._aa & 0x3E) and self._aa & 0x3E:
+            self._aa |= 1
         self._reg_write(AUTO_ACK, self._aa)
 
     def set_auto_ack(self, enable, pipe_number=None):
@@ -617,8 +621,10 @@ class RF24:
         if pipe_number is None:
             self.auto_ack = bool(enable)
         elif 0 <= pipe_number <= 5:
-            self._aa &= ~(1 << pipe_number)
+            self._aa = self._reg_read(AUTO_ACK) & ~(1 << pipe_number)
             self._aa |= (bool(enable) << pipe_number)
+            if pipe_number:
+                self._aa += 1
             self._reg_write(AUTO_ACK, self._aa)
         else:
             raise IndexError("pipe_number must be in range [0, 5]")
@@ -671,7 +677,7 @@ class RF24:
 
     @property
     def allow_ask_no_ack(self):
-        """Allow or disallow the use of ``ask_no_ack`` parameter to `send()` &
+        """Enable or disable the use of ``ask_no_ack`` parameter to `send()` &
         `write()`."""
         self._features = self._reg_read(TX_FEATURE)
         return bool(self._features & 1)
