@@ -94,6 +94,7 @@ To install in a virtual environment in your current project:
 
 Pinout
 ======
+
 .. image:: https://lastminuteengineers.com/wp-content/uploads/2018/07/Pinout-nRF24L01-Wireless-Transceiver-Module.png
     :target: https://lastminuteengineers.com/nrf24l01-arduino-wireless-communication/#nrf24l01-transceiver-module-pinout
 
@@ -170,7 +171,7 @@ For CPython in Linux
 What to purchase
 =================
 
-See the store links on the sidebar or just google "nRF24L01+". It is worth noting that you
+See the store links on the navigation sidebar or just google "nRF24L01+". It is worth noting that you
 generally want to buy more than 1 as you need 2 for testing -- 1 to send & 1 to receive and
 vise versa. This library has been tested on a cheaply bought 6 pack from Amazon.com, but don't
 take Amazon or eBay for granted! There are other wireless transceivers that are NOT compatible
@@ -215,7 +216,8 @@ functionality, they are subject to a couple lesser known (and lesser advertised)
 2. Needs shielding from electromagnetic interference. Shielding usually works best when
    it has a path to ground (GND pin), but this connection to the GND pin is not required.
 
-See also the `Testing nRF24L01+PA+LNA module <troubleshooting.html#testing-nrf24l01-pa-lna-module>`_
+.. seealso::
+    I have documented `Testing nRF24L01+PA+LNA module <troubleshooting.html#testing-nrf24l01-pa-lna-module>`_
 
 nRF24L01(+) clones and counterfeits
 -----------------------------------
@@ -241,9 +243,9 @@ correctly because the designers "cloned" a typo from the 1\ :sup:`st` version of
 RFM7x).
 
 .. seealso::
-  `Read this article
-  <https://ncrmnt.org/2021/01/03/nrf24l01-fixing-the-magic-finger-problem/>`_
-  about using clones with missing capacitors (includes pictures).
+    `Read this article
+    <https://ncrmnt.org/2021/01/03/nrf24l01-fixing-the-magic-finger-problem/>`_
+    about using clones with missing capacitors (includes pictures).
 
 Contributing
 ============

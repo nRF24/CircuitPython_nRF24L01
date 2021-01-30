@@ -66,11 +66,8 @@ def crc24_ble(data, deg_poly=0x65B, init_val=0x555555):
     return reverse_bits((crc).to_bytes(3, "big"))
 
 
-BLE_FREQ = (
-    2,
-    26,
-    80,
-)  #: The BLE channel number is different from the nRF channel number.
+BLE_FREQ = (2, 26, 80,)
+"""The BLE channel number is different from the nRF channel number."""
 
 
 class FakeBLE(RF24):
@@ -130,7 +127,7 @@ class FakeBLE(RF24):
     @property
     def show_pa_level(self):
         """If this attribute is `True`, the payload will automatically include
-        the nRF24L01's pa_level in the advertisement."""
+        the nRF24L01's `pa_level` in the advertisement."""
         return bool(self._show_dbm)
 
     @show_pa_level.setter
@@ -145,7 +142,7 @@ class FakeBLE(RF24):
         self.channel = BLE_FREQ[self._curr_freq]
 
     def whiten(self, data):
-        """Whitening the BLE packet data ensures there's no long repeatition
+        """Whitening the BLE packet data ensures there's no long repetition
         of bits."""
         data, coef = (bytearray(data), (self._curr_freq + 37) | 0x40)
         for i, byte in enumerate(data):

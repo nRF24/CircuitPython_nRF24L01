@@ -67,7 +67,6 @@ class RF24:
         self._reg_write(CONFIGURE, self._config)
         if self._reg_read(CONFIGURE) & 3 != 2:
             raise RuntimeError("nRF24L01 Hardware not responding")
-        self.power = False
         # init shadow copy of RX addresses for all pipes for context manager
         self._pipes = [bytearray(5), bytearray(5), 0xC3, 0xC4, 0xC5, 0xC6]
         # _open_pipes attribute reflects only RX state on each pipe
@@ -487,6 +486,7 @@ class RF24:
         elif isinstance(enable, int):
             self._dyn_pl = 0x3F & enable
         elif isinstance(enable, (list, tuple)):
+            self._dyn_pl = self._reg_read(DYN_PL_LEN)
             for i, val in enumerate(enable):
                 if i < 6 and val >= 0:  # skip pipe if val is negative
                     self._dyn_pl = (self._dyn_pl & ~(1 << i)) | (bool(val) << i)
@@ -502,7 +502,7 @@ class RF24:
         if pipe_number is None:
             self.dynamic_payloads = bool(enable)
         elif 0 <= pipe_number <= 5:
-            self._dyn_pl &= ~(1 << pipe_number)
+            self._dyn_pl = self._reg_read(DYN_PL_LEN) & ~(1 << pipe_number)
             self.dynamic_payloads = self._dyn_pl | (bool(enable) << pipe_number)
         else:
             raise IndexError("pipe_number must be in range [0, 5]")
@@ -542,6 +542,7 @@ class RF24:
     def get_payload_length(self, pipe_number=0):
         """Returns an `int` describing the current setting of a specified data
         pipe's expected static payload length."""
+        self._pl_len[pipe_number] = self._reg_read(RX_PL_LENG + pipe_number)
         return self._pl_len[pipe_number]
 
     @property
@@ -603,12 +604,13 @@ class RF24:
             self._aa = 0x3F & enable
         elif isinstance(enable, (list, tuple)):
             for i, val in enumerate(enable):
+                self._aa = self._reg_read(AUTO_ACK)
                 if i < 6 and val >= 0:  # skip pipe if val is negative
                     self._aa = (self._aa & ~(1 << i)) | (bool(val) << i)
         else:
             raise ValueError("auto_ack: {} is not a valid input" % enable)
-        if bool(self._aa & 1) != bool(self._aa & 0x3E):
-            self._aa &= 1
+        if bool(self._aa & 1) != bool(self._aa & 0x3E) and self._aa & 0x3E:
+            self._aa |= 1
         self._reg_write(AUTO_ACK, self._aa)
 
     def set_auto_ack(self, enable, pipe_number=None):
@@ -617,7 +619,7 @@ class RF24:
         if pipe_number is None:
             self.auto_ack = bool(enable)
         elif 0 <= pipe_number <= 5:
-            self._aa &= ~(1 << pipe_number)
+            self._aa = self._reg_read(AUTO_ACK) & ~(1 << pipe_number)
             self.auto_ack = self._aa | (bool(enable) << pipe_number)
         else:
             raise IndexError("pipe_number must be in range [0, 5]")
@@ -626,6 +628,7 @@ class RF24:
         """Returns a `bool` describing the automatic acknowledgement feature
         setting about a specific data pipe."""
         if 0 <= pipe_number <= 5:
+            self._aa = self._reg_read(AUTO_ACK)
             return bool(self._aa & (1 << pipe_number))
         raise IndexError("pipe_number must be in range [0, 5]")
 
