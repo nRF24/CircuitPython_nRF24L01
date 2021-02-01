@@ -571,7 +571,7 @@ stop_carrier_wave()
         `False`), then use the following code snippet to re-establish the library
         default settings:
 
-        .. code-block::
+        .. code-block:: python
 
             # let `nrf` be the instantiated RF24 object
             nrf.crc = 2

@@ -71,7 +71,7 @@ class RF24NetworkHeader:
     """The header information used for routing network messages.
 
     :param int to_node: The address designating the message's destination.
-    :param MessageType message_type: The pre-defined `MessageType` describing
+    :param int message_type: The pre-defined message type describing
         the message related to this header.
 
     .. note:: These parameters can be left unspecified to create a blank
@@ -108,7 +108,7 @@ class RF24NetworkHeader:
 
     @property
     def message_type(self):
-        """The `MessageType` of the message. This `int` must be less than 255."""
+        """The type of message. This `int` must be less than 256."""
         return self._msg_t
 
     @message_type.setter
@@ -233,16 +233,19 @@ class RF24Network:
     """Enabling this will allow this node to automatically forward received
     multicast frames to the next highest multicast level. Duplicate frames are
     filtered out, so multiple forwarding nodes at the same level should not
-    interfere. Forwarded payloads will also be received.
-    """
-
+    interfere. Forwarded payloads will also be received."""
+    max_message_length = 144
+    """If a network node is driven by the TMRh20 RF24Network library on a
+    ATTiny-based board, set this to ``72``."""
     def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
         if not _is_addr_valid(node_address):
             raise ValueError("node_address argument is invalid or malformed")
         self._radio = RF24(spi, csn_pin, ce_pin, spi_frequency=spi_frequency)
 
         # setup public proprties
-        self.debug = False  #: enable (`True`) or disable (`False`) debugging prompts
+        self.debug = NETWORK_DEBUG
+        """controls the debugging prompts. each bit it reserved for use with
+        ``DEBUG constants``"""
         self.fragmentation = True
         #: enable (`True`) or disable (`False`) message fragmentation
         self.ret_sys_msg = False  #: for use with RF24Mesh (unsupported)
@@ -366,7 +369,7 @@ class RF24Network:
         self.write(header, message, 0o70)
 
     # pylint: disable=unnecessary-pass
-    def write(self, header, message, to_node):
+    def write(self, header, to_node):
         """deliver a message with a header routed to ``to_node`` """
         header.from_node = self._node_address
 

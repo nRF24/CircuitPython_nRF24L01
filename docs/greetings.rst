@@ -23,7 +23,7 @@ Features currently supported
 * Automatic responding acknowledgment (ACK) packets for verifying transmission success
 * Append custom payloadsto the acknowledgment (ACK) packets for instant bi-directional communication
 * Mark a single payload for no acknowledgment (ACK) from the receiving nRF24L01 (see ``ask_no_ack``
-  parameter for :py:meth:`~circuitpython_nrf24l01.rf24.RF24.send()` and `write()` functions)
+  parameter for :meth:`~circuitpython_nrf24l01.rf24.RF24.send()` and :meth:`~circuitpython_nrf24l01.rf24.RF24.write()` functions)
 * Invoke the "re-use the same payload" feature (for manually re-transmitting failed transmissions that
   remain in the TX FIFO buffer)
 * Multiple payload transmissions with one function call (see documentation on the

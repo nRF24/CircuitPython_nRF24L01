@@ -117,7 +117,7 @@ IRQ Pin Example
     uses 2 addresses on pipes 1 & 0 to demonstrate proper addressing convention.
 
 This is a test to show how to use nRF24L01's interrupt pin using the non-blocking
-`write()`. Also the `ack` attribute is enabled to trigger the `irq_dr` event when
+:meth:`~circuitpython_nrf24l01.rf24.RF24.write()`. Also the `ack` attribute is enabled to trigger the `irq_dr` event when
 the master node receives ACK payloads. Simply put, this example is the most advanced
 example script (in this library), and it runs **very** quickly.
 
@@ -141,7 +141,7 @@ This is a test to show how to stream data. The ``master()`` uses the :meth:`~cir
 function to transmit multiple payloads with 1 function call. However
 ``master()`` only uses 1 level of the nRF24L01's TX FIFO. An alternate function,
 called ``master_fifo()`` uses all 3 levels of the nRF24L01's TX FIFO to stream
-data, but it uses the `write()` function to do so.
+data, but it uses the :meth:`~circuitpython_nrf24l01.rf24.RF24.write()` function to do so.
 
 .. literalinclude:: ../examples/nrf24l01_stream_test.py
     :caption: examples/nrf24l01_stream_test.py

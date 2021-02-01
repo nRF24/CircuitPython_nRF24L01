@@ -101,8 +101,8 @@ would be
 * `ard`
 
 The ``ask_no_ack`` feature can be used despite the
-settings/features configuration (see :py:meth:`~circuitpython_nrf24l01.rf24.RF24.send()` &
-`write()` function parameters for more details).
+settings/features configuration (see :meth:`~circuitpython_nrf24l01.rf24.RF24.send()` &
+:meth:`~circuitpython_nrf24l01.rf24.RF24.write()` function parameters for more details).
 
 About the lite version
 ======================
@@ -140,7 +140,7 @@ version:
   parameters will have no affect on the TX FIFO.
 * `crc` removed. 2-bytes encoding scheme (CRC16) is always enabled.
 * `auto_ack` removed. This is always enabled for all pipes. Pass ``ask_no_ack`` parameter
-  as `True` to :py:meth:`~circuitpython_nrf24l01.rf24.RF24.send()` or `write()` to disable
+  as `True` to :meth:`~circuitpython_nrf24l01.rf24.RF24.send()` or :meth:`~circuitpython_nrf24l01.rf24.RF24.write()` to disable
   automatic acknowledgement for TX operations.
 * `is_lna_enabled` removed as it only affects non-plus variants of the nRF24L01.
 * `pa_level` is available, but it will not accept a `list` or `tuple`.
