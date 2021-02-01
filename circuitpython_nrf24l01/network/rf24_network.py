@@ -23,13 +23,14 @@
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import struct
-from micropython import const
-from .rf24 import RF24
+from .constants import *
+from ..rf24 import RF24
 
-# contraints on user-defined header types
-MIN_USER_DEFINED_HEADER_TYPE = const(0)
-MAX_USER_DEFINED_HEADER_TYPE = const(127)
-
+_frag_types = (
+    NETWORK_FRAG_FIRST,
+    NETWORK_FRAG_MORE,
+    NETWORK_FRAG_LAST,
+)  #: helper for identifying fragments
 
 def _is_addr_valid(address):
     """Test is a given address is a valid RF24Network node address."""
@@ -63,33 +64,6 @@ def _level_to_address(level):
     if level:
         level_addr = 1 << ((level - 1) * 3)
     return level_addr
-
-
-# pylint: disable=too-few-public-methods
-class MessageType:
-    """A collection of constants used to define
-    `RF24NetworkHeader.message_type`"""
-
-    PING = const(130)  #: Used for network pings
-
-    ADDR_REQUEST = const(195)
-    #: Used for requesting data from network base node
-    ADDR_RESPONSE = const(128)
-    #: Used for routing messages/responses throughout the network
-
-    FRAG_FIRST = const(148)
-    #: Used to indicate the first frame of fragmented payloads
-    FRAG_MORE = const(149)
-    #: Used to indicate a middle frame of fragmented payloads
-    FRAG_LAST = const(150)
-    #: Used to indicate the last frame of fragmented payloads
-    ACK = const(193)
-    #: Used to forward acknowledgements directed to origin
-
-    EXT_DATA = const(131)
-    """Used for bridging different network protocols between an RF24Network
-    and LAN/WLAN networks (unsupported at this time as this operation requires
-    a gateway implementation)"""
 
 
 # pylint: enable=too-few-public-methods
@@ -174,6 +148,8 @@ class RF24NetworkHeader:
     def decode(self, buffer):
         """decode frame header for first 9 bytes of the payload.
         This function is meant for library internal usage."""
+        if len(buffer) < self.__len__():
+            return False
         (
             self._from,
             self._to,
@@ -181,7 +157,8 @@ class RF24NetworkHeader:
             self._msg_t,
             self._rsv,
             self._next,
-        ) = struct.unpack("hhhbbh", buffer[:9])
+        ) = struct.unpack("hhhbbh", buffer[: self.__len__()])
+        return True
 
     @property
     def buffer(self):
@@ -198,7 +175,14 @@ class RF24NetworkHeader:
         )
 
     def __len__(self):
-        return 9
+        return 10
+
+    @property
+    def is_valid(self):
+        """A `bool` that describes if the `header` addresses are valid or not."""
+        if _is_addr_valid(self._from):
+            return _is_addr_valid(self._to)
+        return False
 
 
 class RF24NetworkFrame:
@@ -216,43 +200,54 @@ class RF24NetworkFrame:
     def __init__(self, header=None, message=None):
         self.header = header or RF24NetworkHeader()
         """The `RF24NetworkHeader` of the message."""
-
-        self.message = message or bytearray(23)
+        self.message = message or bytearray(0)
         """The entire message or a fragment of the message allocated to this
         frame. This attribute is a `bytearray`."""
+
+    def decode(self, buffer):
+        """Decode header & message from ``buffer``. Returns `True` if
+        successful; otherwise `False`."""
+        if self.header.decode(buffer):
+            self.message = buffer[len(self.header) :]
+            return True
+        return False
 
     @property
     def buffer(self):
         """Return the entire object as a `bytearray`."""
         return bytearray(self.header.buffer + self.message)
 
-    @property
-    def is_valid(self):
-        """A `bool` that describes if the `header` addresses are valid or not."""
-        if _is_addr_valid(self.header.from_node):
-            return _is_addr_valid(self.header.to_node)
-        return False
-
     def __len__(self):
         return len(self.header) + len(self.message)
 
 
-class RF24Network(RF24):
+class RF24Network:
     """The object used to instantiate the nRF24L01 as a network node.
 
     :param int node_address: The octal `int` for this node's address
     :param int channel: The RF channel used by the RF24Network
     """
 
+    multicast = True  #: enable (`True`) or disable (`False`) multicasting
+    multicast_relay = True
+    """Enabling this will allow this node to automatically forward received
+    multicast frames to the next highest multicast level. Duplicate frames are
+    filtered out, so multiple forwarding nodes at the same level should not
+    interfere. Forwarded payloads will also be received.
+    """
+
     def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
         if not _is_addr_valid(node_address):
             raise ValueError("node_address argument is invalid or malformed")
-        super().__init__(spi, csn_pin, ce_pin, spi_frequency=spi_frequency)
-        # setup node_address
+        self._radio = RF24(spi, csn_pin, ce_pin, spi_frequency=spi_frequency)
+
+        # setup public proprties
         self.debug = False  #: enable (`True`) or disable (`False`) debugging prompts
         self.fragmentation = True
         #: enable (`True`) or disable (`False`) message fragmentation
         self.ret_sys_msg = False  #: for use with RF24Mesh (unsupported)
+
+        # setup node_address & private properies
         self._node_address = node_address
         self._node_mask = 0xFFFF
         self._multicast_level = 0
@@ -261,59 +256,83 @@ class RF24Network(RF24):
             self._multicast_level += 1
         self._node_mask = ~self._node_mask
         for i in range(6):
-            self.open_rx_pipe(i, _pipe_address(node_address, i))
-        self.ack = True
-        self.set_auto_retries(((node_address % 6) + 1) * 2 + 3, 5)
-        self.listen = True
+            self._radio.open_rx_pipe(i, _pipe_address(node_address, i))
+        self._radio.ack = True
+        self._radio.set_auto_retries(((node_address % 6) + 1) * 2 + 3, 5)
+        self._radio.listen = True
         self._queue = []  # each item is a 2-tuple containing header & message
+
+    @property
+    def channel(self):
+        """The channel used by the network."""
+        return self._radio.channel
+
+    @channel.setter
+    def channel(self, val):
+        self._radio.channel = val
 
     def update(self):
         """keep the network layer current; returns the next header"""
-        while super().available():
+
+        ret_val = 0  # sentinal indicating there is nothing to report
+        while self._radio.available():
             # grab the frame from RX FIFO
-            frame_buf = super().read()
+            frame_buf = self._radio.read()
             frame = RF24NetworkFrame()
-            frame.header.decode(frame_buf[: len(frame.header)])
-            frame.message = frame_buf[len(frame.header) :]
             if self.debug:
                 print("Received packet:", frame_buf)
 
-            if not frame.is_valid:
+            if not frame.decode(frame_buf) or not frame.header.is_valid:
                 if self.debug:
-                    print("discarding packet due to bad network addresses.")
-                del frame
+                    print(
+                        "discarding packet due to inadequate length"
+                        " or bad network addresses."
+                    )
+                # del frame
                 continue
 
             ret_val = frame.header.message_type
             if frame.header.to_node == self._node_address:
-                if ret_val == MessageType.PING:
+                # frame was directed to this node
+                if ret_val == NETWORK_PING:
                     continue
-                if ret_val == MessageType.ADDR_RESPONSE:
-                    requester = 0o4444
+
+                # used for RF24Mesh
+                if ret_val == NETWORK_ADDR_RESPONSE:
+                    requester = NETWORK_DEFAULT_ADDR
                     if requester != self._node_address:
                         frame.header.to_node = requester
-                        # self.send(frame.header.to_node, USER_TX_TO_PHYSICAL_ADDR)
+                        # self.write(frame.header.to_node, USER_TX_TO_PHYSICAL_ADDR)
                         continue
-                if ret_val == MessageType.ADDR_REQUEST and self._node_address:
+                if ret_val == NETWORK_ADDR_REQUEST and self._node_address:
                     frame.header.from_node = self._node_address
                     frame.header.to_node = 0
-                    # self.send(frame.header.to_node, TX_NORMAL)
+                    # self.write(frame.header.to_node, TX_NORMAL)
                     continue
 
-                if (self.ret_sys_msg and ret_val > 127) or ret_val == MessageType.ACK:
-                    frag_types = (
-                        MessageType.FRAG_FIRST,
-                        MessageType.FRAG_MORE,
-                        MessageType.FRAG_LAST,
-                        MessageType.EXT_DATA,
-                    )
-                    if ret_val not in frag_types:
+                if (self.ret_sys_msg and ret_val > 127) or ret_val == NETWORK_ACK:
+                    if ret_val not in _frag_types + (NETWORK_EXTERNAL_DATA,):
                         return ret_val
 
-            self._queue.append(frame)
+                self._queue.append(frame)
+            else:  # frame was not directed to this node
+                if self.multicast:
+                    if frame.header.to_node == 0o100:
+                        # used by RF24Mesh
+                        if (
+                            frame.header.message_type == NETWORK_POLL
+                            and self._node_address != NETWORK_DEFAULT_ADDR
+                        ):
+                            pass
+
+                elif self._node_address != NETWORK_DEFAULT_ADDR:
+                    # self.write(frame.header.to_node, 1)  # pass it along
+                    ret_val = 0  # indicate its a routed payload
+        # end while _radio.available()
+        return ret_val
 
     def available(self):
-        """ is there a message for this node """
+        """Is there a message for this node?"""
         return bool(len(self._queue))
 
     @property
@@ -328,7 +347,6 @@ class RF24Network(RF24):
         without removing it from the queue"""
         return self._queue[0]
 
-    # pylint: disable=arguments-differ
     def read(self):
         """Get the next available header & message from internal queue. This
         differs from `peek` because this function also removes the header &
@@ -343,12 +361,16 @@ class RF24Network(RF24):
         del self._queue[0]
         return ret
 
-    # pylint: disable=unnecessary-pass
     def send(self, header, message):
-        """ deliver a message according to the header's information """
-        pass
+        """deliver a message according to the header's information """
+        self.write(header, message, 0o70)
 
-    # pylint: enable=unnecessary-pass,arguments-differ
+    # pylint: disable=unnecessary-pass
+    def write(self, header, message, to_node):
+        """deliver a message with a header routed to ``to_node`` """
+        header.from_node = self._node_address
+
+    # pylint: enable=unnecessary-pass
     def _is_descendant(self, node_address):
         """is the given node_address a descendant of self._node_address"""
         return node_address & self._node_mask == self._node_address
@@ -376,5 +398,5 @@ class RF24Network(RF24):
     def _set_multicast_level(self, level):
         """Set the pipe 0 address to according to octal tree level"""
         self._multicast_level = level
-        self.listen = False
-        self.open_rx_pipe(0, _pipe_address(_level_to_address(level), 0))
+        self._radio.listen = False
+        self._radio.open_rx_pipe(0, _pipe_address(_level_to_address(level), 0))
