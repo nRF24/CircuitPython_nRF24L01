@@ -208,9 +208,9 @@ TMRh20's library uses static payload lengths by default.
 To make this circuitpython library compatible with
 `TMRh20's RF24 library <https://github.com/nRF24/RF24/>`_:
 
-1. set `dynamic_payloads` to `False`.
+1. set :attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads` to `False`.
 2. set `allow_ask_no_ack` to `False`.
-3. set :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length` to the value that
+3. set :attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length` to the value that
    is passed to TMRh20's ``RF24::setPayloadSize()``. 32 is the default (& maximum)
    payload length/size for both libraries.
 

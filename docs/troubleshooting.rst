@@ -9,16 +9,18 @@ The nRF24L01 has 3 key features.
 
 1. `auto_ack` feature provides transmission verification by using the RX nRF24L01 to
    automatically and immediatedly send an acknowledgment (ACK) packet in response to
-   received payloads. `auto_ack` does not require `dynamic_payloads` to be enabled.
+   received payloads. `auto_ack` does not require
+   :attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads` to be enabled.
 
    .. note:: With the `auto_ack` feature enabled, you get:
 
        * cyclic redundancy checking (`crc`) automatically enabled
        * to change amount of automatic re-transmit attempts and the delay time between
          them. See the `arc` and `ard` attributes.
-2. `dynamic_payloads` feature allows either TX/RX nRF24L01 to be able to send/receive
+2. :attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads` feature allows either TX/RX nRF24L01 to be able to send/receive
    payloads with their size written into the payloads' packet. With this disabled, both
-   RX/TX nRF24L01 must use matching `payload_length` attributes. `dynamic_payloads`
+   RX/TX nRF24L01 must use matching `payload_length` attributes.
+   :attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads`
    does not require `auto_ack` to be enabled.
 3. `ack` feature allows the MCU to append a payload to the ACK packet, thus instant
    bi-directional communication. A transmitting ACK payload must be loaded into the
@@ -26,7 +28,8 @@ The nRF24L01 has 3 key features.
    is to be acknowledged. Once transmitted, the payload is released from the TX FIFO
    buffer.
 
-   .. important:: This `ack` feature requires the `auto_ack` and `dynamic_payloads`
+   .. important:: This `ack` feature requires the `auto_ack` and
+       :attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads`
        features enabled.
 
 FIFO Capacity
@@ -80,10 +83,11 @@ match. These settings/features include:
 * The RX pipe's address on the receiving nRF24L01 (passed to `open_rx_pipe()`) MUST match
   the TX pipe's address on the transmitting nRF24L01 (passed to `open_tx_pipe()`)
 * `address_length`
-* :py:attr:`~circuitpython_nrf24l01.rf24.RF24.channel`
+* :attr:`~circuitpython_nrf24l01.rf24.RF24.channel`
 * `data_rate`
-* `dynamic_payloads`
-* `payload_length` only when `dynamic_payloads` is disabled
+* :attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads`
+* `payload_length` only when
+  :attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads` is disabled
 * `auto_ack`
 * custom `ack` payloads
 * `crc`
@@ -130,8 +134,11 @@ version:
                   print(hex(i), "=", nrf._reg_read_bytes(i))
               elif i not in (0x18, 0x19, 0x1a, 0x1b):
                   print(hex(i), "=", hex(nrf._reg_read(i)))
-* `dynamic_payloads` applies to all pipes, not individual pipes. This attribute will return
-  a `bool` instead of an `int`. `set_dynamic_payloads()` and `get_dynamic_payloads()` have
+* :attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads` applies to all
+  pipes, not individual pipes. This attribute will return
+  a `bool` instead of an `int`.
+  :attr:`~circuitpython_nrf24l01.rf24.RF24.set_dynamic_payloads()` and
+  :attr:`~circuitpython_nrf24l01.rf24.RF24.get_dynamic_payloads()` have
   been removed.
 * `payload_length` applies to all pipes, not individual pipes. `set_payload_length()` and
   `get_payload_length()` have been removed.
