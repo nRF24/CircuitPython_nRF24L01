@@ -45,7 +45,8 @@ from .constants import (
     USER_TX_TO_PHYSICAL_ADDRESS,
 )
 # pylint: enable=unused-import
-from ..rf24 import RF24, logging, address_repr
+from .network_mixin import Radio
+from ..rf24 import logging, address_repr
 
 _frag_types = (
     NETWORK_FRAG_FIRST,
@@ -63,21 +64,6 @@ def _is_addr_valid(address):
         address >>= 3
         byte_count += 1
     return True
-
-
-def _pipe_address(node_address, pipe_number):
-    """translate node address for use on all pipes"""
-    address_translation = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3, 0xEC]
-    result, count, dec = ([0xCC] * 5, 1, node_address)
-    while dec:
-        if pipe_number or not node_address:
-            result[count] = address_translation[dec % 8]
-        dec = int(dec / 8)
-        count += 1
-    if pipe_number or not node_address:
-        result[0] = address_translation[pipe_number]
-        result[1] = address_translation[count - 1]
-    return bytearray(result)
 
 
 def _level_to_address(level):
@@ -243,7 +229,7 @@ class RF24NetworkFrame:
         return len(self.header) + len(self.message)
 
 
-class RF24Network:
+class RF24Network(Radio):
     """The object used to instantiate the nRF24L01 as a network node.
 
     :param int node_address: The octal `int` for this node's address
@@ -263,8 +249,8 @@ class RF24Network:
     def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
         if not _is_addr_valid(node_address):
             raise ValueError("node_address argument is invalid or malformed")
+        super().__init__(spi, csn_pin, ce_pin, spi_frequency)
         self._logger = None
-        self._radio = RF24(spi, csn_pin, ce_pin, spi_frequency=spi_frequency)
         if logging is not None:
             self._logger = logging.getLogger("RF24Network")
             self._logger.setLevel(
@@ -285,7 +271,9 @@ class RF24Network:
 
     def __enter__(self):
         self.node_address = self._node_address
-        return self._radio.__enter__()
+        self._radio.__enter__()
+        self._radio.listen = True
+        return self
 
     def __exit__(self, *exc):
         return self._radio.__exit__()
@@ -299,6 +287,14 @@ class RF24Network:
     def logger(self, val):
         if logging is not None and isinstance(val, logging.Logger):
             self._logger = val
+
+    # pylint: disable=missing-docstring
+    def print_details(self, dump_pipes=True):
+        self._radio.print_details(dump_pipes)
+        prompt = "Net node address: {}".format(oct(self.node_address))
+        self.logger.info(prompt)
+
+    # pylint: enable=missing-docstring
 
     @property
     def node_address(self):
@@ -318,43 +314,31 @@ class RF24Network:
             if self._logger is not None:
                 prompt = "address changed to {}".format(oct(self.node_address))
                 self.logger.log(logging.DEBUG + NETWORK_DEBUG, prompt)
-            for i in range(6):
+            for i in range(1, 6):
                 if self._logger is not None:
                     prompt = "pipe {} bound: 0x{}".format(
-                        i, address_repr(_pipe_address(val, i))
+                        i, address_repr(self._pipe_address(val, i))
                     )
                     self.logger.log(logging.DEBUG + NETWORK_DEBUG, prompt)
-                self._radio.open_rx_pipe(i, _pipe_address(val, i))
+                self._radio.open_rx_pipe(i, self._pipe_address(val, i))
 
-    @property
-    def channel(self):
-        """The channel used by the network."""
-        return self._radio.channel
-
-    @channel.setter
-    def channel(self, val):
-        self._radio.channel = val
-
-    @property
-    def dynamic_payloads(self):
-        """Control RF24Network node's use of :meth:`RF24.dynamic_payloads`"""
-        return self._radio.dynamic_payloads
-
-    @dynamic_payloads.setter
-    def dynamic_payloads(self, val):
-        self._radio.dynamic_payloads = val
-
-    def set_dynamic_payloads(self, enable, pipe=None):
-        """Set RF24Network node's use of :meth:`RF24.dynamic_payloads`"""
-        self._radio.set_dynamic_payloads(enable, pipe_number=pipe)
-
-    def get_dynamic_payloads(self, pipe=None):
-        """Get RF24Network node's use of :meth:`RF24.dynamic_payloads`"""
-        return self._radio.get_dynamic_payloads(pipe)
+    def _pipe_address(self, node_address, pipe_number):
+        """translate node address for use on all pipes"""
+        address_translation = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3, 0xEC]
+        result, count, dec = ([0xCC] * 5, 1, node_address)
+        while dec:
+            if self.multicast and not pipe_number or not node_address:
+                result[count] = address_translation[dec % 8]
+            dec = int(dec / 8)
+            count += 1
+        if self.multicast and not pipe_number or not node_address:
+            result[0] = address_translation[pipe_number]
+        elif self.multicast:
+            result[1] = address_translation[count - 1]
+        return bytearray(result)
 
     def update(self):
         """keep the network layer current; returns the next header"""
-
         ret_val = 0  # sentinal indicating there is nothing to report
         while self._radio.available():
             # grab the frame from RX FIFO
