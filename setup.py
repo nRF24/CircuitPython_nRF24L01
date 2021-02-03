@@ -6,7 +6,7 @@ https://github.com/pypa/sampleproject
 """
 from os import path
 from codecs import open  # To use a consistent encoding
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 ROOT_DIR = path.abspath(path.dirname(__file__))
@@ -46,7 +46,7 @@ setup(
     # simple. Or you can use find_packages().
     # TODO: IF LIBRARY FILES ARE A PACKAGE FOLDER,
     #       CHANGE `py_modules=['...']` TO `packages=['...']`
-    packages=["circuitpython_nrf24l01"],
+    packages=find_packages(),
     # Specifiy your homepage URL for your project here
     url=REPO,
     # Extra links for the sidebar on pypi

@@ -24,7 +24,7 @@ __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import struct
 from .constants import *
-from ..rf24 import RF24
+from ..rf24 import RF24, logging
 
 _frag_types = (
     NETWORK_FRAG_FIRST,
@@ -220,7 +220,6 @@ class RF24NetworkFrame:
     def __len__(self):
         return len(self.header) + len(self.message)
 
-
 class RF24Network:
     """The object used to instantiate the nRF24L01 as a network node.
 
@@ -240,7 +239,13 @@ class RF24Network:
     def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
         if not _is_addr_valid(node_address):
             raise ValueError("node_address argument is invalid or malformed")
+
         self._radio = RF24(spi, csn_pin, ce_pin, spi_frequency=spi_frequency)
+        self._logger = None
+        if logging is not None:
+            self._logger = logging.getLogger(__name__)
+            self._logger.setLevel(logging.WARNING)
+            self._radio.logger.setLevel(logging.ERROR)
 
         # setup public proprties
         self.debug = NETWORK_DEBUG
@@ -266,6 +271,16 @@ class RF24Network:
         self._queue = []  # each item is a 2-tuple containing header & message
 
     @property
+    def logger(self):
+        """Get/Set the current logger."""
+        return self._logger
+
+    @logger.setter
+    def logger(self, val):
+        if logging is not None and isinstance(val, logging.Logger):
+            self._logger = val
+
+    @property
     def channel(self):
         """The channel used by the network."""
         return self._radio.channel
@@ -273,6 +288,20 @@ class RF24Network:
     @channel.setter
     def channel(self, val):
         self._radio.channel = val
+
+    @property
+    def dynamic_payloads(self):
+        return self._radio.dynamic_payloads
+
+    @dynamic_payloads.setter
+    def dynamic_payloads(self, val):
+        self._radio.dynamic_payloads = val
+
+    def set_dynamic_payloads(self, enable, pipe=None):
+        self._radio.set_dynamic_payloads(enable, pipe_number=pipe)
+
+    def get_dynamic_payloads(self, enable, pipe=None):
+        self._radio.get_dynamic_payloads(enable, pipe_number=pipe)
 
     def update(self):
         """keep the network layer current; returns the next header"""
@@ -323,13 +352,13 @@ class RF24Network:
                     if frame.header.to_node == 0o100:
                         # used by RF24Mesh
                         if (
-                            frame.header.message_type == NETWORK_POLL
-                            and self._node_address != NETWORK_DEFAULT_ADDR
+                                frame.header.message_type == NETWORK_POLL
+                                and self._node_address != NETWORK_DEFAULT_ADDR
                         ):
                             pass
 
                 elif self._node_address != NETWORK_DEFAULT_ADDR:
-                    # self.write(frame.header.to_node, 1)  # pass it along
+                    self.write(frame, 1)  # pass it along
                     ret_val = 0  # indicate its a routed payload
         # end while _radio.available()
         return ret_val
@@ -369,7 +398,7 @@ class RF24Network:
         self.write(header, message, 0o70)
 
     # pylint: disable=unnecessary-pass
-    def write(self, header, to_node):
+    def write(self, frame, multicast=0):
         """deliver a message with a header routed to ``to_node`` """
         header.from_node = self._node_address
 

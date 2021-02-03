@@ -30,6 +30,16 @@ try:
 except ImportError:
     from adafruit_bus_device.spi_device import SPIDevice
 
+logging = None
+try:
+    import logging
+    logging.basicConfig()
+except ImportError:
+    try:
+        import adafruit_logging as logging
+    except ImportError:
+        print("Logging disabled")
+
 CONFIGURE = const(0x00)  # IRQ masking, CRC scheme, PWR control, & RX/TX roles
 AUTO_ACK = const(0x01)  # auto-ACK status for all pipes
 OPEN_PIPES = const(0x02)  # open/close RX status for all pipes
@@ -54,18 +64,25 @@ class RF24:
     """A driver class for the nRF24L01(+) transceiver radios."""
 
     def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
-        self._spi = SPIDevice(
-            spi, chip_select=csn, baudrate=spi_frequency, extra_clocks=8
-        )
+        self._spi = None
+        if spi is not None:
+            self._spi = SPIDevice(
+                spi, chip_select=csn, baudrate=spi_frequency, extra_clocks=8
+            )
         self.ce_pin = ce_pin
-        self.ce_pin.switch_to_output(value=False)  # pre-empt standby-I mode
+        if ce_pin is not None:
+            self.ce_pin.switch_to_output(value=False)  # pre-empt standby-I mode
         self._status = 0  # status byte returned on all SPI transactions
         # pre-configure the CONFIGURE register:
         #   0x0E = IRQs are all enabled, CRC is enabled with 2 bytes, and
         #          power up in TX mode
         self._config = 0x0E
+        self._logger = None
+        if logging is not None:
+            self._logger = logging.getLogger(__name__)
+            self._logger.setLevel(logging.WARNING)
         self._reg_write(CONFIGURE, self._config)
-        if self._reg_read(CONFIGURE) & 3 != 2:
+        if spi is not None and self._reg_read(CONFIGURE) & 3 != 2:
             raise RuntimeError("nRF24L01 Hardware not responding")
         # init shadow copy of RX addresses for all pipes for context manager
         self._pipes = [bytearray(5), bytearray(5), 0xC3, 0xC4, 0xC5, 0xC6]
@@ -113,7 +130,8 @@ class RF24:
             self.clear_status_flags()
 
     def __enter__(self):
-        self.ce_pin.value = False
+        if self.ce_pin is not None:
+            self.ce_pin.value = False
         self._reg_write(CONFIGURE, self._config & 0x7C)
         self._reg_write(RF_PA_RATE, self._rf_setup)
         self._reg_write(OPEN_PIPES, self._open_pipes)
@@ -134,7 +152,8 @@ class RF24:
         return self
 
     def __exit__(self, *exc):
-        self.ce_pin.value = False
+        if self.ce_pin is not None:
+            self.ce_pin.value = False
         self.power = False
         return False
 
@@ -142,24 +161,37 @@ class RF24:
     def _reg_read(self, reg):
         out_buf = bytes([reg, 0])
         in_buf = bytearray([0, 0])
-        with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
+        if self._spi is not None:
+            with self._spi as spi:
+                spi.write_readinto(out_buf, in_buf)
+        if self._logger is not None:
+            self._logger.debug("SPI reading 1 byte from {}".format(hex(reg)))
         self._status = in_buf[0]
         return in_buf[1]
 
     def _reg_read_bytes(self, reg, buf_len=5):
         in_buf = bytearray(buf_len + 1)
         out_buf = bytes([reg]) + b"\0" * buf_len
-        with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
+        if self._spi is not None:
+            with self._spi as spi:
+                spi.write_readinto(out_buf, in_buf)
+        if self._logger is not None:
+            self._logger.debug("SPI reading {} bytes from {}".format(
+                buf_len, hex(reg)
+            ))
         self._status = in_buf[0]
         return in_buf[1:]
 
     def _reg_write_bytes(self, reg, out_buf):
         out_buf = bytes([0x20 | reg]) + out_buf
         in_buf = bytearray(len(out_buf))
-        with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
+        if self._spi is not None:
+            with self._spi as spi:
+                spi.write_readinto(out_buf, in_buf)
+        if self._logger is not None:
+            self._logger.debug("SPI writing {} bytes to {} {}".format(
+                len(out_buf) - 1, hex(reg), "0x" + address_repr(out_buf[1:])
+            ))
         self._status = in_buf[0]
 
     def _reg_write(self, reg, value=None):
@@ -167,9 +199,24 @@ class RF24:
         if value is not None:
             out_buf = bytes([0x20 | reg, value])
         in_buf = bytearray(len(out_buf))
-        with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
+        if self._spi is not None:
+            with self._spi as spi:
+                spi.write_readinto(out_buf, in_buf)
+        if self._logger is not None and reg != 0xFF:
+            self._logger.debug("SPI writing {} bytes to {} {}".format(
+                len(out_buf) - 1, hex(reg), hex(out_buf[1:][0]) if value else ""
+            ))
         self._status = in_buf[0]
+
+    @property
+    def logger(self):
+        """Get/Set the current logger."""
+        return self._logger
+
+    @logger.setter
+    def logger(self, val):
+        if logging is not None and isinstance(val, logging.Logger):
+            self._logger = val
 
     # pylint: enable=no-member
 
@@ -235,7 +282,8 @@ class RF24:
 
     @listen.setter
     def listen(self, is_rx):
-        self.ce_pin.value = 0
+        if self.ce_pin is not None:
+            self.ce_pin.value = 0
         if is_rx:
             if self._pipe0_read_addr is not None and self._aa & 1:
                 for i, val in enumerate(self._pipe0_read_addr):
@@ -247,7 +295,8 @@ class RF24:
             self._reg_write(CONFIGURE, self._config)
             time.sleep(0.00015)  # mandatory wait to power up radio
             self.clear_status_flags()
-            self.ce_pin.value = 1  # mandatory pulse is > 130 µs
+            if self.ce_pin is not None:
+                self.ce_pin.value = 1  # mandatory pulse is > 130 µs
             time.sleep(0.00013)
         else:
             if self._features & 6 == 6 and ((self._aa & self._dyn_pl) & 1):
@@ -284,7 +333,8 @@ class RF24:
 
     def send(self, buf, ask_no_ack=False, force_retry=0, send_only=False):
         """This blocking function is used to transmit payload(s)."""
-        self.ce_pin.value = 0
+        if self.ce_pin is not None:
+            self.ce_pin.value = 0
         if isinstance(buf, (list, tuple)):
             result = []
             for b in buf:
@@ -294,9 +344,10 @@ class RF24:
         if not send_only and self.pipe is not None:
             self.flush_rx()
         self.write(buf, ask_no_ack)
-        while not self._status & 0x30:
+        while self._spi is not None and not self._status & 0x30:
             self.update()
-        self.ce_pin.value = 0
+        if self.ce_pin is not None:
+            self.ce_pin.value = 0
         result = self.irq_ds
         if self.irq_df:
             for _ in range(force_retry):
@@ -778,15 +829,18 @@ class RF24:
         top level (first out) of the TX FIFO buffer."""
         result = False
         if not self.fifo(True, True):
-            self.ce_pin.value = 0
+            if self.ce_pin is not None:
+                self.ce_pin.value = 0
             if not send_only and self.pipe is not None:
                 self.flush_rx()
             self.clear_status_flags()
             self._reg_write(0xE3)
-            self.ce_pin.value = 1
-            while not self._status & 0x70:
+            if self.ce_pin is not None:
+                self.ce_pin.value = 1
+            while self._spi is not None and not self._status & 0x30:
                 self.update()
-            self.ce_pin.value = 0
+            if self.ce_pin is not None:
+                self.ce_pin.value = 0
             result = self.irq_ds
             if self._status & 0x60 == 0x60 and not send_only:
                 result = self.read()
@@ -814,7 +868,7 @@ class RF24:
             self._features = self._features & 0xFE | 1
             self._reg_write(TX_FEATURE, self._features)
         self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
-        if not write_only:
+        if not write_only and self.ce_pin is not None:
             self.ce_pin.value = 1
         return True
 
@@ -867,17 +921,21 @@ class RF24:
             self._reg_write_bytes(TX_ADDRESS, self._tx_address)
             self._reg_write_bytes(0xA0, b"\xFF" * 32)
             self.crc = 0
-            self.ce_pin.value = 1
+            if self.ce_pin is not None:
+                self.ce_pin.value = 1
             time.sleep(0.001)
-            self.ce_pin.value = 0
+            if self.ce_pin is not None:
+                self.ce_pin.value = 0
             while self._status & 0x70:
                 self.update()
             self._reg_write(0x17, 0x40)
-        self.ce_pin.value = 1
+        if self.ce_pin is not None:
+            self.ce_pin.value = 1
 
     def stop_carrier_wave(self):
         """Stops a continuous carrier wave test."""
-        self.ce_pin.value = 0
+        if self.ce_pin is not None:
+            self.ce_pin.value = 0
         self.power = 0
         self._rf_setup &= ~0x90
         self._reg_write(RF_PA_RATE, self._rf_setup)
