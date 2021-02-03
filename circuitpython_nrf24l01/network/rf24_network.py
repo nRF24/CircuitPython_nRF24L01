@@ -23,14 +23,34 @@
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import struct
-from .constants import *
-from ..rf24 import RF24, logging
+from .constants import (
+    # NETWORK_DEBUG_MINIMAL,
+    # NETWORK_DEBUG,
+    # NETWORK_DEBUG_FRAG,
+    # NETWORK_DEBUG_FRAG_L2,
+    # NETWORK_DEBUG_ROUTING,
+    NETWORK_FRAG_FIRST,
+    NETWORK_FRAG_MORE,
+    NETWORK_FRAG_LAST,
+    NETWORK_DEFAULT_ADDR,
+    NETWORK_ADDR_RESPONSE,
+    NETWORK_ADDR_REQUEST,
+    NETWORK_ACK,
+    NETWORK_EXTERNAL_DATA,
+    NETWORK_PING,
+    NETWORK_POLL,
+    TX_NORMAL,
+    # TX_ROUTED,
+    USER_TX_TO_PHYSICAL_ADDRESS,
+)
+from ..rf24 import RF24, logging, address_repr
 
 _frag_types = (
     NETWORK_FRAG_FIRST,
     NETWORK_FRAG_MORE,
     NETWORK_FRAG_LAST,
 )  #: helper for identifying fragments
+
 
 def _is_addr_valid(address):
     """Test is a given address is a valid RF24Network node address."""
@@ -220,6 +240,7 @@ class RF24NetworkFrame:
     def __len__(self):
         return len(self.header) + len(self.message)
 
+
 class RF24Network:
     """The object used to instantiate the nRF24L01 as a network node.
 
@@ -236,6 +257,7 @@ class RF24Network:
     max_message_length = 144
     """If a network node is driven by the TMRh20 RF24Network library on a
     ATTiny-based board, set this to ``72``."""
+
     def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
         if not _is_addr_valid(node_address):
             raise ValueError("node_address argument is invalid or malformed")
@@ -243,28 +265,17 @@ class RF24Network:
         self._radio = RF24(spi, csn_pin, ce_pin, spi_frequency=spi_frequency)
         self._logger = None
         if logging is not None:
-            self._logger = logging.getLogger(__name__)
-            self._logger.setLevel(logging.WARNING)
-            self._radio.logger.setLevel(logging.ERROR)
+            self._logger = logging.getLogger("RF24Network")
+            self._logger.setLevel(logging.WARNING if spi is not None else logging.DEBUG)
+            self._radio.logger.setLevel(logging.WARNING)
 
         # setup public proprties
-        self.debug = NETWORK_DEBUG
-        """controls the debugging prompts. each bit it reserved for use with
-        ``DEBUG constants``"""
         self.fragmentation = True
         #: enable (`True`) or disable (`False`) message fragmentation
         self.ret_sys_msg = False  #: for use with RF24Mesh (unsupported)
 
         # setup node_address & private properies
-        self._node_address = node_address
-        self._node_mask = 0xFFFF
-        self._multicast_level = 0
-        while self._node_address & self._node_mask:
-            self._node_mask <<= 3
-            self._multicast_level += 1
-        self._node_mask = ~self._node_mask
-        for i in range(6):
-            self._radio.open_rx_pipe(i, _pipe_address(node_address, i))
+        self.node_address = node_address
         self._radio.ack = True
         self._radio.set_auto_retries(((node_address % 6) + 1) * 2 + 3, 5)
         self._radio.listen = True
@@ -281,6 +292,29 @@ class RF24Network:
             self._logger = val
 
     @property
+    def node_address(self):
+        """get/set the node_address for the RF24Network object."""
+        return self._node_address
+
+    @node_address.setter
+    def node_address(self, val):
+        if _is_addr_valid(val):
+            self._node_address = val
+            self._node_mask = 0xFFFF
+            self._multicast_level = 0
+            while self._node_address & self._node_mask:
+                self._node_mask <<= 3
+                self._multicast_level += 1
+            self._node_mask = ~self._node_mask
+            for i in range(6):
+                if self._logger is not None:
+                    prompt = "pipe {} bound: 0x{}".format(
+                        i, address_repr(_pipe_address(val, i))
+                    )
+                    self.logger.debug(prompt)
+                self._radio.open_rx_pipe(i, _pipe_address(val, i))
+
+    @property
     def channel(self):
         """The channel used by the network."""
         return self._radio.channel
@@ -291,6 +325,7 @@ class RF24Network:
 
     @property
     def dynamic_payloads(self):
+        """Control RF24Network node's use of :meth:`RF24.dynamic_payloads`"""
         return self._radio.dynamic_payloads
 
     @dynamic_payloads.setter
@@ -298,10 +333,12 @@ class RF24Network:
         self._radio.dynamic_payloads = val
 
     def set_dynamic_payloads(self, enable, pipe=None):
+        """Set RF24Network node's use of :meth:`RF24.dynamic_payloads`"""
         self._radio.set_dynamic_payloads(enable, pipe_number=pipe)
 
-    def get_dynamic_payloads(self, enable, pipe=None):
-        self._radio.get_dynamic_payloads(enable, pipe_number=pipe)
+    def get_dynamic_payloads(self, pipe=None):
+        """Get RF24Network node's use of :meth:`RF24.dynamic_payloads`"""
+        return self._radio.get_dynamic_payloads(pipe)
 
     def update(self):
         """keep the network layer current; returns the next header"""
@@ -311,12 +348,13 @@ class RF24Network:
             # grab the frame from RX FIFO
             frame_buf = self._radio.read()
             frame = RF24NetworkFrame()
-            if self.debug:
-                print("Received packet:", frame_buf)
+            if self.logger is not None:
+                prompt = "Received packet:" + address_repr(frame_buf.buffer)
+                self.logger.debug(prompt)
 
             if not frame.decode(frame_buf) or not frame.header.is_valid:
-                if self.debug:
-                    print(
+                if self.logger is not None:
+                    self.logger.debug(
                         "discarding packet due to inadequate length"
                         " or bad network addresses."
                     )
@@ -334,12 +372,12 @@ class RF24Network:
                     requester = NETWORK_DEFAULT_ADDR
                     if requester != self._node_address:
                         frame.header.to_node = requester
-                        # self.write(frame.header.to_node, USER_TX_TO_PHYSICAL_ADDR)
+                        self.write(frame, USER_TX_TO_PHYSICAL_ADDRESS)
                         continue
                 if ret_val == NETWORK_ADDR_REQUEST and self._node_address:
                     frame.header.from_node = self._node_address
                     frame.header.to_node = 0
-                    # self.write(frame.header.to_node, TX_NORMAL)
+                    self.write(frame, TX_NORMAL)
                     continue
 
                 if (self.ret_sys_msg and ret_val > 127) or ret_val == NETWORK_ACK:
@@ -395,12 +433,15 @@ class RF24Network:
 
     def send(self, header, message):
         """deliver a message according to the header's information """
-        self.write(header, message, 0o70)
+        frame = RF24NetworkFrame(header=header, message=message)
+        return self.write(frame, 0o70)
 
     # pylint: disable=unnecessary-pass
-    def write(self, frame, multicast=0):
-        """deliver a message with a header routed to ``to_node`` """
-        header.from_node = self._node_address
+    def write(self, frame, to_node=0):
+        """deliver a constructed ``frame`` with a header routed to ``to_node`` """
+        frame.header.from_node = self._node_address
+        frame.header.to_node = int(to_node) & 0xFFFF
+        return self._radio.send(frame)
 
     # pylint: enable=unnecessary-pass
     def _is_descendant(self, node_address):

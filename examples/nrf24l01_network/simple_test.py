@@ -1,6 +1,6 @@
 """Network simple test"""
-import time
-import struct
+# import time
+# import struct
 
 USE_SHIM = False
 try:
@@ -8,11 +8,14 @@ try:
     import digitalio
 except (NotImplementedError, NameError):
     USE_SHIM = True
-    print("using shim on x86.")
+    print("logging shim on x86.")
 
-# if running this on a ATSAMD21 M0 based board
-# from circuitpython_nrf24l01.rf24_lite import RF24
-from circuitpython_nrf24l01.network.rf24_network import RF24Network, RF24NetworkFrame, RF24NetworkHeader
+# pylint: disable=wrong-import-position
+from circuitpython_nrf24l01.network.rf24_network import (
+    RF24Network,
+    # RF24NetworkFrame,
+    # RF24NetworkHeader,
+)
 
 # change these (digital output) pins accordingly
 ce = None if USE_SHIM else digitalio.DigitalInOut(board.D4)
@@ -24,8 +27,8 @@ spi = None if USE_SHIM else board.SPI()  # init spi bus object
 
 
 # we'll be using the dynamic payload size feature (enabled by default)
-# initialize the nRF24L01 on the spi bus object
-nrf = RF24Network(spi, csn, ce, 0o0)
+# initialize the nRF24L01 on the spi bus object as network node
+nrf = RF24Network(spi, csn, ce, 0o0)  # node_address = octal int 0
 
 # set the Power Amplifier level to -12 dBm since this test example is
 # usually run with nRF24L01 transceivers in close proximity

@@ -52,7 +52,8 @@ NETWORK_ADDR_REQUEST = const(195)
 """Used by RF24Mesh.
 
 Messages of this type are used for requesting data from network base node.
-Any (non-master) node receiving a message of this type will manually forward it to the master node using a normal network write."""
+Any (non-master) node receiving a message of this type will manually forward
+it to the master node using a normal network write."""
 
 NETWORK_ADDR_RESPONSE = const(128)
 """This message type is used to manually route custom messages containing a
@@ -83,11 +84,11 @@ a gateway implementation)"""
 # debugging levels (to be used a binary mneumonics with RF24Network.debug attribute)
 NETWORK_DEBUG = const(1)
 #: general debugging (spicific to the RF24Network object)
-NETWORK_DEBUG_MINIMAL = const(2)
+NETWORK_DEBUG_MINIMAL = const(0)
 #: minimal debugging only prints errors
-NETWORK_DEBUG_ROUTING = const(4)
+NETWORK_DEBUG_ROUTING = const(2)
 #: shows debugging info about routing messages through the RF24Network object
-NETWORK_DEBUG_FRAG = const(8)
+NETWORK_DEBUG_FRAG = const(3)
 #: shows debugging info about fragmented messages
-NETWORK_DEBUG_FRAG_L2 = const(16)
+NETWORK_DEBUG_FRAG_L2 = const(4)
 #: shows advanced debugging info about fragmented messages
