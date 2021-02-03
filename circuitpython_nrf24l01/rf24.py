@@ -508,7 +508,7 @@ class RF24:
             )
         )
         for prompt in prompts:
-            if self.logger is not None and self.logger.getEffectiveLevel() >= 10:
+            if self.logger is not None and self.logger.getEffectiveLevel() < 30:
                 self.logger.info(prompt)
             else:
                 print(prompt)
@@ -529,9 +529,9 @@ class RF24:
                 )
             )
             if is_open:
-                prompts.append("\t\texpecting", self._pl_len[i], "byte static payloads")
+                prompts.append("\t\texpecting {} byte static payloads".format(self._pl_len[i]))
         for prompt in prompts:
-            if self.logger is not None and self.logger.getEffectiveLevel() >= 10:
+            if self.logger is not None and self.logger.getEffectiveLevel() < 30:
                 self.logger.info(prompt)
             else:
                 print(prompt)
