@@ -23,8 +23,9 @@
 found here <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_"""
 from os import urandom
 import struct
-from .rf24 import RF24
+from .rf24 import RF24, address_repr, logging
 
+BLE_DEBUG = True
 
 def swap_bits(original):
     """This function reverses the bit order for a single byte."""
@@ -87,6 +88,9 @@ class FakeBLE(RF24):
         with self:
             self.payload_length = 32
             super().open_rx_pipe(0, b"\x71\x91\x7D\x6B\0")
+            if logging is not None:
+                self._logger = logging.getLogger("Fake_BLE")
+                self.logger.setLevel(logging.DEBUG + BLE_DEBUG if spi is None else logging.INFO)
 
     def __exit__(self, *exc):
         self._show_dbm = False
@@ -145,6 +149,15 @@ class FakeBLE(RF24):
         """Whitening the BLE packet data ensures there's no long repetition
         of bits."""
         data, coef = (bytearray(data), (self._curr_freq + 37) | 0x40)
+        if self.logger is not None:
+            prompts = ["buffer: 0x{}".format(
+                address_repr(data),
+            )]
+            prompts.append("Whiten Coef: {} on channel {}".format(
+                hex(coef), BLE_FREQ[self._curr_freq]
+            ))
+            for prompt in prompts:
+                self.logger.log(logging.DEBUG + BLE_DEBUG, prompt)
         for i, byte in enumerate(data):
             res, mask = (0, 1)
             for _ in range(8):
@@ -154,6 +167,9 @@ class FakeBLE(RF24):
                 mask <<= 1
                 coef >>= 1
             data[i] = byte ^ res
+        if self.logger is not None:
+            prompt = "whitened: 0x{}".format(address_repr(data))
+            self.logger.log(logging.DEBUG + BLE_DEBUG, prompt)
         return data
 
     def _make_payload(self, payload):
@@ -174,6 +190,11 @@ class FakeBLE(RF24):
         if name_length:
             buf += chunk(self.name, 0x08)
         buf += payload
+        if self.logger is not None:
+            prompt = "payload: 0x{} +CRC24: 0x{}".format(
+                address_repr(buf), address_repr(crc24_ble(buf))
+            )
+            self.logger.log(logging.DEBUG + BLE_DEBUG, prompt)
         buf += crc24_ble(buf)
         return buf
 
@@ -193,8 +214,13 @@ class FakeBLE(RF24):
                 payload += b
         else:
             payload = chunk(buf, data_type) if buf else b""
-        payload = self._make_payload(payload)
-        self.send(reverse_bits(self.whiten(payload)))
+        payload = self.whiten(self._make_payload(payload))
+        if self.logger is not None:
+            prompt = "original: 0x{}".format(address_repr(payload))
+            self.logger.log(logging.DEBUG + BLE_DEBUG, prompt)
+            prompt = "reversed: 0x{}".format(address_repr(reverse_bits(payload)))
+            self.logger.log(logging.DEBUG + BLE_DEBUG, prompt)
+        self.send(reverse_bits(payload))
 
     @property
     def channel(self):
@@ -254,59 +280,61 @@ class FakeBLE(RF24):
     def print_details(self, dump_pipes=False):
         """This debuggung function aggregates and outputs all status/condition
         related information from the nRF24L01."""
-        print("Is a plus variant_________{}".format(self.is_plus_variant))
-        print("BLE device name___________{}".format(str(self.name)))
-        print("Broadcasting PA Level_____{}".format(self.show_pa_level))
-        print(
+        prompts = ["Is a plus variant_________{}".format(self.is_plus_variant)]
+        prompts.append("BLE device name___________{}".format(str(self.name)))
+        prompts.append("Broadcasting PA Level_____{}".format(self.show_pa_level))
+        prompts.append(
             "Channel___________________{} ~ {} GHz".format(
                 self.channel, (self.channel + 2400) / 1000
             )
         )
-        print("RF Data Rate______________1 Mbps")
-        print("RF Power Amplifier________{} dbm".format(self.pa_level))
-        print(
+        prompts.append("RF Data Rate______________1 Mbps")
+        prompts.append("RF Power Amplifier________{} dbm".format(self.pa_level))
+        prompts.append(
             "RF Low Noise Amplifier____{}".format(
                 "Enabled" if self.is_lna_enabled else "Disabled"
             )
         )
-        print("CRC bytes_________________3")
-        print("Address length____________4 bytes")
-        print("TX Payload lengths________{} bytes".format(self.payload_length))
-        print("Auto retry delay__________250 microseconds")
-        print("Auto retry attempts_______0 maximum")
-        print("Re-use TX FIFO____________{}".format(bool(self._reg_read(0x17) & 64)))
-        print(
+        prompts.append("CRC bytes_________________3")
+        prompts.append("Address length____________4 bytes")
+        prompts.append("TX Payload lengths________{} bytes".format(self.payload_length))
+        prompts.append("Auto retry delay__________250 microseconds")
+        prompts.append("Auto retry attempts_______0 maximum")
+        prompts.append("Re-use TX FIFO____________{}".format(bool(self._reg_read(0x17) & 64)))
+        prompts.append(
             "IRQ on Data Ready__{}    Data Ready___________{}".format(
                 "_Enabled" if not self._config & 0x40 else "Disabled", self.irq_dr
             )
         )
-        print(
+        prompts.append(
             "IRQ on Data Fail___{}    Data Failed__________{}".format(
                 "_Enabled" if not self._config & 0x10 else "Disabled", self.irq_df
             )
         )
-        print(
+        prompts.append(
             "IRQ on Data Sent___{}    Data Sent____________{}".format(
                 "_Enabled" if not self._config & 0x20 else "Disabled", self.irq_ds
             )
         )
-        print(
+        _fifo = self.fifo(True)
+        prompts.append(
             "TX FIFO full__________{}    TX FIFO empty________{}".format(
-                "_True" if self.tx_full else "False", self.fifo(True, True)
+                "_True" if _fifo & 1 else "False", _fifo & 2
             )
         )
-        print(
+        _fifo = self.fifo(False)
+        prompts.append(
             "RX FIFO full__________{}    RX FIFO empty________{}".format(
-                "_True" if self.fifo(False, False) else "False", self.fifo(False, True)
+                "_True" if _fifo & 1 else "False", _fifo & 2
             )
         )
-        print(
+        prompts.append(
             "Ask no ACK_________{}    Custom ACK Payload___Disabled".format(
                 "_Allowed" if self.allow_ask_no_ack else "Disabled",
             )
         )
-        print("Dynamic Payloads___Disabled    Auto Acknowledgment__Disabled")
-        print(
+        prompts.append("Dynamic Payloads___Disabled    Auto Acknowledgment__Disabled")
+        prompts.append(
             "Primary Mode_____________{}    Power Mode___________{}".format(
                 "RX" if self.listen else "TX",
                 ("Standby-II" if self.ce_pin.value else "Standby-I")
@@ -314,6 +342,11 @@ class FakeBLE(RF24):
                 else "Off",
             )
         )
+        for prompt in prompts:
+            if self.logger is not None and self.logger.getEffectiveLevel() < 30:
+                self.logger.info(prompt)
+            else:
+                print(prompt)
         if dump_pipes:
             self._dump_pipes()
 

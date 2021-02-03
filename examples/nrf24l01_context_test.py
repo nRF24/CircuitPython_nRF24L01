@@ -5,18 +5,25 @@ display settings after changing contexts ( & thus configurations)
 
     .. warning:: This script is not compatible with the rf24_lite module
 """
-import board
-import digitalio
+
+USE_SHIM = False
+try:
+    import board
+    import digitalio
+except (NotImplementedError, NameError):
+    USE_SHIM = True
+    print("logging shim on x86.")
+
 from circuitpython_nrf24l01.rf24 import RF24
 from circuitpython_nrf24l01.fake_ble import FakeBLE
 
 # change these (digital output) pins accordingly
-ce = digitalio.DigitalInOut(board.D4)
-csn = digitalio.DigitalInOut(board.D5)
+ce = None if USE_SHIM else digitalio.DigitalInOut(board.D4)
+csn = None if USE_SHIM else digitalio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
 # available SPI pins, board.SCK, board.MOSI, board.MISO
-spi = board.SPI()  # init spi bus object
+spi = None if USE_SHIM else board.SPI()  # init spi bus object
 
 # initialize the nRF24L01 objects on the spi bus object
 # the first object will have all the features enabled

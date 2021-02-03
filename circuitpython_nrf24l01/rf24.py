@@ -83,7 +83,7 @@ class RF24:
         self._logger = None
         if logging is not None:
             self._logger = logging.getLogger("RF24")
-            self._logger.setLevel(logging.WARNING)
+            self._logger.setLevel(logging.INFO)
         self._reg_write(CONFIGURE, self._config)
         if spi is not None and self._reg_read(CONFIGURE) & 3 != 2:
             raise RuntimeError("nRF24L01 Hardware not responding")

@@ -82,13 +82,13 @@ and LAN/WLAN networks (unsupported at this time as this operation requires
 a gateway implementation)"""
 
 # debugging levels (to be used a binary mneumonics with RF24Network.debug attribute)
-NETWORK_DEBUG = const(1)
+NETWORK_DEBUG_MINIMAL = const(1)
+#: minimal debugging
+NETWORK_DEBUG = const(2)
 #: general debugging (spicific to the RF24Network object)
-NETWORK_DEBUG_MINIMAL = const(0)
-#: minimal debugging only prints errors
-NETWORK_DEBUG_ROUTING = const(2)
+NETWORK_DEBUG_ROUTING = const(3)
 #: shows debugging info about routing messages through the RF24Network object
-NETWORK_DEBUG_FRAG = const(3)
+NETWORK_DEBUG_FRAG = const(4)
 #: shows debugging info about fragmented messages
-NETWORK_DEBUG_FRAG_L2 = const(4)
+NETWORK_DEBUG_FRAG_L2 = const(5)
 #: shows advanced debugging info about fragmented messages

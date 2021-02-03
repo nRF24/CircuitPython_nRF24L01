@@ -13,9 +13,12 @@ except (NotImplementedError, NameError):
 # pylint: disable=wrong-import-position
 from circuitpython_nrf24l01.network.rf24_network import (
     RF24Network,
+    logging,
+    NETWORK_DEBUG,
     # RF24NetworkFrame,
     # RF24NetworkHeader,
 )
+
 
 # change these (digital output) pins accordingly
 ce = None if USE_SHIM else digitalio.DigitalInOut(board.D4)
@@ -33,3 +36,7 @@ nrf = RF24Network(spi, csn, ce, 0o0)  # node_address = octal int 0
 # set the Power Amplifier level to -12 dBm since this test example is
 # usually run with nRF24L01 transceivers in close proximity
 # nrf.pa_level = -12
+
+# log debug msgs specific to RF24Network.
+# use NETWORK_DEBUG_MINIMAL for less verbosity
+nrf.logger.setLevel(logging.DEBUG + NETWORK_DEBUG)

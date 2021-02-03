@@ -5,8 +5,16 @@ This example uses the nRF24L01 as a 'fake' BLE Beacon
         error when loading 'fake_ble.mpy'
 """
 import time
-import board
-import digitalio
+
+USE_SHIM = False
+try:
+    import board
+    import digitalio
+except (NotImplementedError, NameError):
+    USE_SHIM = True
+    print("logging shim on x86.")
+
+# pylint: disable=wrong-import-position
 from circuitpython_nrf24l01.fake_ble import (
     chunk,
     FakeBLE,
@@ -16,12 +24,13 @@ from circuitpython_nrf24l01.fake_ble import (
 )
 
 # change these (digital output) pins accordingly
-ce = digitalio.DigitalInOut(board.D4)
-csn = digitalio.DigitalInOut(board.D5)
+ce = None if USE_SHIM else digitalio.DigitalInOut(board.D4)
+csn = None if USE_SHIM else digitalio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
 # available SPI pins, board.SCK, board.MOSI, board.MISO
-spi = board.SPI()  # init spi bus object
+spi = None if USE_SHIM else board.SPI()  # init spi bus object
+
 
 # initialize the nRF24L01 on the spi bus object as a BLE compliant radio
 nrf = FakeBLE(spi, csn, ce)

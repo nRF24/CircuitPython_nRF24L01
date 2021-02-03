@@ -23,12 +23,13 @@
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import struct
+# pylint: disable=unused-import
 from .constants import (
-    # NETWORK_DEBUG_MINIMAL,
-    # NETWORK_DEBUG,
-    # NETWORK_DEBUG_FRAG,
-    # NETWORK_DEBUG_FRAG_L2,
-    # NETWORK_DEBUG_ROUTING,
+    NETWORK_DEBUG_MINIMAL,
+    NETWORK_DEBUG,
+    NETWORK_DEBUG_FRAG,
+    NETWORK_DEBUG_FRAG_L2,
+    NETWORK_DEBUG_ROUTING,
     NETWORK_FRAG_FIRST,
     NETWORK_FRAG_MORE,
     NETWORK_FRAG_LAST,
@@ -40,9 +41,10 @@ from .constants import (
     NETWORK_PING,
     NETWORK_POLL,
     TX_NORMAL,
-    # TX_ROUTED,
+    TX_ROUTED,
     USER_TX_TO_PHYSICAL_ADDRESS,
 )
+# pylint: enable=unused-import
 from ..rf24 import RF24, logging, address_repr
 
 _frag_types = (
@@ -261,13 +263,13 @@ class RF24Network:
     def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
         if not _is_addr_valid(node_address):
             raise ValueError("node_address argument is invalid or malformed")
-
-        self._radio = RF24(spi, csn_pin, ce_pin, spi_frequency=spi_frequency)
         self._logger = None
+        self._radio = RF24(spi, csn_pin, ce_pin, spi_frequency=spi_frequency)
         if logging is not None:
             self._logger = logging.getLogger("RF24Network")
-            self._logger.setLevel(logging.WARNING if spi is not None else logging.DEBUG)
-            self._radio.logger.setLevel(logging.WARNING)
+            self._logger.setLevel(
+                logging.DEBUG + NETWORK_DEBUG_MINIMAL if spi is None else logging.INFO
+            )
 
         # setup public proprties
         self.fragmentation = True
@@ -280,6 +282,13 @@ class RF24Network:
         self._radio.set_auto_retries(((node_address % 6) + 1) * 2 + 3, 5)
         self._radio.listen = True
         self._queue = []  # each item is a 2-tuple containing header & message
+
+    def __enter__(self):
+        self.node_address = self._node_address
+        return self._radio.__enter__()
+
+    def __exit__(self, *exc):
+        return self._radio.__exit__()
 
     @property
     def logger(self):
@@ -306,12 +315,15 @@ class RF24Network:
                 self._node_mask <<= 3
                 self._multicast_level += 1
             self._node_mask = ~self._node_mask
+            if self._logger is not None:
+                prompt = "address changed to {}".format(oct(self.node_address))
+                self.logger.log(logging.DEBUG + NETWORK_DEBUG, prompt)
             for i in range(6):
                 if self._logger is not None:
                     prompt = "pipe {} bound: 0x{}".format(
                         i, address_repr(_pipe_address(val, i))
                     )
-                    self.logger.debug(prompt)
+                    self.logger.log(logging.DEBUG + NETWORK_DEBUG, prompt)
                 self._radio.open_rx_pipe(i, _pipe_address(val, i))
 
     @property
@@ -350,11 +362,12 @@ class RF24Network:
             frame = RF24NetworkFrame()
             if self.logger is not None:
                 prompt = "Received packet:" + address_repr(frame_buf.buffer)
-                self.logger.debug(prompt)
+                self.logger.log(logging.DEBUG + NETWORK_DEBUG, prompt)
 
             if not frame.decode(frame_buf) or not frame.header.is_valid:
                 if self.logger is not None:
-                    self.logger.debug(
+                    self.logger.log(
+                        logging.DEBUG + NETWORK_DEBUG,
                         "discarding packet due to inadequate length"
                         " or bad network addresses."
                     )
