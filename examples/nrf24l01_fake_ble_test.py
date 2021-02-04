@@ -4,6 +4,7 @@ This example uses the nRF24L01 as a 'fake' BLE Beacon
     .. warning:: ATSAMD21 M0-based boards have memory allocation
         error when loading 'fake_ble.mpy'
 """
+# pylint: disable=wrong-import-position
 import time
 
 USE_SHIM = False
@@ -14,7 +15,6 @@ except (NotImplementedError, NameError):
     USE_SHIM = True
     print("logging shim on x86.")
 
-# pylint: disable=wrong-import-position
 from circuitpython_nrf24l01.fake_ble import (
     chunk,
     FakeBLE,

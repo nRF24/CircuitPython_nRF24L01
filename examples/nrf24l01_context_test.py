@@ -5,7 +5,7 @@ display settings after changing contexts ( & thus configurations)
 
     .. warning:: This script is not compatible with the rf24_lite module
 """
-
+# pylint: disable=wrong-import-position
 USE_SHIM = False
 try:
     import board
