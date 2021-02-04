@@ -241,7 +241,7 @@ class RF24Network(Radio):
     max_message_length = 144
     """If a network node is driven by the TMRh20 RF24Network library on a
     ATTiny-based board, set this to ``72``."""
-    _frame_buf = bytearray(max_message_length + RF24NetworkHeader.__len__())
+    _frame_buf = bytearray(max_message_length + len(RF24NetworkHeader()))
     #: internal frame buffer shared by all RF24Network objects
 
     def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
