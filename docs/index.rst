@@ -23,6 +23,7 @@
 
 .. toctree::
     :caption: Network API Reference
+    :hidden:
 
     network_api
 
@@ -30,6 +31,7 @@
     :caption: Troubleshooting
     :hidden:
 
+    using_logger
     troubleshooting
 
 .. toctree::

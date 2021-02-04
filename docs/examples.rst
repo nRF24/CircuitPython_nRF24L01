@@ -158,7 +158,7 @@ This is a test to show how to use `with` blocks to manage multiple different nRF
 
 .. literalinclude:: ../examples/nrf24l01_context_test.py
     :caption: examples/nrf24l01_context_test.py
-    :start-at: import board
+    :start-at: USE_SHIM = False
 
 Manual ACK Example
 ------------------
@@ -195,7 +195,7 @@ This is a test to show how to use the nRF24L01 as a BLE advertising beacon using
 
 .. literalinclude:: ../examples/nrf24l01_fake_ble_test.py
     :caption: examples/nrf24l01_fake_ble_test.py
-    :start-at: import time
+    :start-at: USE_SHIM = False
     :end-before: def set_role():
 
 TMRh20's Arduino library

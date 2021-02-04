@@ -343,8 +343,8 @@ class FakeBLE(RF24):
             )
         )
         for prompt in prompts:
-            if self.logger is not None and self.logger.getEffectiveLevel() < 30:
-                self.logger.info(prompt)
+            if self.logger is not None:
+                self.logger.log(logging.INFO, prompt)
             else:
                 print(prompt)
         if dump_pipes:

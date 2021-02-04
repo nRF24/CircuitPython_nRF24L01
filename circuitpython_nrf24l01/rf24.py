@@ -170,7 +170,7 @@ class RF24:
                 spi.write_readinto(out_buf, in_buf)
         if self._logger is not None:
             prompt = "SPI reading 1 byte from {}".format(hex(reg))
-            self._logger.debug(prompt)
+            self._logger.log(logging.DEBUG, prompt)
         self._status = in_buf[0]
         return in_buf[1]
 
@@ -182,7 +182,7 @@ class RF24:
                 spi.write_readinto(out_buf, in_buf)
         if self._logger is not None:
             prompt = "SPI reading {} bytes from {}".format(buf_len, hex(reg))
-            self._logger.debug(prompt)
+            self._logger.log(logging.DEBUG, prompt)
         self._status = in_buf[0]
         return in_buf[1:]
 
@@ -196,7 +196,7 @@ class RF24:
             prompt = "SPI writing {} bytes to {} {}".format(
                 len(out_buf) - 1, hex(reg), "0x" + address_repr(out_buf[1:])
             )
-            self._logger.debug(prompt)
+            self._logger.log(logging.DEBUG, prompt)
         self._status = in_buf[0]
 
     def _reg_write(self, reg, value=None):
@@ -211,12 +211,12 @@ class RF24:
             prompt = "SPI writing {} bytes to {} {}".format(
                 len(out_buf) - 1, hex(reg), hex(out_buf[1:][0]) if value else ""
             )
-            self._logger.debug(prompt)
+            self._logger.log(logging.DEBUG, prompt)
         self._status = in_buf[0]
 
     @property
     def logger(self):
-        """Get/Set the current :py:class:`~logging.Logger()`."""
+        """Get/Set the current ``Logger()``."""
         return self._logger
 
     @logger.setter
@@ -508,8 +508,8 @@ class RF24:
             )
         )
         for prompt in prompts:
-            if self.logger is not None and self.logger.getEffectiveLevel() < 30:
-                self.logger.info(prompt)
+            if self.logger is not None:
+                self.logger.log(logging.INFO, prompt)
             else:
                 print(prompt)
         if dump_pipes:
@@ -531,8 +531,8 @@ class RF24:
             if is_open:
                 prompts.append("\t\texpecting {} byte static payloads".format(self._pl_len[i]))
         for prompt in prompts:
-            if self.logger is not None and self.logger.getEffectiveLevel() < 30:
-                self.logger.info(prompt)
+            if self.logger is not None:
+                self.logger.log(logging.INFO, prompt)
             else:
                 print(prompt)
 
