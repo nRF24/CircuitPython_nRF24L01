@@ -237,14 +237,12 @@ class RF24Network(Radio):
     """
 
     multicast = True  #: enable (`True`) or disable (`False`) multicasting
-    multicast_relay = True
-    """Enabling this will allow this node to automatically forward received
-    multicast frames to the next highest multicast level. Duplicate frames are
-    filtered out, so multiple forwarding nodes at the same level should not
-    interfere. Forwarded payloads will also be received."""
+    _multicast_relay = True
     max_message_length = 144
     """If a network node is driven by the TMRh20 RF24Network library on a
     ATTiny-based board, set this to ``72``."""
+    _frame_buf = bytearray(max_message_length + RF24NetworkHeader.__len__())
+    #: internal frame buffer shared by all RF24Network objects
 
     def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
         if not _is_addr_valid(node_address):
@@ -256,6 +254,8 @@ class RF24Network(Radio):
             self._logger.setLevel(
                 logging.DEBUG + NETWORK_DEBUG_MINIMAL if spi is None else logging.INFO
             )
+        self._node_mask = 0xFFFF
+        self._multicast_level = 0
 
         # setup public proprties
         self.fragmentation = True
@@ -264,6 +264,10 @@ class RF24Network(Radio):
 
         # setup node_address & private properies
         self.node_address = node_address
+        self.force_retry = 6
+        """Instead of a txTimeout, we use the minimum amount of forced retries
+        during transmission failure."""
+
         self._radio.ack = True
         self._radio.set_auto_retries(((node_address % 6) + 1) * 2 + 3, 5)
         self._radio.listen = True
@@ -305,8 +309,6 @@ class RF24Network(Radio):
     def node_address(self, val):
         if _is_addr_valid(val):
             self._node_address = val
-            self._node_mask = 0xFFFF
-            self._multicast_level = 0
             while self._node_address & self._node_mask:
                 self._node_mask <<= 3
                 self._multicast_level += 1
@@ -321,6 +323,19 @@ class RF24Network(Radio):
                     )
                     self.logger.log(logging.DEBUG + NETWORK_DEBUG, prompt)
                 self._radio.open_rx_pipe(i, self._pipe_address(val, i))
+
+    @property
+    def multicast_relay(self):
+        """Enabling this will allow this node to automatically forward
+        received multicast frames to the next highest multicast level.
+        Duplicate frames are filtered out, so multiple forwarding nodes at the
+        same level should not interfere. Forwarded payloads will also be
+        received."""
+        return self.multicast and self._multicast_relay
+
+    @multicast_relay.setter
+    def multicast_relay(self, enable):
+        self._multicast_relay = enable and self.multicast
 
     def _pipe_address(self, node_address, pipe_number):
         """translate node address for use on all pipes"""
@@ -383,7 +398,7 @@ class RF24Network(Radio):
 
                 self._queue.append(frame)
             else:  # frame was not directed to this node
-                if self.multicast:
+                if self.multicast_relay:
                     if frame.header.to_node == 0o100:
                         # used by RF24Mesh
                         if (
@@ -440,6 +455,31 @@ class RF24Network(Radio):
         frame.header.to_node = int(to_node) & 0xFFFF
         return self._radio.send(frame)
 
+    def _write_to_pipe(self, to_node, to_pipe):
+        """extract pipe's RX address for a particular node."""
+        result = False
+        # if not network_flags & FAST_FRAG:
+        self.listen = True
+        if self.multicast:
+            self._radio.set_auto_ack(0, 0)
+        else:
+            self._radio.set_auto_ack(1, 0)
+        self._radio.open_tx_pipe(self._pipe_address(to_node, to_pipe))
+        result = self._radio.send(self._frame_buf, force_retry=self.force_retry)
+        # if not network_flags & FAST_FRAG:
+        self._radio.set_auto_ack(0, 0)
+        return result
+
+    def set_multicast_level(self, level):
+        """Set the pipe 0 address to according to octal tree level"""
+        self._multicast_level = level
+        self._radio.listen = False
+        self._radio.open_rx_pipe(0, self._pipe_address(_level_to_address(level), 0))
+
+    def logical_to_physical(self, to_node, to_pipe, frame):
+        """translate frame to node physical address and data pipe number"""
+        pass
+
     # pylint: enable=unnecessary-pass
     def _is_descendant(self, node_address):
         """is the given node_address a descendant of self._node_address"""
@@ -464,9 +504,3 @@ class RF24Network(Radio):
         """return address for a direct child"""
         # this pressumes that node_address is a direct child
         return node_address & ((self._node_mask << 3) | 0x07)
-
-    def _set_multicast_level(self, level):
-        """Set the pipe 0 address to according to octal tree level"""
-        self._multicast_level = level
-        self._radio.listen = False
-        self._radio.open_rx_pipe(0, _pipe_address(_level_to_address(level), 0))
