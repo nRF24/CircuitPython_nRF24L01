@@ -216,7 +216,7 @@ class RF24:
 
     @property
     def logger(self):
-        """Get/Set the current logger."""
+        """Get/Set the current :py:class:`~logging.Logger()`."""
         return self._logger
 
     @logger.setter

@@ -22,16 +22,15 @@
     ble_api
 
 .. toctree::
+    :caption: Network API Reference
+
+    network_api
+
+.. toctree::
     :caption: Troubleshooting
     :hidden:
 
     troubleshooting
-
-
-.. toctree::
-    :caption: Network API Reference
-
-    network_api
 
 .. toctree::
     :caption: Store Links

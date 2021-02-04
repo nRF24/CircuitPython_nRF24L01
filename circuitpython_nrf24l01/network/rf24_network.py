@@ -43,6 +43,7 @@ from .constants import (
     TX_NORMAL,
     TX_ROUTED,
     USER_TX_TO_PHYSICAL_ADDRESS,
+    MAX_USER_DEFINED_HEADER_TYPE,
 )
 # pylint: enable=unused-import
 from .network_mixin import Radio
@@ -233,7 +234,6 @@ class RF24Network(Radio):
     """The object used to instantiate the nRF24L01 as a network node.
 
     :param int node_address: The octal `int` for this node's address
-    :param int channel: The RF channel used by the RF24Network
     """
 
     multicast = True  #: enable (`True`) or disable (`False`) multicasting
@@ -254,8 +254,9 @@ class RF24Network(Radio):
             self._logger.setLevel(
                 logging.DEBUG + NETWORK_DEBUG_MINIMAL if spi is None else logging.INFO
             )
-        self._node_mask = 0xFFFF
+        self._addr_mask = 0xFFFF
         self._multicast_level = 0
+        self._addr = 0
 
         # setup public proprties
         self.fragmentation = True
@@ -265,8 +266,9 @@ class RF24Network(Radio):
         # setup node_address & private properies
         self.node_address = node_address
         self.force_retry = 6
-        """Instead of a txTimeout, we use the minimum amount of forced retries
-        during transmission failure."""
+        """Instead of a ``RF24Network::txTimeout``, we use the minimum amount
+        of forced retries during transmission failure with auto-retries
+        observed for every forced retry)."""
 
         self._radio.ack = True
         self._radio.set_auto_retries(((node_address % 6) + 1) * 2 + 3, 5)
@@ -274,7 +276,7 @@ class RF24Network(Radio):
         self._queue = []  # each item is a 2-tuple containing header & message
 
     def __enter__(self):
-        self.node_address = self._node_address
+        self.node_address = self._addr
         self._radio.__enter__()
         self._radio.listen = True
         return self
@@ -303,16 +305,16 @@ class RF24Network(Radio):
     @property
     def node_address(self):
         """get/set the node_address for the RF24Network object."""
-        return self._node_address
+        return self._addr
 
     @node_address.setter
     def node_address(self, val):
         if _is_addr_valid(val):
-            self._node_address = val
-            while self._node_address & self._node_mask:
-                self._node_mask <<= 3
+            self._addr = val
+            while self._addr & self._addr_mask:
+                self._addr_mask <<= 3
                 self._multicast_level += 1
-            self._node_mask = ~self._node_mask
+            self._addr_mask = ~self._addr_mask
             if self._logger is not None:
                 prompt = "address changed to {}".format(oct(self.node_address))
                 self.logger.log(logging.DEBUG + NETWORK_DEBUG, prompt)
@@ -357,24 +359,22 @@ class RF24Network(Radio):
         ret_val = 0  # sentinal indicating there is nothing to report
         while self._radio.available():
             # grab the frame from RX FIFO
-            frame_buf = self._radio.read()
-            frame = RF24NetworkFrame()
+            frame_buf = RF24NetworkFrame()
+            frame = self._radio.read()
             if self.logger is not None:
-                prompt = "Received packet:" + address_repr(frame_buf.buffer)
+                prompt = "Received packet:" + address_repr(frame)
                 self.logger.log(logging.DEBUG + NETWORK_DEBUG, prompt)
-
-            if not frame.decode(frame_buf) or not frame.header.is_valid:
+            if not frame_buf.decode(frame) or not frame.header.is_valid:
                 if self.logger is not None:
                     self.logger.log(
                         logging.DEBUG + NETWORK_DEBUG,
                         "discarding packet due to inadequate length"
                         " or bad network addresses."
                     )
-                # del frame
                 continue
 
-            ret_val = frame.header.message_type
-            if frame.header.to_node == self._node_address:
+            ret_val = frame_buf.header.message_type
+            if frame_buf.header.to_node == self._addr:
                 # frame was directed to this node
                 if ret_val == NETWORK_PING:
                     continue
@@ -382,32 +382,32 @@ class RF24Network(Radio):
                 # used for RF24Mesh
                 if ret_val == NETWORK_ADDR_RESPONSE:
                     requester = NETWORK_DEFAULT_ADDR
-                    if requester != self._node_address:
-                        frame.header.to_node = requester
-                        self.write(frame, USER_TX_TO_PHYSICAL_ADDRESS)
+                    if requester != self._addr:
+                        frame_buf.header.to_node = requester
+                        self.write(frame_buf, USER_TX_TO_PHYSICAL_ADDRESS)
                         continue
-                if ret_val == NETWORK_ADDR_REQUEST and self._node_address:
-                    frame.header.from_node = self._node_address
-                    frame.header.to_node = 0
-                    self.write(frame, TX_NORMAL)
+                if ret_val == NETWORK_ADDR_REQUEST and self._addr:
+                    frame_buf.header.from_node = self._addr
+                    frame_buf.header.to_node = 0
+                    self.write(frame_buf, TX_NORMAL)
                     continue
 
-                if (self.ret_sys_msg and ret_val > 127) or ret_val == NETWORK_ACK:
-                    if ret_val not in _frag_types + (NETWORK_EXTERNAL_DATA,):
-                        return ret_val
+                if (
+                        self.ret_sys_msg and ret_val > MAX_USER_DEFINED_HEADER_TYPE
+                        or ret_val == NETWORK_ACK
+                        and ret_val not in _frag_types + (NETWORK_EXTERNAL_DATA,)
+                ):
+                    return ret_val
 
                 self._queue.append(frame)
             else:  # frame was not directed to this node
                 if self.multicast_relay:
                     if frame.header.to_node == 0o100:
                         # used by RF24Mesh
-                        if (
-                                frame.header.message_type == NETWORK_POLL
-                                and self._node_address != NETWORK_DEFAULT_ADDR
-                        ):
+                        if ret_val == NETWORK_POLL and self._addr != NETWORK_DEFAULT_ADDR:
                             pass
 
-                elif self._node_address != NETWORK_DEFAULT_ADDR:
+                elif self._addr != NETWORK_DEFAULT_ADDR:
                     self.write(frame, 1)  # pass it along
                     ret_val = 0  # indicate its a routed payload
         # end while _radio.available()
@@ -419,13 +419,13 @@ class RF24Network(Radio):
 
     @property
     def peek_header(self):
-        """return the next available message's header from the internal queue
+        """:Return: the next available message's header from the internal queue
         without removing it from the queue"""
         return self._queue[0][0]
 
     @property
     def peek(self):
-        """return the next available header & message from the internal queue
+        """:Return: the next available header & message from the internal queue
         without removing it from the queue"""
         return self._queue[0]
 
@@ -451,9 +451,13 @@ class RF24Network(Radio):
     # pylint: disable=unnecessary-pass
     def write(self, frame, to_node=0):
         """deliver a constructed ``frame`` with a header routed to ``to_node`` """
-        frame.header.from_node = self._node_address
+        if not isinstance(frame, RF24NetworkFrame):
+            raise TypeError("expected object of type RF24NetworkFrame.")
+        frame.header.from_node = self._addr
         frame.header.to_node = int(to_node) & 0xFFFF
-        return self._radio.send(frame)
+        if frame.header.is_valid():
+            return self._radio.send(frame)
+        return False
 
     def _write_to_pipe(self, to_node, to_pipe):
         """extract pipe's RX address for a particular node."""
@@ -471,36 +475,36 @@ class RF24Network(Radio):
         return result
 
     def set_multicast_level(self, level):
-        """Set the pipe 0 address to according to octal tree level"""
+        """Set the pipe 0 address according to octal tree ``level``"""
         self._multicast_level = level
         self._radio.listen = False
         self._radio.open_rx_pipe(0, self._pipe_address(_level_to_address(level), 0))
 
     def logical_to_physical(self, to_node, to_pipe, frame):
-        """translate frame to node physical address and data pipe number"""
+        """translate ``frame`` to node physical address and data pipe number"""
         pass
 
     # pylint: enable=unnecessary-pass
-    def _is_descendant(self, node_address):
-        """is the given node_address a descendant of self._node_address"""
-        return node_address & self._node_mask == self._node_address
+    def _is_descendant(self, _address):
+        """Is the given ``node_address`` a descendant of `node_address`"""
+        return _address & self._addr_mask == self._addr
 
-    def _is_direct_child(self, node_address):
-        """is the given node_address a direct child of self._node_address"""
-        if self._is_descendant(node_address):
-            return not node_address & ((~self._node_mask) << 3)
+    def _is_direct_child(self, _address):
+        """Is the given ``_address`` a direct child of `node_address`"""
+        if self._is_descendant(_address):
+            return not _address & ((~self._addr_mask) << 3)
         return False
 
-    def _address_of_pipe(self, node_address, pipe_number):
+    def _address_of_pipe(self, _address, _pipe):
         """return the node_address on a specified pipe"""
-        temp_mask = self._node_mask >> 3
+        temp_mask = self._addr_mask >> 3
         count_bits = 0
         while temp_mask:
             temp_mask >>= 1
             count_bits += 1
-        return node_address | (pipe_number << count_bits)
+        return _address | (_pipe << count_bits)
 
     def _direct_child_route_to(self, node_address):
         """return address for a direct child"""
         # this pressumes that node_address is a direct child
-        return node_address & ((self._node_mask << 3) | 0x07)
+        return node_address & ((self._addr_mask << 3) | 0x07)
