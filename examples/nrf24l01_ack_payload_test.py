@@ -84,12 +84,12 @@ def master(count=5):  # count = 5 will only transmit 5 packets
                 end=" ",
             )
             if isinstance(result, bool):
-                print(" Received an empty ACK packet")
+                print("Received an empty ACK packet")
             else:
                 # result[:6] truncates c-string NULL termiating char
                 # received counter is a unsigned byte, thus result[7:8][0]
                 print(
-                    " Received: {}{}".format(
+                    "Received: {}{}".format(
                         bytes(result[:6]).decode("utf-8"), result[7:8][0]
                     )
                 )
