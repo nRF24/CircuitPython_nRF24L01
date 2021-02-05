@@ -500,7 +500,7 @@ rpd
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.rpd
 
-    The RPD flag is triggered in the following cases:
+    The RPD (Received Power Detector) flag is triggered in the following cases:
 
     1. During RX mode (when `listen` is `True`) and an arbitrary RF transmission with
        a gain above -64 dBm threshold is/was present.

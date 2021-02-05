@@ -365,7 +365,8 @@ crc
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.crc
 
-    CRC is a way of making sure that the transmission didn't get corrupted over the air.
+    CRC (cyclic redundancy checking) is a way of making sure that the transmission didn't get
+    corrupted over the air.
 
     A valid input value must be:
 
@@ -409,6 +410,6 @@ is_lna_enabled
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.is_lna_enabled
 
-    See `pa_level` attribute about how to set this. Default is always enabled, but this
-    feature is specific to non-plus variants of nRF24L01 transceivers. If
-    `is_plus_variant` attribute is `True`, then setting feature in any way has no affect.
+    LNA stands for Low Noise Amplifier. See `pa_level` attribute about how to set this. Default
+    is always enabled, but this feature is specific to non-plus variants of nRF24L01 transceivers.
+    If `is_plus_variant` attribute is `True`, then setting feature in any way has no affect.

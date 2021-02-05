@@ -47,11 +47,11 @@ Each RF24 class is layerd so that lgging mesages can be filtered out. In additio
 
 .. csv-table::
     :header: ``level``, Description
-    :widths: 5, 12
+    :widths: 3, 12
 
-    ``10``, "Basic module debug. Show SPI transactions"
-    ``11``, "general debug prompts specic to `RF24Network` or `FakeBLE`"
-    ``12``, "minimal debug prompts specic to `RF24Network`"
-    ``13``, "show fragmentation debug prompts specic to `RF24Network`"
-    ``14``, "show level 2 of fragmentation debug prompts specic to `RF24Network`"
+    ``10``, "Basic module debug."
+    ``11``, "general debug prompts specific to `RF24Network` or `FakeBLE`"
+    ``12``, "minimal debug prompts specific to `RF24Network`"
+    ``13``, "show fragmentation debug prompts specific to `RF24Network`"
+    ``14``, "show level 2 of fragmentation debug prompts specific to `RF24Network`"
 

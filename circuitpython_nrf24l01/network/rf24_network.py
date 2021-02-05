@@ -46,8 +46,8 @@ from .constants import (
     MAX_USER_DEFINED_HEADER_TYPE,
 )
 # pylint: enable=unused-import
-from .network_mixin import Radio
-from ..rf24 import logging, address_repr
+from .network_mixin import RadioMixin
+from ..rf24 import address_repr
 
 _frag_types = (
     NETWORK_FRAG_FIRST,
@@ -230,7 +230,7 @@ class RF24NetworkFrame:
         return len(self.header) + len(self.message)
 
 
-class RF24Network(Radio):
+class RF24Network(RadioMixin):
     """The object used to instantiate the nRF24L01 as a network node.
 
     :param int node_address: The octal `int` for this node's address
@@ -248,15 +248,9 @@ class RF24Network(Radio):
         if not _is_addr_valid(node_address):
             raise ValueError("node_address argument is invalid or malformed")
         super().__init__(spi, csn_pin, ce_pin, spi_frequency)
-        self._logger = None
-        if logging is not None:
-            self._logger = logging.getLogger("RF24Network")
-            self._logger.setLevel(
-                logging.DEBUG + NETWORK_DEBUG_MINIMAL if spi is None else logging.INFO
-            )
-        self._addr_mask = 0xFFFF
         self._multicast_level = 0
         self._addr = 0
+        self._addr_mask = 0xFFFF
 
         # setup public proprties
         self.fragmentation = True
@@ -270,35 +264,28 @@ class RF24Network(Radio):
         of forced retries during transmission failure with auto-retries
         observed for every forced retry)."""
 
-        self._radio.ack = True
-        self._radio.set_auto_retries(((node_address % 6) + 1) * 2 + 3, 5)
-        self._radio.listen = True
+        self._rf24.ack = True
+        self._rf24.set_auto_retries(((node_address % 6) + 1) * 2 + 3, 5)
+        self._rf24.listen = True
         self._queue = []  # each item is a 2-tuple containing header & message
 
     def __enter__(self):
         self.node_address = self._addr
-        self._radio.__enter__()
-        self._radio.listen = True
+        self._rf24.__enter__()
+        self._rf24.listen = True
         return self
 
     def __exit__(self, *exc):
-        return self._radio.__exit__()
-
-    @property
-    def logger(self):
-        """Get/Set the current logger."""
-        return self._logger
-
-    @logger.setter
-    def logger(self, val):
-        if logging is not None and isinstance(val, logging.Logger):
-            self._logger = val
+        return self._rf24.__exit__()
 
     # pylint: disable=missing-docstring
     def print_details(self, dump_pipes=True):
-        self._radio.print_details(dump_pipes)
-        prompt = "Net node address: {}".format(oct(self.node_address))
-        self.logger.info(prompt)
+        self._rf24.print_details(dump_pipes)
+        prompt = "Net node address__________{}".format(oct(self.node_address))
+        if self.logger is not None:
+            self.logger.log(20, prompt)
+        else:
+            print(prompt)
 
     # pylint: enable=missing-docstring
 
@@ -315,16 +302,16 @@ class RF24Network(Radio):
                 self._addr_mask <<= 3
                 self._multicast_level += 1
             self._addr_mask = ~self._addr_mask
-            if self._logger is not None:
+            if self.logger is not None:
                 prompt = "address changed to {}".format(oct(self.node_address))
-                self.logger.log(logging.DEBUG + NETWORK_DEBUG, prompt)
+                self.logger.log(NETWORK_DEBUG, prompt)
             for i in range(1, 6):
-                if self._logger is not None:
+                if self.logger is not None:
                     prompt = "pipe {} bound: 0x{}".format(
                         i, address_repr(self._pipe_address(val, i))
                     )
-                    self.logger.log(logging.DEBUG + NETWORK_DEBUG, prompt)
-                self._radio.open_rx_pipe(i, self._pipe_address(val, i))
+                    self.logger.log(NETWORK_DEBUG, prompt)
+                self._rf24.open_rx_pipe(i, self._pipe_address(val, i))
 
     @property
     def multicast_relay(self):
@@ -357,17 +344,17 @@ class RF24Network(Radio):
     def update(self):
         """keep the network layer current; returns the next header"""
         ret_val = 0  # sentinal indicating there is nothing to report
-        while self._radio.available():
+        while self._rf24.available():
             # grab the frame from RX FIFO
             frame_buf = RF24NetworkFrame()
-            frame = self._radio.read()
+            frame = self._rf24.read()
             if self.logger is not None:
                 prompt = "Received packet:" + address_repr(frame)
-                self.logger.log(logging.DEBUG + NETWORK_DEBUG, prompt)
+                self.logger.log(NETWORK_DEBUG, prompt)
             if not frame_buf.decode(frame) or not frame.header.is_valid:
                 if self.logger is not None:
                     self.logger.log(
-                        logging.DEBUG + NETWORK_DEBUG,
+                        NETWORK_DEBUG,
                         "discarding packet due to inadequate length"
                         " or bad network addresses."
                     )
@@ -410,7 +397,7 @@ class RF24Network(Radio):
                 elif self._addr != NETWORK_DEFAULT_ADDR:
                     self.write(frame, 1)  # pass it along
                     ret_val = 0  # indicate its a routed payload
-        # end while _radio.available()
+        # end while _rf24.available()
         return ret_val
 
     def available(self):
@@ -456,7 +443,7 @@ class RF24Network(Radio):
         frame.header.from_node = self._addr
         frame.header.to_node = int(to_node) & 0xFFFF
         if frame.header.is_valid():
-            return self._radio.send(frame)
+            return self._rf24.send(frame)
         return False
 
     def _write_to_pipe(self, to_node, to_pipe):
@@ -465,20 +452,20 @@ class RF24Network(Radio):
         # if not network_flags & FAST_FRAG:
         self.listen = True
         if self.multicast:
-            self._radio.set_auto_ack(0, 0)
+            self._rf24.set_auto_ack(0, 0)
         else:
-            self._radio.set_auto_ack(1, 0)
-        self._radio.open_tx_pipe(self._pipe_address(to_node, to_pipe))
-        result = self._radio.send(self._frame_buf, force_retry=self.force_retry)
+            self._rf24.set_auto_ack(1, 0)
+        self._rf24.open_tx_pipe(self._pipe_address(to_node, to_pipe))
+        result = self._rf24.send(self._frame_buf, force_retry=self.force_retry)
         # if not network_flags & FAST_FRAG:
-        self._radio.set_auto_ack(0, 0)
+        self._rf24.set_auto_ack(0, 0)
         return result
 
     def set_multicast_level(self, level):
         """Set the pipe 0 address according to octal tree ``level``"""
         self._multicast_level = level
-        self._radio.listen = False
-        self._radio.open_rx_pipe(0, self._pipe_address(_level_to_address(level), 0))
+        self._rf24.listen = False
+        self._rf24.open_rx_pipe(0, self._pipe_address(_level_to_address(level), 0))
 
     def logical_to_physical(self, to_node, to_pipe, frame):
         """translate ``frame`` to node physical address and data pipe number"""

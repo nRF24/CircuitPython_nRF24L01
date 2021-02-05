@@ -134,7 +134,8 @@ read()
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.read
 
-    This function can also be used to fetch the last ACK packet's payload if `ack` is enabled.
+    The `irq_dr` status flag is reset autmotically. This function can also be used to fetch
+    the last ACK packet's payload if `ack` is enabled.
 
     :param int length: An optional parameter to specify how many bytes to read from the RX
         FIFO buffer. This parameter is not constrained in any way.

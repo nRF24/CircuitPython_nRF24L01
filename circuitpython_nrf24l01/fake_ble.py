@@ -23,9 +23,8 @@
 found here <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_"""
 from os import urandom
 import struct
-from .rf24 import RF24, address_repr, logging
+from .rf24 import RF24, address_repr
 
-BLE_DEBUG = True
 
 def swap_bits(original):
     """This function reverses the bit order for a single byte."""
@@ -86,11 +85,7 @@ class FakeBLE(RF24):
         self._addr_len = 4  # use only 4 byte address length
         self._tx_address[:4] = b"\x71\x91\x7D\x6B"
         with self:
-            self.payload_length = 32
             super().open_rx_pipe(0, b"\x71\x91\x7D\x6B\0")
-            if logging is not None:
-                self._logger = logging.getLogger("Fake_BLE")
-                self.logger.setLevel(logging.DEBUG + BLE_DEBUG if spi is None else logging.INFO)
 
     def __exit__(self, *exc):
         self._show_dbm = False
@@ -149,15 +144,10 @@ class FakeBLE(RF24):
         """Whitening the BLE packet data ensures there's no long repetition
         of bits."""
         data, coef = (bytearray(data), (self._curr_freq + 37) | 0x40)
-        if self.logger is not None:
-            prompts = ["buffer: 0x{}".format(
-                address_repr(data),
-            )]
-            prompts.append("Whiten Coef: {} on channel {}".format(
-                hex(coef), BLE_FREQ[self._curr_freq]
-            ))
-            for prompt in prompts:
-                self.logger.log(logging.DEBUG + BLE_DEBUG, prompt)
+        self._log(11, "buffer: 0x{}".format(address_repr(data)))
+        self._log(11, "Whiten Coef: {} on channel {}".format(
+            hex(coef), BLE_FREQ[self._curr_freq]
+        ))
         for i, byte in enumerate(data):
             res, mask = (0, 1)
             for _ in range(8):
@@ -167,9 +157,7 @@ class FakeBLE(RF24):
                 mask <<= 1
                 coef >>= 1
             data[i] = byte ^ res
-        if self.logger is not None:
-            prompt = "whitened: 0x{}".format(address_repr(data))
-            self.logger.log(logging.DEBUG + BLE_DEBUG, prompt)
+        self._log(11, "whitened: 0x{}".format(address_repr(data)))
         return data
 
     def _make_payload(self, payload):
@@ -190,11 +178,9 @@ class FakeBLE(RF24):
         if name_length:
             buf += chunk(self.name, 0x08)
         buf += payload
-        if self.logger is not None:
-            prompt = "payload: 0x{} +CRC24: 0x{}".format(
-                address_repr(buf), address_repr(crc24_ble(buf))
-            )
-            self.logger.log(logging.DEBUG + BLE_DEBUG, prompt)
+        self._log(11, "payload: 0x{} +CRC24: 0x{}".format(
+            address_repr(buf), address_repr(crc24_ble(buf))
+        ))
         buf += crc24_ble(buf)
         return buf
 
@@ -215,140 +201,57 @@ class FakeBLE(RF24):
         else:
             payload = chunk(buf, data_type) if buf else b""
         payload = self.whiten(self._make_payload(payload))
-        if self.logger is not None:
-            prompt = "original: 0x{}".format(address_repr(payload))
-            self.logger.log(logging.DEBUG + BLE_DEBUG, prompt)
-            prompt = "reversed: 0x{}".format(address_repr(reverse_bits(payload)))
-            self.logger.log(logging.DEBUG + BLE_DEBUG, prompt)
+        self._log(11, "original: 0x{}".format(address_repr(payload)))
+        self._log(11, "reversed: 0x{}".format(address_repr(reverse_bits(payload))))
         self.send(reverse_bits(payload))
 
-    @property
-    def channel(self):
-        """The only allowed channels are those contained in the `BLE_FREQ`
-        tuple."""
-        return self._channel
+    def print_details(self, dump_pipes=False):
+        super().print_details(dump_pipes)
+        prompts = ["BLE device name___________{}".format(str(self.name))]
+        prompts.append("Broadcasting PA Level_____{}".format(self.show_pa_level))
+        for prompt in prompts:
+            self._log(20, prompt, force_print=True)
 
-    @channel.setter
+    @RF24.channel.setter
     def channel(self, value):
         if value not in BLE_FREQ:
-            raise ValueError("channel {} is not a valid BLE frequency".format(value))
-        self._channel = value
-        self._reg_write(0x05, value)
+            self._log(40, "channel {} is not a valid BLE frequency".format(value))
+        else:
+            self._channel = value
+            self._reg_write(0x05, value)
 
-    # pylint: disable=missing-function-docstring
-    @property
-    def dynamic_payloads(self):
-        raise NotImplementedError(
-            "adjusting dynamic_payloads breaks BLE specifications"
-        )
+    # pylint: disable=unused-argument
+    @RF24.dynamic_payloads.setter
+    def dynamic_payloads(self, val):
+        self._log(40, "adjusting dynamic_payloads breaks BLE specifications")
 
-    def set_dynamic_payloads(self, enable, pipe_number=None):
-        raise NotImplementedError(
-            "adjusting dynamic_payloads breaks BLE specifications"
-        )
+    @RF24.data_rate.setter
+    def data_rate(self, val):
+        self._log(40, "adjusting data_rate breaks BLE specifications")
 
-    @property
-    def data_rate(self):
-        raise NotImplementedError("adjusting data_rate breaks BLE specifications")
+    @RF24.address_length.setter
+    def address_length(self, val):
+        self._log(40, "adjusting address_length breaks BLE specifications")
 
-    @property
-    def address_length(self):
-        raise NotImplementedError("adjusting address_length breaks BLE specifications")
+    @RF24.auto_ack.setter
+    def auto_ack(self, val):
+        self._log(40, "adjusting auto_ack breaks BLE specifications")
 
-    @property
-    def auto_ack(self):
-        raise NotImplementedError("adjusting auto_ack breaks BLE specifications")
+    @RF24.ack.setter
+    def ack(self, val):
+        self._log(40, "adjusting ack breaks BLE specifications")
 
-    def set_auto_ack(self, enable, pipe_number=None):
-        raise NotImplementedError("adjusting auto_ack breaks BLE specifications")
-
-    @property
-    def ack(self):
-        raise NotImplementedError("adjusting ack breaks BLE specifications")
-
-    @property
-    def crc(self):
-        raise NotImplementedError("adjusting crc breaks BLE specifications")
+    @RF24.crc.setter
+    def crc(self, val):
+        self._log(40, "adjusting crc breaks BLE specifications")
 
     def open_rx_pipe(self, pipe_number, address):
-        raise NotImplementedError("BLE implementation only uses 1 address on pipe 0")
+        self._log(40, "BLE implementation only uses 1 address on pipe 0")
 
     def open_tx_pipe(self, address):
-        raise NotImplementedError("BLE implentation only uses 1 address")
+        self._log(40, "BLE implentation only uses 1 address")
 
-    # pylint: enable=missing-function-docstring
-    def print_details(self, dump_pipes=False):
-        """This debuggung function aggregates and outputs all status/condition
-        related information from the nRF24L01."""
-        prompts = ["Is a plus variant_________{}".format(self.is_plus_variant)]
-        prompts.append("BLE device name___________{}".format(str(self.name)))
-        prompts.append("Broadcasting PA Level_____{}".format(self.show_pa_level))
-        prompts.append(
-            "Channel___________________{} ~ {} GHz".format(
-                self.channel, (self.channel + 2400) / 1000
-            )
-        )
-        prompts.append("RF Data Rate______________1 Mbps")
-        prompts.append("RF Power Amplifier________{} dbm".format(self.pa_level))
-        prompts.append(
-            "RF Low Noise Amplifier____{}".format(
-                "Enabled" if self.is_lna_enabled else "Disabled"
-            )
-        )
-        prompts.append("CRC bytes_________________3")
-        prompts.append("Address length____________4 bytes")
-        prompts.append("TX Payload lengths________{} bytes".format(self.payload_length))
-        prompts.append("Auto retry delay__________250 microseconds")
-        prompts.append("Auto retry attempts_______0 maximum")
-        prompts.append("Re-use TX FIFO____________{}".format(bool(self._reg_read(0x17) & 64)))
-        prompts.append(
-            "IRQ on Data Ready__{}    Data Ready___________{}".format(
-                "_Enabled" if not self._config & 0x40 else "Disabled", self.irq_dr
-            )
-        )
-        prompts.append(
-            "IRQ on Data Fail___{}    Data Failed__________{}".format(
-                "_Enabled" if not self._config & 0x10 else "Disabled", self.irq_df
-            )
-        )
-        prompts.append(
-            "IRQ on Data Sent___{}    Data Sent____________{}".format(
-                "_Enabled" if not self._config & 0x20 else "Disabled", self.irq_ds
-            )
-        )
-        _fifo = self.fifo(True)
-        prompts.append(
-            "TX FIFO full__________{}    TX FIFO empty________{}".format(
-                "_True" if _fifo & 1 else "False", _fifo & 2
-            )
-        )
-        _fifo = self.fifo(False)
-        prompts.append(
-            "RX FIFO full__________{}    RX FIFO empty________{}".format(
-                "_True" if _fifo & 1 else "False", _fifo & 2
-            )
-        )
-        prompts.append(
-            "Ask no ACK_________{}    Custom ACK Payload___Disabled".format(
-                "_Allowed" if self.allow_ask_no_ack else "Disabled",
-            )
-        )
-        prompts.append("Dynamic Payloads___Disabled    Auto Acknowledgment__Disabled")
-        prompts.append(
-            "Primary Mode_____________{}    Power Mode___________{}".format(
-                "RX" if self.listen else "TX",
-                ("Standby-II" if self.ce_pin.value else "Standby-I")
-                if self._config & 2
-                else "Off",
-            )
-        )
-        for prompt in prompts:
-            if self.logger is not None:
-                self.logger.log(logging.INFO, prompt)
-            else:
-                print(prompt)
-        if dump_pipes:
-            self._dump_pipes()
+    # pylint: enable=unused-argument
 
 
 class ServiceData:

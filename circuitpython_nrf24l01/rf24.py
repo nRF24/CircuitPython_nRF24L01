@@ -26,12 +26,7 @@ __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from micropython import const
 
-try:
-    from ubus_device import SPIDevice
-except ImportError:
-    from adafruit_bus_device.spi_device import SPIDevice
-# pylint: disable=invalid-name
-logging = None
+logging = None  # pylint: disable=invalid-name
 try:
     import logging
 
@@ -40,8 +35,12 @@ except ImportError:
     try:
         import adafruit_logging as logging
     except ImportError:
-        print("Logging disabled")
-# pylint: enable=invalid-name
+        pass  # print("nrf24l01: Logging disabled")
+
+try:
+    from ubus_device import SPIDevice
+except ImportError:
+    from adafruit_bus_device.spi_device import SPIDevice
 
 CONFIGURE = const(0x00)  # IRQ masking, CRC scheme, PWR control, & RX/TX roles
 AUTO_ACK = const(0x01)  # auto-ACK status for all pipes
@@ -72,41 +71,52 @@ class RF24:
             self._spi = SPIDevice(
                 spi, chip_select=csn, baudrate=spi_frequency, extra_clocks=8
             )
-        self.ce_pin = ce_pin
-        if ce_pin is not None:
-            self.ce_pin.switch_to_output(value=False)  # pre-empt standby-I mode
-        self._status = 0  # status byte returned on all SPI transactions
-        # pre-configure the CONFIGURE register:
-        #   0x0E = IRQs are all enabled, CRC is enabled with 2 bytes, and
-        #          power up in TX mode
-        self._config = 0x0E
         self._logger = None
         if logging is not None:
-            self._logger = logging.getLogger("RF24")
-            self._logger.setLevel(logging.INFO)
-        self._reg_write(CONFIGURE, self._config)
-        if spi is not None and self._reg_read(CONFIGURE) & 3 != 2:
-            raise RuntimeError("nRF24L01 Hardware not responding")
+            self._logger = logging.getLogger(type(self).__name__)
+            self._logger.setLevel(10 if spi is None else logging.INFO)
+        self._ce_pin = ce_pin
+        if ce_pin is not None:
+            self._ce_pin.switch_to_output(value=False)  # pre-empt standby-I mode
+        self._status = 0  # status byte returned on all SPI transactions
         # init shadow copy of RX addresses for all pipes for context manager
-        self._pipes = [bytearray(5), bytearray(5), 0xC3, 0xC4, 0xC5, 0xC6]
-        # _open_pipes attribute reflects only RX state on each pipe
-        self._open_pipes = 0  # 0 = all pipes closed
-        for i in range(6):  # capture RX addresses from registers
-            if i < 2:
-                self._pipes[i] = self._reg_read_bytes(RX_ADDR_P0 + i)
-            else:
-                self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
+        self._pipes = [
+            bytearray([0xE7] * 5),
+            bytearray([0xC2] * 5),
+            0xC3,
+            0xC4,
+            0xC5,
+            0xC6,
+        ]
+        # pre-configure the CONFIGURE register:
+        #   0x0E = IRQs are all enabled, CRC is 2 bytes, and power up in TX mode
+        self._config = 0x0E
+        self._reg_write(CONFIGURE, self._config)
+        if spi is not None:
+            if self._reg_read(CONFIGURE) & 3 != 2:
+                raise RuntimeError("nRF24L01 Hardware not responding")
+            for i in range(6):  # capture RX addresses from registers
+                if i < 2:
+                    self._pipes[i] = self._reg_read_bytes(RX_ADDR_P0 + i)
+                else:
+                    self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
+        self._open_pipes = 0  # 0 = all RX pipes closed
         # test is nRF24L01 is a plus variant using a command specific to
         # non-plus variants
         self._is_plus_variant = False
-        b4_toggle = self._reg_read(TX_FEATURE)
-        # derelict ACTIVATE command toggles bits in the TX_FEATURE register
-        self._reg_write(0x50, 0x73)
+        self._features = self._reg_read(TX_FEATURE)
+        self._reg_write(
+            0x50, 0x73
+        )  # derelict command toggles bits in TX_FEATURE register
         after_toggle = self._reg_read(TX_FEATURE)
-        if b4_toggle == after_toggle:
+        if self._features == after_toggle:
             self._is_plus_variant = True
-        if not after_toggle:  # if features are disabled
+        elif not after_toggle:  # if features are disabled
             self._reg_write(0x50, 0x73)  # ensure they're enabled
+        # pre-configure features for TX operations:
+        #   5 = enable dynamic_payloads, disable custom ack payloads, &
+        #       allow ask_no_ack command
+        self._features = 5
         # init shadow copy of last RX_ADDR_P0 written to pipe 0 needed as
         # open_tx_pipe() appropriates pipe 0 for ACK packet
         self._pipe0_read_addr = None
@@ -117,12 +127,7 @@ class RF24:
         # pre-configure the RF_SETUP register
         self._rf_setup = 0x07  # 1 Mbps data_rate, and 0 dbm pa_level
         # pre-configure dynamic_payloads & auto_ack
-        self._dyn_pl = 0x3F  # 0x3F = enable dynamic_payloads on all pipes
-        self._aa = 0x3F  # 0x3F = enable auto_ack on all pipes
-        # pre-configure features for TX operations:
-        #   5 = enable dynamic_payloads, disable custom ack payloads, &
-        #       allow ask_no_ack command
-        self._features = 5
+        self._dyn_pl, self._aa = (0x3F, 0x3F)  # 0x3F = enable feature on all pipes
         self._channel = 76  # 2.476 GHz
         self._addr_len = 5  # 5-byte long addresses
         self._pl_len = [32] * 6  # 32-byte static payloads for all pipes
@@ -132,9 +137,18 @@ class RF24:
             self.flush_tx()
             self.clear_status_flags()
 
+    @property
+    def ce_pin(self):
+        """control the CE pin (for adbanced usage)"""
+        return self._ce_pin.value if self._ce_pin is not None else False
+
+    @ce_pin.setter
+    def ce_pin(self, val):
+        if self._ce_pin is not None:
+            self._ce_pin.value = val
+
     def __enter__(self):
-        if self.ce_pin is not None:
-            self.ce_pin.value = False
+        self.ce_pin = False
         self._reg_write(CONFIGURE, self._config & 0x7C)
         self._reg_write(RF_PA_RATE, self._rf_setup)
         self._reg_write(OPEN_PIPES, self._open_pipes)
@@ -155,22 +169,21 @@ class RF24:
         return self
 
     def __exit__(self, *exc):
-        if self.ce_pin is not None:
-            self.ce_pin.value = False
+        self.ce_pin = False
         self.power = False
         return False
 
     # pylint: disable=no-member
-    #                          ,logging-not-lazy
     def _reg_read(self, reg):
         out_buf = bytes([reg, 0])
         in_buf = bytearray([0, 0])
         if self._spi is not None:
             with self._spi as spi:
                 spi.write_readinto(out_buf, in_buf)
-        if self._logger is not None:
-            prompt = "SPI reading 1 byte from {}".format(hex(reg))
-            self._logger.log(logging.DEBUG, prompt)
+        if self.logger is not None:
+            self._log(
+                10, "SPI reading 1 byte  from {} {}".format(hex(reg), hex(in_buf[1]))
+            )
         self._status = in_buf[0]
         return in_buf[1]
 
@@ -180,9 +193,8 @@ class RF24:
         if self._spi is not None:
             with self._spi as spi:
                 spi.write_readinto(out_buf, in_buf)
-        if self._logger is not None:
-            prompt = "SPI reading {} bytes from {}".format(buf_len, hex(reg))
-            self._logger.log(logging.DEBUG, prompt)
+        if self.logger is not None:
+            self._log(10, "SPI reading {} bytes from {}".format(buf_len, hex(reg)))
         self._status = in_buf[0]
         return in_buf[1:]
 
@@ -192,11 +204,13 @@ class RF24:
         if self._spi is not None:
             with self._spi as spi:
                 spi.write_readinto(out_buf, in_buf)
-        if self._logger is not None:
-            prompt = "SPI writing {} bytes to {} {}".format(
-                len(out_buf) - 1, hex(reg), "0x" + address_repr(out_buf[1:])
+        if self.logger is not None:
+            self._log(
+                10,
+                "SPI writing {} bytes to {} {}".format(
+                    len(out_buf) - 1, hex(reg), "0x" + address_repr(out_buf[1:])
+                ),
             )
-            self._logger.log(logging.DEBUG, prompt)
         self._status = in_buf[0]
 
     def _reg_write(self, reg, value=None):
@@ -207,13 +221,16 @@ class RF24:
         if self._spi is not None:
             with self._spi as spi:
                 spi.write_readinto(out_buf, in_buf)
-        if self._logger is not None and reg != 0xFF:
-            prompt = "SPI writing {} bytes to {} {}".format(
-                len(out_buf) - 1, hex(reg), hex(out_buf[1:][0]) if value else ""
-            )
-            self._logger.log(logging.DEBUG, prompt)
+        if self.logger is not None and reg != 0xFF:
+            prompt = "SPI writing "
+            if value is not None:
+                prompt += "1 byte  to {} {}".format(hex(reg), hex(value))
+            else:
+                prompt += "command {}".format(hex(reg))
+            self._log(10, prompt)
         self._status = in_buf[0]
 
+    # pylint: enable=no-member
     @property
     def logger(self):
         """Get/Set the current ``Logger()``."""
@@ -224,12 +241,15 @@ class RF24:
         if logging is not None and isinstance(val, logging.Logger):
             self._logger = val
 
-    # pylint: enable=no-member
+    def _log(self, level, prompt, force_print=False):
+        if self.logger is not None:
+            self.logger.log(level, prompt)
+        elif force_print:
+            print("Level", level, "-", prompt)
 
     @property
     def address_length(self):
-        """This `int` attribute specifies the length (in bytes) of addresses
-        to be used for RX/TX pipes."""
+        """This `int` is the length (in bytes) used of RX/TX addresses."""
         return self._reg_read(0x03) + 2
 
     @address_length.setter
@@ -240,8 +260,7 @@ class RF24:
         self._reg_write(0x03, length - 2)
 
     def open_tx_pipe(self, address):
-        """This function is used to open a data pipe for OTA (over the air)
-        TX transmissions."""
+        """Open a data pipe for TX transmissions."""
         if self._aa & 1:
             for i, val in enumerate(address):
                 self._pipes[0][i] = val
@@ -251,8 +270,7 @@ class RF24:
         self._reg_write_bytes(TX_ADDRESS, address)
 
     def close_rx_pipe(self, pipe_number):
-        """This function is used to close a specific data pipe from OTA (over
-        the air) RX transmissions."""
+        """Close a specific data pipe from RX transmissions."""
         if pipe_number < 0 or pipe_number > 5:
             raise IndexError("pipe number must be in range [0, 5]")
         self._open_pipes = self._reg_read(OPEN_PIPES)
@@ -263,8 +281,7 @@ class RF24:
             self._reg_write(OPEN_PIPES, self._open_pipes)
 
     def open_rx_pipe(self, pipe_number, address):
-        """This function is used to open a specific data pipe for OTA (over
-        the air) RX transmissions."""
+        """Open a specific data pipe for RX transmissions."""
         if not 0 <= pipe_number <= 5:
             raise IndexError("pipe number must be in range [0, 5]")
         if not address:
@@ -283,13 +300,12 @@ class RF24:
 
     @property
     def listen(self):
-        """An attribute to represent the nRF24L01 primary role as a radio."""
+        """This attribute is the primary role as a radio."""
         return self.power and bool(self._config & 1)
 
     @listen.setter
     def listen(self, is_rx):
-        if self.ce_pin is not None:
-            self.ce_pin.value = 0
+        self.ce_pin = 0
         if is_rx:
             if self._pipe0_read_addr is not None and self._aa & 1:
                 for i, val in enumerate(self._pipe0_read_addr):
@@ -301,8 +317,7 @@ class RF24:
             self._reg_write(CONFIGURE, self._config)
             time.sleep(0.00015)  # mandatory wait to power up radio
             self.clear_status_flags()
-            if self.ce_pin is not None:
-                self.ce_pin.value = 1  # mandatory pulse is > 130 µs
+            self.ce_pin = 1  # mandatory pulse is > 130 µs
             time.sleep(0.00013)
         else:
             if self._features & 6 == 6 and ((self._aa & self._dyn_pl) & 1):
@@ -315,12 +330,11 @@ class RF24:
             time.sleep(0.00016)
 
     def available(self):
-        """Returns a bool describing if there is a payload in the RX FIFO"""
+        """A `bool` describing if there is a payload in the RX FIFO."""
         return self.update() and self.pipe is not None
 
     def any(self):
-        """This function checks if the nRF24L01 has received any data at all,
-        and then reports the next available payload's length (in bytes)."""
+        """This function reports the next available payload's length (in bytes)."""
         if self.available():
             if self._features & 4:
                 return self._reg_read(0x60)
@@ -328,8 +342,7 @@ class RF24:
         return 0
 
     def read(self, length=None):
-        """This function is used to retrieve the next available payload in the
-        RX FIFO buffer, then clears the `irq_dr` status flag."""
+        """This function is used to retrieve data from the RX FIFO."""
         return_size = length if length is not None else self.any()
         if not return_size:
             return None
@@ -339,8 +352,7 @@ class RF24:
 
     def send(self, buf, ask_no_ack=False, force_retry=0, send_only=False):
         """This blocking function is used to transmit payload(s)."""
-        if self.ce_pin is not None:
-            self.ce_pin.value = 0
+        self.ce_pin = 0
         if isinstance(buf, (list, tuple)):
             result = []
             for b in buf:
@@ -350,11 +362,16 @@ class RF24:
         if not send_only and self.pipe is not None:
             self.flush_rx()
         self.write(buf, ask_no_ack)
+        up_cnt = 0
         while self._spi is not None and not self._status & 0x30:
-            self.update()
-        if self.ce_pin is not None:
-            self.ce_pin.value = 0
+            up_cnt += self.update()
+        # self.ce_pin = 0  # keep it high, so subsequent calls are faster
         result = self.irq_ds
+        if self.logger is not None:
+            prompt = "  send() waited {} updates DS: {} DR: {} DF: {}".format(
+                up_cnt, self.irq_ds, self.irq_dr, self.irq_df
+            )
+            self._log(12, prompt)
         if self.irq_df:
             for _ in range(force_retry):
                 result = self.resend(send_only)
@@ -366,14 +383,13 @@ class RF24:
 
     @property
     def tx_full(self):
-        """An attribute to represent the nRF24L01's status flag signaling
-        that the TX FIFO buffer is full. (read-only)"""
+        """An `bool` to represent if the TX FIFO is full. (read-only)"""
         return bool(self._status & 1)
 
     @property
     def pipe(self):
-        """The identifying number of the data pipe that received
-        the next available payload in the RX FIFO buffer. (read only)"""
+        """The number of the data pipe that received the next available
+        payload in the RX FIFO. (read only)"""
         result = (self._status & 0x0E) >> 1
         if result <= 5 and self._spi is not None:
             return result
@@ -381,20 +397,17 @@ class RF24:
 
     @property
     def irq_dr(self):
-        """A `bool` that represents the "Data Ready" interrupted flag.
-        (read-only)"""
+        """A `bool` that represents the "Data Ready" interrupted flag. (read-only)"""
         return bool(self._status & 0x40)
 
     @property
     def irq_ds(self):
-        """A `bool` that represents the "Data Sent" interrupted flag.
-        (read-only)"""
+        """A `bool` that represents the "Data Sent" interrupted flag. (read-only)"""
         return bool(self._status & 0x20)
 
     @property
     def irq_df(self):
-        """A `bool` that represents the "Data Failed" interrupted flag.
-        (read-only)"""
+        """A `bool` that represents the "Data Failed" interrupted flag. (read-only)"""
         return bool(self._status & 0x10)
 
     def clear_status_flags(self, data_recv=True, data_sent=True, data_fail=True):
@@ -409,42 +422,58 @@ class RF24:
         self._reg_write(CONFIGURE, self._config)
 
     def print_details(self, dump_pipes=False):
-        """This debuggung function aggregates and outputs all status/condition
-        related information from the nRF24L01."""
-        observer = self._reg_read(8)
-        prompts = ["Is a plus variant_________{}".format(self.is_plus_variant)]
+        """This debuggung function outputs all details about the nRF24L01."""
+        _crc = (
+            (2 if self._config & 4 else 1)
+            if self._aa
+            else max(0, ((self._config & 0x0C) >> 2) - 1)
+        )
+        observer = 0
+        _fifo = 17
+        if self._spi is not None:  # skip this if running on a Shim
+            observer = self._reg_read(8)
+            _fifo = self._reg_read(0x17)
+            self._config = self._reg_read(CONFIGURE)
+            self._rf_setup = self._reg_read(RF_PA_RATE)
+            self._retry_setup = self._reg_read(SETUP_RETR)
+            self._channel = self.channel
+            self._addr_len = self._reg_read(0x03) + 2
+            self._features = self._reg_read(TX_FEATURE)
+            self._aa = self._reg_read(AUTO_ACK)
+            self._dyn_pl = self._reg_read(DYN_PL_LEN)
+
+        prompts = []
+        prompts.append("Is a plus variant_________{}".format(self.is_plus_variant))
+        prompts.append("Channel___________________{} ~ {} GHz".format(
+            self._channel, (self._channel + 2400) / 1000
+        ))
+        d_rate = self._rf_setup & 0x28
+        d_rate = (2 if d_rate == 8 else 250) if d_rate else 1
+        prompts.append("RF Data Rate______________{} {}".format(
+            d_rate, "Mbps" if d_rate != 250 else "Kbps"
+        ))
+        _pa_level = (3 - ((self._rf_setup & 6) >> 1)) * -6
+        prompts.append("RF Power Amplifier________{} dbm".format(_pa_level))
+        prompts.append("RF Low Noise Amplifier____{}".format(
+            "Enabled" if bool(self._rf_setup & 1) else "Disabled"
+        ))
+        prompts.append("CRC bytes_________________{}".format(_crc))
+        prompts.append("Address length____________{} bytes".format(self._addr_len))
+        prompts.append("TX Payload lengths________{} bytes".format(self._pl_len[0]))
         prompts.append(
-            "Channel___________________{} ~ {} GHz".format(
-                self._channel, (self.channel + 2400) / 1000
+            "Auto retry delay__________{} microseconds".format(
+                ((self._rf_setup & 0xF0) >> 4) * 250 + 250
             )
         )
-        d_rate = self.data_rate
         prompts.append(
-            "RF Data Rate______________{} {}".format(
-                d_rate, "Mbps" if d_rate != 250 else "Kbps"
-            )
+            "Auto retry attempts_______{} maximum".format(self._rf_setup & 0x0F)
         )
-        prompts.append("RF Power Amplifier________{} dbm".format(self.pa_level))
+        prompts.append("Re-use TX FIFO____________{}".format(bool(_fifo & 64)))
         prompts.append(
-            "RF Low Noise Amplifier____{}".format(
-                "Enabled" if self.is_lna_enabled else "Disabled"
-            )
-        )
-        prompts.append("CRC bytes_________________{}".format(self.crc))
-        prompts.append("Address length____________{} bytes".format(self.address_length))
-        prompts.append("TX Payload lengths________{} bytes".format(self.payload_length))
-        prompts.append("Auto retry delay__________{} microseconds".format(self.ard))
-        prompts.append("Auto retry attempts_______{} maximum".format(self.arc))
-        prompts.append("Re-use TX FIFO____________{}".format(bool(self._reg_read(0x17) & 64)))
-        prompts.append(
-            "Packets lost on current channel_____________________{}".format(
-                (observer & 0xF0) >> 4
-            )
+            "Packets lost on current channel_____________________{}".format(observer >> 4)
         )
         prompts.append(
-            "Retry attempts made for last transmission___________{}".format(
-                observer & 0x0F
-            )
+            "Retry attempts made for last transmission___________{}".format(observer & 0xF)
         )
         prompts.append(
             "IRQ on Data Ready__{}    Data Ready___________{}".format(
@@ -461,21 +490,19 @@ class RF24:
                 "_Enabled" if not self._config & 0x20 else "Disabled", self.irq_ds
             )
         )
-        _fifo = self.fifo(True)
         prompts.append(
             "TX FIFO full__________{}    TX FIFO empty________{}".format(
-                "_True" if _fifo & 1 else "False", _fifo & 2
+                "_True" if _fifo & 0x20 else "False", "True" if _fifo & 0x10 else "False",
             )
         )
-        _fifo = self.fifo(False)
         prompts.append(
             "RX FIFO full__________{}    RX FIFO empty________{}".format(
-                "_True" if _fifo & 1 else "False", _fifo & 2
+                "_True" if _fifo & 2 else "False", "True" if _fifo & 1 else "False",
             )
         )
         prompts.append(
             "Ask no ACK_________{}    Custom ACK Payload___{}".format(
-                "_Allowed" if self.allow_ask_no_ack else "Disabled",
+                "_Allowed" if self._features & 1 else "Disabled",
                 "Enabled" if self._features & 2 else "Disabled",
             )
         )
@@ -500,52 +527,47 @@ class RF24:
             )
         )
         prompts.append(
-            "Primary Mode_____________{}    Power Mode___________{}".format(
-                "RX" if self.listen else "TX",
-                ("Standby-II" if self.ce_pin.value else "Standby-I")
+            "Primary Mode_____________{}X    Power Mode___________{}".format(
+                "R" if self._config & 1 else "T",
+                ("Standby-II" if self.ce_pin else "Standby-I")
                 if self._config & 2
                 else "Off",
             )
         )
         for prompt in prompts:
-            if self.logger is not None:
-                self.logger.log(logging.INFO, prompt)
-            else:
-                print(prompt)
+            self._log(logging.INFO, prompt, force_print=True)
         if dump_pipes:
             self._dump_pipes()
 
     def _dump_pipes(self):
+        if self._spi is not None:
+            self._open_pipes = self._reg_read(OPEN_PIPES)
+            self._tx_address = self._reg_read_bytes(TX_ADDRESS)
+            for i in range(6):
+                if i < 2:
+                    self._pipes[i] = self._reg_read_bytes(RX_PL_LENG + i)
+                else:
+                    self._pipes[i] = self._reg_read(RX_PL_LENG + i)
         prompts = []
         prompts.append("TX address____________ 0x" + address_repr(self.address()))
-        self._open_pipes = self._reg_read(OPEN_PIPES)
         for i in range(6):
             is_open = self._open_pipes & (1 << i)
-            prompts.append(
-                "Pipe {} ({}) bound: {}".format(
-                    i,
-                    " open " if is_open else "closed",
-                    "0x" + address_repr(self.address(i)),
-                )
-            )
+            prompts.append("Pipe {} ({}) bound: {}".format(
+                i, " open " if is_open else "closed", "0x" + address_repr(self.address(i))
+            ))
             if is_open:
                 prompts.append("\t\texpecting {} byte static payloads".format(self._pl_len[i]))
         for prompt in prompts:
-            if self.logger is not None:
-                self.logger.log(logging.INFO, prompt)
-            else:
-                print(prompt)
+            self._log(logging.INFO, prompt, force_print=True)
 
     @property
     def is_plus_variant(self):
-        """A `bool` attribute to descibe if the nRF24L01 is a plus variant or
-        not (read-only)."""
+        """A `bool` descibing if the nRF24L01 is a plus variant or not (read-only)."""
         return self._is_plus_variant
 
     @property
     def dynamic_payloads(self):
-        """This `int` attribute controls the nRF24L01's dynamic payload
-        length feature for any or all pipes."""
+        """This `int` attribute is the dynamic payload length feature for any/all pipes."""
         self._dyn_pl = self._reg_read(DYN_PL_LEN)
         return self._dyn_pl
 
@@ -579,16 +601,14 @@ class RF24:
             raise IndexError("pipe_number must be in range [0, 5]")
 
     def get_dynamic_payloads(self, pipe_number=0):
-        """Returns a `bool` describing the setting of the dynamic payload
-        feature about a specific data pipe."""
+        """Returns a `bool` describing the dynamic payload feature about a pipe."""
         if 0 <= pipe_number <= 5:
             return bool(self.dynamic_payloads & (1 << pipe_number))
         raise IndexError("pipe_number must be in range [0, 5]")
 
     @property
     def payload_length(self):
-        """This `int` attribute specifies the length (in bytes) of static
-        payloads for any or all pipes."""
+        """This `int` attribute is the length of static payloads for any/all pipes."""
         return self._pl_len[0]
 
     @payload_length.setter
@@ -611,16 +631,14 @@ class RF24:
             self._reg_write(RX_PL_LENG + pipe_number, length)
 
     def get_payload_length(self, pipe_number=0):
-        """Returns an `int` describing the current setting of a specified data
-        pipe's expected static payload length."""
+        """Returns an `int` describing the specified data pipe's static payload length."""
         self._pl_len[pipe_number] = self._reg_read(RX_PL_LENG + pipe_number)
         return self._pl_len[pipe_number]
 
     @property
     def arc(self):
-        """This `int` attribute specifies the nRF24L01's number of attempts
-        to re-transmit TX payload when acknowledgment packet is not received.
-        """
+        """This `int` attribute specifies the number of attempts to
+        re-transmit TX payload when ACK packet is not received."""
         self._retry_setup = self._reg_read(SETUP_RETR)
         return self._retry_setup & 0x0F
 
@@ -632,10 +650,8 @@ class RF24:
 
     @property
     def ard(self):
-        """This `int` attribute specifies the nRF24L01's delay (in
-        microseconds) between attempts to automatically re-transmit the
-        TX payload when an expected acknowledgement (ACK) packet is not
-        received."""
+        """This `int` attribute specifies the delay (in microseconds) between attempts
+        to automatically re-transmit the TX payload when no ACK packet is received."""
         self._retry_setup = self._reg_read(SETUP_RETR)
         return ((self._retry_setup & 0xF0) >> 4) * 250 + 250
 
@@ -662,8 +678,7 @@ class RF24:
 
     @property
     def auto_ack(self):
-        """This `int` attribute controls the nRF24L01's automatic
-        acknowledgment feature for any or all pipes."""
+        """This `int` attribute is the automatic acknowledgment feature for any/all pipes."""
         self._aa = self._reg_read(AUTO_ACK)
         return self._aa
 
@@ -685,8 +700,7 @@ class RF24:
         self._reg_write(AUTO_ACK, self._aa)
 
     def set_auto_ack(self, enable, pipe_number=None):
-        """Control the automatic acknowledgement feature for a specific data
-        pipe."""
+        """Control the `auto_ack` feature for a specific data pipe."""
         if pipe_number is None:
             self.auto_ack = bool(enable)
         elif 0 <= pipe_number <= 5:
@@ -696,8 +710,7 @@ class RF24:
             raise IndexError("pipe_number must be in range [0, 5]")
 
     def get_auto_ack(self, pipe_number=0):
-        """Returns a `bool` describing the automatic acknowledgement feature
-        setting about a specific data pipe."""
+        """Returns a `bool` describing the `auto_ack` feature about a data pipe."""
         if 0 <= pipe_number <= 5:
             self._aa = self._reg_read(AUTO_ACK)
             return bool(self._aa & (1 << pipe_number))
@@ -705,9 +718,7 @@ class RF24:
 
     @property
     def ack(self):
-        """This `bool` attribute represents the status of the nRF24L01's
-        capability to use custom payloads as part of the automatic
-        acknowledgment (ACK) packet."""
+        """Represents use of custom payloads as part of the ACK packet."""
         self._aa = self._reg_read(AUTO_ACK)
         self._dyn_pl = self._reg_read(DYN_PL_LEN)
         self._features = self._reg_read(TX_FEATURE)
@@ -724,8 +735,7 @@ class RF24:
         self._reg_write(TX_FEATURE, self._features)
 
     def load_ack(self, buf, pipe_number):
-        """This allows the MCU to specify a payload to be allocated into the
-        TX FIFO buffer for use on a specific data pipe."""
+        """Load a payload into the TX FIFO for use on a specific data pipe."""
         if pipe_number < 0 or pipe_number > 5:
             raise IndexError("pipe_number must be in range [0, 5]")
         if not buf or len(buf) > 32:
@@ -739,20 +749,18 @@ class RF24:
 
     @property
     def allow_ask_no_ack(self):
-        """Allow or disallow the use of ``ask_no_ack`` parameter to `send()` &
-        `write()`."""
+        """Allow or disable ``ask_no_ack`` parameter to `send()` & `write()`."""
         self._features = self._reg_read(TX_FEATURE)
         return bool(self._features & 1)
 
     @allow_ask_no_ack.setter
     def allow_ask_no_ack(self, enable):
-        self._features = self._features & 6 | bool(enable)
+        self._features = self._reg_read(TX_FEATURE) & 6 | bool(enable)
         self._reg_write(TX_FEATURE, self._features)
 
     @property
     def data_rate(self):
-        """This `int` attribute specifies the nRF24L01's frequency data rate
-        for OTA (over the air) transmissions."""
+        """This `int` attribute specifies the RF data rate."""
         self._rf_setup = self._reg_read(RF_PA_RATE)
         rf_setup = self._rf_setup & 0x28
         return (2 if rf_setup == 8 else 250) if rf_setup else 1
@@ -766,10 +774,9 @@ class RF24:
                 "250 kbps data rate is not available for the non-plus "
                 "variants of the nRF24L01 transceivers."
             )
-        if self.data_rate != speed:
-            speed = 0 if speed == 1 else (0x20 if speed != 2 else 8)
-            self._rf_setup = self._rf_setup & 0xD7 | speed
-            self._reg_write(RF_PA_RATE, self._rf_setup)
+        speed = 0 if speed == 1 else (0x20 if speed != 2 else 8)
+        self._rf_setup = self._reg_read(RF_PA_RATE) & 0xD7 | speed
+        self._reg_write(RF_PA_RATE, self._rf_setup)
 
     @property
     def channel(self):
@@ -785,8 +792,7 @@ class RF24:
 
     @property
     def crc(self):
-        """This `int` attribute specifies the nRF24L01's CRC (cyclic
-        redundancy checking) encoding scheme in terms of byte length."""
+        """This `int` attribute specifies the CRC checksum length in bytes."""
         self._config = self._reg_read(CONFIGURE)
         self._aa = self._reg_read(AUTO_ACK)
         if self._aa:
@@ -808,15 +814,13 @@ class RF24:
 
     @power.setter
     def power(self, is_on):
-        self._config = self._reg_read(CONFIGURE)
-        if self.power != bool(is_on):
-            self._config = self._config & 0x7D | bool(is_on) << 1
-            self._reg_write(CONFIGURE, self._config)
-            time.sleep(0.00016)
+        self._config = self._reg_read(CONFIGURE) & 0x7D | bool(is_on) << 1
+        self._reg_write(CONFIGURE, self._config)
+        time.sleep(0.00016)
 
     @property
     def pa_level(self):
-        """This `int` attribute specifies the nRF24L01's power amplifier level (in dBm)."""
+        """This `int` is the power amplifier level (in dBm)."""
         self._rf_setup = self._reg_read(RF_PA_RATE)
         return (3 - ((self._rf_setup & 6) >> 1)) * -6
 
@@ -833,43 +837,44 @@ class RF24:
 
     @property
     def is_lna_enabled(self):
-        """A read-only `bool` attribute about the LNA (Low Noise Amplifier)
-        gain feature."""
+        """A read-only `bool` attribute about the LNA gain feature."""
         self._rf_setup = self._reg_read(RF_PA_RATE)
         return bool(self._rf_setup & 1)
 
     def update(self):
-        """This function is only used to get an updated status byte over SPI
-        from the nRF24L01."""
+        """This function gets an updated status byte over SPI."""
         self._reg_write(0xFF)
         return True
 
     def resend(self, send_only=False):
-        """Use this function to maunally re-send the previous payload in the
-        top level (first out) of the TX FIFO buffer."""
+        """Manually re-send the first-out payload from TX FIFO buffers."""
         result = False
         if not self.fifo(True, True):
-            if self.ce_pin is not None:
-                self.ce_pin.value = 0
+            self.ce_pin = 0
             if not send_only and self.pipe is not None:
                 self.flush_rx()
             self.clear_status_flags()
             self._reg_write(0xE3)
-            if self.ce_pin is not None:
-                self.ce_pin.value = 1
+            self.ce_pin = 1
+            up_cnt = 0
             while self._spi is not None and not self._status & 0x30:
-                self.update()
-            if self.ce_pin is not None:
-                self.ce_pin.value = 0
+                up_cnt += self.update()
+            self.ce_pin = 0
             result = self.irq_ds
+            if self.logger is not None:
+                self._log(
+                    12,
+                    "resend() waited {} updates DS: {} DR: {} DF: {}".format(
+                        up_cnt, self.irq_ds, self.irq_dr, self.irq_df
+                    ),
+                )
             if self._status & 0x60 == 0x60 and not send_only:
                 result = self.read()
         return result
 
     def write(self, buf, ask_no_ack=False, write_only=False):
-        """This non-blocking function (when used as alternative to `send()`)
-        is meant for asynchronous applications and can only handle one
-        payload at a time as it is a helper function to `send()`."""
+        """This non-blocking and helper function to `send()` can only handle
+        one payload at a time."""
         if not buf or len(buf) > 32:
             raise ValueError("buffer must have a length in range [1, 32]")
         self.clear_status_flags()
@@ -888,29 +893,27 @@ class RF24:
             self._features = self._features & 0xFE | 1
             self._reg_write(TX_FEATURE, self._features)
         self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
-        if not write_only and self.ce_pin is not None:
-            self.ce_pin.value = 1
+        if not write_only:
+            self.ce_pin = 1
         return True
 
     def flush_rx(self):
-        """A helper function to flush the nRF24L01's RX FIFO buffer."""
+        """Flush all 3 levels of the RX FIFO."""
         self._reg_write(0xE2)
 
     def flush_tx(self):
-        """A helper function to flush the nRF24L01's TX FIFO buffer."""
+        """Flush all 3 levels of the TX FIFO."""
         self._reg_write(0xE1)
 
     def fifo(self, about_tx=False, check_empty=None):
-        """This provides *some* precision determining the status of the TX/RX
-        FIFO buffers. (read-only)"""
+        """This provides the status of the TX/RX FIFO buffers. (read-only)"""
         _fifo, about_tx = (self._reg_read(0x17), bool(about_tx))
         if check_empty is None:
             return (_fifo & (0x30 if about_tx else 0x03)) >> (4 * about_tx)
         return bool(_fifo & ((2 - bool(check_empty)) << (4 * about_tx)))
 
     def address(self, index=-1):
-        """Returns the current address set to a specified data pipe or the TX
-        address. (read-only)"""
+        """Returns the current TX address or optionally RX address. (read-only)"""
         if index > 5:
             raise IndexError("index {} is out of bounds [0,5]".format(index))
         if index < 0:
@@ -921,8 +924,7 @@ class RF24:
 
     @property
     def rpd(self):
-        """This read-only attribute returns `True` if RPD (Received Power
-        Detector) is triggered or `False` if not triggered."""
+        """Returns `True` if signal was detected or `False` if not. (read-only)"""
         return bool(self._reg_read(0x09))
 
     def start_carrier_wave(self):
@@ -941,21 +943,17 @@ class RF24:
             self._reg_write_bytes(TX_ADDRESS, self._tx_address)
             self._reg_write_bytes(0xA0, b"\xFF" * 32)
             self.crc = 0
-            if self.ce_pin is not None:
-                self.ce_pin.value = 1
+            self.ce_pin = 1
             time.sleep(0.001)
-            if self.ce_pin is not None:
-                self.ce_pin.value = 0
+            self.ce_pin = 0
             while self._status & 0x70:
                 self.update()
             self._reg_write(0x17, 0x40)
-        if self.ce_pin is not None:
-            self.ce_pin.value = 1
+        self.ce_pin = 1
 
     def stop_carrier_wave(self):
         """Stops a continuous carrier wave test."""
-        if self.ce_pin is not None:
-            self.ce_pin.value = 0
+        self.ce_pin = 0
         self.power = 0
         self._rf_setup &= ~0x90
         self._reg_write(RF_PA_RATE, self._rf_setup)

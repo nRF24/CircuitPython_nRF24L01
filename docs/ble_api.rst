@@ -306,6 +306,8 @@ channel
 
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.channel
 
+    The only allowed channels are those contained in the `BLE_FREQ` tuple.
+
 interrupt_config()
 ####################
 

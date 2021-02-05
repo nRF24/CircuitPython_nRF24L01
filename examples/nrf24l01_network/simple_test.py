@@ -16,7 +16,6 @@ except (NotImplementedError, NameError):
 # pylint: disable=wrong-import-position
 from circuitpython_nrf24l01.network.rf24_network import (
     RF24Network,
-    logging,
     NETWORK_DEBUG,
     # RF24NetworkFrame,
     RF24NetworkHeader,
@@ -47,7 +46,7 @@ nrf.pa_level = -12
 
 # log debug msgs specific to RF24Network.
 # use NETWORK_DEBUG_MINIMAL for less verbosity
-nrf.logger.setLevel(logging.DEBUG + NETWORK_DEBUG)
+nrf.logger.setLevel(NETWORK_DEBUG)
 # using the python keyword global is bad practice. Instead we'll use a 1 item
 # list to store our float number for the payloads sent/received
 packets_sent = [0]
