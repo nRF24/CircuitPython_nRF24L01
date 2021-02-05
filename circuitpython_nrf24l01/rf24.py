@@ -368,15 +368,12 @@ class RF24:
         # self.ce_pin = 0  # keep it high, so subsequent calls are faster
         result = self.irq_ds
         if self.logger is not None:
-            prompt = "  send() waited {} updates DS: {} DR: {} DF: {}".format(
+            self._log(12, "  send() waited {} updates DS: {} DR: {} DF: {}".format(
                 up_cnt, self.irq_ds, self.irq_dr, self.irq_df
-            )
-            self._log(12, prompt)
-        if self.irq_df:
-            for _ in range(force_retry):
-                result = self.resend(send_only)
-                if result is None or result:
-                    break
+            ))
+        while force_retry and not result:
+            result = self.resend(send_only)
+            force_retry -= 1
         if self._status & 0x60 == 0x60 and not send_only:
             result = self.read()
         return result
@@ -862,12 +859,9 @@ class RF24:
             self.ce_pin = 0
             result = self.irq_ds
             if self.logger is not None:
-                self._log(
-                    12,
-                    "resend() waited {} updates DS: {} DR: {} DF: {}".format(
-                        up_cnt, self.irq_ds, self.irq_dr, self.irq_df
-                    ),
-                )
+                self._log(12, "resend() waited {} updates DS: {} DR: {} DF: {}".format(
+                    up_cnt, self.irq_ds, self.irq_dr, self.irq_df
+                ))
             if self._status & 0x60 == 0x60 and not send_only:
                 result = self.read()
         return result
