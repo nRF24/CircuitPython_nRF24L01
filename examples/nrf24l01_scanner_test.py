@@ -44,27 +44,29 @@ def scan(timeout=30):
     print("\n" + "~" * 126)
 
     signals = [0] * 126  # store the signal count for each channel
+    curr_channel = 0
     start_timer = time.monotonic()  # start the timer
     while time.monotonic() - start_timer < timeout:
-        for curr_channel in range(126):  # for each channel
-            nrf.channel = curr_channel
-            time.sleep(0.00013)  # let radio modulate to new channel
-            nrf.listen = 1  # start a RX session
-            time.sleep(0.00013)  # wait 130 microseconds
-            signals[curr_channel] += nrf.rpd  # if interference is present
-            nrf.listen = 0  # end the RX session
+        nrf.channel = curr_channel
+        time.sleep(0.00013)  # let radio modulate to new channel
+        nrf.listen = 1  # start a RX session
+        time.sleep(0.00013)  # wait 130 microseconds
+        signals[curr_channel] += nrf.rpd  # if interference is present
+        nrf.listen = 0  # end the RX session
+        curr_channel = curr_channel + 1 if curr_channel < 125 else 0
 
-            # ouptut the signal counts per channel
-            print(
-                hex(min(0x0F, signals[curr_channel]))[2:]
-                if signals[curr_channel]
-                else "-",
-                sep="",
-                end="" if curr_channel < 125 else "\r",
-            )
-    # print results 1 last time to end with a new line
-    for sig in signals:
-        print(hex(min(0x0F, sig))[2:] if sig else "-", sep="", end="")
+        # ouptut the signal counts per channel
+        sig_cnt = signals[curr_channel]
+        print(
+            hex(min(0x0F, sig_cnt))[2:] if sig_cnt else "-",
+            sep="",
+            end="" if curr_channel < 125 else "\r",
+        )
+    # finish printing results and end with a new line
+    while curr_channel < len(signals):
+        sig_cnt = signals[curr_channel]
+        print(hex(min(0x0F, sig_cnt))[2:] if sig_cnt else "-", sep="", end="")
+        curr_channel += 1
     print("")
 
 
