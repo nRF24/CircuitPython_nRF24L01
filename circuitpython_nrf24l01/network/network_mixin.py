@@ -1,25 +1,34 @@
 """A module to hold all usuall accesssible RF24 API via the RF24Network API"""
 # pylint: disable=missing-docstring
-from ..rf24 import RF24, logging
+from ..rf24 import RF24
+from ..mixin import logging
 
-class RadioMixin():
+
+class RadioMixin:
     def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
         self._rf24 = RF24(spi, csn, ce_pin, spi_frequency=spi_frequency)
         self._logger = None
-        if logging is not None:
-            self._rf24.logger.setLevel(20)  # ignore DEBUG prompts from RF24
+        if self._rf24.logger is not None:
+            self._rf24.logger.setLevel(logging.INFO)  # ignore DEBUG from RF24
             self._logger = logging.getLogger(type(self).__name__)
-            self.logger.setLevel(logging.DEBUG if spi is None else logging.INFO)
-
+            self._logger.setLevel(logging.DEBUG if spi is None else logging.INFO)
+        super().__init__()
 
     @property
     def logger(self):
+        """Get/Set the current ``Logger()``."""
         return self._logger
 
     @logger.setter
     def logger(self, val):
         if logging is not None and isinstance(val, logging.Logger):
             self._logger = val
+
+    def _log(self, level, prompt, force_print=False):
+        if self.logger is not None:
+            self.logger.log(level, prompt)
+        elif force_print:
+            print(prompt)
 
     @property
     def channel(self):

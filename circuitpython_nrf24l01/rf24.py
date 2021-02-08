@@ -25,22 +25,7 @@ __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from micropython import const
-
-logging = None  # pylint: disable=invalid-name
-try:
-    import logging
-
-    logging.basicConfig()
-except ImportError:
-    try:
-        import adafruit_logging as logging
-    except ImportError:
-        pass  # print("nrf24l01: Logging disabled")
-
-try:
-    from ubus_device import SPIDevice
-except ImportError:
-    from adafruit_bus_device.spi_device import SPIDevice
+from .mixin import HWLogMixin, address_repr
 
 CONFIGURE = const(0x00)  # IRQ masking, CRC scheme, PWR control, & RX/TX roles
 AUTO_ACK = const(0x01)  # auto-ACK status for all pipes
@@ -54,31 +39,11 @@ DYN_PL_LEN = const(0x1C)  # dynamic payloads status for all pipes
 TX_FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
 
 
-def address_repr(addr):
-    """Convert an address into a hexlified string (in big endian)."""
-    rev_str = ""
-    for char in range(len(addr) - 1, -1, -1):
-        rev_str += ("" if addr[char] > 0x0F else "0") + hex(addr[char])[2:]
-    return rev_str
-
-
-class RF24:
+class RF24(HWLogMixin):
     """A driver class for the nRF24L01(+) transceiver radios."""
 
-    def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
-        self._spi = None
-        if spi is not None:
-            self._spi = SPIDevice(
-                spi, chip_select=csn, baudrate=spi_frequency, extra_clocks=8
-            )
-        self._logger = None
-        if logging is not None:
-            self._logger = logging.getLogger(type(self).__name__)
-            self._logger.setLevel(10 if spi is None else logging.INFO)
-        self._ce_pin = ce_pin
-        if ce_pin is not None:
-            self._ce_pin.switch_to_output(value=False)  # pre-empt standby-I mode
-        self._status = 0  # status byte returned on all SPI transactions
+    def __init__(self, spi=None, csn=None, ce_pin=None, spi_frequency=10000000):
+        super().__init__(spi, csn, ce_pin, spi_frequency)
         # init shadow copy of RX addresses for all pipes for context manager
         self._pipes = [
             bytearray([0xE7] * 5),
@@ -91,8 +56,8 @@ class RF24:
         # pre-configure the CONFIGURE register:
         #   0x0E = IRQs are all enabled, CRC is 2 bytes, and power up in TX mode
         self._config = 0x0E
-        self._reg_write(CONFIGURE, self._config)
         if spi is not None:
+            self._reg_write(CONFIGURE, self._config)
             if self._reg_read(CONFIGURE) & 3 != 2:
                 raise RuntimeError("nRF24L01 Hardware not responding")
             for i in range(6):  # capture RX addresses from registers
@@ -100,14 +65,14 @@ class RF24:
                     self._pipes[i] = self._reg_read_bytes(RX_ADDR_P0 + i)
                 else:
                     self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
+        elif self.logger is not None:
+            self.logger.setLevel(10)  # set to DEBUG output
         self._open_pipes = 0  # 0 = all RX pipes closed
         # test is nRF24L01 is a plus variant using a command specific to
         # non-plus variants
         self._is_plus_variant = False
         self._features = self._reg_read(TX_FEATURE)
-        self._reg_write(
-            0x50, 0x73
-        )  # derelict command toggles bits in TX_FEATURE register
+        self._reg_write(0x50, 0x73)  # derelict command toggles TX_FEATURE register
         after_toggle = self._reg_read(TX_FEATURE)
         if self._features == after_toggle:
             self._is_plus_variant = True
@@ -137,16 +102,6 @@ class RF24:
             self.flush_tx()
             self.clear_status_flags()
 
-    @property
-    def ce_pin(self):
-        """control the CE pin (for adbanced usage)"""
-        return self._ce_pin.value if self._ce_pin is not None else False
-
-    @ce_pin.setter
-    def ce_pin(self, val):
-        if self._ce_pin is not None:
-            self._ce_pin.value = val
-
     def __enter__(self):
         self.ce_pin = False
         self._reg_write(CONFIGURE, self._config & 0x7C)
@@ -161,91 +116,16 @@ class RF24:
                 self._reg_write_bytes(RX_ADDR_P0 + i, addr)
             else:
                 self._reg_write(RX_ADDR_P0 + i, addr)
+            self.set_payload_length(self._pl_len[i], i)
         self._reg_write_bytes(TX_ADDRESS, self._tx_address)
         self._reg_write(0x05, self._channel)
         self._reg_write(0x03, self._addr_len - 2)
-        for i, val in enumerate(self._pl_len):
-            self.set_payload_length(val, i)
         return self
 
     def __exit__(self, *exc):
         self.ce_pin = False
         self.power = False
         return False
-
-    # pylint: disable=no-member
-    def _reg_read(self, reg):
-        out_buf = bytes([reg, 0])
-        in_buf = bytearray([0, 0])
-        if self._spi is not None:
-            with self._spi as spi:
-                spi.write_readinto(out_buf, in_buf)
-        if self.logger is not None:
-            self._log(
-                10, "SPI reading 1 byte  from {} {}".format(hex(reg), hex(in_buf[1]))
-            )
-        self._status = in_buf[0]
-        return in_buf[1]
-
-    def _reg_read_bytes(self, reg, buf_len=5):
-        in_buf = bytearray(buf_len + 1)
-        out_buf = bytes([reg]) + b"\0" * buf_len
-        if self._spi is not None:
-            with self._spi as spi:
-                spi.write_readinto(out_buf, in_buf)
-        if self.logger is not None:
-            self._log(10, "SPI reading {} bytes from {}".format(buf_len, hex(reg)))
-        self._status = in_buf[0]
-        return in_buf[1:]
-
-    def _reg_write_bytes(self, reg, out_buf):
-        out_buf = bytes([0x20 | reg]) + out_buf
-        in_buf = bytearray(len(out_buf))
-        if self._spi is not None:
-            with self._spi as spi:
-                spi.write_readinto(out_buf, in_buf)
-        if self.logger is not None:
-            self._log(
-                10,
-                "SPI writing {} bytes to {} {}".format(
-                    len(out_buf) - 1, hex(reg), "0x" + address_repr(out_buf[1:])
-                ),
-            )
-        self._status = in_buf[0]
-
-    def _reg_write(self, reg, value=None):
-        out_buf = bytes([reg])
-        if value is not None:
-            out_buf = bytes([0x20 | reg, value])
-        in_buf = bytearray(len(out_buf))
-        if self._spi is not None:
-            with self._spi as spi:
-                spi.write_readinto(out_buf, in_buf)
-        if self.logger is not None and reg != 0xFF:
-            prompt = "SPI writing "
-            if value is not None:
-                prompt += "1 byte  to {} {}".format(hex(reg), hex(value))
-            else:
-                prompt += "command {}".format(hex(reg))
-            self._log(10, prompt)
-        self._status = in_buf[0]
-
-    # pylint: enable=no-member
-    @property
-    def logger(self):
-        """Get/Set the current ``Logger()``."""
-        return self._logger
-
-    @logger.setter
-    def logger(self, val):
-        if logging is not None and isinstance(val, logging.Logger):
-            self._logger = val
-
-    def _log(self, level, prompt, force_print=False):
-        if self.logger is not None:
-            self.logger.log(level, prompt)
-        elif force_print:
-            print("Level", level, "-", prompt)
 
     @property
     def address_length(self):
@@ -532,7 +412,7 @@ class RF24:
             )
         )
         for prompt in prompts:
-            self._log(logging.INFO, prompt, force_print=True)
+            self._log(20, prompt, force_print=True)
         if dump_pipes:
             self._dump_pipes()
 
@@ -542,9 +422,10 @@ class RF24:
             self._tx_address = self._reg_read_bytes(TX_ADDRESS)
             for i in range(6):
                 if i < 2:
-                    self._pipes[i] = self._reg_read_bytes(RX_PL_LENG + i)
+                    self._pipes[i] = self._reg_read_bytes(RX_ADDR_P0 + i)
                 else:
-                    self._pipes[i] = self._reg_read(RX_PL_LENG + i)
+                    self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
+                self._pl_len[i] = self._reg_read(RX_PL_LENG + i)
         prompts = []
         prompts.append("TX address____________ 0x" + address_repr(self.address()))
         for i in range(6):
@@ -555,7 +436,7 @@ class RF24:
             if is_open:
                 prompts.append("\t\texpecting {} byte static payloads".format(self._pl_len[i]))
         for prompt in prompts:
-            self._log(logging.INFO, prompt, force_print=True)
+            self._log(20, prompt, force_print=True)
 
     @property
     def is_plus_variant(self):

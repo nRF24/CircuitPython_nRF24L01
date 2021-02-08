@@ -3,17 +3,12 @@
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
-from adafruit_bus_device.spi_device import SPIDevice
+from .mixin import HWMixin
 
 
-class RF24:
-    def __init__(self, spi, csn, ce, spi_frequency=10000000):
-        self._spi = SPIDevice(
-            spi, chip_select=csn, baudrate=spi_frequency, extra_clocks=8
-        )
-        self.ce_pin = ce
-        self.ce_pin.switch_to_output(value=False)
-        self._status = 0
+class RF24(HWMixin):
+    def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
+        super().__init__(spi, csn, ce_pin, spi_frequency)
         self._reg_write(0, 0x0E)
         if self._reg_read(0) & 3 != 2:
             raise RuntimeError("nRF24L01 Hardware not responding")
@@ -31,40 +26,6 @@ class RF24:
         self.flush_tx()
         self.clear_status_flags()
 
-    # pylint: disable=no-member
-    def _reg_read(self, reg):
-        out_buf = bytes([reg, 0])
-        in_buf = bytearray([0, 0])
-        with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
-        self._status = in_buf[0]
-        return in_buf[1]
-
-    def _reg_read_bytes(self, reg, buf_len=5):
-        in_buf = bytearray(buf_len + 1)
-        out_buf = bytes([reg]) + b"\0" * buf_len
-        with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
-        self._status = in_buf[0]
-        return in_buf[1:]
-
-    def _reg_write_bytes(self, reg, out_buf):
-        out_buf = bytes([0x20 | reg]) + out_buf
-        in_buf = bytearray(len(out_buf))
-        with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
-        self._status = in_buf[0]
-
-    def _reg_write(self, reg, val=None):
-        out_buf = bytes([reg])
-        if val is not None:
-            out_buf = bytes([0x20 | reg, val])
-        in_buf = bytearray(len(out_buf))
-        with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
-        self._status = in_buf[0]
-
-    # pylint: enable=no-member
     @property
     def address_length(self):
         return self._reg_read(0x03) + 2
@@ -105,7 +66,7 @@ class RF24:
 
     @listen.setter
     def listen(self, is_rx):
-        self.ce_pin.value = 0
+        self.ce_pin = 0
         if is_rx:
             if self._pipe0_read_addr is not None:
                 self._reg_write_bytes(0x0A, self._pipe0_read_addr)
@@ -114,7 +75,7 @@ class RF24:
             self._reg_write(0, (self._reg_read(0) & 0xFC) | 3)
             time.sleep(0.00015)
             self.clear_status_flags()
-            self.ce_pin.value = 1
+            self.ce_pin = 1
             time.sleep(0.00013)
         else:
             if self._reg_read(0x1D) & 6 == 6:
@@ -142,7 +103,7 @@ class RF24:
         return result
 
     def send(self, buf, ask_no_ack=False, force_retry=0, send_only=False):
-        self.ce_pin.value = 0
+        self.ce_pin = 0
         if isinstance(buf, (list, tuple)):
             result = []
             for b in buf:
@@ -154,7 +115,7 @@ class RF24:
         self.write(buf, ask_no_ack)
         while not self._status & 0x70:
             self.update()
-        self.ce_pin.value = 0
+        self.ce_pin = 0
         result = self.irq_ds
         if self.irq_df:
             for _ in range(force_retry):
@@ -301,15 +262,15 @@ class RF24:
     def resend(self, send_only=False):
         result = False
         if not self.fifo(True, True):
-            self.ce_pin.value = 0
+            self.ce_pin = 0
             if not send_only and self.pipe is not None:
                 self.flush_rx()
             self.clear_status_flags()
             self._reg_write(0xE3)
-            self.ce_pin.value = 1
+            self.ce_pin = 1
             while not self._status & 0x30:
                 self.update()
-            self.ce_pin.value = 0
+            self.ce_pin = 0
             result = self.irq_ds
             if self._status & 0x60 == 0x60 and not send_only:
                 result = self.read()
@@ -333,7 +294,7 @@ class RF24:
                 buf = buf[:pl_width]
         self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
         if not write_only:
-            self.ce_pin.value = 1
+            self.ce_pin = 1
         return True
 
     def flush_rx(self):

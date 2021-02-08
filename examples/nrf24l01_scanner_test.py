@@ -63,10 +63,10 @@ def scan(timeout=30):
             end="" if curr_channel < 125 else "\r",
         )
     # finish printing results and end with a new line
-    while curr_channel < len(signals):
+    while curr_channel < len(signals) - 1:
+        curr_channel += 1
         sig_cnt = signals[curr_channel]
         print(hex(min(0x0F, sig_cnt))[2:] if sig_cnt else "-", sep="", end="")
-        curr_channel += 1
     print("")
 
 
