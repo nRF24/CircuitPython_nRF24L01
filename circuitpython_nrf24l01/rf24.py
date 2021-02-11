@@ -25,7 +25,7 @@ __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from micropython import const
-from .mixin import HWLogMixin, address_repr
+from . import HWLogMixin, address_repr
 
 CONFIGURE = const(0x00)  # IRQ masking, CRC scheme, PWR control, & RX/TX roles
 AUTO_ACK = const(0x01)  # auto-ACK status for all pipes
@@ -130,7 +130,8 @@ class RF24(HWLogMixin):
     @property
     def address_length(self):
         """This `int` is the length (in bytes) used of RX/TX addresses."""
-        return self._reg_read(0x03) + 2
+        self._addr_len = self._reg_read(0x03) + 2
+        return self._addr_len
 
     @address_length.setter
     def address_length(self, length):
@@ -230,15 +231,20 @@ class RF24(HWLogMixin):
         self.clear_status_flags(True, False, False)
         return result
 
-    def send(self, buf, ask_no_ack=False, force_retry=0, send_only=False):
+    def send(self, buf, ask_no_ack=False, force_retry=0,
+             send_only=False, send_fast=False):
         """This blocking function is used to transmit payload(s)."""
         self.ce_pin = 0
         if isinstance(buf, (list, tuple)):
             result = []
-            for b in buf:
-                result.append(self.send(b, ask_no_ack, force_retry, send_only))
+            for i, b in enumerate(buf):
+                result.append(self.send(
+                    b, ask_no_ack, force_retry, send_only,
+                    force_retry and i != self.irq_df
+                ))
             return result
-        self.flush_tx()
+        if not send_fast:
+            self.flush_tx()
         if not send_only and self.pipe is not None:
             self.flush_rx()
         self.write(buf, ask_no_ack)
@@ -247,10 +253,12 @@ class RF24(HWLogMixin):
             up_cnt += self.update()
         # self.ce_pin = 0  # keep it high, so subsequent calls are faster
         result = self.irq_ds
-        if self.logger is not None:
-            self._log(12, "  send() waited {} updates DS: {} DR: {} DF: {}".format(
+        self._log(
+            12,
+            "send() waited {} updates DS: {} DR: {} DF: {}".format(
                 up_cnt, self.irq_ds, self.irq_dr, self.irq_df
-            ))
+            ),
+        )
         while force_retry and not result:
             result = self.resend(send_only)
             force_retry -= 1
@@ -321,19 +329,25 @@ class RF24(HWLogMixin):
 
         prompts = []
         prompts.append("Is a plus variant_________{}".format(self.is_plus_variant))
-        prompts.append("Channel___________________{} ~ {} GHz".format(
-            self._channel, (self._channel + 2400) / 1000
-        ))
+        prompts.append(
+            "Channel___________________{} ~ {} GHz".format(
+                self._channel, (self._channel + 2400) / 1000
+            )
+        )
         d_rate = self._rf_setup & 0x28
         d_rate = (2 if d_rate == 8 else 250) if d_rate else 1
-        prompts.append("RF Data Rate______________{} {}".format(
-            d_rate, "Mbps" if d_rate != 250 else "Kbps"
-        ))
+        prompts.append(
+            "RF Data Rate______________{} {}".format(
+                d_rate, "Mbps" if d_rate != 250 else "Kbps"
+            )
+        )
         _pa_level = (3 - ((self._rf_setup & 6) >> 1)) * -6
         prompts.append("RF Power Amplifier________{} dbm".format(_pa_level))
-        prompts.append("RF Low Noise Amplifier____{}".format(
-            "Enabled" if bool(self._rf_setup & 1) else "Disabled"
-        ))
+        prompts.append(
+            "RF Low Noise Amplifier____{}".format(
+                "Enabled" if bool(self._rf_setup & 1) else "Disabled"
+            )
+        )
         prompts.append("CRC bytes_________________{}".format(_crc))
         prompts.append("Address length____________{} bytes".format(self._addr_len))
         prompts.append("TX Payload lengths________{} bytes".format(self._pl_len[0]))
@@ -347,10 +361,14 @@ class RF24(HWLogMixin):
         )
         prompts.append("Re-use TX FIFO____________{}".format(bool(_fifo & 64)))
         prompts.append(
-            "Packets lost on current channel_____________________{}".format(observer >> 4)
+            "Packets lost on current channel_____________________{}".format(
+                observer >> 4
+            )
         )
         prompts.append(
-            "Retry attempts made for last transmission___________{}".format(observer & 0xF)
+            "Retry attempts made for last transmission___________{}".format(
+                observer & 0xF
+            )
         )
         prompts.append(
             "IRQ on Data Ready__{}    Data Ready___________{}".format(
@@ -369,7 +387,8 @@ class RF24(HWLogMixin):
         )
         prompts.append(
             "TX FIFO full__________{}    TX FIFO empty________{}".format(
-                "_True" if _fifo & 0x20 else "False", "True" if _fifo & 0x10 else "False",
+                "_True" if _fifo & 0x20 else "False",
+                "True" if _fifo & 0x10 else "False",
             )
         )
         prompts.append(
@@ -430,11 +449,17 @@ class RF24(HWLogMixin):
         prompts.append("TX address____________ 0x" + address_repr(self.address()))
         for i in range(6):
             is_open = self._open_pipes & (1 << i)
-            prompts.append("Pipe {} ({}) bound: {}".format(
-                i, " open " if is_open else "closed", "0x" + address_repr(self.address(i))
-            ))
+            prompts.append(
+                "Pipe {} ({}) bound: {}".format(
+                    i,
+                    " open " if is_open else "closed",
+                    "0x" + address_repr(self.address(i)),
+                )
+            )
             if is_open:
-                prompts.append("\t\texpecting {} byte static payloads".format(self._pl_len[i]))
+                prompts.append(
+                    "\t\texpecting {} byte static payloads".format(self._pl_len[i])
+                )
         for prompt in prompts:
             self._log(20, prompt, force_print=True)
 
@@ -567,8 +592,8 @@ class RF24(HWLogMixin):
         elif isinstance(enable, int):
             self._aa = 0x3F & enable
         elif isinstance(enable, (list, tuple)):
+            self._aa = self._reg_read(AUTO_ACK)
             for i, val in enumerate(enable):
-                self._aa = self._reg_read(AUTO_ACK)
                 if i < 6 and val >= 0:  # skip pipe if val is negative
                     self._aa = (self._aa & ~(1 << i)) | (bool(val) << i)
         else:
@@ -740,9 +765,12 @@ class RF24(HWLogMixin):
             self.ce_pin = 0
             result = self.irq_ds
             if self.logger is not None:
-                self._log(12, "resend() waited {} updates DS: {} DR: {} DF: {}".format(
-                    up_cnt, self.irq_ds, self.irq_dr, self.irq_df
-                ))
+                self._log(
+                    12,
+                    "resend() waited {} updates DS: {} DR: {} DF: {}".format(
+                        up_cnt, self.irq_ds, self.irq_dr, self.irq_df
+                    ),
+                )
             if self._status & 0x60 == 0x60 and not send_only:
                 result = self.read()
         return result
@@ -752,11 +780,12 @@ class RF24(HWLogMixin):
         one payload at a time."""
         if not buf or len(buf) > 32:
             raise ValueError("buffer must have a length in range [1, 32]")
-        self.clear_status_flags()
+        if self.irq_ds or self.irq_df:
+            self.clear_status_flags()
         if self.tx_full:
             return False
         if self._config & 3 != 2:  # is radio powered up in TX mode?
-            self._config = (self._reg_read(CONFIGURE) & 0x7C) | 2
+            self._config = (self._config & 0x7C) | 2
             self._reg_write(CONFIGURE, self._config)
             time.sleep(0.00016)
         if not bool((self._dyn_pl & 1) and (self._features & 4)):

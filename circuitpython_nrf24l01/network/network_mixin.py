@@ -1,7 +1,7 @@
 """A module to hold all usuall accesssible RF24 API via the RF24Network API"""
 # pylint: disable=missing-docstring
 from ..rf24 import RF24
-from ..mixin import logging
+from .. import logging
 
 
 class RadioMixin:

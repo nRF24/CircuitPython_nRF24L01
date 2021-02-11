@@ -47,7 +47,7 @@ from .constants import (
 )
 # pylint: enable=unused-import
 from .network_mixin import RadioMixin
-from ..rf24 import address_repr
+from .. import address_repr
 
 _frag_types = (
     NETWORK_FRAG_FIRST,
