@@ -8,7 +8,7 @@ class DigitalInOut:
     def __init__(self, pin_numb):
         self._pin = pin_numb
         GPIO.setmode(GPIO.BCM)
-        GPIO.setup(pin_numb, GPIO.OUT)
+        GPIO.setup([pin_numb], GPIO.OUT)
 
     # pylint: disable=unused-argument
     def switch_to_output(self, pull=None, value=False):
