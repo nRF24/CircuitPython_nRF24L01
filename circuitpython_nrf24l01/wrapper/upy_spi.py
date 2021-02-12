@@ -11,7 +11,7 @@ wrapper classes that:
 1. add context management to managing SPI Bus Device
 2. a simple wrapper for ``machine.Pin``
 """
-
+from . import DigitalInOut
 
 class SPIDevice:
     """
@@ -52,13 +52,13 @@ class SPIDevice:
         self.phase = phase
         self.extra_clocks = extra_clocks
         self.chip_select = chip_select
+        if isinstance(chip_select, int):
+            self.chip_select = DigitalInOut(chip_select)
         if self.chip_select:
             self.chip_select.switch_to_output(value=True)
 
     def __enter__(self):
-        while not self.spi.try_lock():
-            pass
-        self.spi.configure(
+        self.spi.init(
             baudrate=self.baudrate, polarity=self.polarity, phase=self.phase
         )
         if self.chip_select:
@@ -75,5 +75,5 @@ class SPIDevice:
                 clocks += 1
             for _ in range(clocks):
                 self.spi.write(buf)
-        self.spi.unlock()
+        self.spi.deinit()
         return False

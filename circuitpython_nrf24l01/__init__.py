@@ -8,7 +8,7 @@
 Logging can be achieved by having `adafruit_logging` module or
 MicroPython ``logging`` module present in the MCU's ``lib`` folder.
 """
-from .wrapper import DigitalInOut, SPIDevice, SPIDevCtx
+from .wrapper import DigitalInOut, SPIDevice, SPIDevCtx, RPiDIO
 logging = None  # pylint: disable=invalid-name
 try:
     import logging
@@ -35,7 +35,10 @@ class CEMixin:
         self._ce_pin = ce_pin
         if ce_pin is not None:
             if not isinstance(ce_pin, DigitalInOut):
-                self._ce_pin = DigitalInOut(ce_pin)
+                if isinstance(ce_pin, int) and RPiDIO is not None:
+                    self._ce_pin = RPiDIO(ce_pin)
+                else:
+                    self._ce_pin = DigitalInOut(ce_pin)
             self._ce_pin.switch_to_output(value=False)  # pre-empt standby-I mode
         super().__init__()
 

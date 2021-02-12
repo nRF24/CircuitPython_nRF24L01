@@ -3,12 +3,12 @@
 import RPi.GPIO as GPIO
 
 
-class DigitalInOut:
+class RPiDIO:
     """A wrapper for the RPi.GPIO bcm-scheme pins"""
     def __init__(self, pin_numb):
-        self._pin = pin_numb
+        self._pin = int(pin_numb)
         GPIO.setmode(GPIO.BCM)
-        GPIO.setup([pin_numb], GPIO.OUT)
+        GPIO.setup(self._pin, GPIO.OUT)
 
     # pylint: disable=unused-argument
     def switch_to_output(self, pull=None, value=False):
