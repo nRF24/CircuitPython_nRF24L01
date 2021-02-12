@@ -4,24 +4,45 @@ Received Power Detection (RPD) to scan for possible interference.
 This example does not require a counterpart node.
 """
 import time
-import board
-import digitalio
 
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
 
-# change these (digital output) pins accordingly
-ce = digitalio.DigitalInOut(board.D4)
-csn = digitalio.DigitalInOut(board.D5)
+spi = None
+csn = 5
+ce_pin = 4
+try:  # on CircuitPython & Linux
+    import board
 
-# using board.SPI() automatically selects the MCU's
-# available SPI pins, board.SCK, board.MOSI, board.MISO
-spi = board.SPI()  # init spi bus object
+    # change these (digital output) pins accordingly
+    ce_pin = board.D4
+    csn = board.D5
 
-# we'll be using the dynamic payload size feature (enabled by default)
+    try:  # on Linux
+        import spidev
+        spi = spidev.SpiDev()  # for a faster interface on linux
+        csn = 0  # use CE0 on default bus
+        from circuitpython_nrf24l01.wrapper import RPiDIO
+        if RPiDIO is not None:
+            ce_pin = 4
+
+    except ImportError:  # on CircuitPython only
+        # using board.SPI() automatically selects the MCU's
+        # available SPI pins, board.SCK, board.MOSI, board.MISO
+        spi = board.SPI()  # init spi bus object
+
+except ImportError:  # on MicroPython
+    from machine import SPI
+    spi = SPI(1)  # the identifying number passed here changes according to
+                  # the board running the script
+
 # initialize the nRF24L01 on the spi bus object
-nrf = RF24(spi, csn, ce)
+nrf = RF24(spi, csn, ce_pin)
+# On Linux, csn value is a bit coded
+#                 0 = bus 0, CE0  # SPI bus 0 is enabled by default
+#                10 = bus 1, CE0  # enable SPI bus 2 prior to running this
+#                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
 
 # turn off RX features specific to the nRF24L01 module
 nrf.auto_ack = 0
