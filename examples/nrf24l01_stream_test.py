@@ -2,24 +2,45 @@
 Example of library usage for streaming multiple payloads.
 """
 import time
-import board
-import digitalio
 
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
 
-# change these (digital output) pins accordingly
-ce = digitalio.DigitalInOut(board.D4)
-csn = digitalio.DigitalInOut(board.D5)
+spi = None
+csn = 5
+ce_pin = 4
+try:  # on CircuitPython & Linux
+    import board
 
-# using board.SPI() automatically selects the MCU's
-# available SPI pins, board.SCK, board.MOSI, board.MISO
-spi = board.SPI()  # init spi bus object
+    # change these (digital output) pins accordingly
+    ce_pin = board.D4
+    csn = board.D5
 
-# we'll be using the dynamic payload size feature (enabled by default)
+    try:  # on Linux
+        import spidev  # not builtin; this must be installed
+        spi = spidev.SpiDev()  # for a faster interface on linux
+        csn = 0  # use CE0 on default bus (even faster than using any pin)
+        from circuitpython_nrf24l01.wrapper import RPiDIO
+        if RPiDIO is not None:  # RPi.GPIO lib is present (faster than CircuitPython)
+            ce_pin = 22  # using pin gpio22 (BCM numbering)
+
+    except ImportError:  # on CircuitPython only
+        # using board.SPI() automatically selects the MCU's
+        # available SPI pins, board.SCK, board.MOSI, board.MISO
+        spi = board.SPI()  # init spi bus object
+
+except ImportError:  # on MicroPython
+    from machine import SPI
+    spi = SPI(1)  # the identifying number passed here changes according to
+                  # the board running the script
+
 # initialize the nRF24L01 on the spi bus object
-nrf = RF24(spi, csn, ce)
+nrf = RF24(spi, csn, ce_pin)
+# On Linux using SpiDev, csn value has a coded meaning:
+#                 0 = bus 0, CE0  # SPI bus 0 is enabled by default
+#                10 = bus 1, CE0  # enable SPI bus 2 prior to running this
+#                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
 
 # set the Power Amplifier level to -12 dBm since this test example is
 # usually run with nRF24L01 transceivers in close proximity
@@ -103,11 +124,11 @@ def master_fifo(count=1, size=32):
             while buf_iter < size and nrf.write(buf[buf_iter], write_only=1):
                 # NOTE write() returns False if TX FIFO is already full
                 buf_iter += 1  # increment iterator of payloads
-            ce.value = True  # start tranmission (after 10 microseconds)
+            nrf.ce_pin = True  # start tranmission (after 10 microseconds)
             while not nrf.fifo(True, True):  # updates irq_df flag
                 if nrf.irq_df:
                     # reception failed; we need to reset the irq_rf flag
-                    ce.value = False  # fall back to Standby-I mode
+                    nrf.ce_pin = False  # fall back to Standby-I mode
                     failures += 1  # increment manual retries
                     if failures > 99 and buf_iter < 7 and c < 2:
                         # we need to prevent an infinite loop
@@ -119,8 +140,8 @@ def master_fifo(count=1, size=32):
                         nrf.flush_tx()  # discard all payloads in TX FIFO
                         break
                     nrf.clear_status_flags()  # clear the irq_df flag
-                    ce.value = True  # start re-transmitting
-            ce.value = False
+                    nrf.ce_pin = True  # start re-transmitting
+            nrf.ce_pin = False
         end_timer = time.monotonic_ns()  # end timer
         print(
             "Transmission took {} us with {} failures detected.".format(

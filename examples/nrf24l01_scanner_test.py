@@ -25,7 +25,7 @@ try:  # on CircuitPython & Linux
         csn = 0  # use CE0 on default bus
         from circuitpython_nrf24l01.wrapper import RPiDIO
         if RPiDIO is not None:
-            ce_pin = 4
+            ce_pin = 22  # using pin gpio22 (BCM numbering)
 
     except ImportError:  # on CircuitPython only
         # using board.SPI() automatically selects the MCU's
