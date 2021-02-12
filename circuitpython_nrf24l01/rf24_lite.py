@@ -18,7 +18,7 @@ class RF24(HWMixin):
         self._reg_write(0x1C, 0x3F)
         self._reg_write(1, 0x3F)
         self._reg_write(0x1D, 5)
-        self._reg_write(4, 0x53)
+        self._reg_write(4, 0x5F)
         self._pipe0_read_addr = None
         self.channel = 76
         self.payload_length = 32

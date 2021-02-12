@@ -116,23 +116,22 @@ def master_fifo(count=1, size=32):
         size = 6
     buf = make_buffers(size)  # make a list of payloads
     nrf.listen = False  # ensures the nRF24L01 is in TX mode
-    for c in range(count):  # transmit the same payloads this many times
+    for cnt in range(count):  # transmit the same payloads this many times
         nrf.flush_tx()  # clear the TX FIFO so we can use all 3 levels
         # NOTE the write_only parameter does not initiate sending
         buf_iter = 0  # iterator of payloads for the while loop
         failures = 0  # keep track of manual retries
         start_timer = time.monotonic_ns()  # start timer
         while buf_iter < size:  # cycle through all the payloads
-            while buf_iter < size and nrf.write(buf[buf_iter], write_only=1):
+            while buf_iter < size and nrf.write(buf[buf_iter]):
                 # NOTE write() returns False if TX FIFO is already full
                 buf_iter += 1  # increment iterator of payloads
-            nrf.ce_pin = True  # start tranmission (after 10 microseconds)
             while not nrf.fifo(True, True):  # updates irq_df flag
                 if nrf.irq_df:
                     # reception failed; we need to reset the irq_rf flag
                     nrf.ce_pin = False  # fall back to Standby-I mode
                     failures += 1  # increment manual retries
-                    if failures > 99 and buf_iter < 7 and c < 2:
+                    if failures > 99 and buf_iter < 7 and cnt < 2:
                         # we need to prevent an infinite loop
                         print(
                             "Make sure slave() node is listening."
@@ -143,23 +142,13 @@ def master_fifo(count=1, size=32):
                         break
                     nrf.clear_status_flags()  # clear the irq_df flag
                     nrf.ce_pin = True  # start re-transmitting
-            nrf.ce_pin = False
+        nrf.ce_pin = False
         end_timer = time.monotonic_ns()  # end timer
         print(
             "Transmission took {} us with {} failures detected.".format(
                 (end_timer - start_timer) / 1000, failures
-            ),
-            end=" " if failures < 100 else "\n",
-        )
-        if 1 <= failures < 100:
-            print(
-                "\n\nHINT: Try playing with the 'ard' and 'arc' attributes to"
-                " reduce the number of\nfailures detected. Tests were better"
-                " with these attributes at higher values, but\nnotice the "
-                "transmission time differences."
             )
-        elif not failures:
-            print("You Win!")
+        )
 
 
 def slave(timeout=5):

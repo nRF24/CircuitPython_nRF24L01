@@ -88,7 +88,7 @@ class RF24(HWLogMixin):
         # shadow copy of the TX_ADDRESS
         self._tx_address = self._reg_read_bytes(TX_ADDRESS)
         # pre-configure the SETUP_RETR register
-        self._retry_setup = 0x53  # ard = 1500; arc = 3
+        self._retry_setup = 0x5F  # ard = 1500; arc = 15
         # pre-configure the RF_SETUP register
         self._rf_setup = 0x07  # 1 Mbps data_rate, and 0 dbm pa_level
         # pre-configure dynamic_payloads & auto_ack
@@ -777,7 +777,7 @@ class RF24(HWLogMixin):
         one payload at a time."""
         if not buf or len(buf) > 32:
             raise ValueError("buffer must have a length in range [1, 32]")
-        if self.irq_ds or self.irq_df:
+        if self._status & 0x70:
             self.clear_status_flags()
         if self.tx_full:
             return False
