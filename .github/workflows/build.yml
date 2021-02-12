@@ -55,7 +55,7 @@ jobs:
     - name: PyLint
       run: |
         pylint --disable=too-many-instance-attributes,too-many-public-methods,too-many-arguments circuitpython_nrf24l01/*.py
-        ([[ ! -d "examples" ]] || pylint --disable=invalid-name $( find . -path "./examples/*.py" ))
+        ([[ ! -d "examples" ]] || pylint --disable=invalid-name,c-extension-no-member $( find . -path "./examples/*.py" ))
     - name: Build assets
       run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --library_location . --package_folder_prefix ${{ steps.pkg-name.outputs.pkg-name }}
     - name: Archive bundles

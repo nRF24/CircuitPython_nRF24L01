@@ -8,6 +8,7 @@ import time
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
+from circuitpython_nrf24l01.wrapper import RPiDIO
 
 spi = None
 csn = 5
@@ -21,9 +22,9 @@ try:  # on CircuitPython & Linux
 
     try:  # on Linux
         import spidev
+
         spi = spidev.SpiDev()  # for a faster interface on linux
         csn = 0  # use CE0 on default bus
-        from circuitpython_nrf24l01.wrapper import RPiDIO
         if RPiDIO is not None:
             ce_pin = 22  # using pin gpio22 (BCM numbering)
 
@@ -34,6 +35,7 @@ try:  # on CircuitPython & Linux
 
 except ImportError:  # on MicroPython
     from machine import SPI
+
     spi = SPI(1)  # the identifying number passed here changes according to
                   # the board running the script
 
@@ -69,7 +71,7 @@ def scan(timeout=30):
     start_timer = time.monotonic()  # start the timer
     while time.monotonic() - start_timer < timeout:
         nrf.channel = curr_channel
-        time.sleep(0.00013)  # let radio modulate to new channel
+        # time.sleep(0.00013)  # let radio modulate to new channel
         nrf.listen = 1  # start a RX session
         time.sleep(0.00013)  # wait 130 microseconds
         signals[curr_channel] += nrf.rpd  # if interference is present

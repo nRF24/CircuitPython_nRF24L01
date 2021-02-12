@@ -240,12 +240,6 @@ send()
         If this parameter is set to `True`, then use `read()` to get the ACK payload
         (if there is any) from the RX FIFO. Remember that the RX FIFO can only hold
         up to 3 payloads at once.
-    :param bool send_fast: This parameter should only be set `True` if there is no unhandled
-        transmission failure. Internally, this parameter allows skipping the step of flushing
-        the entire TX FIFO on every call to `send()`.
-
-        .. hint:: Use this partameter as `True` when using the ``ask_no_ack`` or
-            ``force_retry`` parameters.
 
     .. tip:: It is highly recommended that `auto_ack` attribute is enabled
         when sending multiple payloads. Test results with the `auto_ack` attribute

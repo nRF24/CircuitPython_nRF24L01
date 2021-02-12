@@ -232,18 +232,15 @@ class RF24(HWLogMixin):
         return result
 
     def send(self, buf, ask_no_ack=False, force_retry=0,
-             send_only=False, send_fast=False):
+             send_only=False):
         """This blocking function is used to transmit payload(s)."""
         self.ce_pin = 0
         if isinstance(buf, (list, tuple)):
             result = []
-            for i, b in enumerate(buf):
-                result.append(self.send(
-                    b, ask_no_ack, force_retry, send_only,
-                    force_retry and i != self.irq_df
-                ))
+            for b in buf:
+                result.append(self.send(b, ask_no_ack, force_retry, send_only))
             return result
-        if not send_fast:
+        if self.irq_df or self.tx_full:
             self.flush_tx()
         if not send_only and self.pipe is not None:
             self.flush_rx()
