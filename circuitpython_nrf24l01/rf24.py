@@ -192,18 +192,20 @@ class RF24(HWLogMixin):
                 for i, val in enumerate(self._pipe0_read_addr):
                     self._pipes[0][i] = val
                 self._reg_write_bytes(RX_ADDR_P0, self._pipe0_read_addr)
-            elif self._pipe0_read_addr is None:
-                self.close_rx_pipe(0)
+            elif self._pipe0_read_addr is None and self._open_pipes & 1:
+                self._open_pipes &= 0x3E  # close_rx_pipe(0) is slower
+                self._reg_write(OPEN_PIPES, self._open_pipes)
             self._config = (self._config & 0xFC) | 3
             self._reg_write(CONFIGURE, self._config)
             time.sleep(0.00015)  # mandatory wait to power up radio
-            self.clear_status_flags()
+            if self._status & 0x70:
+                self.clear_status_flags()
             self.ce_pin = 1  # mandatory pulse is > 130 µs
             time.sleep(0.00013)
         else:
             if self._features & 6 == 6 and ((self._aa & self._dyn_pl) & 1):
                 self.flush_tx()
-            if self._aa & 1:
+            if self._aa & 1 and not self._open_pipes & 1:
                 self._open_pipes |= 1
                 self._reg_write(OPEN_PIPES, self._open_pipes)
             self._config = self._config & 0xFE | 2
