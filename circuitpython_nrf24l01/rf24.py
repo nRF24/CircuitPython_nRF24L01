@@ -307,11 +307,6 @@ class RF24(HWLogMixin):
 
     def print_details(self, dump_pipes=False):
         """This debuggung function outputs all details about the nRF24L01."""
-        _crc = (
-            (2 if self._config & 4 else 1)
-            if self._aa
-            else max(0, ((self._config & 0x0C) >> 2) - 1)
-        )
         observer = 0
         _fifo = 17
         if self._spi is not None:  # skip this if running on a Shim
@@ -325,6 +320,11 @@ class RF24(HWLogMixin):
             self._features = self._reg_read(TX_FEATURE)
             self._aa = self._reg_read(AUTO_ACK)
             self._dyn_pl = self._reg_read(DYN_PL_LEN)
+        _crc = (
+            (2 if self._config & 4 else 1)
+            if self._aa
+            else max(0, ((self._config & 0x0C) >> 2) - 1)
+        )
 
         prompts = []
         prompts.append("Is a plus variant_________{}".format(self.is_plus_variant))
@@ -751,27 +751,29 @@ class RF24(HWLogMixin):
     def resend(self, send_only=False):
         """Manually re-send the first-out payload from TX FIFO buffers."""
         result = False
-        if not self.fifo(True, True):
-            self.ce_pin = 0
-            if not send_only and self.pipe is not None:
-                self.flush_rx()
+        if self.fifo(True, True):
+            return result
+        self.ce_pin = 0
+        if not send_only and self.pipe is not None:
+            self.flush_rx()
+        if self._status & 0x70:
             self.clear_status_flags()
-            self._reg_write(0xE3)
-            self.ce_pin = 1
-            up_cnt = 0
-            while self._spi is not None and not self._status & 0x30:
-                up_cnt += self.update()
-            self.ce_pin = 0
-            result = self.irq_ds
-            if self.logger is not None:
-                self._log(
-                    12,
-                    "resend() waited {} updates DS: {} DR: {} DF: {}".format(
-                        up_cnt, self.irq_ds, self.irq_dr, self.irq_df
-                    ),
-                )
-            if self._status & 0x60 == 0x60 and not send_only:
-                result = self.read()
+        self._reg_write(0xE3)
+        self.ce_pin = 1
+        up_cnt = 0
+        while self._spi is not None and not self._status & 0x30:
+            up_cnt += self.update()
+        self.ce_pin = 0
+        result = self.irq_ds
+        if self.logger is not None:
+            self._log(
+                12,
+                "resend() waited {} updates DS: {} DR: {} DF: {}".format(
+                    up_cnt, self.irq_ds, self.irq_dr, self.irq_df
+                ),
+            )
+        if self._status & 0x60 == 0x60 and not send_only:
+            result = self.read()
         return result
 
     def write(self, buf, ask_no_ack=False, write_only=False):
