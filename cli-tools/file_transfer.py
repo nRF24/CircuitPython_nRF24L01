@@ -182,13 +182,12 @@ if __name__ == "__main__":
         print("setting role to TX")
         args.role = 1
 
-    file_bin = bytearray()
-    with open(args.file, "rb", buffering=0) as src:
-        file_bin = src.readall()
-
     try:
         if bool(args.role):
             master(make_buffers(args.file, file_bin))
+            file_bin = bytearray()
+            with open(args.file, "rb", buffering=0) as src:
+                file_bin = src.readall()
         else:
             slave()
     except KeyboardInterrupt:
