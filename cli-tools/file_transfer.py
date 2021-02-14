@@ -62,7 +62,7 @@ def make_buffers(f_name, buffer):
     """Return a list of payloads sliced from a ``buffer``"""
     if len(f_name) > PL_SIZE:
         f_name = f_name[: 26] + "_1" + f_name[-4:]
-    buffers = [bytes(f_name)]
+    buffers = [bytes(f_name.encode("utf-8"))]
     for i in range(0, len(buffer), PL_SIZE):
         end_slice = len(buffers) - 1 - i
         if i + PL_SIZE <= len(buffers):
@@ -142,7 +142,7 @@ def slave(timeout=30):
         while time.monotonic() < start_timer + timeout:
             if nrf.available():
                 if not count:
-                    file_dets = nrf.read()
+                    file_dets = nrf.read().decode("utf-8")
                     print("Receiving file: {}".format(file_dets.decode("utf-8")))
                 else:
                     file_buf += nrf.read()
@@ -150,7 +150,7 @@ def slave(timeout=30):
                 count += 1
                 start_timer = time.monotonic()  # reset timer on every RX payload
 
-    with open(file_dets.decode("utf-8"), "wb") as output:
+    with open(file_dets, "wb") as output:
         output.write(file_buf)
 
 print("File transfer tool")
