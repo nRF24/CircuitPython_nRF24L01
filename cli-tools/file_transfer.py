@@ -141,7 +141,7 @@ def slave(timeout=30):
             if nrf.available():
                 if not count:
                     file_dets = nrf.read().decode("utf-8")
-                    print("Receiving file: {}".format(file_dets.decode("utf-8")))
+                    print("Receiving file:", file_dets)
                 else:
                     file_buf += nrf.read()
                     print("Received: {} - {}".format(file_buf[count * PL_SIZE:], count))
@@ -180,7 +180,7 @@ if __name__ == "__main__":
     # nrf.dynamic_payloads = False
 
     nrf.print_details(1)
-    
+
     try:
         if bool(args.role):
             file_bin = bytearray()
