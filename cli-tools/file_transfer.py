@@ -64,9 +64,7 @@ def make_buffers(f_name, buffer):
         f_name = f_name[: 26] + "_1" + f_name[-4:]
     buffers = [bytes(f_name.encode("utf-8"))]
     for i in range(0, len(buffer), PL_SIZE):
-        end_slice = len(buffers) - 1 - i
-        if i + PL_SIZE <= len(buffers):
-            end_slice = i + PL_SIZE
+        end_slice = len(buffer) if i + PL_SIZE > len(buffer) else i + PL_SIZE
         buffers.append(buffer[i : end_slice])
     nrf.logger.log(20, "{} bytes split into {} payloads".format(len(buffer), len(buffers)))
     return buffers
