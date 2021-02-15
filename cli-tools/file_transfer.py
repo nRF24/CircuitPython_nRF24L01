@@ -143,8 +143,9 @@ def slave(timeout=30):
                     file_dets = nrf.read().decode("utf-8")
                     print("Receiving file:", file_dets)
                 else:
-                    file_buf += nrf.read()
-                    print("Received: {} - {}".format(file_buf[count * PL_SIZE:], count))
+                    buf = nrf.read()
+                    file_buf += buf
+                    print("Received: {} - {}".format(bytes(buf), count))
                 count += 1
                 start_timer = time.monotonic()  # reset timer on every RX payload
     if file_dets:
