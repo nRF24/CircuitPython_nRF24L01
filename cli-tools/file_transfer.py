@@ -66,7 +66,7 @@ def make_buffers(f_name, buffer):
     for i in range(0, len(buffer), PL_SIZE):
         end_slice = len(buffer) if i + PL_SIZE > len(buffer) else i + PL_SIZE
         buffers.append(buffer[i : end_slice])
-    nrf.logger.log(20, "{} bytes split into {} payloads".format(len(buffer), len(buffers)))
+    print("{} bytes split into {} payloads".format(len(buffer), len(buffers)))
     return buffers
 
 
@@ -179,8 +179,6 @@ if __name__ == "__main__":
     # uncomment the following 2 lines for compatibility with TMRh20 library
     # nrf.allow_ask_no_ack = False
     # nrf.dynamic_payloads = False
-
-    nrf.print_details(1)
 
     try:
         if bool(args.role):
