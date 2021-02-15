@@ -184,10 +184,10 @@ if __name__ == "__main__":
 
     try:
         if bool(args.role):
-            master(make_buffers(args.file, file_bin))
             file_bin = bytearray()
             with open(args.file, "rb", buffering=0) as src:
                 file_bin = src.readall()
+            master(make_buffers(args.file, file_bin))
         else:
             slave()
     except KeyboardInterrupt:
