@@ -78,7 +78,7 @@ def master(buffers):
         nrf.listen = False  # ensures the nRF24L01 is in TX mode
         result = nrf.send(buffers, force_retry=3)
     end_timer = time.monotonic()
-    print("Transmission took", end_timer - start_timer, "ms")
+    print("Transmission took", end_timer - start_timer, "s")
 
     successful = 0  # keep track of success rate
     for r in result:  # tally the resulting success rate
