@@ -104,7 +104,9 @@ class RF24(HWLogMixin):
 
     def __enter__(self):
         self.ce_pin = False
-        self._reg_write(CONFIGURE, self._config & 0x7C)
+        self._config |= 2
+        self._reg_write(CONFIGURE, self._config)
+        # time.sleep(0.00015)  # let the rest of this function be the delay
         self._reg_write(RF_PA_RATE, self._rf_setup)
         self._reg_write(OPEN_PIPES, self._open_pipes)
         self._reg_write(DYN_PL_LEN, self._dyn_pl)
@@ -124,7 +126,9 @@ class RF24(HWLogMixin):
 
     def __exit__(self, *exc):
         self.ce_pin = False
-        self.power = False
+        self._config &= 0x7D  # power off radio
+        self._reg_write(CONFIGURE, self._config)
+        time.sleep(0.00016)
         return False
 
     @property

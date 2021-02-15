@@ -68,7 +68,7 @@ def make_buffers(f_name, buffer):
         if i + PL_SIZE <= len(buffers):
             end_slice = i + PL_SIZE
         buffers.append(buffer[i : end_slice])
-    nrf.logger.log(10, "{} bytes split into {} payloads".format(len(buffer), len(buffers)))
+    nrf.logger.log(20, "{} bytes split into {} payloads".format(len(buffer), len(buffers)))
     return buffers
 
 
@@ -149,9 +149,9 @@ def slave(timeout=30):
                     print("Received: {} - {}".format(file_buf[count * PL_SIZE:], count))
                 count += 1
                 start_timer = time.monotonic()  # reset timer on every RX payload
-
-    with open(file_dets, "wb") as output:
-        output.write(file_buf)
+    if file_dets:
+        with open(file_dets, "wb") as output:
+            output.write(file_buf)
 
 print("File transfer tool")
 
