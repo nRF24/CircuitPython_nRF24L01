@@ -133,7 +133,7 @@ def slave(timeout=30):
     """Stops listening after a `timeout` with no response"""
     count = 0  # keep track of the number of received payloads
     file_buf = bytearray()
-    file_dets = bytearray(PL_SIZE)
+    file_dets = None
     with nrf:
         nrf.listen = True  # put radio into RX mode and power up
         start_timer = time.monotonic()  # start timer
@@ -151,13 +151,20 @@ def slave(timeout=30):
         with open(file_dets, "wb") as output:
             output.write(file_buf)
 
-print("File transfer tool")
 
 if __name__ == "__main__":
 
     args = parser.parse_args()  # parse any CLI args
 
-    print(sys.argv[0])  # print example name
+    print(sys.argv[0])  # print tool name
+
+    if args.file is None and args.role:
+        print("no file designated for transfer.")
+        parser.print_help()
+        sys.exit()
+    elif args.file is not None and not args.role:
+        print("setting role to TX")
+        args.role = 1
 
     # addresses needs to be in a buffer protocol object (bytearray)
     address = [b"1util", b"2util"]
@@ -172,14 +179,8 @@ if __name__ == "__main__":
     # nrf.allow_ask_no_ack = False
     # nrf.dynamic_payloads = False
 
-    if args.file is None and args.role:
-        print("no file designated for transfer.")
-        parser.print_help()
-        sys.exit()
-    elif args.file is not None and not args.role:
-        print("setting role to TX")
-        args.role = 1
-
+    nrf.print_details(1)
+    
     try:
         if bool(args.role):
             file_bin = bytearray()
