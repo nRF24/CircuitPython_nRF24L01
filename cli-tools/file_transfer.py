@@ -6,20 +6,26 @@ import time
 import argparse
 import board
 from circuitpython_nrf24l01.rf24 import RF24
-from circuitpython_nrf24l01.wrapper import RPiDIO
 
+# import wrappers to imitate circuitPython's DigitalInOut
+from circuitpython_nrf24l01.wrapper import RPiDIO, DigitalInOut
+# RPiDIO is wrapper for RPi.GPIO on Linux
+# DigitalInOut is a wrapper for machine.Pin() on MicroPython
+#   or simply digitalio.DigitalInOut on CircuitPython and Linux
+
+spi = None  # scoped placeholder
 
 # change these (digital output) pins accordingly
-ce_pin = board.D4
-csn = board.D5
+ce_pin = DigitalInOut(board.D4)
+csn = DigitalInOut(board.D5)
 
-spi = None
 try:  # on Linux
     import spidev
 
     spi = spidev.SpiDev()  # for a faster interface on linux
     csn = 0  # use CE0 on default bus (even faster than using any pin)
-    if RPiDIO is not None:  # RPi.GPIO lib is present (faster than CircuitPython)
+    if RPiDIO is not None:  # RPi.GPIO lib is present
+        # RPi.GPIO is faster than CircuitPython on Linux & uses IRQ callbacks
         ce_pin = 22  # using pin gpio22 (BCM numbering)
 
 except ImportError:  # on CircuitPython only

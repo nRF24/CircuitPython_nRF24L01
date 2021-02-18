@@ -6,15 +6,6 @@ This example uses the nRF24L01 as a 'fake' BLE Beacon
 """
 # pylint: disable=wrong-import-position
 import time
-
-USE_SHIM = False
-try:
-    import board
-    import digitalio
-except (NotImplementedError, NameError):
-    USE_SHIM = True
-    print("logging shim on x86.")
-
 from circuitpython_nrf24l01.fake_ble import (
     chunk,
     FakeBLE,
@@ -23,17 +14,51 @@ from circuitpython_nrf24l01.fake_ble import (
     TemperatureServiceData,
 )
 
-# change these (digital output) pins accordingly
-ce = None if USE_SHIM else digitalio.DigitalInOut(board.D4)
-csn = None if USE_SHIM else digitalio.DigitalInOut(board.D5)
+# import wrappers to imitate circuitPython's DigitalInOut
+from circuitpython_nrf24l01.wrapper import RPiDIO, DigitalInOut
+# RPiDIO is wrapper for RPi.GPIO on Linux
+# DigitalInOut is a wrapper for machine.Pin() on MicroPython
+#   or simply digitalio.DigitalInOut on CircuitPython and Linux
 
-# using board.SPI() automatically selects the MCU's
-# available SPI pins, board.SCK, board.MOSI, board.MISO
-spi = None if USE_SHIM else board.SPI()  # init spi bus object
+# default values that allow using no radio module (for testing only)
+spi = None
+csn = None
+ce_pin = None
 
+try:  # on CircuitPython & Linux
+    import board
+
+    # change these (digital output) pins accordingly
+    ce_pin = DigitalInOut(board.D4)
+    csn = DigitalInOut(board.D5)
+
+    try:  # on Linux
+        import spidev
+
+        spi = spidev.SpiDev()  # for a faster interface on linux
+        csn = 0  # use CE0 on default bus (even faster than using any pin)
+        if RPiDIO is not None:  # RPi.GPIO lib is present
+            # RPi.GPIO is faster than CircuitPython on Linux & uses IRQ callbacks
+            ce_pin = 22  # using pin gpio22 (BCM numbering)
+
+    except ImportError:  # on CircuitPython only
+        # using board.SPI() automatically selects the MCU's
+        # available SPI pins, board.SCK, board.MOSI, board.MISO
+        spi = board.SPI()  # init spi bus object
+
+except ImportError:  # on MicroPython
+    from machine import SPI
+
+    # the argument passed here changes according to the board used
+    spi = SPI(1)
+
+    # instantiate the integers representing micropython pins as
+    # DigitalInOut compatible objects
+    csn = DigitalInOut(5)
+    ce_pin = DigitalInOut(4)
 
 # initialize the nRF24L01 on the spi bus object as a BLE compliant radio
-nrf = FakeBLE(spi, csn, ce)
+nrf = FakeBLE(spi, csn, ce_pin)
 
 # the name parameter is going to be its broadcasted BLE name
 # this can be changed at any time using the `name` attribute
