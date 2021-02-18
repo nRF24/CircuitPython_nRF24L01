@@ -167,9 +167,10 @@ def slave(timeout=30):
                 else:
                     buf = nrf.read()
                     file_buf += buf
-                    print("Received: {} - {}".format(bytes(buf), count))
+                    print("Received: {} payloads".format(count), end="\r")
                 count += 1
                 start_timer = time.monotonic()  # reset timer on every RX payload
+    print("Received: {} payloads".format(count))
     if file_dets:
         with open(file_dets, "wb") as output:
             output.write(file_buf)

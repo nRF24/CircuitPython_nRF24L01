@@ -195,7 +195,7 @@ This is a test to show how to use the nRF24L01 as a BLE advertising beacon using
 
 .. literalinclude:: ../examples/nrf24l01_fake_ble_test.py
     :caption: examples/nrf24l01_fake_ble_test.py
-    :start-at: USE_SHIM = False
+    :start-at: import time
     :end-before: def set_role():
 
 TMRh20's Arduino library
