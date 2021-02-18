@@ -7,24 +7,32 @@ import time
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
-from circuitpython_nrf24l01.wrapper import RPiDIO
 
+# import wrappers to imitate circuitPython's DigitalInOut
+from circuitpython_nrf24l01.wrapper import RPiDIO, DigitalInOut
+# RPiDIO is wrapper for RPi.GPIO on Linux
+# DigitalInOut is a wrapper for machine.Pin() on MicroPython
+#   or simply digitalio.DigitalInOut on CircuitPython and Linux
+
+# default values that allow using no radio module (for testing only)
 spi = None
-csn = 5
-ce_pin = 4
+csn = None
+ce_pin = None
+
 try:  # on CircuitPython & Linux
     import board
 
     # change these (digital output) pins accordingly
-    ce_pin = board.D4
-    csn = board.D5
+    ce_pin = DigitalInOut(board.D4)
+    csn = DigitalInOut(board.D5)
 
     try:  # on Linux
         import spidev
 
         spi = spidev.SpiDev()  # for a faster interface on linux
-        csn = 0  # use CE0 on default bus
-        if RPiDIO is not None:
+        csn = 0  # use CE0 on default bus (even faster than using any pin)
+        if RPiDIO is not None:  # RPi.GPIO lib is present;
+            # RPi.GPIO is faster than CircuitPython on Linux & uses IRQ callbacks
             ce_pin = 22  # using pin gpio22 (BCM numbering)
 
     except ImportError:  # on CircuitPython only
@@ -35,8 +43,13 @@ try:  # on CircuitPython & Linux
 except ImportError:  # on MicroPython
     from machine import SPI
 
-    spi = SPI(1)  # the identifying number passed here changes according to
-                  # the board running the script
+    # the argument passed here changes according to the board used
+    spi = SPI(1)
+
+    # instantiate the integers representing micropython pins as
+    # DigitalInOut compatible objects
+    csn = DigitalInOut(5)
+    ce_pin = DigitalInOut(4)
 
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(spi, csn, ce_pin)

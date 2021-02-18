@@ -25,7 +25,7 @@ __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from micropython import const
-from . import HWLogMixin, address_repr
+from .wrapper import SPIDevCtx, SPIDevice
 
 CONFIGURE = const(0x00)  # IRQ masking, CRC scheme, PWR control, & RX/TX roles
 AUTO_ACK = const(0x01)  # auto-ACK status for all pipes
@@ -39,11 +39,31 @@ DYN_PL_LEN = const(0x1C)  # dynamic payloads status for all pipes
 TX_FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
 
 
-class RF24(HWLogMixin):
+def address_repr(addr):
+    """Convert a bytearray into a hexlified string (in big endian)."""
+    rev_str = ""
+    for char in range(len(addr) - 1, -1, -1):
+        rev_str += ("" if addr[char] > 0x0F else "0") + hex(addr[char])[2:]
+    return rev_str
+
+
+class RF24:
     """A driver class for the nRF24L01(+) transceiver radios."""
 
     def __init__(self, spi=None, csn=None, ce_pin=None, spi_frequency=10000000):
-        super().__init__(spi, csn, ce_pin, spi_frequency)
+        self._logger = None
+        self._ce_pin = ce_pin
+        if ce_pin is not None:
+            self._ce_pin.switch_to_output(value=False)
+        self._spi = None
+        if spi is not None:
+            if type(spi).__name__.startswith("SpiDev"):
+                self._spi = SPIDevCtx(spi, csn, spi_frequency=spi_frequency)
+            else:
+                self._spi = SPIDevice(
+                    spi, chip_select=csn, baudrate=spi_frequency, extra_clocks=8
+                )
+        self._status = 0  # status byte returned on all SPI transactions
         # init shadow copy of RX addresses for all pipes for context manager
         self._pipes = [
             bytearray([0xE7] * 5),
@@ -132,6 +152,78 @@ class RF24(HWLogMixin):
         self._reg_write(CONFIGURE, self._config)
         time.sleep(0.00016)
         return False
+
+    @property
+    def logger(self):
+        """Get/Set the current ``Logger()``."""
+        return self._logger
+
+    @logger.setter
+    def logger(self, val):
+        if type(val).__name__.startswith("Logger"):
+            self._logger = val
+
+    def _log(self, level, prompt, force_print=False):
+        if self.logger is not None:
+            self.logger.log(level, prompt)
+        elif force_print:
+            print(prompt)
+
+    @property
+    def ce_pin(self):
+        """control the CE pin (for advanced usage)"""
+        return self._ce_pin.value if self._ce_pin is not None else False
+
+    @ce_pin.setter
+    def ce_pin(self, val):
+        if self._ce_pin is not None:
+            self._ce_pin.value = val
+
+    def _reg_read(self, reg):
+        in_buf = bytearray([0, 0])
+        if self._spi is not None:
+            with self._spi as spi:
+                spi.write_readinto(bytes([reg, 0]), in_buf)
+        self._status = in_buf[0]
+        self._log(
+            10, "SPI read 1 byte from {} {}".format(hex(reg), hex(in_buf[1]))
+        )
+        return in_buf[1]
+
+    def _reg_read_bytes(self, reg, buf_len=5):
+        in_buf = bytearray(buf_len + 1)
+        if self._spi is not None:
+            with self._spi as spi:
+                spi.write_readinto(bytes([reg] + [0] * buf_len), in_buf)
+        self._status = in_buf[0]
+        self._log(10, "SPI reading {} bytes from {} {}".format(
+            buf_len, hex(reg), "0x" + address_repr(in_buf[1:])
+        ))
+        return in_buf[1:]
+
+    def _reg_write_bytes(self, reg, out_buf):
+        self._log(10, "SPI writing {} bytes to {} {}".format(
+            len(out_buf), hex(reg), "0x" + address_repr(out_buf)
+        ))
+        in_buf = bytearray(len(out_buf) + 1)
+        if self._spi is not None:
+            with self._spi as spi:
+                spi.write_readinto(bytes([0x20 | reg]) + out_buf, in_buf)
+        self._status = in_buf[0]
+
+    def _reg_write(self, reg, value=None):
+        if self._logger is not None and reg != 0xFF:
+            self._log(10, "SPI write {} {} {}".format(
+                "command" if value is None else "1 byte to",
+                hex(reg),
+                "" if value is None else hex(value)
+            ))
+        if self._spi is not None:
+            out_buf = bytes([reg] if value is None else [reg, value])
+            in_buf = bytearray(len(out_buf))
+            with self._spi as spi:
+                spi.write_readinto(out_buf, in_buf)
+        self._status = in_buf[0]
 
     @property
     def address_length(self):
@@ -787,8 +879,7 @@ class RF24(HWLogMixin):
         one payload at a time."""
         if not buf or len(buf) > 32:
             raise ValueError("buffer must have a length in range [1, 32]")
-        if self._status & 0x70:
-            self.clear_status_flags()
+        self.clear_status_flags()
         if self.tx_full:
             return False
         if self._config & 3 != 2:  # is radio powered up in TX mode?

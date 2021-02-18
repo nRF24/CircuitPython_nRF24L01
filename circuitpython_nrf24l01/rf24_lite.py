@@ -12,7 +12,7 @@ class RF24:
         self._spi = SPIDevice(
             spi, chip_select=csn, baudrate=spi_frequency, extra_clocks=8
         )
-        self._status = 0  # status byte returned on all SPI transactions
+        self._status = 0
         self._reg_write(0, 0x0E)
         if self._reg_read(0) & 3 != 2:
             raise RuntimeError("nRF24L01 Hardware not responding")
@@ -34,31 +34,26 @@ class RF24:
     # pylint: disable=no-member
     def _reg_read(self, reg):
         in_buf = bytearray([0, 0])
-        out_buf = bytes([reg, 0])
         with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
+            spi.write_readinto(bytes([reg, 0]), in_buf)
         self._status = in_buf[0]
         return in_buf[1]
 
     def _reg_read_bytes(self, reg, buf_len=5):
         in_buf = bytearray(buf_len + 1)
-        out_buf = bytes([reg]) + b"\0" * buf_len
         with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
+            spi.write_readinto(bytes([reg] + [0] * buf_len), in_buf)
         self._status = in_buf[0]
         return in_buf[1:]
 
     def _reg_write_bytes(self, reg, out_buf):
-        out_buf = bytes([0x20 | reg]) + out_buf
-        in_buf = bytearray(len(out_buf))
+        in_buf = bytearray(len(out_buf) + 1)
         with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
+            spi.write_readinto(bytes([0x20 | reg]) + out_buf, in_buf)
         self._status = in_buf[0]
 
     def _reg_write(self, reg, value=None):
-        out_buf = bytes([reg])
-        if value is not None:
-            out_buf = bytes([0x20 | reg, value])
+        out_buf = bytes([reg] if value is None else [reg, value])
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
             spi.write_readinto(out_buf, in_buf)

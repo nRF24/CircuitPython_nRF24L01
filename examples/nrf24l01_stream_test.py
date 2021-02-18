@@ -6,24 +6,32 @@ import time
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
-from circuitpython_nrf24l01.wrapper import RPiDIO
 
+# import wrappers to imitate circuitPython's DigitalInOut
+from circuitpython_nrf24l01.wrapper import RPiDIO, DigitalInOut
+# RPiDIO is wrapper for RPi.GPIO on Linux
+# DigitalInOut is a wrapper for machine.Pin() on MicroPython
+#   or simply digitalio.DigitalInOut on CircuitPython and Linux
+
+# default values that allow using no radio module (for testing only)
 spi = None
-csn = 5
-ce_pin = 4
+csn = None
+ce_pin = None
+
 try:  # on CircuitPython & Linux
     import board
 
     # change these (digital output) pins accordingly
-    ce_pin = board.D4
-    csn = board.D5
+    ce_pin = DigitalInOut(board.D4)
+    csn = DigitalInOut(board.D5)
 
     try:  # on Linux
         import spidev
 
         spi = spidev.SpiDev()  # for a faster interface on linux
         csn = 0  # use CE0 on default bus (even faster than using any pin)
-        if RPiDIO is not None:  # RPi.GPIO lib is present (faster than CircuitPython)
+        if RPiDIO is not None:  # RPi.GPIO lib is present;
+            # RPi.GPIO is faster than CircuitPython on Linux & uses IRQ callbacks
             ce_pin = 22  # using pin gpio22 (BCM numbering)
 
     except ImportError:  # on CircuitPython only
@@ -34,8 +42,13 @@ try:  # on CircuitPython & Linux
 except ImportError:  # on MicroPython
     from machine import SPI
 
-    spi = SPI(1)  # the identifying number passed here changes according to
-                  # the board running the script
+    # the argument passed here changes according to the board used
+    spi = SPI(1)
+
+    # instantiate the integers representing micropython pins as
+    # DigitalInOut compatible objects
+    csn = DigitalInOut(5)
+    ce_pin = DigitalInOut(4)
 
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(spi, csn, ce_pin)
@@ -66,7 +79,7 @@ nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
 
 # uncomment the following 2 lines for compatibility with TMRh20 library
 # nrf.allow_ask_no_ack = False
-# nrf.dynamic_payloads = False
+nrf.dynamic_payloads = False
 
 
 def make_buffers(size=32):
@@ -130,6 +143,7 @@ def master_fifo(count=1, size=32):
                     # reception failed; we need to reset the irq_rf flag
                     nrf.ce_pin = False  # fall back to Standby-I mode
                     failures += 1  # increment manual retries
+                    nrf.clear_status_flags()  # clear the irq_df flag
                     if failures > 99 and buf_iter < 7 and cnt < 2:
                         # we need to prevent an infinite loop
                         print(
@@ -138,8 +152,8 @@ def master_fifo(count=1, size=32):
                         )
                         buf_iter = size + 1  # be sure to exit the while loop
                         nrf.flush_tx()  # discard all payloads in TX FIFO
-                    nrf.clear_status_flags()  # clear the irq_df flag
-                    nrf.ce_pin = True  # start re-transmitting
+                    else:
+                        nrf.ce_pin = True  # start re-transmitting
         nrf.ce_pin = False
         end_timer = time.monotonic_ns()  # end timer
         print(

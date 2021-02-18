@@ -113,7 +113,7 @@ def master_fifo(f_name):
         with nrf:
             nrf.listen = False  # ensures the nRF24L01 is in TX mode
             nrf.flush_tx()  # clear the TX FIFO so we can use all 3 levels
-            start_timer = time.monotonic() * 1000  # start timer
+            start_timer = time.monotonic()  # start timer
             while file_in.tell() < max_len:  # cycle through the file
                 nrf.ce_pin = False
                 while file_in.tell() < max_len and nrf.write(buf, write_only=1):
@@ -135,14 +135,14 @@ def master_fifo(f_name):
                             nrf.flush_tx()  # discard all payloads in TX FIFO
                         else:
                             nrf.ce_pin = True  # start re-transmitting
-    end_timer = time.monotonic() * 1000  # end timer
+    end_timer = time.monotonic()  # end timer
     print(
-            "Transmission of {} bytes took {} s with {} failures detected"
-            ".".format(
-                max_len, (end_timer - start_timer) / 1000, failures
-            )
+        "Transmission of {} bytes took {} s with {} failures detected"
+        ".".format(
+            max_len, end_timer - start_timer, failures
         )
     )
+
 
 
 def slave(timeout=30):

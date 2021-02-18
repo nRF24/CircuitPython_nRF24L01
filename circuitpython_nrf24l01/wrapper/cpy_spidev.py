@@ -35,7 +35,7 @@ class SPIDevCtx:
 
     def write_readinto(self, out_buf, in_buf):
         """wraps ``spidev.SpiDev.xfer2()`` into MicroPython compatible
-        spi.write_readinto()`` calls.
+        ``spi.write_readinto()`` calls.
 
         .. warning:: The ``in_buf`` parameter must be a mutable bytearray.
         """
