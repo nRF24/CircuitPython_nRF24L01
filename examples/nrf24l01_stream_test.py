@@ -111,9 +111,6 @@ def master(count=1, size=32):  # count = 5 will transmit the list 5 times
 def master_fifo(count=1, size=32):
     """Similar to the `master()` above except this function uses the full
     TX FIFO and `RF24.write()` instead of `RF24.send()`"""
-    if size < 6:
-        print("setting size to 6;", size, "is not allowed for this test.")
-        size = 6
     buf = make_buffers(size)  # make a list of payloads
     nrf.listen = False  # ensures the nRF24L01 is in TX mode
     for cnt in range(count):  # transmit the same payloads this many times
@@ -123,9 +120,11 @@ def master_fifo(count=1, size=32):
         failures = 0  # keep track of manual retries
         start_timer = time.monotonic_ns()  # start timer
         while buf_iter < size:  # cycle through all the payloads
-            while buf_iter < size and nrf.write(buf[buf_iter]):
+            nrf.ce_pin = False
+            while buf_iter < size and nrf.write(buf[buf_iter], write_only=1):
                 # NOTE write() returns False if TX FIFO is already full
                 buf_iter += 1  # increment iterator of payloads
+            nrf.ce_pin = True
             while not nrf.fifo(True, True):  # updates irq_df flag
                 if nrf.irq_df:
                     # reception failed; we need to reset the irq_rf flag
@@ -139,7 +138,6 @@ def master_fifo(count=1, size=32):
                         )
                         buf_iter = size + 1  # be sure to exit the while loop
                         nrf.flush_tx()  # discard all payloads in TX FIFO
-                        break
                     nrf.clear_status_flags()  # clear the irq_df flag
                     nrf.ce_pin = True  # start re-transmitting
         nrf.ce_pin = False

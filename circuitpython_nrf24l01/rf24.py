@@ -58,7 +58,9 @@ class RF24(HWLogMixin):
         self._config = 0x0E
         if spi is not None:
             self._reg_write(CONFIGURE, self._config)
-            if self._reg_read(CONFIGURE) & 3 != 2:
+            hw_check = self._reg_read(CONFIGURE)
+            if hw_check & 3 != 2:
+                self._log(50, "hardware check returned {}".format(hw_check))
                 raise RuntimeError("nRF24L01 Hardware not responding")
             for i in range(6):  # capture RX addresses from registers
                 if i < 2:
@@ -762,7 +764,7 @@ class RF24(HWLogMixin):
             self.flush_rx()
         if self._status & 0x70:
             self.clear_status_flags()
-        self._reg_write(0xE3)
+        # self._reg_write(0xE3)
         self.ce_pin = 1
         up_cnt = 0
         while self._spi is not None and not self._status & 0x30:
@@ -776,8 +778,8 @@ class RF24(HWLogMixin):
                     up_cnt, self.irq_ds, self.irq_dr, self.irq_df
                 ),
             )
-        if self._status & 0x60 == 0x60 and not send_only:
-            result = self.read()
+        if result and self.irq_dr and not send_only:
+            return self.read()
         return result
 
     def write(self, buf, ask_no_ack=False, write_only=False):

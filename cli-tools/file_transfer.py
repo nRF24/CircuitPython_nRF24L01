@@ -53,6 +53,13 @@ parser.add_argument(
     type=str,
     help="the path and name of the file to transfer."
 )
+parser.add_argument(
+    "-x",
+    "--express",
+    default=False,
+    type=bool,
+    help="Defaults to False. Set to True to use all 3 levels of TX FIFO."
+)
 
 
 PL_SIZE = 32
@@ -93,38 +100,47 @@ def master(buffers):
     )
 
 
-def master_fifo(buffers):
+def master_fifo(f_name):
     """Similar to the `master()` above except this function uses the full
     TX FIFO and `RF24.write()` instead of `RF24.send()`"""
-    buf_iter = 0  # iterator of payloads for the while loop
     failures = 0  # keep track of manual retries
-    max_iter = len(buffers)
-    start_timer = time.monotonic() * 1000  # start timer
-    with nrf:
-        nrf.listen = False  # ensures the nRF24L01 is in TX mode
-        nrf.flush_tx()  # clear the TX FIFO so we can use all 3 levels
-        while buf_iter < max_iter:  # cycle through all the payloads
-            nrf.ce_pin = False
-            while buf_iter < max_iter and nrf.write(buffers[buf_iter], write_only=1):
-                # NOTE write() returns False if TX FIFO is already full
-                buf_iter += 1  # increment iterator of payloads
-            nrf.ce_pin = True
-            while not nrf.fifo(True, True):  # updates irq_df flag
-                if nrf.irq_df:
-                    # reception failed; we need to reset the irq_rf flag
-                    nrf.ce_pin = False  # fall back to Standby-I mode
-                    failures += 1  # increment manual retries
-                    if failures > 99 and buf_iter < 7:
-                        # we need to prevent an infinite loop
-                        buf_iter = max_iter + 1  # be sure to exit the while loop
-                        nrf.flush_tx()  # discard all payloads in TX FIFO
-                        break
-                    nrf.clear_status_flags()  # clear the irq_df flag
-                    nrf.ce_pin = True  # start re-transmitting
+    start_timer = 0
+    max_len = 0
+    with open(f_name, "rb") as file_in:
+        max_len = file_in.seek(0, 2)  # get max len of file
+        file_in.seek(0)  # reset position to beginning of file
+        buf = f_name.encode("utf-8")  # tell slave file's name w/ 1st payload
+        with nrf:
+            nrf.listen = False  # ensures the nRF24L01 is in TX mode
+            nrf.flush_tx()  # clear the TX FIFO so we can use all 3 levels
+            start_timer = time.monotonic() * 1000  # start timer
+            while file_in.tell() < max_len:  # cycle through the file
+                nrf.ce_pin = False
+                while file_in.tell() < max_len and nrf.write(buf, write_only=1):
+                    # NOTE write() returns False if TX FIFO is already full
+                    buf = file_in.read(32)
+                    # if dynamic payloads are disabled, uncomment the next 2 lines
+                    # if len(buf) < 32:
+                    #     nrf.set_payload_length(len(buf), 0)
+                nrf.ce_pin = True
+                while not nrf.fifo(True, True):  # updates irq_df flag
+                    if nrf.irq_df:
+                        # reception failed; we need to reset the irq_rf flag
+                        nrf.ce_pin = False  # fall back to Standby-I mode
+                        failures += 1  # increment manual retries
+                        nrf.clear_status_flags()  # clear the irq_df flag
+                        if failures > 99 and file_in.tell() < (7 * PL_SIZE):
+                            # we need to prevent an infinite loop
+                            file_in.seek(max_len)  # be sure to exit the while loop
+                            nrf.flush_tx()  # discard all payloads in TX FIFO
+                        else:
+                            nrf.ce_pin = True  # start re-transmitting
     end_timer = time.monotonic() * 1000  # end timer
     print(
-        "Transmission took {} ms with {} failures detected.".format(
-            end_timer - start_timer, failures
+            "Transmission of {} bytes took {} s with {} failures detected"
+            ".".format(
+                max_len, (end_timer - start_timer) / 1000, failures
+            )
         )
     )
 
@@ -168,7 +184,7 @@ if __name__ == "__main__":
         args.role = 1
 
     # addresses needs to be in a buffer protocol object (bytearray)
-    address = [b"1util", b"2util"]
+    address = [b"1wifi", b"2wifi"]
 
     # set TX address of RX node into the TX pipe
     nrf.open_tx_pipe(address[args.role])  # always uses pipe 0
@@ -176,16 +192,22 @@ if __name__ == "__main__":
     # set RX address of TX node into an RX pipe
     nrf.open_rx_pipe(1, address[not args.role])  # using pipe 1
 
+    # change data rate to 2 million bits per second (Mbps)
+    nrf.data_rate = 2
+
     # uncomment the following 2 lines for compatibility with TMRh20 library
     # nrf.allow_ask_no_ack = False
     # nrf.dynamic_payloads = False
 
     try:
         if bool(args.role):
-            file_bin = bytearray()
-            with open(args.file, "rb", buffering=0) as src:
-                file_bin = src.readall()
-            master(make_buffers(args.file, file_bin))
+            if not args.express:
+                file_bin = bytearray()
+                with open(args.file, "rb", buffering=0) as src:
+                    file_bin = src.readall()
+                master(make_buffers(args.file, file_bin))
+            else:
+                master_fifo(args.file)
         else:
             slave()
     except KeyboardInterrupt:

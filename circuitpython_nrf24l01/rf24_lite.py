@@ -3,15 +3,20 @@
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
-from . import HWMixin
+from digitalio import DigitalInOut
+from adafruit_bus_device.spi_device import SPIDevice
 
 
-class RF24(HWMixin):
+class RF24:
     def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
-        super().__init__(spi, csn, ce_pin, spi_frequency)
+        self._spi = SPIDevice(
+            spi, chip_select=csn, baudrate=spi_frequency, extra_clocks=8
+        )
+        self._status = 0  # status byte returned on all SPI transactions
         self._reg_write(0, 0x0E)
         if self._reg_read(0) & 3 != 2:
             raise RuntimeError("nRF24L01 Hardware not responding")
+        self._ce_pin = DigitalInOut(ce_pin)
         self._reg_write(3, 3)
         self._reg_write(6, 7)
         self._reg_write(2, 0)
@@ -25,6 +30,49 @@ class RF24(HWMixin):
         self.flush_rx()
         self.flush_tx()
         self.clear_status_flags()
+
+    # pylint: disable=no-member
+    def _reg_read(self, reg):
+        in_buf = bytearray([0, 0])
+        out_buf = bytes([reg, 0])
+        with self._spi as spi:
+            spi.write_readinto(out_buf, in_buf)
+        self._status = in_buf[0]
+        return in_buf[1]
+
+    def _reg_read_bytes(self, reg, buf_len=5):
+        in_buf = bytearray(buf_len + 1)
+        out_buf = bytes([reg]) + b"\0" * buf_len
+        with self._spi as spi:
+            spi.write_readinto(out_buf, in_buf)
+        self._status = in_buf[0]
+        return in_buf[1:]
+
+    def _reg_write_bytes(self, reg, out_buf):
+        out_buf = bytes([0x20 | reg]) + out_buf
+        in_buf = bytearray(len(out_buf))
+        with self._spi as spi:
+            spi.write_readinto(out_buf, in_buf)
+        self._status = in_buf[0]
+
+    def _reg_write(self, reg, value=None):
+        out_buf = bytes([reg])
+        if value is not None:
+            out_buf = bytes([0x20 | reg, value])
+        in_buf = bytearray(len(out_buf))
+        with self._spi as spi:
+            spi.write_readinto(out_buf, in_buf)
+        self._status = in_buf[0]
+
+    # pylint: enable=no-member
+
+    @property
+    def ce_pin(self):
+        return self._ce_pin.value
+
+    @ce_pin.setter
+    def ce_pin(self, val):
+        self._ce_pin.value = val
 
     @property
     def address_length(self):
