@@ -27,6 +27,15 @@ import time
 from micropython import const
 from .wrapper import SPIDevCtx, SPIDevice
 
+logging = None  # pylint: disable=invalid-name
+try:
+    import logging
+except ImportError:
+    try:
+        import adafruit_logging as logging
+    except ImportError:
+        pass  # proceed without logging capability
+
 CONFIGURE = const(0x00)  # IRQ masking, CRC scheme, PWR control, & RX/TX roles
 AUTO_ACK = const(0x01)  # auto-ACK status for all pipes
 OPEN_PIPES = const(0x02)  # open/close RX status for all pipes
@@ -50,45 +59,42 @@ def address_repr(addr):
 class RF24:
     """A driver class for the nRF24L01(+) transceiver radios."""
 
-    def __init__(self, spi=None, csn=None, ce_pin=None, spi_frequency=10000000):
+    def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
         self._logger = None
+        if logging is not None:
+            self._logger = logging.getLogger(type(self).__name__)
+            self._logger.setLevel(logging.DEBUG if spi is None else logging.INFO)
         self._ce_pin = ce_pin
         if ce_pin is not None:
             self._ce_pin.switch_to_output(value=False)
+        # init shadow copy of RX addresses for all pipes for context manager
+        self._pipes = [bytearray([0xE7] * 5), bytearray([0xC2] * 5),
+                       0xC3, 0xC4, 0xC5, 0xC6]
+        self._status = 0  # status byte returned on all SPI transactions
         self._spi = None
-        if spi is not None:
-            if type(spi).__name__.startswith("SpiDev"):
+        # pre-configure the CONFIGURE register:
+        #   0x0E = IRQs are all enabled, CRC is 2 bytes, and power up in TX mode
+        self._config = 0x0E
+        if spi is not None:  # setup SPI
+            if type(spi).__name__.endswith("SpiDev"):
                 self._spi = SPIDevCtx(spi, csn, spi_frequency=spi_frequency)
             else:
                 self._spi = SPIDevice(
                     spi, chip_select=csn, baudrate=spi_frequency, extra_clocks=8
                 )
-        self._status = 0  # status byte returned on all SPI transactions
-        # init shadow copy of RX addresses for all pipes for context manager
-        self._pipes = [
-            bytearray([0xE7] * 5),
-            bytearray([0xC2] * 5),
-            0xC3,
-            0xC4,
-            0xC5,
-            0xC6,
-        ]
-        # pre-configure the CONFIGURE register:
-        #   0x0E = IRQs are all enabled, CRC is 2 bytes, and power up in TX mode
-        self._config = 0x0E
-        if spi is not None:
             self._reg_write(CONFIGURE, self._config)
+            self._log(20, "status = {}".format(hex(self._status)))
             hw_check = self._reg_read(CONFIGURE)
-            if hw_check & 3 != 2:
-                self._log(50, "hardware check returned {}".format(hw_check))
+            if hw_check != self._config:
+                self._log(50, "hardware check returned {}, expected {}".format(
+                    hex(hw_check), hex(self._config)
+                ))
                 raise RuntimeError("nRF24L01 Hardware not responding")
             for i in range(6):  # capture RX addresses from registers
                 if i < 2:
                     self._pipes[i] = self._reg_read_bytes(RX_ADDR_P0 + i)
                 else:
                     self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
-        elif self.logger is not None:
-            self.logger.setLevel(10)  # set to DEBUG output
         self._open_pipes = 0  # 0 = all RX pipes closed
         # test is nRF24L01 is a plus variant using a command specific to
         # non-plus variants
@@ -181,9 +187,9 @@ class RF24:
 
     def _reg_read(self, reg):
         in_buf = bytearray([0, 0])
-        if self._spi is not None:
-            with self._spi as spi:
-                spi.write_readinto(bytes([reg, 0]), in_buf)
+        out_buf = bytes([reg, 0])
+        with self._spi as spi:
+            spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         self._log(
             10, "SPI read 1 byte from {} {}".format(hex(reg), hex(in_buf[1]))
@@ -192,38 +198,39 @@ class RF24:
 
     def _reg_read_bytes(self, reg, buf_len=5):
         in_buf = bytearray(buf_len + 1)
-        if self._spi is not None:
-            with self._spi as spi:
-                spi.write_readinto(bytes([reg] + [0] * buf_len), in_buf)
+        out_buf = bytes([reg] + [0] * buf_len)
+        with self._spi as spi:
+            spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
-        self._log(10, "SPI reading {} bytes from {} {}".format(
+        self._log(10, "SPI read {} bytes from {} {}".format(
             buf_len, hex(reg), "0x" + address_repr(in_buf[1:])
         ))
         return in_buf[1:]
 
     def _reg_write_bytes(self, reg, out_buf):
-        self._log(10, "SPI writing {} bytes to {} {}".format(
+        in_buf = bytearray(len(out_buf) + 1)
+        out_buf = bytes([0x20 | reg]) + out_buf
+        with self._spi as spi:
+            spi.write_readinto(out_buf, in_buf)
+        self._status = in_buf[0]
+        self._log(10, "SPI write {} bytes to {} {}".format(
             len(out_buf), hex(reg), "0x" + address_repr(out_buf)
         ))
-        in_buf = bytearray(len(out_buf) + 1)
-        if self._spi is not None:
-            with self._spi as spi:
-                spi.write_readinto(bytes([0x20 | reg]) + out_buf, in_buf)
-        self._status = in_buf[0]
 
     def _reg_write(self, reg, value=None):
+        out_buf = bytes([reg])
+        if value is not None:
+            out_buf += bytes([value])
+        in_buf = bytearray(len(out_buf))
+        with self._spi as spi:
+            spi.write_readinto(out_buf, in_buf)
+        self._status = in_buf[0]
         if self._logger is not None and reg != 0xFF:
             self._log(10, "SPI write {} {} {}".format(
                 "command" if value is None else "1 byte to",
                 hex(reg),
                 "" if value is None else hex(value)
             ))
-        if self._spi is not None:
-            out_buf = bytes([reg] if value is None else [reg, value])
-            in_buf = bytearray(len(out_buf))
-            with self._spi as spi:
-                spi.write_readinto(out_buf, in_buf)
-        self._status = in_buf[0]
 
     @property
     def address_length(self):

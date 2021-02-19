@@ -12,5 +12,3 @@ except ImportError:  # must be on linux or CircuitPython compatible
         from .cpy_rpi_gpio import RPiDIO
     except ImportError:
         pass
-
-__all__ = ["DigitalInOut", "SPIDevice", "SPIDevCtx", "RPiDIO"]
