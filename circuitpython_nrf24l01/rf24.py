@@ -66,10 +66,6 @@ class RF24:
             self._logger.setLevel(logging.DEBUG if spi is None else logging.INFO)
         self._ce_pin = ce_pin
         if ce_pin is not None:
-            if isinstance(ce_pin, int):
-                self._ce_pin = (
-                    DigitalInOut(ce_pin) if RPiDIO is None else RPiDIO(ce_pin)
-                )
             self._ce_pin.switch_to_output(value=False)
         # init shadow copy of RX addresses for all pipes for context manager
         self._pipes = [
