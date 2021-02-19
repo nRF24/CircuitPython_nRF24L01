@@ -25,7 +25,7 @@ __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from micropython import const
-from .wrapper import SPIDevCtx, SPIDevice
+from .wrapper import SPIDevCtx, SPIDevice, DigitalInOut, RPiDIO
 
 logging = None  # pylint: disable=invalid-name
 try:
@@ -66,6 +66,11 @@ class RF24:
             self._logger.setLevel(logging.DEBUG if spi is None else logging.INFO)
         self._ce_pin = ce_pin
         if ce_pin is not None:
+            if isinstance(ce_pin, int):
+                if RPiDIO is not None:
+                    self._ce_pin = RPiDIO(ce_pin)
+                else:  # this only works on micropython
+                    self._ce_pin = DigitalInOut(ce_pin)
             self._ce_pin.switch_to_output(value=False)
         # init shadow copy of RX addresses for all pipes for context manager
         self._pipes = [bytearray([0xE7] * 5), bytearray([0xC2] * 5),
