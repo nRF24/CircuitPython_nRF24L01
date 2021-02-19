@@ -67,14 +67,19 @@ class RF24:
         self._ce_pin = ce_pin
         if ce_pin is not None:
             if isinstance(ce_pin, int):
-                if RPiDIO is not None:
-                    self._ce_pin = RPiDIO(ce_pin)
-                else:  # this only works on micropython
-                    self._ce_pin = DigitalInOut(ce_pin)
+                self._ce_pin = (
+                    DigitalInOut(ce_pin) if RPiDIO is None else RPiDIO(ce_pin)
+                )
             self._ce_pin.switch_to_output(value=False)
         # init shadow copy of RX addresses for all pipes for context manager
-        self._pipes = [bytearray([0xE7] * 5), bytearray([0xC2] * 5),
-                       0xC3, 0xC4, 0xC5, 0xC6]
+        self._pipes = [
+            bytearray([0xE7] * 5),
+            bytearray([0xC2] * 5),
+            0xC3,
+            0xC4,
+            0xC5,
+            0xC6,
+        ]
         self._status = 0  # status byte returned on all SPI transactions
         self._spi = None
         # pre-configure the CONFIGURE register:
@@ -91,9 +96,12 @@ class RF24:
             self._log(20, "status = {}".format(hex(self._status)))
             hw_check = self._reg_read(CONFIGURE)
             if hw_check != self._config:
-                self._log(50, "hardware check returned {}, expected {}".format(
-                    hex(hw_check), hex(self._config)
-                ))
+                self._log(
+                    50,
+                    "hardware check returned {}, expected {}".format(
+                        hex(hw_check), hex(self._config)
+                    ),
+                )
                 raise RuntimeError("nRF24L01 Hardware not responding")
             for i in range(6):  # capture RX addresses from registers
                 if i < 2:
@@ -196,9 +204,7 @@ class RF24:
         with self._spi as spi:
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
-        self._log(
-            10, "SPI read 1 byte from {} {}".format(hex(reg), hex(in_buf[1]))
-        )
+        self._log(10, "SPI read 1 byte from {} {}".format(hex(reg), hex(in_buf[1])))
         return in_buf[1]
 
     def _reg_read_bytes(self, reg, buf_len=5):
@@ -207,9 +213,12 @@ class RF24:
         with self._spi as spi:
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
-        self._log(10, "SPI read {} bytes from {} {}".format(
-            buf_len, hex(reg), "0x" + address_repr(in_buf[1:])
-        ))
+        self._log(
+            10,
+            "SPI read {} bytes from {} {}".format(
+                buf_len, hex(reg), "0x" + address_repr(in_buf[1:])
+            ),
+        )
         return in_buf[1:]
 
     def _reg_write_bytes(self, reg, out_buf):
@@ -218,9 +227,12 @@ class RF24:
         with self._spi as spi:
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
-        self._log(10, "SPI write {} bytes to {} {}".format(
-            len(out_buf), hex(reg), "0x" + address_repr(out_buf)
-        ))
+        self._log(
+            10,
+            "SPI write {} bytes to {} {}".format(
+                len(out_buf), hex(reg), "0x" + address_repr(out_buf)
+            ),
+        )
 
     def _reg_write(self, reg, value=None):
         out_buf = bytes([reg])
@@ -231,11 +243,14 @@ class RF24:
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         if self._logger is not None and reg != 0xFF:
-            self._log(10, "SPI write {} {} {}".format(
-                "command" if value is None else "1 byte to",
-                hex(reg),
-                "" if value is None else hex(value)
-            ))
+            self._log(
+                10,
+                "SPI write {} {} {}".format(
+                    "command" if value is None else "1 byte to",
+                    hex(reg),
+                    "" if value is None else hex(value),
+                ),
+            )
 
     @property
     def address_length(self):
@@ -343,8 +358,7 @@ class RF24:
         self.clear_status_flags(True, False, False)
         return result
 
-    def send(self, buf, ask_no_ack=False, force_retry=0,
-             send_only=False):
+    def send(self, buf, ask_no_ack=False, force_retry=0, send_only=False):
         """This blocking function is used to transmit payload(s)."""
         self.ce_pin = 0
         if isinstance(buf, (list, tuple)):
