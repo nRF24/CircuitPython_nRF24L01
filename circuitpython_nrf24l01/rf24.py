@@ -233,7 +233,7 @@ class RF24:
     def _reg_write(self, reg, value=None):
         out_buf = bytes([reg])
         if value is not None:
-            out_buf += bytes([value])
+            out_buf = bytes([(0x20 if reg != 0x50 else 0) | reg, value])
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
             spi.write_readinto(out_buf, in_buf)
