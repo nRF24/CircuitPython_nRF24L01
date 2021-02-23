@@ -77,10 +77,10 @@ class RF24:
             0xC6,
         ]
         self._status = 0  # status byte returned on all SPI transactions
-        self._spi = None
         # pre-configure the CONFIGURE register:
         #   0x0E = IRQs are all enabled, CRC is 2 bytes, and power up in TX mode
         self._config = 0x0E
+        self._spi = None
         if spi is not None:  # setup SPI
             if type(spi).__name__.endswith("SpiDev"):
                 self._spi = SPIDevCtx(spi, csn, spi_frequency=spi_frequency)
@@ -196,18 +196,18 @@ class RF24:
 
     def _reg_read(self, reg):
         in_buf = bytearray([0, 0])
-        out_buf = bytes([reg, 0])
-        with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
+        if self._spi is not None:
+            with self._spi as spi:
+                spi.write_readinto(bytes([reg, 0]), in_buf)
         self._status = in_buf[0]
         self._log(10, "SPI read 1 byte from {} {}".format(hex(reg), hex(in_buf[1])))
         return in_buf[1]
 
     def _reg_read_bytes(self, reg, buf_len=5):
         in_buf = bytearray(buf_len + 1)
-        out_buf = bytes([reg] + [0] * buf_len)
-        with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
+        if self._spi is not None:
+            with self._spi as spi:
+                spi.write_readinto(bytes([reg] + [0] * buf_len), in_buf)
         self._status = in_buf[0]
         self._log(
             10,
@@ -219,9 +219,9 @@ class RF24:
 
     def _reg_write_bytes(self, reg, out_buf):
         in_buf = bytearray(len(out_buf) + 1)
-        out_buf = bytes([0x20 | reg]) + out_buf
-        with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
+        if self._spi is not None:
+            with self._spi as spi:
+                spi.write_readinto(bytes([0x20 | reg]) + out_buf, in_buf)
         self._status = in_buf[0]
         self._log(
             10,
@@ -235,8 +235,9 @@ class RF24:
         if value is not None:
             out_buf = bytes([(0x20 if reg != 0x50 else 0) | reg, value])
         in_buf = bytearray(len(out_buf))
-        with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
+        if self._spi is not None:
+            with self._spi as spi:
+                spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         if self._logger is not None and reg != 0xFF:
             self._log(

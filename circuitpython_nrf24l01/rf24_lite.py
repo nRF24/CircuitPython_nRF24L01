@@ -3,8 +3,10 @@
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
-from digitalio import DigitalInOut
-from adafruit_bus_device.spi_device import SPIDevice
+try:
+    from adafruit_bus_device.spi_device import SPIDevice
+except ImportError:
+    from .wrapper.upy_spi import SPIDevice
 
 
 class RF24:
@@ -16,7 +18,7 @@ class RF24:
         self._reg_write(0, 0x0E)
         if self._reg_read(0) & 3 != 2:
             raise RuntimeError("nRF24L01 Hardware not responding")
-        self._ce_pin = DigitalInOut(ce_pin)
+        self._ce_pin = ce_pin
         self._reg_write(3, 3)
         self._reg_write(6, 7)
         self._reg_write(2, 0)
@@ -53,7 +55,9 @@ class RF24:
         self._status = in_buf[0]
 
     def _reg_write(self, reg, value=None):
-        out_buf = bytes([reg] if value is None else [reg, value])
+        out_buf = bytes([reg])
+        if value is not None:
+            out_buf = bytes([(0x20 if reg != 0x50 else 0) | reg, value])
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
             spi.write_readinto(out_buf, in_buf)

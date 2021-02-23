@@ -1,5 +1,4 @@
-"""wrapped driver for RPi.GPIO as DigitalIO"""
-
+"""This module contains a wrapper class for RPi.GPIO as digitalio.DigitalInOut"""
 import RPi.GPIO as GPIO
 
 

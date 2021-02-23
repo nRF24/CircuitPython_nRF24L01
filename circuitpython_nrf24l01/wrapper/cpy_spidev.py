@@ -1,4 +1,4 @@
-"""wrapper for spidev python wrapped driver"""
+"""This module contains a wrapper class for `spidev.SpiDev` in CPython on Linux"""
 
 
 class SPIDevCtx:

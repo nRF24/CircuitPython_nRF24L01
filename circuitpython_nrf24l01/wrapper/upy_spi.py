@@ -3,13 +3,8 @@
 #
 # SPDX-License-Identifier: MIT
 """
-MicroPython support
-====================================================
-
-wrapper classes that:
-
-1. add context management to managing SPI Bus Device
-2. a simple wrapper for ``machine.Pin``
+This module adds MicroPython supportvia a wrapper class that adds
+context management to a `machine.SPI` object.
 """
 from . import DigitalInOut
 

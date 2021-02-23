@@ -1,4 +1,4 @@
-"""wrappers for CirrcuitPython API over MicroPython's API"""
+"""wrappers for MicroPython's machine.Pin as CircuitPython's digitalio  API"""
 from machine import Pin  # pylint: disable=import-error
 # pylint: disable=too-few-public-methods,missing-class-docstring
 
