@@ -236,13 +236,6 @@ class RF24Network(RadioMixin):
     :param int node_address: The octal `int` for this node's address
     """
 
-    multicast = True  #: enable (`True`) or disable (`False`) multicasting
-    _multicast_relay = True
-    max_message_length = 144
-    """If a network node is driven by the TMRh20 RF24Network library on a
-    ATTiny-based board, set this to ``72``."""
-    _frame_buf = bytearray(max_message_length + len(RF24NetworkHeader()))
-    #: internal frame buffer shared by all RF24Network objects
 
     def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
         if not _is_addr_valid(node_address):
@@ -252,7 +245,13 @@ class RF24Network(RadioMixin):
         self._addr = 0
         self._addr_mask = 0xFFFF
 
-        # setup public proprties
+        self.multicast = True  #: enable (`True`) or disable (`False`) multicasting
+        self._multicast_relay = True
+        self.max_message_length = 144
+        """If a network node is driven by the TMRh20 RF24Network library on a
+        ATTiny-based board, set this to ``72``."""
+        # init internal frame buffer
+        self._frame_buf = bytearray(self.max_message_length + len(RF24NetworkHeader()))
         self.fragmentation = True
         #: enable (`True`) or disable (`False`) message fragmentation
         self.ret_sys_msg = False  #: for use with RF24Mesh (unsupported)
@@ -261,7 +260,7 @@ class RF24Network(RadioMixin):
         self.node_address = node_address
         self.force_retry = 6
         """Instead of a ``RF24Network::txTimeout``, we use the minimum amount
-        of forced retries during transmission failure with auto-retries
+        of forced retries during transmission failure (with auto-retries
         observed for every forced retry)."""
 
         self._rf24.ack = True
@@ -281,11 +280,11 @@ class RF24Network(RadioMixin):
     # pylint: disable=missing-docstring
     def print_details(self, dump_pipes=True):
         self._rf24.print_details(dump_pipes)
-        prompt = "Net node address__________{}".format(oct(self.node_address))
-        if self.logger is not None:
-            self.logger.log(20, prompt)
-        else:
-            print(prompt)
+        self._log(
+            20,
+            "Net node address__________{}".format(oct(self.node_address)),
+            force_print=True,
+        )
 
     # pylint: enable=missing-docstring
 

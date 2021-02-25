@@ -93,10 +93,11 @@ class RF24:
             hw_check = self._reg_read(CONFIGURE)
             if hw_check != self._config:
                 self._log(
-                    50,
+                    50,  # this is a logging.CRITICAL prompt
                     "hardware check returned {}, expected {}".format(
                         hex(hw_check), hex(self._config)
                     ),
+                    force_print=True,
                 )
                 raise RuntimeError("nRF24L01 Hardware not responding")
             for i in range(6):  # capture RX addresses from registers
@@ -200,7 +201,10 @@ class RF24:
             with self._spi as spi:
                 spi.write_readinto(bytes([reg, 0]), in_buf)
         self._status = in_buf[0]
-        self._log(10, "SPI read 1 byte from {} {}".format(hex(reg), hex(in_buf[1])))
+        if self._logger is not None:
+            self._log(10, "SPI read 1 byte from {} {}".format(
+                hex(reg), hex(in_buf[1])
+            ))
         return in_buf[1]
 
     def _reg_read_bytes(self, reg, buf_len=5):
@@ -209,12 +213,13 @@ class RF24:
             with self._spi as spi:
                 spi.write_readinto(bytes([reg] + [0] * buf_len), in_buf)
         self._status = in_buf[0]
-        self._log(
-            10,
-            "SPI read {} bytes from {} {}".format(
-                buf_len, hex(reg), "0x" + address_repr(in_buf[1:])
-            ),
-        )
+        if self._logger is not None:
+            self._log(
+                10,
+                "SPI read {} bytes from {} {}".format(
+                    buf_len, hex(reg), "0x" + address_repr(in_buf[1:])
+                ),
+            )
         return in_buf[1:]
 
     def _reg_write_bytes(self, reg, out_buf):
@@ -223,12 +228,13 @@ class RF24:
             with self._spi as spi:
                 spi.write_readinto(bytes([0x20 | reg]) + out_buf, in_buf)
         self._status = in_buf[0]
-        self._log(
-            10,
-            "SPI write {} bytes to {} {}".format(
-                len(out_buf), hex(reg), "0x" + address_repr(out_buf)
-            ),
-        )
+        if self._logger is not None:
+            self._log(
+                10,
+                "SPI write {} bytes to {} {}".format(
+                    len(out_buf), hex(reg), "0x" + address_repr(out_buf)
+                ),
+            )
 
     def _reg_write(self, reg, value=None):
         out_buf = bytes([reg])
