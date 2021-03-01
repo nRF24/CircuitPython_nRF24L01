@@ -60,6 +60,17 @@ This driver depends on:
   <https://github.com/adafruit/Adafruit_CircuitPython_BusDevice>`_ (specifically the
   :py:mod:`~adafruit_bus_device.spi_device`)
 
+  .. note:: As of CircuitPython 6.2.0-beta1 the adafruit_bus_device library is included
+      with the firmware (the UF2 file). However, devices running CircuitPython 6.1.0 or
+      earlier need to have the adafruit_bus_device library installed manually in the
+      CIRCUITPY drive's "lib" folder.
+
+      .. tip:: Use CircuitPython 6.2.0 or newer because faster SPI transactions yield
+          faster transmissions.
+
+      The adafruit_bus_device library is installed automatically on Linux when
+      `Installing from PyPI`_.
+
 Please ensure all dependencies are available on the CircuitPython filesystem.
 This is easily achieved by downloading
 `the Adafruit library and driver bundle <https://github.com/adafruit/Adafruit_CircuitPython_Bundle>`_.
