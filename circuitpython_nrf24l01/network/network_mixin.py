@@ -1,14 +1,21 @@
 """A module to hold all usuall accesssible RF24 API via the RF24Network API"""
 # pylint: disable=missing-docstring
-from ..rf24 import RF24, logging
+from ..rf24 import RF24
+logging = None  # pylint: disable=invalid-name
+try:
+    import logging
+except ImportError:
+    try:
+        import adafruit_logging as logging
+    except ImportError:
+        pass  # proceed without logging capability
 
 
 class RadioMixin:
     def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
         self._rf24 = RF24(spi, csn, ce_pin, spi_frequency=spi_frequency)
         self._logger = None
-        if self._rf24.logger is not None:
-            self._rf24.logger.setLevel(logging.INFO)  # ignore DEBUG from RF24
+        if logging is not None:
             self._logger = logging.getLogger(type(self).__name__)
             self._logger.setLevel(logging.DEBUG if spi is None else logging.INFO)
         super().__init__()

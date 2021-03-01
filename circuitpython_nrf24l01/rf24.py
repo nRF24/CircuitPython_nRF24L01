@@ -27,14 +27,6 @@ import time
 from micropython import const
 from .wrapper import SPIDevCtx, SPIDevice
 
-logging = None  # pylint: disable=invalid-name
-try:
-    import logging
-except ImportError:
-    try:
-        import adafruit_logging as logging
-    except ImportError:
-        pass  # proceed without logging capability
 
 CONFIGURE = const(0x00)  # IRQ masking, CRC scheme, PWR control, & RX/TX roles
 AUTO_ACK = const(0x01)  # auto-ACK status for all pipes
@@ -60,10 +52,6 @@ class RF24:
     """A driver class for the nRF24L01(+) transceiver radios."""
 
     def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
-        self._logger = None
-        if logging is not None:
-            self._logger = logging.getLogger(type(self).__name__)
-            self._logger.setLevel(logging.DEBUG if spi is None else logging.INFO)
         self._ce_pin = ce_pin
         if ce_pin is not None:
             self._ce_pin.switch_to_output(value=False)
@@ -86,20 +74,16 @@ class RF24:
                 self._spi = SPIDevCtx(spi, csn, spi_frequency=spi_frequency)
             else:
                 self._spi = SPIDevice(
-                    spi, chip_select=csn, baudrate=spi_frequency, extra_clocks=8
+                    spi, chip_select=csn, baudrate=spi_frequency, # extra_clocks=8
                 )
             self._reg_write(CONFIGURE, self._config)
-            self._log(20, "status = {}".format(hex(self._status)))
             hw_check = self._reg_read(CONFIGURE)
             if hw_check != self._config:
-                self._log(
-                    50,  # this is a logging.CRITICAL prompt
-                    "hardware check returned {}, expected {}".format(
-                        hex(hw_check), hex(self._config)
-                    ),
-                    force_print=True,
+                raise RuntimeError(
+                    "nRF24L01 Hardware not responding; expected {}, got {}".format(
+                        hex(self._config), hex(hw_check)
+                    )
                 )
-                raise RuntimeError("nRF24L01 Hardware not responding")
             for i in range(6):  # capture RX addresses from registers
                 if i < 2:
                     self._pipes[i] = self._reg_read_bytes(RX_ADDR_P0 + i)
@@ -170,22 +154,6 @@ class RF24:
         return False
 
     @property
-    def logger(self):
-        """Get/Set the current ``Logger()``."""
-        return self._logger
-
-    @logger.setter
-    def logger(self, val):
-        if type(val).__name__.startswith("Logger"):
-            self._logger = val
-
-    def _log(self, level, prompt, force_print=False):
-        if self.logger is not None:
-            self.logger.log(level, prompt)
-        elif force_print:
-            print(prompt)
-
-    @property
     def ce_pin(self):
         """control the CE pin (for advanced usage)"""
         return self._ce_pin.value if self._ce_pin is not None else False
@@ -201,10 +169,7 @@ class RF24:
             with self._spi as spi:
                 spi.write_readinto(bytes([reg, 0]), in_buf)
         self._status = in_buf[0]
-        if self._logger is not None:
-            self._log(10, "SPI read 1 byte from {} {}".format(
-                hex(reg), hex(in_buf[1])
-            ))
+        # print("SPI read 1 byte from", hex(reg), hex(in_buf[1]))
         return in_buf[1]
 
     def _reg_read_bytes(self, reg, buf_len=5):
@@ -213,13 +178,9 @@ class RF24:
             with self._spi as spi:
                 spi.write_readinto(bytes([reg] + [0] * buf_len), in_buf)
         self._status = in_buf[0]
-        if self._logger is not None:
-            self._log(
-                10,
-                "SPI read {} bytes from {} {}".format(
-                    buf_len, hex(reg), "0x" + address_repr(in_buf[1:])
-                ),
-            )
+        # print("SPI read {} bytes from {} {}".format(
+        #     buf_len, hex(reg), "0x" + address_repr(in_buf[1:])
+        # ))
         return in_buf[1:]
 
     def _reg_write_bytes(self, reg, out_buf):
@@ -228,13 +189,9 @@ class RF24:
             with self._spi as spi:
                 spi.write_readinto(bytes([0x20 | reg]) + out_buf, in_buf)
         self._status = in_buf[0]
-        if self._logger is not None:
-            self._log(
-                10,
-                "SPI write {} bytes to {} {}".format(
-                    len(out_buf), hex(reg), "0x" + address_repr(out_buf)
-                ),
-            )
+        # print("SPI write {} bytes to {} {}".format(
+        #     len(out_buf), hex(reg), "0x" + address_repr(out_buf)
+        # ))
 
     def _reg_write(self, reg, value=None):
         out_buf = bytes([reg])
@@ -245,15 +202,13 @@ class RF24:
             with self._spi as spi:
                 spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
-        if self._logger is not None and reg != 0xFF:
-            self._log(
-                10,
-                "SPI write {} {} {}".format(
-                    "command" if value is None else "1 byte to",
-                    hex(reg),
-                    "" if value is None else hex(value),
-                ),
-            )
+        # if reg != 0xFF:
+        #     print(
+        #         "SPI write",
+        #         "command" if value is None else "1 byte to",
+        #         hex(out_buf[0]),
+        #         "" if value is None else hex(value),
+        #     )
 
     @property
     def address_length(self):
@@ -379,12 +334,11 @@ class RF24:
             up_cnt += self.update()
         # self.ce_pin = 0  # keep it high, so subsequent calls are faster
         result = self.irq_ds
-        self._log(
-            12,
-            "send() waited {} updates DS: {} DR: {} DF: {}".format(
-                up_cnt, self.irq_ds, self.irq_dr, self.irq_df
-            ),
-        )
+        # print(
+        #     "send() waited {} updates DS: {} DR: {} DF: {}".format(
+        #         up_cnt, self.irq_ds, self.irq_dr, self.irq_df
+        #     )
+        # )
         while force_retry and not result:
             result = self.resend(send_only)
             force_retry -= 1
@@ -557,7 +511,7 @@ class RF24:
             )
         )
         for prompt in prompts:
-            self._log(20, prompt, force_print=True)
+            print(prompt)
         if dump_pipes:
             self._dump_pipes()
 
@@ -587,7 +541,7 @@ class RF24:
                     "\t\texpecting {} byte static payloads".format(self._pl_len[i])
                 )
         for prompt in prompts:
-            self._log(20, prompt, force_print=True)
+            print(prompt)
 
     @property
     def is_plus_variant(self):
@@ -892,13 +846,9 @@ class RF24:
             up_cnt += self.update()
         self.ce_pin = 0
         result = self.irq_ds
-        if self.logger is not None:
-            self._log(
-                12,
-                "resend() waited {} updates DS: {} DR: {} DF: {}".format(
-                    up_cnt, self.irq_ds, self.irq_dr, self.irq_df
-                ),
-            )
+        # print("resend() waited {} updates DS: {} DR: {} DF: {}".format(
+        #     up_cnt, self.irq_ds, self.irq_dr, self.irq_df
+        # ))
         if result and self.irq_dr and not send_only:
             return self.read()
         return result
@@ -977,8 +927,7 @@ class RF24:
             self.ce_pin = 1
             time.sleep(0.001)
             self.ce_pin = 0
-            while self._status & 0x70:
-                self.update()
+            self.clear_status_flags()
             self._reg_write(0x17, 0x40)
         self.ce_pin = 1
 
