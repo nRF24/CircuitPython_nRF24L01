@@ -23,7 +23,7 @@
 found here <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_"""
 from os import urandom
 import struct
-from .rf24 import RF24, address_repr
+from .rf24 import RF24  #, address_repr
 
 
 def swap_bits(original):
@@ -66,7 +66,7 @@ def crc24_ble(data, deg_poly=0x65B, init_val=0x555555):
     return reverse_bits((crc).to_bytes(3, "big"))
 
 
-BLE_FREQ = (2, 26, 80,)
+BLE_FREQ = (2, 26, 80)
 """The BLE channel number is different from the nRF channel number."""
 
 
@@ -144,10 +144,10 @@ class FakeBLE(RF24):
         """Whitening the BLE packet data ensures there's no long repetition
         of bits."""
         data, coef = (bytearray(data), (self._curr_freq + 37) | 0x40)
-        self._log(11, "buffer: 0x{}".format(address_repr(data)))
-        self._log(11, "Whiten Coef: {} on channel {}".format(
-            hex(coef), BLE_FREQ[self._curr_freq]
-        ))
+        # print("buffer: 0x{}".format(address_repr(data)))
+        # print("Whiten Coef: {} on channel {}".format(
+        #     hex(coef), BLE_FREQ[self._curr_freq]
+        # ))
         for i, byte in enumerate(data):
             res, mask = (0, 1)
             for _ in range(8):
@@ -157,7 +157,7 @@ class FakeBLE(RF24):
                 mask <<= 1
                 coef >>= 1
             data[i] = byte ^ res
-        self._log(11, "whitened: 0x{}".format(address_repr(data)))
+        # print("whitened: 0x{}".format(address_repr(data)))
         return data
 
     def _make_payload(self, payload):
@@ -178,9 +178,9 @@ class FakeBLE(RF24):
         if name_length:
             buf += chunk(self.name, 0x08)
         buf += payload
-        self._log(11, "payload: 0x{} +CRC24: 0x{}".format(
-            address_repr(buf), address_repr(crc24_ble(buf))
-        ))
+        # print("payload: 0x{} +CRC24: 0x{}".format(
+        #     address_repr(buf), address_repr(crc24_ble(buf))
+        # ))
         buf += crc24_ble(buf)
         return buf
 
@@ -201,55 +201,53 @@ class FakeBLE(RF24):
         else:
             payload = chunk(buf, data_type) if buf else b""
         payload = self.whiten(self._make_payload(payload))
-        self._log(11, "original: 0x{}".format(address_repr(payload)))
-        self._log(11, "reversed: 0x{}".format(address_repr(reverse_bits(payload))))
+        # print("original: 0x{}".format(address_repr(payload)))
+        # print("reversed: 0x{}".format(address_repr(reverse_bits(payload))))
         self.send(reverse_bits(payload))
 
     def print_details(self, dump_pipes=False):
         super().print_details(dump_pipes)
-        prompts = ["BLE device name___________{}".format(str(self.name))]
-        prompts.append("Broadcasting PA Level_____{}".format(self.show_pa_level))
-        for prompt in prompts:
-            self._log(20, prompt, force_print=True)
+        print("BLE device name___________{}".format(str(self.name)))
+        print("Broadcasting PA Level_____{}".format(self.show_pa_level))
 
     @RF24.channel.setter
     def channel(self, value):
-        if value not in BLE_FREQ:
-            self._log(40, "channel {} is not a valid BLE frequency".format(value))
-        else:
+        if value in BLE_FREQ:
             self._channel = value
             self._reg_write(0x05, value)
+        # else:
+        #     print("channel {} is not a valid BLE frequency".format(value))
 
     # pylint: disable=unused-argument
     @RF24.dynamic_payloads.setter
     def dynamic_payloads(self, val):
-        self._log(40, "adjusting dynamic_payloads breaks BLE specifications")
+        raise RuntimeWarning("adjusting dynamic_payloads breaks BLE specifications")
 
     @RF24.data_rate.setter
     def data_rate(self, val):
-        self._log(40, "adjusting data_rate breaks BLE specifications")
+        raise RuntimeWarning("adjusting data_rate breaks BLE specifications")
 
     @RF24.address_length.setter
     def address_length(self, val):
-        self._log(40, "adjusting address_length breaks BLE specifications")
+        raise RuntimeWarning("adjusting address_length breaks BLE specifications")
 
     @RF24.auto_ack.setter
     def auto_ack(self, val):
-        self._log(40, "adjusting auto_ack breaks BLE specifications")
+        raise RuntimeWarning("adjusting auto_ack breaks BLE specifications")
 
     @RF24.ack.setter
     def ack(self, val):
-        self._log(40, "adjusting ack breaks BLE specifications")
+        raise RuntimeWarning("adjusting ack breaks BLE specifications")
 
     @RF24.crc.setter
     def crc(self, val):
-        self._log(40, "adjusting crc breaks BLE specifications")
+        raise RuntimeWarning("adjusting crc breaks BLE specifications")
 
     def open_rx_pipe(self, pipe_number, address):
-        self._log(40, "BLE implementation only uses 1 address on pipe 0")
+        raise RuntimeWarning("BLE implementation only uses 1 address on pipe 0")
 
     def open_tx_pipe(self, address):
-        self._log(40, "BLE implentation only uses 1 address")
+        raise RuntimeWarning("BLE implentation only uses 1 address")
 
     # pylint: enable=unused-argument
 
