@@ -2,22 +2,21 @@
 Using logger(s)
 ================
 
-Each `RF24` based object comes with compatibility with python's stanard
+The `RF24Network` object comes with compatibility with python's standard
 logging library. For CircuitPython, the :py:mod:`adafruit_logging` module must
 exist in your CIRCUITPY drive's ``lib`` folder.
 
 If the logging module is found:
 
 1. The logging level is set to ``logging.INFO``
-2. All library :py:func:`print()` calls will use the logger instantaited and
-   accessed by the class's
-   :attr:`~circuitpython_nrf24l01.rf24.RF24.logger` attribute.
+2. All internal calls to :py:func:`print()` will use the logger instantaited and
+   accessed by the class's `logger` attribute.
 
 
 logger
 ------
 
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.logger
+.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.logger
 
     Internally, only this object's ``log()`` & ``setLevel()`` methods are used.
 
@@ -37,21 +36,19 @@ different levels of logging. The default is ``INFO``.
 
   .. code-block:: python
 
-      >>> from circuitpython_nrf24l01.fake_ble import FakeBLE
-      >>> nrf = FakeBLE(None, None, None)  # Shim created; autmatically uses DEBUG
+      >>> from circuitpython_nrf24l01.network.rf24_network import RF24Network
+      >>> nrf = RF24Network(None, None, None)  # Shim created; autmatically uses DEBUG
       >>> nrf.logger.setLevel(20)  # set back to default INFO
       >>> nrf.logger.info("Shims are useful with pytest")
-      INFO:Fake_BLE:Shims are useful with pytest
+      INFO:RF24Network:Shims are useful with pytest
 
-Each RF24 class is layerd so that lgging mesages can be filtered out. In addition to the usual ``CRITICAL``, ``ERROR``, ``WARNING``,  & ``INFO`` levels, the following ``DEBUG`` values are supported by the corresponding object.
+Logging mesages can be filtered using logging levels. In addition to the usual ``CRITICAL``, ``ERROR``, ``WARNING``,  & ``INFO`` levels, the following ``DEBUG`` values are supported by the corresponding object.
 
 .. csv-table::
     :header: ``level``, Description
     :widths: 3, 12
 
-    ``10``, "Basic module debug."
-    ``11``, "general debug prompts specific to `RF24Network` or `FakeBLE`"
+    ``11``, "general debug prompts specific to `RF24Network`"
     ``12``, "minimal debug prompts specific to `RF24Network`"
     ``13``, "show fragmentation debug prompts specific to `RF24Network`"
-    ``14``, "show level 2 of fragmentation debug prompts specific to `RF24Network`"
-
+    ``14``, "show advanced fragmentation debug prompts specific to `RF24Network`"
