@@ -32,7 +32,9 @@ spi = None if USE_SHIM else board.SPI()  # init spi bus object
 # to use different addresses on a pair of radios, we need a variable to
 # uniquely identify which address this radio will use
 radio_number = int(
-    input("Which radio is this? Enter '0' or '1' or octal int. Defaults to '0' ") or "0",
+    input(
+        "Which radio is this? Enter '0', '1', or octal int. Defaults to '0' "
+    ) or "0",
     8,  # octal base
 )
 
