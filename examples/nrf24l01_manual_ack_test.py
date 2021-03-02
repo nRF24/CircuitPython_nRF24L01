@@ -32,7 +32,7 @@ try:  # on CircuitPython & Linux
         spi = spidev.SpiDev()  # for a faster interface on linux
         csn = 0  # use CE0 on default bus (even faster than using any pin)
         if RPiDIO is not None:  # RPi.GPIO lib is present
-            # RPi.GPIO is faster than CircuitPython on Linux & uses IRQ callbacks
+            # RPi.GPIO is faster than CircuitPython on Linux
             ce_pin = RPiDIO(22)  # using pin gpio22 (BCM numbering)
 
     except ImportError:  # on CircuitPython only
