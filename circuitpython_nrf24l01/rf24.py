@@ -532,7 +532,8 @@ class RF24:
 
     @property
     def dynamic_payloads(self):
-        """This `int` attribute is the dynamic payload length feature for any/all pipes."""
+        """This `int` attribute is the dynamic payload length feature for
+        any/all pipes."""
         self._dyn_pl = self._reg_read(DYN_PL_LEN)
         return self._dyn_pl
 
@@ -596,7 +597,8 @@ class RF24:
             self._reg_write(RX_PL_LENG + pipe_number, length)
 
     def get_payload_length(self, pipe_number=0):
-        """Returns an `int` describing the specified data pipe's static payload length."""
+        """Returns an `int` describing the specified data pipe's static
+        payload length."""
         self._pl_len[pipe_number] = self._reg_read(RX_PL_LENG + pipe_number)
         return self._pl_len[pipe_number]
 
@@ -643,7 +645,8 @@ class RF24:
 
     @property
     def auto_ack(self):
-        """This `int` attribute is the automatic acknowledgment feature for any/all pipes."""
+        """This `int` attribute is the automatic acknowledgment feature for
+        any/all pipes."""
         self._aa = self._reg_read(AUTO_ACK)
         return self._aa
 
