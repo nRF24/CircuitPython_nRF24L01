@@ -59,40 +59,32 @@ class RF24:
         self._pipes = [
             bytearray([0xE7] * 5),
             bytearray([0xC2] * 5),
-            0xC3,
-            0xC4,
-            0xC5,
-            0xC6,
+            0xC3, 0xC4, 0xC5, 0xC6,
         ]
-        self._status = 0  # status byte returned on all SPI transactions
+        # self._status = status byte returned on all SPI transactions
         # pre-configure the CONFIGURE register:
-        #   0x0E = IRQs are all enabled, CRC is 2 bytes, and power up in TX mode
-        self._config = 0x0E
-        self._spi = None
+        #   0x0E = all IRQs enabled, CRC is 2 bytes, and power up in TX mode
+        self._status, self._config, self._spi = (0, 0x0E, None)
         if spi is not None:  # setup SPI
             if type(spi).__name__.endswith("SpiDev"):
                 self._spi = SPIDevCtx(spi, csn, spi_frequency=spi_frequency)
             else:
-                self._spi = SPIDevice(
-                    spi, chip_select=csn, baudrate=spi_frequency, # extra_clocks=8
-                )
+                self._spi = SPIDevice(spi, chip_select=csn, baudrate=spi_frequency)
             self._reg_write(CONFIGURE, self._config)
             hw_check = self._reg_read(CONFIGURE)
             if hw_check != self._config:
                 raise RuntimeError(
-                    "nRF24L01 Hardware not responding; expected {}, got {}".format(
-                        hex(self._config), hex(hw_check)
-                    )
+                    "nRF24L01 Hardware not responding; expected {}, got "
+                    "{}".format(hex(self._config), hex(hw_check))
                 )
             for i in range(6):  # capture RX addresses from registers
                 if i < 2:
                     self._pipes[i] = self._reg_read_bytes(RX_ADDR_P0 + i)
                 else:
                     self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
-        self._open_pipes = 0  # 0 = all RX pipes closed
         # test is nRF24L01 is a plus variant using a command specific to
         # non-plus variants
-        self._is_plus_variant = False
+        self._open_pipes, self._is_plus_variant = (0, False)  # close all RX pipes
         self._features = self._reg_read(TX_FEATURE)
         self._reg_write(0x50, 0x73)  # derelict command toggles TX_FEATURE register
         after_toggle = self._reg_read(TX_FEATURE)
@@ -114,7 +106,7 @@ class RF24:
         # pre-configure the RF_SETUP register
         self._rf_setup = 0x07  # 1 Mbps data_rate, and 0 dbm pa_level
         # pre-configure dynamic_payloads & auto_ack
-        self._dyn_pl, self._aa = (0x3F, 0x3F)  # 0x3F = enable feature on all pipes
+        self._dyn_pl, self._aa = (0x3F,) * 2  # 0x3F = enable feature on all pipes
         self._channel = 76  # 2.476 GHz
         self._addr_len = 5  # 5-byte long addresses
         self._pl_len = [32] * 6  # 32-byte static payloads for all pipes
@@ -377,8 +369,8 @@ class RF24:
 
     def clear_status_flags(self, data_recv=True, data_sent=True, data_fail=True):
         """This clears the interrupt flags in the status register."""
-        config = bool(data_recv) << 6 | bool(data_sent) << 5 | bool(data_fail) << 4
-        self._reg_write(7, config)
+        config = bool(data_recv) << 6 | bool(data_sent) << 5
+        self._reg_write(7, config | bool(data_fail) << 4)
 
     def interrupt_config(self, data_recv=True, data_sent=True, data_fail=True):
         """Sets the configuration of the nRF24L01's IRQ pin. (write-only)"""
@@ -406,83 +398,80 @@ class RF24:
             if self._aa
             else max(0, ((self._config & 0x0C) >> 2) - 1)
         )
+        d_rate = self._rf_setup & 0x28
+        d_rate = (2 if d_rate == 8 else 250) if d_rate else 1
+        _pa_level = (3 - ((self._rf_setup & 6) >> 1)) * -6
 
-        prompts = []
-        prompts.append("Is a plus variant_________{}".format(self.is_plus_variant))
-        prompts.append(
+        print("Is a plus variant_________{}".format(self.is_plus_variant))
+        print(
             "Channel___________________{} ~ {} GHz".format(
                 self._channel, (self._channel + 2400) / 1000
             )
         )
-        d_rate = self._rf_setup & 0x28
-        d_rate = (2 if d_rate == 8 else 250) if d_rate else 1
-        prompts.append(
-            "RF Data Rate______________{} {}".format(
-                d_rate, "Mbps" if d_rate != 250 else "Kbps"
-            )
+        print(
+            "RF Data Rate______________{}".format(d_rate),
+            "Mbps" if d_rate != 250 else "Kbps",
         )
-        _pa_level = (3 - ((self._rf_setup & 6) >> 1)) * -6
-        prompts.append("RF Power Amplifier________{} dbm".format(_pa_level))
-        prompts.append(
+        print("RF Power Amplifier________{} dbm".format(_pa_level))
+        print(
             "RF Low Noise Amplifier____{}".format(
                 "Enabled" if bool(self._rf_setup & 1) else "Disabled"
             )
         )
-        prompts.append("CRC bytes_________________{}".format(_crc))
-        prompts.append("Address length____________{} bytes".format(self._addr_len))
-        prompts.append("TX Payload lengths________{} bytes".format(self._pl_len[0]))
-        prompts.append(
+        print("CRC bytes_________________{}".format(_crc))
+        print("Address length____________{} bytes".format(self._addr_len))
+        print("TX Payload lengths________{} bytes".format(self._pl_len[0]))
+        print(
             "Auto retry delay__________{} microseconds".format(
                 ((self._rf_setup & 0xF0) >> 4) * 250 + 250
             )
         )
-        prompts.append(
-            "Auto retry attempts_______{} maximum".format(self._rf_setup & 0x0F)
-        )
-        prompts.append("Re-use TX FIFO____________{}".format(bool(_fifo & 64)))
-        prompts.append(
+        print("Auto retry attempts_______{} maximum".format(self._rf_setup & 0x0F))
+        print("Re-use TX FIFO____________{}".format(bool(_fifo & 64)))
+        print(
             "Packets lost on current channel_____________________{}".format(
                 observer >> 4
             )
         )
-        prompts.append(
+        print(
             "Retry attempts made for last transmission___________{}".format(
                 observer & 0xF
             )
         )
-        prompts.append(
+        print(
             "IRQ on Data Ready__{}    Data Ready___________{}".format(
                 "_Enabled" if not self._config & 0x40 else "Disabled", self.irq_dr
             )
         )
-        prompts.append(
+        print(
             "IRQ on Data Fail___{}    Data Failed__________{}".format(
                 "_Enabled" if not self._config & 0x10 else "Disabled", self.irq_df
             )
         )
-        prompts.append(
+        print(
             "IRQ on Data Sent___{}    Data Sent____________{}".format(
                 "_Enabled" if not self._config & 0x20 else "Disabled", self.irq_ds
             )
         )
-        prompts.append(
+        print(
             "TX FIFO full__________{}    TX FIFO empty________{}".format(
                 "_True" if _fifo & 0x20 else "False",
                 "True" if _fifo & 0x10 else "False",
             )
         )
-        prompts.append(
+        print(
             "RX FIFO full__________{}    RX FIFO empty________{}".format(
-                "_True" if _fifo & 2 else "False", "True" if _fifo & 1 else "False",
+                "_True" if _fifo & 2 else "False",
+                "True" if _fifo & 1 else "False",
             )
         )
-        prompts.append(
+        print(
             "Ask no ACK_________{}    Custom ACK Payload___{}".format(
                 "_Allowed" if self._features & 1 else "Disabled",
                 "Enabled" if self._features & 2 else "Disabled",
             )
         )
-        prompts.append(
+        print(
             "Dynamic Payloads___{}    Auto Acknowledgment__{}".format(
                 "_Enabled"
                 if self._dyn_pl == 0x3F
@@ -502,7 +491,7 @@ class RF24:
                 ),
             )
         )
-        prompts.append(
+        print(
             "Primary Mode_____________{}X    Power Mode___________{}".format(
                 "R" if self._config & 1 else "T",
                 ("Standby-II" if self.ce_pin else "Standby-I")
@@ -510,8 +499,6 @@ class RF24:
                 else "Off",
             )
         )
-        for prompt in prompts:
-            print(prompt)
         if dump_pipes:
             self._dump_pipes()
 
@@ -525,11 +512,10 @@ class RF24:
                 else:
                     self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
                 self._pl_len[i] = self._reg_read(RX_PL_LENG + i)
-        prompts = []
-        prompts.append("TX address____________ 0x" + address_repr(self.address()))
+        print("TX address____________ 0x" + address_repr(self.address()))
         for i in range(6):
             is_open = self._open_pipes & (1 << i)
-            prompts.append(
+            print(
                 "Pipe {} ({}) bound: {}".format(
                     i,
                     " open " if is_open else "closed",
@@ -537,11 +523,7 @@ class RF24:
                 )
             )
             if is_open:
-                prompts.append(
-                    "\t\texpecting {} byte static payloads".format(self._pl_len[i])
-                )
-        for prompt in prompts:
-            print(prompt)
+                print("\t\texpecting {} byte static payloads".format(self._pl_len[i]))
 
     @property
     def is_plus_variant(self):
