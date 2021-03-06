@@ -23,6 +23,7 @@
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import struct
+
 # pylint: disable=unused-import
 from .constants import (
     NETWORK_DEBUG_MINIMAL,
@@ -45,6 +46,7 @@ from .constants import (
     USER_TX_TO_PHYSICAL_ADDRESS,
     MAX_USER_DEFINED_HEADER_TYPE,
 )
+
 # pylint: enable=unused-import
 from .network_mixin import RadioMixin
 from ..rf24 import address_repr
@@ -236,11 +238,12 @@ class RF24Network(RadioMixin):
     :param int node_address: The octal `int` for this node's address
     """
 
-
     def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
         if not _is_addr_valid(node_address):
             raise ValueError("node_address argument is invalid or malformed")
         super().__init__(spi, csn_pin, ce_pin, spi_frequency)
+        self.address_suffix = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
+        self.address_prefix = [0xCC] * 5
         self._multicast_level = 0
         self._addr = 0
         self._addr_mask = 0xFFFF
@@ -280,11 +283,7 @@ class RF24Network(RadioMixin):
     # pylint: disable=missing-docstring
     def print_details(self, dump_pipes=True):
         self._rf24.print_details(dump_pipes)
-        self._log(
-            20,
-            "Net node address__________{}".format(oct(self.node_address)),
-            force_print=True,
-        )
+        print("Net node address__________{}".format(oct(self.node_address)))
 
     # pylint: enable=missing-docstring
 
@@ -301,15 +300,7 @@ class RF24Network(RadioMixin):
                 self._addr_mask <<= 3
                 self._multicast_level += 1
             self._addr_mask = ~self._addr_mask
-            if self.logger is not None:
-                prompt = "address changed to {}".format(oct(self.node_address))
-                self.logger.log(NETWORK_DEBUG, prompt)
-            for i in range(1, 6):
-                if self.logger is not None:
-                    prompt = "pipe {} bound: 0x{}".format(
-                        i, address_repr(self._pipe_address(val, i))
-                    )
-                    self.logger.log(NETWORK_DEBUG, prompt)
+            for i in range(6):
                 self._rf24.open_rx_pipe(i, self._pipe_address(val, i))
 
     @property
@@ -327,17 +318,25 @@ class RF24Network(RadioMixin):
 
     def _pipe_address(self, node_address, pipe_number):
         """translate node address for use on all pipes"""
-        address_translation = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3, 0xEC]
-        result, count, dec = ([0xCC] * 5, 1, node_address)
+        # self.address_suffix = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
+        result, count, dec = (self.address_prefix[:6], 1, node_address)
         while dec:
-            if self.multicast and not pipe_number or not node_address:
-                result[count] = address_translation[dec % 8]
+            if not self.multicast or (
+                self.multicast and (pipe_number or not node_address)
+            ):
+                result[count] = self.address_suffix[dec % 8]
             dec = int(dec / 8)
             count += 1
-        if self.multicast and not pipe_number or not node_address:
-            result[0] = address_translation[pipe_number]
-        elif self.multicast:
-            result[1] = address_translation[count - 1]
+
+        if (self.multicast and (pipe_number or not node_address)) or not self.multicast:
+            result[0] = self.address_suffix[pipe_number]
+        elif self.multicast and (not pipe_number or node_address):
+            result[1] = self.address_suffix[count - 1]
+        # print(
+        #     "address for pipe {} using address {} is {}".format(
+        #         pipe_number, oct(node_address), address_repr(bytearray(result))
+        #     )
+        # )
         return bytearray(result)
 
     def update(self):
@@ -355,7 +354,7 @@ class RF24Network(RadioMixin):
                     self.logger.log(
                         NETWORK_DEBUG,
                         "discarding packet due to inadequate length"
-                        " or bad network addresses."
+                        " or bad network addresses.",
                     )
                 continue
 
@@ -379,9 +378,10 @@ class RF24Network(RadioMixin):
                     continue
 
                 if (
-                        self.ret_sys_msg and ret_val > MAX_USER_DEFINED_HEADER_TYPE
-                        or ret_val == NETWORK_ACK
-                        and ret_val not in _frag_types + (NETWORK_EXTERNAL_DATA,)
+                    self.ret_sys_msg
+                    and ret_val > MAX_USER_DEFINED_HEADER_TYPE
+                    or ret_val == NETWORK_ACK
+                    and ret_val not in _frag_types + (NETWORK_EXTERNAL_DATA,)
                 ):
                     return ret_val
 
@@ -390,7 +390,10 @@ class RF24Network(RadioMixin):
                 if self.multicast_relay:
                     if frame.header.to_node == 0o100:
                         # used by RF24Mesh
-                        if ret_val == NETWORK_POLL and self._addr != NETWORK_DEFAULT_ADDR:
+                        if (
+                            ret_val == NETWORK_POLL
+                            and self._addr != NETWORK_DEFAULT_ADDR
+                        ):
                             pass
 
                 elif self._addr != NETWORK_DEFAULT_ADDR:
