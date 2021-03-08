@@ -522,7 +522,7 @@ class RF24:
                     "0x" + address_repr(self.address(i)),
                 )
             )
-            if is_open:
+            if is_open and not self._dyn_pl & (1 << i):
                 print("\t\texpecting {} byte static payloads".format(self._pl_len[i]))
 
     @property
@@ -663,8 +663,6 @@ class RF24:
                     self._aa = (self._aa & ~(1 << i)) | (bool(val) << i)
         else:
             raise ValueError("auto_ack: {} is not a valid input" % enable)
-        if bool(self._aa & 1) != bool(self._aa & 0x3E) and self._aa & 0x3E:
-            self._aa |= 1
         self._reg_write(AUTO_ACK, self._aa)
 
     def set_auto_ack(self, enable, pipe_number=None):

@@ -172,10 +172,10 @@ read()
     .. versionadded:: 1.2.0
         ``length`` parameter
 
-    ..versionchanged:: 2.0.0
-        renamed this method from ``recv()`` to ``read()`` beccause it isn't doing
+    .. versionchanged:: 2.0.0
+        renamed this method from ``recv()`` to ``read()`` because it isn't doing
         any actual receiving. Rather, it is only reading data from the RX FIFO that
-        was already received.
+        was already received/validated by the radio.
 
 send()
 ******************
