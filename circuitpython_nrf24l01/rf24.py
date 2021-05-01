@@ -551,9 +551,8 @@ class RF24:
                     self._dyn_pl = (self._dyn_pl & ~(1 << i)) | (bool(val) << i)
         else:
             raise ValueError("dynamic_payloads: {} is an invalid input" % enable)
-        if self._dyn_pl:
-            self._features = (self._features & 3) | (bool(self._dyn_pl) << 2)
-            self._reg_write(TX_FEATURE, self._features)
+        self._features = (self._features & 3) | (bool(self._dyn_pl) << 2)
+        self._reg_write(TX_FEATURE, self._features)
         self._reg_write(DYN_PL_LEN, self._dyn_pl)
 
     def set_dynamic_payloads(self, enable, pipe_number=None):
