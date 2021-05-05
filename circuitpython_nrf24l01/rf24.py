@@ -734,7 +734,7 @@ class RF24:
     def data_rate(self, speed):
         if not speed in (1, 2, 250):
             raise ValueError("data_rate must be 1 (Mbps), 2 (Mbps), or 250 (kbps)")
-        if self.is_plus_variant and speed == 250:
+        if not self.is_plus_variant and speed == 250:
             raise NotImplementedError(
                 "250 kbps data rate is not available for the non-plus "
                 "variants of the nRF24L01 transceivers."
