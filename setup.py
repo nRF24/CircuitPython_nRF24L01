@@ -5,7 +5,7 @@ https://packaging.python.org/en/latest/distributing.html
 https://github.com/pypa/sampleproject
 """
 from os import path
-from codecs import open  # To use a consistent encoding
+from codecs import open as open_codec # To use a consistent encoding
 from setuptools import setup, find_packages
 
 
@@ -13,7 +13,7 @@ ROOT_DIR = path.abspath(path.dirname(__file__))
 REPO = "https://github.com/2bndy5/CircuitPython_nRF24L01"
 
 # Get the long description from the README file
-with open(path.join(ROOT_DIR, "README.rst"), encoding="utf-8") as f:
+with open_codec(path.join(ROOT_DIR, "README.rst"), encoding="utf-8") as f:
     long_description = f.read()
 
 setup(
