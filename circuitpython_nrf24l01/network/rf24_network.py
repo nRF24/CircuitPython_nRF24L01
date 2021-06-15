@@ -26,7 +26,7 @@ import time
 import math
 from typing import Union
 from .network_mixin import RadioMixin
-from ..rf24 import address_repr
+from ..rf24 import address_repr, SPIDevice, DigitalInOut
 from .packet_structs import RF24NetworkFrame, RF24NetworkHeader, _is_addr_valid
 
 from .constants import (
@@ -116,7 +116,13 @@ class RF24Network(RadioMixin):
     :param int node_address: The octal `int` for this node's address
     """
 
-    def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
+    def __init__(self,
+            spi: SPIDevice,
+            csn_pin: DigitalInOut,
+            ce_pin: DigitalInOut,
+            node_address: int,
+            spi_frequency: int=10000000
+        ) -> None:
         if not _is_addr_valid(node_address):
             raise ValueError("node_address argument is invalid or malformed")
         super().__init__(spi, csn_pin, ce_pin, spi_frequency)
@@ -165,13 +171,13 @@ class RF24Network(RadioMixin):
     def __exit__(self, *exc):
         return self._rf24.__exit__()
 
-    def print_details(self, dump_pipes=True):
+    def print_details(self, dump_pipes: bool=True) -> None:
         """.. seealso:: :py:meth:`~circuitpython_nrf24l01.rf24.RF24.print_details()`"""
         self._rf24.print_details(dump_pipes)
         print("Network node address__", oct(self.node_address))
 
     @property
-    def node_address(self):
+    def node_address(self) -> int:
         """get/set the node_address for the RF24Network object."""
         return self._addr
 
@@ -211,7 +217,7 @@ class RF24Network(RadioMixin):
         self._multicast_relay = enable and self.allow_multicast
 
     @property
-    def parent_pipe(self):
+    def parent_pipe(self) -> int:
         """The pipe that the parent node uses to listen to child nodes."""
         result = self._addr
         mask = self._addr_mask >> 3
@@ -377,13 +383,21 @@ class RF24Network(RadioMixin):
         self._rf24.listen = False
         self._rf24.open_rx_pipe(0, self._pipe_address(_level_to_address(level), 0))
 
-    def multicast(self, header: RF24NetworkHeader, message: Union[bytes, bytearray], level: int) -> bool:
+    def multicast(self,
+            header: RF24NetworkHeader,
+            message: Union[bytes, bytearray],
+            level: int
+        ) -> bool:
         """Broadcast a message to all nodes on a certain address level"""
         header.to_node = 0o100
         header.from_node = self.node_address
         return self.send(header, message, _level_to_address(level))
 
-    def send(self, header: RF24NetworkHeader, message: Union[bytes, bytearray], traffic_direct: int=0o70) -> bool:
+    def send(self,
+            header: RF24NetworkHeader,
+            message: Union[bytes, bytearray],
+            traffic_direct: int=0o70
+        ) -> bool:
         """Deliver a ``message`` according to the ``header`` information."""
         if not isinstance(header, RF24NetworkHeader):
             raise TypeError("header is not a RF24NetworkHeader object")
@@ -491,7 +505,12 @@ class RF24Network(RadioMixin):
             self._rf24.listen = True
         return result
 
-    def _write_to_pipe(self, frame: RF24NetworkFrame, to_node: int, to_pipe: int, use_multicast: bool) -> bool:
+    def _write_to_pipe(self,
+            frame: RF24NetworkFrame,
+            to_node: int,
+            to_pipe: int,
+            use_multicast: bool
+        ) -> bool:
         """send prepared frame to a particular network node pipe's RX address."""
         result = False
         if not frame.header.is_valid():
@@ -521,7 +540,11 @@ class RF24Network(RadioMixin):
             count_bits += 1
         return _address | (_pipe << count_bits)
 
-    def _logical_to_physical(self, to_node: int, to_pipe: int, use_multicast: bool=False) -> tuple:
+    def _logical_to_physical(self,
+            to_node: int,
+            to_pipe: int,
+            use_multicast: bool=False
+        ) -> tuple:
         """translates logical routing to physical address and data pipe number with
         a use_multicast flag"""
         if to_pipe > TX_ROUTED:

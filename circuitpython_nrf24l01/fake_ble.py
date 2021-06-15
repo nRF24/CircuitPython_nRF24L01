@@ -25,7 +25,7 @@ found here
 from os import urandom
 import struct
 from typing import Union
-from .rf24 import RF24, SPIDevCtx, SPIDevice, DigitalInOut, RPiDIO
+from .rf24 import RF24, SPIDevice, DigitalInOut
 
 
 def swap_bits(original: int) -> int:
@@ -76,9 +76,9 @@ class FakeBLE(RF24):
     """A class to implement BLE advertisements using the nRF24L01."""
 
     def __init__(self,
-            spi: Union[SPIDevice, SPIDevCtx],
-            csn:Union[DigitalInOut, RPiDIO],
-            ce_pin:Union[DigitalInOut, RPiDIO],
+            spi: SPIDevice,
+            csn: DigitalInOut,
+            ce_pin: DigitalInOut,
             spi_frequency: int=10000000
         ) -> None:
         super().__init__(spi, csn, ce_pin, spi_frequency=spi_frequency)

@@ -53,9 +53,9 @@ class RF24:
     """A driver class for the nRF24L01(+) transceiver radios."""
 
     def __init__(self,
-            spi: Union[SPIDevice, SPIDevCtx],
-            csn:Union[DigitalInOut, RPiDIO],
-            ce_pin:Union[DigitalInOut, RPiDIO],
+            spi: SPIDevice,
+            csn: DigitalInOut,
+            ce_pin: DigitalInOut,
             spi_frequency: int=10000000
         ) -> None:
         self._ce_pin = ce_pin
