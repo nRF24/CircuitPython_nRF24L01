@@ -26,7 +26,7 @@ __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from typing import List, Tuple, Union
 from micropython import const
-from .wrapper import SPIDevCtx, SPIDevice, RPiDIO, DigitalInOut
+from .wrapper import SPIDevCtx, SPIDevice, DigitalInOut
 
 
 CONFIGURE = const(0x00)  # IRQ masking, CRC scheme, PWR control, & RX/TX roles
