@@ -1,4 +1,5 @@
 """wrappers for MicroPython's machine.Pin as CircuitPython's digitalio  API"""
+from typing import Union
 from machine import Pin  # pylint: disable=import-error
 # pylint: disable=too-few-public-methods,missing-class-docstring
 
@@ -14,19 +15,21 @@ class Pull:
 
 class DigitalInOut:
     """A class to control micropython's :py:class:`~machine.Pin` object like
-    a circuitpython DigitalInOut object
-    :param ~machine.Pin pin: the digital pin alias.
+    a circuitpython DigitalInOut object.
+
+    :param int pin: The digital pin number to alias.
     """
-    def __init__(self, pin_number):
+
+    def __init__(self, pin_number: int) -> None:
         self._pin = Pin(pin_number, Pin.IN)
 
-    def deinit(self):
+    def deinit(self) -> None:
         """ deinitialize the GPIO pin """
         # deinit() not implemented in micropython
         # avoid raising a NotImplemented Error
         pass  # pylint: disable=unnecessary-pass
 
-    def switch_to_output(self, pull=None, value=False):
+    def switch_to_output(self, pull: Pull=None, value: Union[int, bool]=False) -> None:
         """ change pin into output """
         if pull is None:
             self._pin.init(Pin.OUT, value=value)
@@ -35,18 +38,18 @@ class DigitalInOut:
         else:
             raise AttributeError("pull parameter is unrecognized")
 
-    def switch_to_input(self, pull=None):  # pylint: disable=unused-argument
+    def switch_to_input(self, pull: Pull=None) -> None:  # pylint: disable=unused-argument
         """ change pin into input """
         self._pin.init(Pin.IN)
 
     @property
-    def value(self):
+    def value(self) -> bool:
         """ the value of the pin """
         return self._pin.value()
 
     @value.setter
-    def value(self, val):
+    def value(self, val: Union[int, bool]) -> None:
         self._pin.value(val)
 
-    def __del__(self):
+    def __del__(self) -> None:
         del self._pin

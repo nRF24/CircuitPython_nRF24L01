@@ -15,8 +15,8 @@ class SPIDevice:
 
     :param ~machine.SPI spi: The SPI bus the device is on
     :param ~machine.Pin chip_select: The chip select pin number.
-    :param int extra_clocks: The minimum number of clock cycles to cycle the bus after CS is high.
-        (Used for SD cards.)
+    :param int extra_clocks: The minimum number of clock cycles to cycle the
+        bus after CS is high. (Used for SD cards.)
 
     Example:
 
@@ -39,8 +39,15 @@ class SPIDevice:
             spi.write(bytes_read)
     """
 
-    def __init__(self, spi, chip_select=None, *,
-                 baudrate=100000, polarity=0, phase=0, extra_clocks=0):
+    def __init__(self,
+            spi,
+            chip_select: DigitalInOut=None,
+            *,
+            baudrate: int=100000,
+            polarity: int=0,
+            phase: int=0,
+            extra_clocks: int=0
+        ) -> None:
         self.spi = spi
         self.baudrate = baudrate
         self.polarity = polarity

@@ -122,7 +122,7 @@ version:
 * `is_plus_variant` is removed, meaning the
   lite version is not compatibility with the older non-plus variants of the nRF24L01.
 * `address()` removed.
-* `print_details()` removed. However you can use the following function to dump all available
+* :py:meth:`~circuitpython_nrf24l01.rf24.RF24.print_details()` removed. However you can use the following function to dump all available
   registers' values (for advanced users):
 
   .. code-block:: python

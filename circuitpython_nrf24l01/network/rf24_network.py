@@ -166,7 +166,7 @@ class RF24Network(RadioMixin):
         return self._rf24.__exit__()
 
     def print_details(self, dump_pipes=True):
-        """.. seealso:: `~rf24.print_details()`"""
+        """.. seealso:: :py:meth:`~circuitpython_nrf24l01.rf24.RF24.print_details()`"""
         self._rf24.print_details(dump_pipes)
         print("Network node address__", oct(self.node_address))
 
