@@ -96,17 +96,17 @@ def master(count=5):
     """Transmits 2 incrementing long ints every 2 second"""
     nrf.listen = True  # stay in active RX mode when not sleeping/TXing
     failures = 0
+    start_timer = time.monotonic()
     while failures < 6 and count:
-        count -= 1
         nrf.update()
         now = time.monotonic()
-        last_sent = now + 2
         # If it's time to send a message, send it!
-        if now - last_sent >= 2:
-            last_sent = now
+        if now >= start_timer + 2:
+            start_timer = now
+            count -= 1
             ok = nrf.send(
                 RF24NetworkHeader(not bool(radio_number % 8)),
-                struct.pack("<LL", time.monotonic_ns() / 1000, packets_sent[0]),
+                struct.pack("<LL", int(time.monotonic_ns() / 1000000), packets_sent[0]),
             )
             packets_sent[0] += 1
             failures += not ok

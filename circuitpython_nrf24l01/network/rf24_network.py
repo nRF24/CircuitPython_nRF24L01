@@ -117,7 +117,7 @@ class RF24Network(RadioMixin):
         self._multicast_level = 0
         self._network_flags = 0
         self._addr = 0
-        self._addr_mask = 0xFFFF
+        self._addr_mask = 0
 
         # setup members specific to network node
         #: enable (`True`) or disable (`False`) multicasting
@@ -171,10 +171,13 @@ class RF24Network(RadioMixin):
     def node_address(self, val):
         if _is_addr_valid(val):
             self._addr = val
-            while self._addr & self._addr_mask:
-                self._addr_mask <<= 3
+            mask = 0xFFFF
+            while self._addr & mask:
+                mask = (mask << 3) & 0xFFFF
                 self._multicast_level += 1
-            self._addr_mask = ~self._addr_mask
+            while not mask & 7:
+                self._addr_mask = (self._addr_mask << 3) | 7
+                mask >>= 3
             for i in range(6):
                 self._rf24.open_rx_pipe(i, self._pipe_address(val, i))
 
@@ -431,14 +434,14 @@ class RF24Network(RadioMixin):
             self._log(
                 NETWORK_DEBUG_ROUTING,
                 "Failed to send to {} via {} on pipe {}".format(
-                    frame.header.to_node, to_node, to_pipe
+                    frame.header.to_node, oct(to_node), oct(to_pipe)
                 ),
             )
         if (
             traffic_direct == TX_ROUTED
             and result
             and to_node == frame.header.to_node
-            and frame.is_ack_type()
+            and frame.is_ack_type
         ):
             # respond with a network ACK
             ack_to_node, ack_to_pipe, use_multicast = self._logical_to_physical(
@@ -449,7 +452,7 @@ class RF24Network(RadioMixin):
                 NETWORK_DEBUG_ROUTING,
                 "Network ACK {} origin {} (pipe {})".format(
                     "reached" if ack_ok else "failed to reach",
-                    frame.header.from_node,
+                    oct(frame.header.from_node),
                     ack_to_pipe,
                 ),
             )
@@ -458,7 +461,7 @@ class RF24Network(RadioMixin):
         if (
             result
             and to_node != frame.header.to_node
-            and frame.is_ack_type()
+            and frame.is_ack_type
             and traffic_direct in (0, 3)
         ):
             # wait for Network ACK
@@ -484,7 +487,7 @@ class RF24Network(RadioMixin):
     def _write_to_pipe(self, frame, to_node, to_pipe, use_multicast):
         """send prepared frame to a particular network node pipe's RX address."""
         result = False
-        if not frame.header.is_valid():
+        if not frame.header.is_valid:
             return result
         if not self._network_flags & FLAG_FAST_FRAG:
             self.listen = True
@@ -522,6 +525,9 @@ class RF24Network(RadioMixin):
         elif self._is_descendant(to_node):
             to_node = self._direct_child_route_to(to_node)
             to_pipe = 5
+        else:
+            to_node = self.parent
+            to_pipe = self.parent_pipe
         return (to_node, to_pipe, use_multicast)
 
     def _is_descendant(self, address):
