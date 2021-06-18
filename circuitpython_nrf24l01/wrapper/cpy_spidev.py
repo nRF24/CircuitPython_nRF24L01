@@ -1,9 +1,6 @@
 """This module contains a wrapper class for `spidev.SpiDev` in CPython on Linux"""
 
 
-from typing import Union
-
-
 class SPIDevCtx:
     """A wrapper class to allow using the spidev module on linux and
     circuitpython's API and context manager.
@@ -18,11 +15,7 @@ class SPIDevCtx:
         Defaults to 10MHz.
     """
 
-    def __init__(self,
-            spi,
-            csn: Union[int, list, tuple],
-            spi_frequency: int=10000000
-        ) -> None:
+    def __init__(self, spi, csn, spi_frequency=10000000):
         self._spi = spi
         self._baudrate = spi_frequency
         self._no_cs = False
@@ -50,7 +43,7 @@ class SPIDevCtx:
         self._spi.close()
         return False
 
-    def write_readinto(self, out_buf: Union[bytes, bytearray], in_buf: bytearray) -> None:
+    def write_readinto(self, out_buf, in_buf):
         """wraps ``spidev.SpiDev.xfer2()`` into MicroPython compatible
         ``spi.write_readinto()`` calls.
 

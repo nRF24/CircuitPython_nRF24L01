@@ -41,13 +41,13 @@ class SPIDevice:
 
     def __init__(self,
             spi,
-            chip_select: DigitalInOut=None,
+            chip_select=None,
             *,
-            baudrate: int=100000,
-            polarity: int=0,
-            phase: int=0,
-            extra_clocks: int=0
-        ) -> None:
+            baudrate=100000,
+            polarity=0,
+            phase=0,
+            extra_clocks=0
+        ):
         self.spi = spi
         self.baudrate = baudrate
         self.polarity = polarity

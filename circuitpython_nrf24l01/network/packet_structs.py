@@ -1,9 +1,8 @@
 """This module contains the data structures used foe network packets."""
 import struct
-from typing import Union
 
 
-def _is_addr_valid(address: int) -> bool:
+def _is_addr_valid(address):
     """Test is a given address is a valid RF24Network node address."""
     byte_count = 0
     while address:
@@ -25,24 +24,28 @@ class RF24NetworkHeader:
         header that can be augmented after instantiation.
     """
 
-    def __init__(self, to_node: int=None, message_type: int=None) -> None:
+    def __init__(self, to_node=None, message_type=None):
         self._from = 0
         self._to = to_node or 0
         self._to &= 0xFFFF
-        self._msg_t = message_type or 0
+        self._msg_t = 0
+        if message_type is not None:
+            self._msg_t = (
+                ord(message_type) if isinstance(message_type, str) else message_type
+            )
         self._msg_t &= 0xFF
         self._id = 0
         self._rsv = 0
-        self._next = 1
+        # self._next = 1
 
     @property
-    def from_node(self) -> int:
+    def from_node(self):
         """Describes the message origin. This attribute is truncated to a
         2-byte `int`."""
         return self._from
 
     @from_node.setter
-    def from_node(self, val: int) -> None:
+    def from_node(self, val: int):
         self._from = val & 0xFFFF
 
     @property
@@ -52,37 +55,38 @@ class RF24NetworkHeader:
         return self._to
 
     @to_node.setter
-    def to_node(self, val: int) -> None:
+    def to_node(self, val):
         self._to = val & 0xFFFF
 
     @property
-    def message_type(self) -> int:
+    def message_type(self):
         """The type of message. This `int` must be less than 256."""
         return self._msg_t
 
     @message_type.setter
-    def message_type(self, val: int) -> None:
+    def message_type(self, val):
         self._msg_t = val & 0xFF
 
     @property
     def frame_id(self) -> int:
-        """Describes the unique id for the frame. This attribute is truncated
-        to a 2-byte `int`."""
+        """Describes the unique id for the frame. Each frame's id is
+        incremented sequentially, but fragmented frames have the same id.
+        his attribute is truncated to a 2-byte `int`."""
         return self._id
 
     @frame_id.setter
-    def frame_id(self, val: int) -> None:
+    def frame_id(self, val):
         self._id = val & 0xFFFF
 
-    @property
-    def next_id(self) -> int:
-        """points to the next sequential message to be sent. This attribute is
-        truncated to a 2-byte `int`."""
-        return self._next
+    # @property
+    # def next_id(self):
+    #     """points to the next sequential message to be sent. This attribute is
+    #     truncated to a 2-byte `int`."""
+    #     return self._next
 
-    @next_id.setter
-    def next_id(self, val: int) -> None:
-        self._next = val & 0xFFFF
+    # @next_id.setter
+    # def next_id(self, val):
+    #     self._next = val & 0xFFFF
 
     @property
     def reserved(self) -> int:
@@ -91,10 +95,10 @@ class RF24NetworkHeader:
         return self._rsv
 
     @reserved.setter
-    def reserved(self, val: int) -> None:
+    def reserved(self, val):
         self._rsv = val & 0xFF
 
-    def decode(self, buffer: Union[bytes, bytearray]) -> bool:
+    def decode(self, buffer):
         """decode frame header for first 9 bytes of the payload.
         This function is meant for library internal usage."""
         if len(buffer) < self.__len__():
@@ -105,29 +109,29 @@ class RF24NetworkHeader:
             self._id,
             self._msg_t,
             self._rsv,
-            self._next,
-        ) = struct.unpack("hhhbbh", buffer[: self.__len__()])
+            # self._next,
+        ) = struct.unpack("hhhbb", buffer[: self.__len__()])
         return True
 
     @property
-    def buffer(self) -> bytes:
+    def buffer(self):
         """Return the entire header as a `bytes` object. This is similar to
         TMRh20's ``RF24NetworkHeader::toString()``."""
         return struct.pack(
-            "hhhbbh",
+            "hhhbb",
             self._from,
             self._to,
             self._id,
             self._msg_t,
             self._rsv,
-            self._next,
+            # self._next,
         )
 
-    def __len__(self) -> int:
-        return 10
+    def __len__(self):
+        return 8
 
     @property
-    def is_valid(self) -> bool:
+    def is_valid(self):
         """A `bool` that describes if the `header` addresses are valid or not."""
         if _is_addr_valid(self._from):
             return _is_addr_valid(self._to)
@@ -146,7 +150,7 @@ class RF24NetworkFrame:
         header that can be augmented after instantiation.
     """
 
-    def __init__(self, header: RF24NetworkHeader=None, message: Union[bytes, bytearray]=None) -> None:
+    def __init__(self, header=None, message=None):
         self.header = header
         """The `RF24NetworkHeader` of the message."""
         if not isinstance(header, RF24NetworkHeader):
@@ -159,19 +163,19 @@ class RF24NetworkFrame:
         """Decode header & message from ``buffer``. Returns `True` if
         successful; otherwise `False`."""
         if self.header.decode(buffer):
-            self.message = buffer[len(self.header) :]
+            self.message = buffer[len(self.header):]
             return True
         return False
 
     @property
-    def buffer(self) -> bytearray:
-        """Return the entire object as a `bytearray`."""
-        return bytearray(self.header.buffer + self.message)
+    def buffer(self):
+        """Return the entire object as a `bytes` object."""
+        return self.header.buffer + bytes(self.message)
 
-    def __len__(self) -> int:
+    def __len__(self):
         return len(self.header) + len(self.message)
 
     @property
-    def is_ack_type(self) -> bool:
+    def is_ack_type(self):
         """Is the frame to expect a network ACK? (for internal use)"""
         return 64 < self.header.message_type < 192

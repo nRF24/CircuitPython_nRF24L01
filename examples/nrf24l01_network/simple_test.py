@@ -5,15 +5,7 @@ This example was written to be used on 2 devices acting as 'nodes'.
 import time
 import struct
 
-USE_SHIM = False
-try:
-    import board
-    import digitalio
-except (NotImplementedError, NameError):
-    USE_SHIM = True
-    print("logging shim on x86.")
-
-# pylint: disable=wrong-import-position
+from circuitpython_nrf24l01.rf24 import RF24
 from circuitpython_nrf24l01.network.rf24_network import (
     RF24Network,
     NETWORK_DEBUG,
@@ -21,13 +13,59 @@ from circuitpython_nrf24l01.network.rf24_network import (
     RF24NetworkHeader,
 )
 
-# change these (digital output) pins accordingly
-ce = None if USE_SHIM else digitalio.DigitalInOut(board.D4)
-csn = None if USE_SHIM else digitalio.DigitalInOut(board.D5)
+# import wrappers to imitate circuitPython's DigitalInOut
+from circuitpython_nrf24l01.wrapper import RPiDIO, DigitalInOut
+# RPiDIO is wrapper for RPi.GPIO on Linux
+# DigitalInOut is a wrapper for machine.Pin() on MicroPython
+#   or simply digitalio.DigitalInOut on CircuitPython and Linux
 
-# using board.SPI() automatically selects the MCU's
-# available SPI pins, board.SCK, board.MOSI, board.MISO
-spi = None if USE_SHIM else board.SPI()  # init spi bus object
+# default values that allow using no radio module (for testing only)
+spi = None
+csn = None
+ce_pin = None
+
+try:  # on CircuitPython & Linux
+    import board
+
+    # change these (digital output) pins accordingly
+    ce_pin = DigitalInOut(board.D4)
+    csn = DigitalInOut(board.D5)
+
+    try:  # on Linux
+        import spidev
+
+        spi = spidev.SpiDev()  # for a faster interface on linux
+        csn = 0  # use CE0 on default bus (even faster than using any pin)
+        if RPiDIO is not None:  # RPi.GPIO lib is present
+            # RPi.GPIO is faster than CircuitPython on Linux
+            ce_pin = RPiDIO(22)  # using pin gpio22 (BCM numbering)
+
+    except ImportError:  # on CircuitPython only
+        # using board.SPI() automatically selects the MCU's
+        # available SPI pins, board.SCK, board.MOSI, board.MISO
+        spi = board.SPI()  # init spi bus object
+
+except ImportError:  # on MicroPython
+    from machine import SPI
+
+    # the argument passed here changes according to the board used
+    spi = SPI(1)
+
+    # instantiate the integers representing micropython pins as
+    # DigitalInOut compatible objects
+    csn = DigitalInOut(5)
+    ce_pin = DigitalInOut(4)
+
+# initialize the nRF24L01 on the spi bus object
+nrf = RF24(spi, csn, ce_pin)
+# On Linux, csn value is a bit coded
+#                 0 = bus 0, CE0  # SPI bus 0 is enabled by default
+#                10 = bus 1, CE0  # enable SPI bus 2 prior to running this
+#                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
+
+# set the Power Amplifier level to -12 dBm since this test example is
+# usually run with nRF24L01 transceivers in close proximity
+nrf.pa_level = -12
 
 # to use different addresses on a pair of radios, we need a variable to
 # uniquely identify which address this radio will use
@@ -39,7 +77,7 @@ radio_number = int(
 )
 
 # initialize the network node using `radio_number` as `nrf.node_address`
-nrf = RF24Network(spi, csn, ce, radio_number)
+nrf = RF24Network(spi, csn, ce_pin, radio_number)
 nrf.channel = 90
 
 # set the Power Amplifier level to -12 dBm since this test example is
@@ -88,14 +126,13 @@ def slave(timeout=6):
     while (time.monotonic() - start_timer) < timeout:
         nrf.update()
         while nrf.available():
-            header, payload = nrf.read()
+            payload = nrf.read()
             print("payload length", len(payload))
-            millis, number = struct.unpack("<LL", bytes(payload))
             print(
-                "Received payload", number,
-                "at", millis,
-                "from", oct(header.from_node),
-                "to", oct(header.to_node)
+                "Received payload",
+                struct.unpack("<LL", bytes(payload.message)),
+                "from", oct(payload.header.from_node),
+                "to", oct(payload.header.to_node)
             )
             start_timer = time.monotonic()  # reset timer
         time.sleep(0.05)  # wait 50 ms
