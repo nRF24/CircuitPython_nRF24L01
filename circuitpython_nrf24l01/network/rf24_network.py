@@ -376,7 +376,7 @@ class RF24Network(RadioMixin):
         header.from_node = self.node_address
         return self.send(header, message, _level_to_address(level))
 
-    def send(self, header, message, traffic_direct=0o70):
+    def send(self, header, message, traffic_direct=0):
         """Deliver a ``message`` according to the ``header`` information."""
         if not isinstance(header, RF24NetworkHeader):
             raise TypeError("header is not a RF24NetworkHeader object")
@@ -403,7 +403,7 @@ class RF24Network(RadioMixin):
             self._log(NETWORK_DEBUG_FRAG_L2, prompt + "sent successfully")
         return True
 
-    def write(self, frame, traffic_direct=0):
+    def write(self, frame, traffic_direct=0o70):
         """Deliver a constructed ``frame`` routed as ``traffic_direct``"""
         if not isinstance(frame, RF24NetworkFrame):
             raise TypeError("expected object of type RF24NetworkFrame.")
@@ -434,7 +434,7 @@ class RF24Network(RadioMixin):
             self._log(
                 NETWORK_DEBUG_ROUTING,
                 "Failed to send to {} via {} on pipe {}".format(
-                    frame.header.to_node, oct(to_node), oct(to_pipe)
+                    oct(frame.header.to_node), oct(to_node), to_pipe
                 ),
             )
         if (
@@ -476,7 +476,7 @@ class RF24Network(RadioMixin):
                     self._log(
                         NETWORK_DEBUG_ROUTING,
                         "No Network ACK received from {} (pipe{})".format(
-                            to_node, to_pipe
+                            oct(to_node), to_pipe
                         ),
                     )
                     break
@@ -495,6 +495,16 @@ class RF24Network(RadioMixin):
             self._rf24.set_auto_ack(0, 0)
         else:
             self._rf24.set_auto_ack(1, 0)
+        self._log(
+            NETWORK_DEBUG,
+            "Sending type {} with ID {} from {} to {} on pipe {}".format(
+                frame.header.message_type,
+                frame.header.frame_id,
+                oct(frame.header.from_node),
+                oct(frame.header.to_node),
+                to_pipe
+            )
+        )
         self._rf24.open_tx_pipe(self._pipe_address(to_node, to_pipe))
 
         result = self._rf24.send(frame.buffer)

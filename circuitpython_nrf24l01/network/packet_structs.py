@@ -34,9 +34,11 @@ class RF24NetworkHeader:
                 ord(message_type) if isinstance(message_type, str) else message_type
             )
         self._msg_t &= 0xFF
-        self._id = 0
+        self._id = RF24NetworkHeader.__next_id
+        RF24NetworkHeader.__next_id += 1
         self._rsv = 0
-        # self._next = 1
+
+    __next_id = 0
 
     @property
     def from_node(self):
@@ -74,20 +76,6 @@ class RF24NetworkHeader:
         his attribute is truncated to a 2-byte `int`."""
         return self._id
 
-    @frame_id.setter
-    def frame_id(self, val):
-        self._id = val & 0xFFFF
-
-    # @property
-    # def next_id(self):
-    #     """points to the next sequential message to be sent. This attribute is
-    #     truncated to a 2-byte `int`."""
-    #     return self._next
-
-    # @next_id.setter
-    # def next_id(self, val):
-    #     self._next = val & 0xFFFF
-
     @property
     def reserved(self) -> int:
         """A single byte reserved for network usage. This will be the
@@ -109,7 +97,6 @@ class RF24NetworkHeader:
             self._id,
             self._msg_t,
             self._rsv,
-            # self._next,
         ) = struct.unpack("hhhbb", buffer[: self.__len__()])
         return True
 
@@ -124,7 +111,6 @@ class RF24NetworkHeader:
             self._id,
             self._msg_t,
             self._rsv,
-            # self._next,
         )
 
     def __len__(self):

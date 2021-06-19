@@ -75,7 +75,7 @@ class QueueFrag(Queue):
         for frag_frame in self._frag_cache:
             if frame.header.from_node == frag_frame.header.to_node:
                 count += 1
-                if frame.header.id == frag_frame.header.id:
+                if frame.header.frame_id == frag_frame.header.frame_id:
                     if frame.header.message_type == NETWORK_FRAG_FIRST and \
                         frag_frame.header.message_type == NETWORK_FRAG_FIRST:
                         return False  # Already received this fragment
