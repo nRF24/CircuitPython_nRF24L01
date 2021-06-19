@@ -106,6 +106,9 @@ class RF24Network(RadioMixin):
     """The object used to instantiate the nRF24L01 as a network node.
 
     :param int node_address: The octal `int` for this node's address
+
+    .. seealso:: For all other parameters, see the
+        :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' contructor documentation.
     """
 
     def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
@@ -130,22 +133,18 @@ class RF24Network(RadioMixin):
         ATTiny-based board, set this to ``72``."""
 
         # init internal frame buffer
-        self._frame_buf = bytearray(self.max_message_length + len(RF24NetworkHeader()))
-        self.address_suffix = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
-        self.address_prefix = [0xCC] * 5
         self.fragmentation = True
         #: enable/disable (`True`/`False`) message fragmentation
         self._queue = QueueFrag()
-        self.force_retry = 6
-        """Instead of a ``RF24Network::txTimeout``, we use the minimum amount
-        of forced retries during transmission failure (with auto-retries
-        observed for every forced retry)."""
 
         # setup radio
         self._rf24.auto_ack = 0x3E
         self._rf24.set_auto_retries(250 * (((node_address % 6) + 1) * 2 + 3) + 250, 5)
         self.node_address = node_address
         self._rf24.listen = True
+
+    address_suffix = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
+    address_prefix = [0xCC] * 5
 
     def __enter__(self):
         self.node_address = self._addr
@@ -170,6 +169,7 @@ class RF24Network(RadioMixin):
     def node_address(self, val):
         if _is_addr_valid(val):
             self._addr = val
+            self._addr_mask = 0
             mask = 0xFFFF
             while self._addr & mask:
                 mask = (mask << 3) & 0xFFFF
@@ -216,33 +216,34 @@ class RF24Network(RadioMixin):
 
     @property
     def parent(self):
-        """get address for parent node"""
+        """get address for the parent node"""
         if not self._addr:
             return None
         return self._addr & (self._addr_mask >> 3)
 
     def _pipe_address(self, node_address, pipe_number):
         """translate node address for use on all pipes"""
-        result, count, dec = (self.address_prefix[:6], 1, node_address)
+        result, count, dec = (RF24Network.address_prefix[:], 1, node_address)
         while dec:
             if not self.allow_multicast or (
                 self.allow_multicast and (pipe_number or not node_address)
             ):
-                result[count] = self.address_suffix[dec % 8]
+                result[count] = RF24Network.address_suffix[dec % 8]
             dec = int(dec / 8)
             count += 1
 
         if not self.allow_multicast or (
             self.allow_multicast and (pipe_number or not node_address)
         ):
-            result[0] = self.address_suffix[pipe_number]
+            result[0] = RF24Network.address_suffix[pipe_number]
         elif self.allow_multicast and (not pipe_number or node_address):
-            result[1] = self.address_suffix[count - 1]
-        # print(
-        #     "address for pipe {} using address {} is {}".format(
-        #         pipe_number, oct(node_address), address_repr(bytearray(result))
-        #     )
-        # )
+            result[1] = RF24Network.address_suffix[count - 1]
+        self._log(
+            NETWORK_DEBUG,
+            "address for pipe {} using address {} is {}".format(
+                pipe_number, oct(node_address), address_repr(bytearray(result))
+            ),
+        )
         return bytearray(result)
 
     def update(self):
@@ -341,14 +342,14 @@ class RF24Network(RadioMixin):
 
     @property
     def peek_header(self):
-        """:Return: the next available message's header from the internal queue
-        without removing it from the queue"""
+        """:Returns: the next available message's header (a `RF24NetworkHeader` object)
+        from the internal queue without removing it from the queue."""
         return self._queue.peek.header
 
     @property
     def peek(self):
-        """:Return: the next available header & message from the internal queue
-        without removing it from the queue"""
+        """:Returns: the next available header & message (as a `RF24NetworkFrame`
+        object) from the internal queue without removing it from the queue."""
         return self._queue.peek
 
     def read(self):
@@ -356,10 +357,7 @@ class RF24Network(RadioMixin):
         differs from `peek` because this function also removes the header &
         message from the internal queue.
 
-        :returns: A 2-item tuple containing the next available
-
-            1. `RF24NetworkHeader`
-            2. a `bytearray` message
+        :Returns: A `RF24NetworkFrame` object.
         """
         return self._queue.pop
 

@@ -35,7 +35,7 @@ class RF24NetworkHeader:
             )
         self._msg_t &= 0xFF
         self._id = RF24NetworkHeader.__next_id
-        RF24NetworkHeader.__next_id += 1
+        RF24NetworkHeader.__next_id = (RF24NetworkHeader.__next_id + 1) & 0xFFFF
         self._rsv = 0
 
     __next_id = 0
@@ -51,7 +51,7 @@ class RF24NetworkHeader:
         self._from = val & 0xFFFF
 
     @property
-    def to_node(self) -> int:
+    def to_node(self):
         """Describes the message destination. This attribute is truncated to a
         2-byte `int`."""
         return self._to
@@ -73,7 +73,7 @@ class RF24NetworkHeader:
     def frame_id(self):
         """Describes the unique id for the frame. Each frame's id is
         incremented sequentially, but fragmented frames have the same id.
-        his attribute is truncated to a 2-byte `int`."""
+        This attribute is truncated to a 2-byte `int`."""
         return self._id
 
     @property
@@ -133,7 +133,7 @@ class RF24NetworkFrame:
         or a fragment of a payload.
 
     .. note:: These parameters can be left unspecified to create a blank
-        header that can be augmented after instantiation.
+        header and message that can be augmented after instantiation.
     """
 
     def __init__(self, header=None, message=None):
