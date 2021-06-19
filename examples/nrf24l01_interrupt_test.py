@@ -85,9 +85,7 @@ def master():
     print("    Pinging slave node for an ACK payload...", end=" ")
     _ping_and_prompt()  # CE pin is managed by this function
     print(
-        "\t'on data ready' event test{}successful".format(
-            " " if nrf.irq_dr else " un"
-        )
+        "\t'on data ready' event test{}successful".format(" " if nrf.irq_dr else " un")
     )
 
     # on data sent test
@@ -96,9 +94,7 @@ def master():
     print("    Pinging slave node again...             ", end=" ")
     _ping_and_prompt()  # CE pin is managed by this function
     print(
-        "\t'on data sent' event test{}successful".format(
-            " " if nrf.irq_ds else " un"
-        )
+        "\t'on data sent' event test{}successful".format(" " if nrf.irq_ds else " un")
     )
 
     # trigger slave node to exit by filling the slave node's RX FIFO
@@ -108,10 +104,7 @@ def master():
         if nrf.fifo(False, False):  # is RX FIFO full?
             print("Slave node should not be listening anymore.")
         else:
-            print(
-                "transmission succeeded, "
-                "but slave node might still be listening"
-            )
+            print("transmission succeeded, " "but slave node might still be listening")
     else:
         print("Slave node was unresponsive.")
 
@@ -123,9 +116,7 @@ def master():
     nrf.write(b"Dummy", write_only=True)  # CE pin is left LOW
     _ping_and_prompt()  # CE pin is managed by this function
     print(
-        "\t'on data failed' event test{}successful".format(
-            " " if nrf.irq_df else " un"
-        )
+        "\t'on data failed' event test{}successful".format(" " if nrf.irq_df else " un")
     )
     nrf.flush_tx()  # flush artifact payload in TX FIFO from last test
     # all 3 ACK payloads received were 4 bytes each, and RX FIFO is full

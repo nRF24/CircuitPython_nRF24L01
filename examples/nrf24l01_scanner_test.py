@@ -11,6 +11,7 @@ from circuitpython_nrf24l01.rf24 import RF24
 
 # import wrappers to imitate circuitPython's DigitalInOut
 from circuitpython_nrf24l01.wrapper import RPiDIO, DigitalInOut
+
 # RPiDIO is wrapper for RPi.GPIO on Linux
 # DigitalInOut is a wrapper for machine.Pin() on MicroPython
 #   or simply digitalio.DigitalInOut on CircuitPython and Linux
@@ -115,10 +116,7 @@ def set_role():
         - False when app should exit
     """
     user_input = (
-        input(
-            "*** Enter 'S' to perform scan.\n"
-            "*** Enter 'Q' to quit example.\n"
-        )
+        input("*** Enter 'S' to perform scan.\n" "*** Enter 'Q' to quit example.\n")
         or "?"
     )
     user_input = user_input.split()

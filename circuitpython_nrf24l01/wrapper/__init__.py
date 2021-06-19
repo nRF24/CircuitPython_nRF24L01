@@ -8,6 +8,7 @@ try:  # check for MicroPython's machine.Pin
 except ImportError:  # must be on linux or CircuitPython compatible
     from digitalio import DigitalInOut
     from adafruit_bus_device.spi_device import SPIDevice
+
     try:  # check for RPi.GPIO library (if on RPi)
         from .cpy_rpi_gpio import RPiDIO
     except ImportError:

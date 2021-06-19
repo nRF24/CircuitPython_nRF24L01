@@ -15,6 +15,7 @@ from circuitpython_nrf24l01.network.rf24_network import (
 
 # import wrappers to imitate circuitPython's DigitalInOut
 from circuitpython_nrf24l01.wrapper import RPiDIO, DigitalInOut
+
 # RPiDIO is wrapper for RPi.GPIO on Linux
 # DigitalInOut is a wrapper for machine.Pin() on MicroPython
 #   or simply digitalio.DigitalInOut on CircuitPython and Linux
@@ -70,9 +71,7 @@ nrf.pa_level = -12
 # to use different addresses on a pair of radios, we need a variable to
 # uniquely identify which address this radio will use
 radio_number = int(
-    input(
-        "Which radio is this? Enter '0', '1', or octal int. Defaults to '0' "
-    ) or "0",
+    input("Which radio is this? Enter '0', '1', or octal int. Defaults to '0' ") or "0",
     8,  # octal base
 )
 
@@ -131,8 +130,10 @@ def slave(timeout=6):
             print(
                 "Received payload",
                 struct.unpack("<LL", bytes(payload.message)),
-                "from", oct(payload.header.from_node),
-                "to", oct(payload.header.to_node)
+                "from",
+                oct(payload.header.from_node),
+                "to",
+                oct(payload.header.to_node),
             )
             start_timer = time.monotonic()  # reset timer
         time.sleep(0.05)  # wait 50 ms
@@ -185,6 +186,4 @@ if __name__ == "__main__":
         print(" Keyboard Interrupt detected. Powering down radio...")
         nrf.power = 0
 else:
-    print(
-        "    Run master() on transmitter.\n    Run slave() on receiver."
-    )
+    print("    Run master() on transmitter.\n    Run slave() on receiver.")

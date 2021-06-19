@@ -70,14 +70,14 @@ class RF24NetworkHeader:
         self._msg_t = val & 0xFF
 
     @property
-    def frame_id(self) -> int:
+    def frame_id(self):
         """Describes the unique id for the frame. Each frame's id is
         incremented sequentially, but fragmented frames have the same id.
         his attribute is truncated to a 2-byte `int`."""
         return self._id
 
     @property
-    def reserved(self) -> int:
+    def reserved(self):
         """A single byte reserved for network usage. This will be the
         fragment_id, but on the last fragment this will be the header_type."""
         return self._rsv
@@ -149,7 +149,7 @@ class RF24NetworkFrame:
         """Decode header & message from ``buffer``. Returns `True` if
         successful; otherwise `False`."""
         if self.header.decode(buffer):
-            self.message = buffer[len(self.header):]
+            self.message = buffer[len(self.header) :]
             return True
         return False
 

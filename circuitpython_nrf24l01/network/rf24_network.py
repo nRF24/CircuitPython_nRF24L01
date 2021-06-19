@@ -56,7 +56,6 @@ from .constants import (
 )
 
 
-
 def _level_to_address(level):
     """translate octal tree ``level`` into a node_address"""
     level_addr = 0
@@ -157,7 +156,7 @@ class RF24Network(RadioMixin):
     def __exit__(self, *exc):
         return self._rf24.__exit__()
 
-    def print_details(self, dump_pipes: bool=True) -> None:
+    def print_details(self, dump_pipes=True):
         """.. seealso:: :py:meth:`~circuitpython_nrf24l01.rf24.RF24.print_details()`"""
         self._rf24.print_details(dump_pipes)
         print("Network node address__", oct(self.node_address))
@@ -320,7 +319,7 @@ class RF24Network(RadioMixin):
                                 NETWORK_DEBUG_ROUTING,
                                 "Forwarding multicast frame from {} to {}".format(
                                     frame.header.from_node, frame.header.to_node
-                                )
+                                ),
                             )
                             if not self._addr >> 3:
                                 time.sleep(0.0024)
@@ -502,8 +501,8 @@ class RF24Network(RadioMixin):
                 frame.header.frame_id,
                 oct(frame.header.from_node),
                 oct(frame.header.to_node),
-                to_pipe
-            )
+                to_pipe,
+            ),
         )
         self._rf24.open_tx_pipe(self._pipe_address(to_node, to_pipe))
 

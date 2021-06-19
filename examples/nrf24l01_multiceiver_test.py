@@ -11,6 +11,7 @@ from circuitpython_nrf24l01.rf24 import RF24
 
 # import wrappers to imitate circuitPython's DigitalInOut
 from circuitpython_nrf24l01.wrapper import RPiDIO, DigitalInOut
+
 # RPiDIO is wrapper for RPi.GPIO on Linux
 # DigitalInOut is a wrapper for machine.Pin() on MicroPython
 #   or simply digitalio.DigitalInOut on CircuitPython and Linux
@@ -182,5 +183,6 @@ else:
     print(
         "    Run base() on the receiver\n    "
         "Run node(node_number) on a transmitter\n    "
-        "node()'s parameter, `node_number`, must be in range [0, 5]"""
+        "node()'s parameter, `node_number`, must be in range [0, 5]"
+        ""
     )

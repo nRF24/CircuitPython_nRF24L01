@@ -9,6 +9,7 @@ from circuitpython_nrf24l01.rf24 import RF24
 
 # import wrappers to imitate circuitPython's DigitalInOut
 from circuitpython_nrf24l01.wrapper import RPiDIO, DigitalInOut
+
 # RPiDIO is wrapper for RPi.GPIO on Linux
 # DigitalInOut is a wrapper for machine.Pin() on MicroPython
 #   or simply digitalio.DigitalInOut on CircuitPython and Linux
@@ -41,8 +42,7 @@ nrf = RF24(spi, csn, ce_pin)
 #                21 = bus 2, CE1 ; enable SPI bus 1 prior to running this
 
 parser = argparse.ArgumentParser(
-    description=__doc__,
-    formatter_class=argparse.RawDescriptionHelpFormatter
+    description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
 )
 parser.add_argument(
     "-r",
@@ -50,21 +50,21 @@ parser.add_argument(
     default=0,
     type=int,
     choices=range(2),
-    help="'1' specifies the TX role. '0' specifies the RX role."
+    help="'1' specifies the TX role. '0' specifies the RX role.",
 )
 parser.add_argument(
     "-f",
     "--file",
     default=None,
     type=str,
-    help="the path and name of the file to transfer."
+    help="the path and name of the file to transfer.",
 )
 parser.add_argument(
     "-x",
     "--express",
     default=False,
     type=bool,
-    help="Defaults to False. Set to True to use all 3 levels of TX FIFO."
+    help="Defaults to False. Set to True to use all 3 levels of TX FIFO.",
 )
 
 
@@ -74,11 +74,11 @@ PL_SIZE = 32
 def make_buffers(f_name, buffer):
     """Return a list of payloads sliced from a ``buffer``"""
     if len(f_name) > PL_SIZE:
-        f_name = f_name[: 26] + "_1" + f_name[-4:]
+        f_name = f_name[:26] + "_1" + f_name[-4:]
     buffers = [bytes(f_name.encode("utf-8"))]
     for i in range(0, len(buffer), PL_SIZE):
         end_slice = len(buffer) if i + PL_SIZE > len(buffer) else i + PL_SIZE
-        buffers.append(buffer[i : end_slice])
+        buffers.append(buffer[i:end_slice])
     print("{} bytes split into {} payloads".format(len(buffer), len(buffers)))
     return buffers
 
@@ -101,7 +101,7 @@ def master(buffers):
             successful / (len(buffers)) * 100,
             successful,
             len(buffers),
-            buffers[0].decode("utf-8")
+            buffers[0].decode("utf-8"),
         )
     )
 
@@ -144,11 +144,8 @@ def master_fifo(f_name):
     end_timer = time.monotonic()  # end timer
     print(
         "Transmission of {} bytes took {} s with {} failures detected"
-        ".".format(
-            max_len, end_timer - start_timer, failures
-        )
+        ".".format(max_len, end_timer - start_timer, failures)
     )
-
 
 
 def slave(timeout=30):

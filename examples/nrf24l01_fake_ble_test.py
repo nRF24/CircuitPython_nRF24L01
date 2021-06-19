@@ -15,6 +15,7 @@ from circuitpython_nrf24l01.fake_ble import (
 
 # import wrappers to imitate circuitPython's DigitalInOut
 from circuitpython_nrf24l01.wrapper import RPiDIO, DigitalInOut
+
 # RPiDIO is wrapper for RPi.GPIO on Linux
 # DigitalInOut is a wrapper for machine.Pin() on MicroPython
 #   or simply digitalio.DigitalInOut on CircuitPython and Linux

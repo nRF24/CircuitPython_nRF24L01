@@ -5,6 +5,7 @@ import RPi.GPIO as GPIO
 
 class RPiDIO:
     """A wrapper for the RPi.GPIO bcm-scheme pins"""
+
     def __init__(self, pin_numb):
         self._pin = int(pin_numb)
         GPIO.setmode(GPIO.BCM)
@@ -12,11 +13,11 @@ class RPiDIO:
 
     # pylint: disable=unused-argument
     def switch_to_output(self, pull=None, value=False):
-        """ change pin to an output """
+        """change pin to an output"""
         GPIO.setup(self._pin, GPIO.OUT, initial=value)
 
     def switch_to_input(self, pull=None):
-        """ change pin to an input """
+        """change pin to an input"""
         GPIO.setup(self._pin, GPIO.IN)
 
     @property

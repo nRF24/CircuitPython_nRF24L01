@@ -59,7 +59,10 @@ class RF24:
         self._pipes = [
             bytearray([0xE7] * 5),
             bytearray([0xC2] * 5),
-            0xC3, 0xC4, 0xC5, 0xC6,
+            0xC3,
+            0xC4,
+            0xC5,
+            0xC6,
         ]
         # self._status = status byte returned on all SPI transactions
         # pre-configure the CONFIGURE register:

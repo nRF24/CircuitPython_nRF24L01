@@ -1,4 +1,3 @@
-
 # SPDX-FileCopyrightText: 2016 Scott Shawcroft for Adafruit Industries
 #
 # SPDX-License-Identifier: MIT
@@ -7,6 +6,7 @@ This module adds MicroPython supportvia a wrapper class that adds
 context management to a `machine.SPI` object.
 """
 from . import DigitalInOut
+
 
 class SPIDevice:
     """
@@ -39,15 +39,16 @@ class SPIDevice:
             spi.write(bytes_read)
     """
 
-    def __init__(self,
-            spi,
-            chip_select=None,
-            *,
-            baudrate=100000,
-            polarity=0,
-            phase=0,
-            extra_clocks=0
-        ):
+    def __init__(
+        self,
+        spi,
+        chip_select=None,
+        *,
+        baudrate=100000,
+        polarity=0,
+        phase=0,
+        extra_clocks=0
+    ):
         self.spi = spi
         self.baudrate = baudrate
         self.polarity = polarity
@@ -60,9 +61,7 @@ class SPIDevice:
             self.chip_select.switch_to_output(value=True)
 
     def __enter__(self):
-        self.spi.init(
-            baudrate=self.baudrate, polarity=self.polarity, phase=self.phase
-        )
+        self.spi.init(baudrate=self.baudrate, polarity=self.polarity, phase=self.phase)
         if self.chip_select:
             self.chip_select.value = False
         return self.spi

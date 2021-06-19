@@ -5,7 +5,7 @@ https://packaging.python.org/en/latest/distributing.html
 https://github.com/pypa/sampleproject
 """
 from os import path
-from codecs import open as open_codec # To use a consistent encoding
+from codecs import open as open_codec  # To use a consistent encoding
 from setuptools import setup, find_packages
 
 
@@ -20,7 +20,7 @@ setup(
     name="circuitpython-nrf24l01",
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
-    python_requires='>=3.7',
+    python_requires=">=3.7",
     description="Circuitpython driver library for the nRF24L01 transceiver",
     long_description=long_description,
     long_description_content_type="text/x-rst",

@@ -10,6 +10,7 @@ from circuitpython_nrf24l01.rf24 import RF24
 
 # import wrappers to imitate circuitPython's DigitalInOut
 from circuitpython_nrf24l01.wrapper import RPiDIO, DigitalInOut
+
 # RPiDIO is wrapper for RPi.GPIO on Linux
 # DigitalInOut is a wrapper for machine.Pin() on MicroPython
 #   or simply digitalio.DigitalInOut on CircuitPython and Linux
@@ -105,9 +106,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         else:
             print(
                 "Transmission successful! Time to Transmit: "
-                "{} us. Sent: {}".format(
-                    (end_timer - start_timer) / 1000, payload[0]
-                )
+                "{} us. Sent: {}".format((end_timer - start_timer) / 1000, payload[0])
             )
             payload[0] += 0.01
         time.sleep(1)
