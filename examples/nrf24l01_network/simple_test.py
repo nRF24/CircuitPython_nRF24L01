@@ -8,9 +8,8 @@ import struct
 from circuitpython_nrf24l01.rf24 import RF24
 from circuitpython_nrf24l01.network.rf24_network import (
     RF24Network,
-    NETWORK_DEBUG,
+    # NETWORK_DEBUG,
     NETWORK_DEBUG_MINIMAL,
-    RF24NetworkFrame,
     RF24NetworkHeader,
 )
 
@@ -128,7 +127,7 @@ def master_frag(count=5):
             count -= 1
             ok = nrf.send(
                 RF24NetworkHeader(not bool(radio_number % 8)),
-                struct.pack("<LL", int(time.monotonic_ns() / 1000000), packets_sent[0]),
+                bytes(range(packets_sent[0])),
             )
             packets_sent[0] += 1
             failures += not ok

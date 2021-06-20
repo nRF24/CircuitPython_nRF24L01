@@ -90,14 +90,13 @@ def _frame_frags(messages, header):
 def _frag_msg(msg):
     """Fragment a single message into a list of messages"""
     messages = []
-    max_i = math.ceil(len(msg) / MAX_FRAG_SIZE)
+    max_len = len(msg)
     i = 0
-    while i < max_i:
-        start = i * MAX_FRAG_SIZE
-        end = start + MAX_FRAG_SIZE
-        if len(msg) < end:
-            end = len(msg)
-        messages.append(msg[start:end])
+    start = i
+    while i <= max_len:
+        if i - start == MAX_FRAG_SIZE or i == max_len:
+            messages.append(msg[start : i])
+            start = i
         i += 1
     return messages
 
@@ -277,7 +276,7 @@ class RF24Network(RadioMixin):
                 keep_updating = self._handle_frame_for_other_node(frame_buf)
                 if (
                     self.multicast_relay
-                    and frame.header.to_node == 0o100
+                    and frame_buf.header.to_node == 0o100
                     and ret_val == NETWORK_POLL
                     and self._addr != NETWORK_DEFAULT_ADDR
                 ):
@@ -428,7 +427,7 @@ class RF24Network(RadioMixin):
             while not result and retries < 3:
                 result = self.write(frm, traffic_direct)
                 retries += 1
-            prompt = "Frag {} of {} ".format(i, len(frames))
+            prompt = "Frag {} of {} ".format(i + 1, len(frames))
             if not result:
                 self._log(NETWORK_DEBUG_FRAG, prompt + "failed to send. Aborting")
                 return False
@@ -455,7 +454,7 @@ class RF24Network(RadioMixin):
 
         result = False
         if len(frame.message) > MAX_FRAG_SIZE and self.fragmentation:
-            self._write_frag(frame, traffic_direct)
+            return self._write_frag(frame, traffic_direct)
 
         # send the frame
         to_node, to_pipe, use_multicast = self._logical_to_physical(
