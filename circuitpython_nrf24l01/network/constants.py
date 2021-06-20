@@ -14,7 +14,7 @@ TX_ROUTED = const(1)
 USER_TX_TO_PHYSICAL_ADDRESS = const(2)  #: no network ACK
 USER_TX_TO_LOGICAL_ADDRESS = const(3)  #: network ACK
 USER_TX_MULTICAST = const(4)
-MAX_MESSAGE_SIZE = const(22)  # for a single frame (containing header + message)
+MAX_FRAG_SIZE = const(24)  # for a single frame's message (does not including header)
 
 
 # additional internal constants about handling payloads

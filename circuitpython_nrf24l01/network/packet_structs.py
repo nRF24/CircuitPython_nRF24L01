@@ -79,7 +79,8 @@ class RF24NetworkHeader:
     @property
     def reserved(self):
         """A single byte reserved for network usage. This will be the
-        fragment_id, but on the last fragment this will be the header_type."""
+        fragment `frame_id` number, but on the last fragment this will be the
+        `message_type`."""
         return self._rsv
 
     @reserved.setter
@@ -87,8 +88,9 @@ class RF24NetworkHeader:
         self._rsv = val & 0xFF
 
     def decode(self, buffer):
-        """decode frame header for first 9 bytes of the payload.
-        This function is meant for library internal usage."""
+        """Decode the frame header from the first 8 bytes of the frame.
+        This function is meant for library internal usage.
+        """
         if len(buffer) < self.__len__():
             return False
         (
@@ -97,15 +99,14 @@ class RF24NetworkHeader:
             self._id,
             self._msg_t,
             self._rsv,
-        ) = struct.unpack("hhhbb", buffer[: self.__len__()])
+        ) = struct.unpack("HHHBB", buffer[: self.__len__()])
         return True
 
     @property
     def buffer(self):
-        """Return the entire header as a `bytes` object. This is similar to
-        TMRh20's ``RF24NetworkHeader::toString()``."""
+        """:Returns: The entire header as a `bytes` object."""
         return struct.pack(
-            "hhhbb",
+            "HHHBB",
             self._from,
             self._to,
             self._id,
@@ -126,7 +127,7 @@ class RF24NetworkHeader:
 
 class RF24NetworkFrame:
     """Structure of a single frame for either a fragmented message of payloads
-    or a single payload of less than 23 bytes.
+    or a single payload whose message is less than 25 bytes.
 
     :param RF24NetworkHeader header: The header describing the message's frame
     :param bytes,bytearray message: The actual message containing the payload
@@ -146,8 +147,11 @@ class RF24NetworkFrame:
         frame. This attribute is a `bytearray`."""
 
     def decode(self, buffer):
-        """Decode header & message from ``buffer``. Returns `True` if
-        successful; otherwise `False`."""
+        """Decode header & message from ``buffer``. This is meant for library internal
+        usage.
+
+        :Returns: `True` if successful; otherwise `False`.
+        """
         if self.header.decode(buffer):
             self.message = buffer[len(self.header) :]
             return True

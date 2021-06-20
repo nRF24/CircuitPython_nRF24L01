@@ -9,7 +9,8 @@ from circuitpython_nrf24l01.rf24 import RF24
 from circuitpython_nrf24l01.network.rf24_network import (
     RF24Network,
     NETWORK_DEBUG,
-    # RF24NetworkFrame,
+    NETWORK_DEBUG_MINIMAL,
+    RF24NetworkFrame,
     RF24NetworkHeader,
 )
 
@@ -85,13 +86,35 @@ nrf.pa_level = -12
 
 # log debug msgs specific to RF24Network.
 # use NETWORK_DEBUG_MINIMAL for less verbosity
-nrf.logger.setLevel(NETWORK_DEBUG)
+nrf.logger.setLevel(NETWORK_DEBUG_MINIMAL)
 # using the python keyword global is bad practice. Instead we'll use a 1 item
 # list to store our float number for the payloads sent/received
 packets_sent = [0]
 
 
 def master(count=5):
+    """Transmits 2 incrementing long ints every 2 second"""
+    nrf.listen = True  # stay in active RX mode when not sleeping/TXing
+    failures = 0
+    start_timer = time.monotonic()
+    while failures < 6 and count:
+        nrf.update()
+        now = time.monotonic()
+        # If it's time to send a message, send it!
+        if now >= start_timer + 2:
+            start_timer = now
+            count -= 1
+            ok = nrf.send(
+                RF24NetworkHeader(not bool(radio_number % 8)),
+                bytes(range(nrf.max_message_length)),
+            )
+            packets_sent[0] += 1
+            failures += not ok
+            print("Sending %d..." % packets_sent[0], "ok." if ok else "failed.")
+    print(failures, "failures detected. Leaving TX role.")
+
+
+def master_frag(count=5):
     """Transmits 2 incrementing long ints every 2 second"""
     nrf.listen = True  # stay in active RX mode when not sleeping/TXing
     failures = 0
@@ -135,6 +158,38 @@ def slave(timeout=6):
                 "to",
                 oct(payload.header.to_node),
             )
+            start_timer = time.monotonic()  # reset timer
+        time.sleep(0.05)  # wait 50 ms
+
+
+def slave_frag(timeout=6):
+    """Listen for any payloads and print the transaction
+
+    :param int timeout: The number of seconds to wait (with no transmission)
+        until exiting function.
+    """
+    nrf.listen = True  # put radio in RX mode
+
+    start_timer = time.monotonic()
+    while (time.monotonic() - start_timer) < timeout:
+        nrf.update()
+        while nrf.available():
+            payload = nrf.read()
+            print("payload length", len(payload.message))
+            print(
+                "Received payload from",
+                oct(payload.header.from_node),
+                "to",
+                oct(payload.header.to_node),
+                "type",
+                payload.header.message_type,
+                "id",
+                payload.header.frame_id,
+            )
+            # print("message:", end="")
+            # for byte in payload.message:
+            #     print(hex(byte)[2:] + " ", end="")
+            print("")
             start_timer = time.monotonic()  # reset timer
         time.sleep(0.05)  # wait 50 ms
 
