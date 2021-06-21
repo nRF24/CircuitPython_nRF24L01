@@ -4,12 +4,13 @@ This example was written to be used on 2 devices acting as 'nodes'.
 """
 import time
 import struct
-
 from circuitpython_nrf24l01.rf24 import RF24
+from circuitpython_nrf24l01.network.constants import (
+    # NETWORK_DEBUG,
+    NETWORK_DEBUG_MINIMAL
+)
 from circuitpython_nrf24l01.network.rf24_network import (
     RF24Network,
-    # NETWORK_DEBUG,
-    NETWORK_DEBUG_MINIMAL,
     RF24NetworkHeader,
 )
 
@@ -105,7 +106,7 @@ def master(count=5):
             count -= 1
             ok = nrf.send(
                 RF24NetworkHeader(not bool(radio_number % 8)),
-                bytes(range(nrf.max_message_length)),
+                struct.pack("LL", int(time.monotonic_ns() / 1000000), packets_sent[0]),
             )
             packets_sent[0] += 1
             failures += not ok
@@ -127,7 +128,7 @@ def master_frag(count=5):
             count -= 1
             ok = nrf.send(
                 RF24NetworkHeader(not bool(radio_number % 8)),
-                bytes(range(packets_sent[0])),
+                bytes(range(packets_sent[0] % nrf.max_message_length)),
             )
             packets_sent[0] += 1
             failures += not ok
@@ -148,17 +149,14 @@ def slave(timeout=6):
         nrf.update()
         while nrf.available():
             payload = nrf.read()
-            print("payload length", len(payload))
             print(
-                "Received payload",
-                struct.unpack("<LL", bytes(payload.message)),
-                "from",
-                oct(payload.header.from_node),
-                "to",
-                oct(payload.header.to_node),
+                "Received payload", struct.unpack("<LL", bytes(payload.message)),
+                "from", oct(payload.header.from_node),
+                "to", oct(payload.header.to_node),
+                "length", len(payload.message),
             )
             start_timer = time.monotonic()  # reset timer
-        time.sleep(0.05)  # wait 50 ms
+        # time.sleep(0.05)  # wait 50 ms
 
 
 def slave_frag(timeout=6):
@@ -174,23 +172,19 @@ def slave_frag(timeout=6):
         nrf.update()
         while nrf.available():
             payload = nrf.read()
-            print("payload length", len(payload.message))
             print(
-                "Received payload from",
-                oct(payload.header.from_node),
-                "to",
-                oct(payload.header.to_node),
-                "type",
-                payload.header.message_type,
-                "id",
-                payload.header.frame_id,
+                "Received payload from", oct(payload.header.from_node),
+                "to", oct(payload.header.to_node),
+                "type", payload.header.message_type,
+                "id", payload.header.frame_id,
+                "length", len(payload.message),
             )
             # print("message:", end="")
             # for byte in payload.message:
             #     print(hex(byte)[2:] + " ", end="")
             print("")
             start_timer = time.monotonic()  # reset timer
-        time.sleep(0.05)  # wait 50 ms
+        # time.sleep(0.05)  # wait 50 ms
 
 
 def set_role():
@@ -204,23 +198,37 @@ def set_role():
     user_input = (
         input(
             "*** Enter 'R' for receiver role.\n"
+            "*** Enter 'RF' for receiver role with fragmentation.\n"
             "*** Enter 'T' for transmitter role.\n"
+            "*** Enter 'TF' for transmitter role with fragmentation.\n"
             "*** Enter 'Q' to quit example.\n"
         )
         or "?"
     )
     user_input = user_input.split()
     if user_input[0].upper().startswith("R"):
-        if len(user_input) > 1:
-            slave(int(user_input[1]))
+        if user_input[0].upper().endswith("F"):
+            if len(user_input) > 1:
+                slave_frag(int(user_input[1]))
+            else:
+                slave_frag()
         else:
-            slave()
+            if len(user_input) > 1:
+                slave(int(user_input[1]))
+            else:
+                slave()
         return True
     if user_input[0].upper().startswith("T"):
-        if len(user_input) > 1:
-            master(int(user_input[1]))
+        if user_input[0].upper().endswith("F"):
+            if len(user_input) > 1:
+                master_frag(int(user_input[1]))
+            else:
+                master_frag()
         else:
-            master()
+            if len(user_input) > 1:
+                master(int(user_input[1]))
+            else:
+                master()
         return True
     if user_input[0].upper().startswith("Q"):
         nrf.power = 0

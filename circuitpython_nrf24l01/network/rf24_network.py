@@ -252,14 +252,8 @@ class RF24Network(RadioMixin):
         ret_val = 0  # sentinal indicating there is nothing to report
         while self._rf24.available():
             # grab the frame from RX FIFO
-            frame_buf = RF24NetworkFrame()
-            frame = self._rf24.read()
-            if self.logger is not None:
-                string = ""
-                for byte in frame:
-                    string += " " + hex(byte)[2:]
-                self._log(NETWORK_DEBUG, "Received packet:{}".format(string))
-            if not frame_buf.decode(frame) or not frame_buf.header.is_valid:
+            frame = RF24NetworkFrame()
+            if not frame.decode(self._rf24.read()) or not frame.header.is_valid:
                 self.logger.log(
                     NETWORK_DEBUG,
                     "discarding packet due to inadequate length"
@@ -267,16 +261,24 @@ class RF24Network(RadioMixin):
                 )
                 continue
 
-            ret_val = frame_buf.header.message_type
+            ret_val = frame.header.message_type
+            self._log(
+                NETWORK_DEBUG,
+                "Received packet: from {} to {} type {}".format(
+                    frame.header.from_node,
+                    frame.header.to_node,
+                    frame.header.message_type,
+                )
+            )
             keep_updating = False
-            if frame_buf.header.to_node == self._addr:
+            if frame.header.to_node == self._addr:
                 # frame was directed to this node
-                keep_updating = self._handle_frame_for_this_node(frame_buf)
+                keep_updating = self._handle_frame_for_this_node(frame)
             else:  # frame was not directed to this node
-                keep_updating = self._handle_frame_for_other_node(frame_buf)
+                keep_updating = self._handle_frame_for_other_node(frame)
                 if (
                     self.multicast_relay
-                    and frame_buf.header.to_node == 0o100
+                    and frame.header.to_node == 0o100
                     and ret_val == NETWORK_POLL
                     and self._addr != NETWORK_DEFAULT_ADDR
                 ):
