@@ -264,10 +264,11 @@ class RF24Network(RadioMixin):
             ret_val = frame.header.message_type
             self._log(
                 NETWORK_DEBUG,
-                "Received packet: from {} to {} type {}".format(
+                "Received packet: from {} to {} type {} frag_id {}".format(
                     frame.header.from_node,
                     frame.header.to_node,
                     frame.header.message_type,
+                    frame.header.reserved,
                 )
             )
             keep_updating = False

@@ -87,6 +87,7 @@ nrf.pa_level = -12
 # log debug msgs specific to RF24Network.
 # use NETWORK_DEBUG_MINIMAL for less verbosity
 nrf.logger.setLevel(NETWORK_DEBUG_MINIMAL)
+nrf._queue.logger.setLevel(NETWORK_DEBUG_MINIMAL)  # pylint: disable=protected-access
 # using the python keyword global is bad practice. Instead we'll use a 1 item
 # list to store our float number for the payloads sent/received
 packets_sent = [0]
@@ -177,6 +178,7 @@ def slave_frag(timeout=6):
                 "to", oct(payload.header.to_node),
                 "type", payload.header.message_type,
                 "id", payload.header.frame_id,
+                "reserved (frag id)", payload.header.reserved,
                 "length", len(payload.message),
             )
             # print("message:", end="")
@@ -187,6 +189,7 @@ def slave_frag(timeout=6):
         # time.sleep(0.05)  # wait 50 ms
 
 
+# pylint: disable=too-many-branches
 def set_role():
     """Set the role using stdin stream. Timeout arg for slave() can be
     specified using a space delimiter (e.g. 'R 10' calls `slave(10)`)
@@ -235,6 +238,7 @@ def set_role():
         return False
     print(user_input[0], "is an unrecognized input. Please try again.")
     return set_role()
+# pylint: enable=too-many-branches
 
 
 print("    nrf24l01_network/simple_test")  # print example name
