@@ -1,3 +1,24 @@
+# The MIT License (MIT)
+#
+# Copyright (c) 2021 Brendan Doherty
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 """
 A module to contain the basic queue implementation for the stack of received messages.
 """
@@ -8,6 +29,7 @@ from .constants import (
     NETWORK_FRAG_LAST,
     NETWORK_DEBUG_FRAG,
 )
+from .packet_structs import RF24NetworkFrame
 
 
 class Queue:
@@ -24,7 +46,7 @@ class Queue:
         if logging is not None:
             self._logger = logging.getLogger(type(self).__name__)
 
-    def enqueue(self, frame):
+    def enqueue(self, frame: RF24NetworkFrame) -> bool:
         """add a `RF24NetworkFrame` to the queue."""
         if (
             self._max_q_size == len(self._list)
@@ -41,12 +63,12 @@ class Queue:
         return True
 
     @property
-    def peek(self):
+    def peek(self) -> RF24NetworkFrame:
         """return First Out element without removing it from the queue"""
         return self._list[0]
 
     @property
-    def dequeue(self):
+    def dequeue(self) -> RF24NetworkFrame:
         """return and remove the First Out element from the queue"""
         ret_val = self._list[0]
         del self._list[0]
@@ -83,7 +105,7 @@ class QueueFrag(Queue):
         super().__init__(max_message_length, max_queue_size)
         self._frag_cache = None
 
-    def enqueue(self, frame):
+    def enqueue(self, frame: RF24NetworkFrame) -> bool:
         """add a `RF24NetworkFrame` to the queue."""
         if (
             frame.header.message_type in (
@@ -93,11 +115,13 @@ class QueueFrag(Queue):
             return self._cache_frag_frame(frame)
         return super().enqueue(frame)
 
-    def _cache_frag_frame(self, frame):
-        prompt = "queueing fragment id {}.{} ".format(
-            frame.header.frame_id,
-            frame.header.reserved,
-        )
+    def _cache_frag_frame(self, frame: RF24NetworkFrame) -> bool:
+        prompt = ""
+        if self._logger is not None:
+            prompt = "queueing fragment id {}.{} ".format(
+                frame.header.frame_id,
+                frame.header.reserved,
+            )
         if (
             self._frag_cache is not None
             and frame.header.to_node == self._frag_cache.header.to_node

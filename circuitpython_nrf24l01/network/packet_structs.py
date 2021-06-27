@@ -1,3 +1,24 @@
+# The MIT License (MIT)
+#
+# Copyright (c) 2020 Brendan Doherty
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 """This module contains the data structures used foe network packets."""
 import struct
 
@@ -87,7 +108,7 @@ class RF24NetworkHeader:
     def reserved(self, val):
         self._rsv = val & 0xFF
 
-    def decode(self, buffer):
+    def decode(self, buffer) -> bool:
         """Decode the frame header from the first 8 bytes of the frame.
         This function is meant for library internal usage.
         """
@@ -103,7 +124,7 @@ class RF24NetworkHeader:
         return True
 
     @property
-    def buffer(self):
+    def buffer(self) -> bytes:
         """:Returns: The entire header as a `bytes` object."""
         return struct.pack(
             "HHHBB",
@@ -118,7 +139,7 @@ class RF24NetworkHeader:
         return 8
 
     @property
-    def is_valid(self):
+    def is_valid(self) -> bool:
         """A `bool` that describes if the `header` addresses are valid or not."""
         if _is_addr_valid(self._from):
             return _is_addr_valid(self._to)
@@ -137,7 +158,7 @@ class RF24NetworkFrame:
         header and message that can be augmented after instantiation.
     """
 
-    def __init__(self, header=None, message=None):
+    def __init__(self, header: RF24NetworkHeader=None, message=None):
         self.header = header
         """The `RF24NetworkHeader` of the message."""
         if not isinstance(header, RF24NetworkHeader):
@@ -146,7 +167,7 @@ class RF24NetworkFrame:
         """The entire message or a fragment of the message allocated to this
         frame. This attribute is a `bytearray`."""
 
-    def decode(self, buffer):
+    def decode(self, buffer) -> bool:
         """Decode header & message from ``buffer``. This is meant for library internal
         usage.
 
@@ -158,7 +179,7 @@ class RF24NetworkFrame:
         return False
 
     @property
-    def buffer(self):
+    def buffer(self) -> bytes:
         """Return the entire object as a `bytes` object."""
         return self.header.buffer + bytes(self.message)
 
@@ -166,6 +187,6 @@ class RF24NetworkFrame:
         return len(self.header) + len(self.message)
 
     @property
-    def is_ack_type(self):
+    def is_ack_type(self) -> bool:
         """Is the frame to expect a network ACK? (for internal use)"""
         return 64 < self.header.message_type < 192

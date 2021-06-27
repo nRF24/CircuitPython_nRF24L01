@@ -23,7 +23,6 @@
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
-import math
 from .network_mixin import RadioMixin
 from ..rf24 import address_repr
 from .packet_structs import RF24NetworkFrame, RF24NetworkHeader, _is_addr_valid
@@ -142,10 +141,11 @@ class RF24Network(RadioMixin):
         self.node_address = node_address
         self._rf24.listen = True
 
-    address_suffix = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
-    """Each byte in this list is used as the unique byte per pipe and child node."""
-    address_prefix = [0xCC] * 5
-    """The base address used for all pipes before mutating with `address_suffix`."""
+        self.address_suffix = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
+        """Each byte in this list is used as the unique byte per pipe and child node."""
+        self.address_prefix = 0xCC
+        """The base address used for all pipes' address bytes before mutating with
+        `address_suffix`."""
 
     def __enter__(self):
         self.node_address = self._addr
@@ -224,21 +224,21 @@ class RF24Network(RadioMixin):
 
     def _pipe_address(self, node_address, pipe_number):
         """translate node address for use on all pipes"""
-        result, count, dec = (RF24Network.address_prefix[:], 1, node_address)
+        result, count, dec = ([self.address_prefix] * 5, 1, node_address)
         while dec:
             if not self.allow_multicast or (
                 self.allow_multicast and (pipe_number or not node_address)
             ):
-                result[count] = RF24Network.address_suffix[dec % 8]
+                result[count] = self.address_suffix[dec % 8]
             dec = int(dec / 8)
             count += 1
 
         if not self.allow_multicast or (
             self.allow_multicast and (pipe_number or not node_address)
         ):
-            result[0] = RF24Network.address_suffix[pipe_number]
+            result[0] = self.address_suffix[pipe_number]
         elif self.allow_multicast and (not pipe_number or node_address):
-            result[1] = RF24Network.address_suffix[count - 1]
+            result[1] = self.address_suffix[count - 1]
         self._log(
             NETWORK_DEBUG,
             "address for pipe {} using address {} is {}".format(
@@ -291,7 +291,7 @@ class RF24Network(RadioMixin):
         # end while _rf24.available()
         return ret_val
 
-    def _handle_frame_for_this_node(self, frame):
+    def _handle_frame_for_this_node(self, frame: RF24NetworkFrame) -> bool:
         """
         :Returns: `False` if the frame is not consumed or `True` if the frame
             is consumed.
@@ -335,7 +335,7 @@ class RF24Network(RadioMixin):
             return False
         return False
 
-    def _handle_frame_for_other_node(self, frame):
+    def _handle_frame_for_other_node(self, frame: RF24NetworkFrame) -> bool:
         """
         :Returns: `False` if the frame is not consumed or `True` if the frame
             is consumed.
@@ -372,24 +372,24 @@ class RF24Network(RadioMixin):
             return True
         return False
 
-    def available(self):
+    def available(self) -> bool:
         """Is there a message for this node?"""
         return bool(len(self._queue))
 
     @property
-    def peek_header(self):
+    def peek_header(self) -> RF24NetworkHeader:
         """:Returns: the next available message's header (a `RF24NetworkHeader` object)
         from the internal queue without removing it from the queue."""
         return self._queue.peek.header
 
     @property
-    def peek(self):
+    def peek(self) -> RF24NetworkFrame:
         """:Returns: the next available header & message (as a `RF24NetworkFrame`
             object) from the internal queue without removing it from the queue.
         """
         return self._queue.peek
 
-    def read(self):
+    def read(self) -> RF24NetworkFrame:
         """Get the next available header & message from internal queue. This
         differs from `peek` because this function also removes the header &
         message from the internal queue.
@@ -404,13 +404,13 @@ class RF24Network(RadioMixin):
         self._rf24.listen = False
         self._rf24.open_rx_pipe(0, self._pipe_address(_level_to_address(level), 0))
 
-    def multicast(self, header, message, level):
+    def multicast(self, header: RF24NetworkHeader, message, level):
         """Broadcast a message to all nodes on a certain address level"""
         header.to_node = 0o100
         header.from_node = self.node_address
         return self.send(header, message, _level_to_address(level))
 
-    def send(self, header, message, traffic_direct=0):
+    def send(self, header: RF24NetworkHeader, message, traffic_direct=0):
         """Deliver a ``message`` according to the ``header`` information."""
         if not isinstance(header, RF24NetworkHeader):
             raise TypeError("header is not a RF24NetworkHeader object")
@@ -419,7 +419,7 @@ class RF24Network(RadioMixin):
         frame = RF24NetworkFrame(header=header, message=message)
         return self.write(frame, traffic_direct)
 
-    def _write_frag(self, frame, traffic_direct):
+    def _write_frag(self, frame: RF24NetworkFrame, traffic_direct):
         """write a message fragmented into multiple payloads"""
         if len(frame.message) > self.max_message_length and self.fragmentation:
             raise ValueError("message is too large to fragment")
@@ -437,7 +437,7 @@ class RF24Network(RadioMixin):
             self._log(NETWORK_DEBUG_FRAG_L2, prompt + "sent successfully")
         return True
 
-    def write(self, frame, traffic_direct=0o70):
+    def write(self, frame: RF24NetworkFrame, traffic_direct=0o70):
         """Deliver a constructed ``frame`` routed as ``traffic_direct``"""
         if not isinstance(frame, RF24NetworkFrame):
             raise TypeError("expected object of type RF24NetworkFrame.")
@@ -518,7 +518,7 @@ class RF24Network(RadioMixin):
             self._rf24.listen = True
         return result
 
-    def _write_to_pipe(self, frame, to_node, to_pipe, use_multicast):
+    def _write_to_pipe(self, frame: RF24NetworkFrame, to_node, to_pipe, use_multicast):
         """send prepared frame to a particular network node pipe's RX address."""
         result = False
         if not frame.header.is_valid:
