@@ -133,7 +133,8 @@ class RF24Network(RadioMixin):
         # init internal frame buffer
         self.fragmentation = True
         #: enable/disable (`True`/`False`) message fragmentation
-        self._queue = QueueFrag(self.max_message_length)
+        self.queue = QueueFrag(self.max_message_length)
+        #: The queue (FIFO) of recieved frames for this node
 
         # setup radio
         self._rf24.auto_ack = 0x3E
@@ -329,7 +330,7 @@ class RF24Network(RadioMixin):
             )
             return False
 
-        self._queue.enqueue(frame)
+        self.queue.enqueue(frame)
         if ret_val == NETWORK_EXTERNAL_DATA:
             self._log(NETWORK_DEBUG_MINIMAL, "return external data type")
             return False
@@ -351,7 +352,7 @@ class RF24Network(RadioMixin):
                     frame.header.from_node = self._addr
                     self.write(frame, USER_TX_TO_PHYSICAL_ADDRESS)
                     return False
-                self._queue.enqueue(frame)
+                self.queue.enqueue(frame)
                 if self.multicast_relay:
                     self._log(
                         NETWORK_DEBUG_ROUTING,
@@ -374,20 +375,20 @@ class RF24Network(RadioMixin):
 
     def available(self) -> bool:
         """Is there a message for this node?"""
-        return bool(len(self._queue))
+        return bool(len(self.queue))
 
     @property
     def peek_header(self) -> RF24NetworkHeader:
         """:Returns: the next available message's header (a `RF24NetworkHeader` object)
         from the internal queue without removing it from the queue."""
-        return self._queue.peek.header
+        return self.queue.peek.header
 
     @property
     def peek(self) -> RF24NetworkFrame:
         """:Returns: the next available header & message (as a `RF24NetworkFrame`
             object) from the internal queue without removing it from the queue.
         """
-        return self._queue.peek
+        return self.queue.peek
 
     def read(self) -> RF24NetworkFrame:
         """Get the next available header & message from internal queue. This
@@ -396,7 +397,7 @@ class RF24Network(RadioMixin):
 
         :Returns: A `RF24NetworkFrame` object.
         """
-        return self._queue.dequeue
+        return self.queue.dequeue
 
     def set_multicast_level(self, level):
         """Set the pipe 0 address according to octal tree ``level``"""

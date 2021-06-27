@@ -87,7 +87,7 @@ nrf.pa_level = -12
 # log debug msgs specific to RF24Network.
 # use NETWORK_DEBUG_MINIMAL for less verbosity
 nrf.logger.setLevel(NETWORK_DEBUG_MINIMAL)
-nrf._queue.logger.setLevel(NETWORK_DEBUG_MINIMAL)  # pylint: disable=protected-access
+nrf.queue.logger.setLevel(NETWORK_DEBUG_MINIMAL)
 # using the python keyword global is bad practice. Instead we'll use a 1 item
 # list to store our float number for the payloads sent/received
 packets_sent = [0]
@@ -106,12 +106,12 @@ def master(count=5):
             start_timer = now
             count -= 1
             ok = nrf.send(
-                RF24NetworkHeader(not bool(radio_number % 8)),
+                RF24NetworkHeader(not bool(radio_number % 8), "t"),
                 struct.pack("LL", int(time.monotonic_ns() / 1000000), packets_sent[0]),
             )
-            packets_sent[0] += 1
             failures += not ok
             print("Sending %d..." % packets_sent[0], "ok." if ok else "failed.")
+            packets_sent[0] += 1
     print(failures, "failures detected. Leaving TX role.")
 
 
@@ -127,13 +127,17 @@ def master_frag(count=5):
         if now >= start_timer + 2:
             start_timer = now
             count -= 1
+            length = (packets_sent[0] + 24) % nrf.max_message_length
             ok = nrf.send(
-                RF24NetworkHeader(not bool(radio_number % 8)),
-                bytes(range(packets_sent[0] % nrf.max_message_length)),
+                RF24NetworkHeader(not bool(radio_number % 8), "t"),
+                bytes(range(length)),
+            )
+            failures += not ok
+            print(
+                "Sending {} (len {})...".format(packets_sent[0], length),
+                "ok." if ok else "failed."
             )
             packets_sent[0] += 1
-            failures += not ok
-            print("Sending %d..." % packets_sent[0], "ok." if ok else "failed.")
     print(failures, "failures detected. Leaving TX role.")
 
 
@@ -253,3 +257,4 @@ if __name__ == "__main__":
         nrf.power = 0
 else:
     print("    Run master() on transmitter.\n    Run slave() on receiver.")
+    print("    Use master_frag() or slave_frag() demonstrate message fragmentation.")

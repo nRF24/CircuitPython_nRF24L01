@@ -51,8 +51,9 @@ class RF24NetworkHeader:
         self._to &= 0xFFFF
         self._msg_t = 0
         if message_type is not None:
+            # convert the first char in `message_type` to int if it is a string
             self._msg_t = (
-                ord(message_type) if isinstance(message_type, str) else message_type
+                ord(message_type[0]) if isinstance(message_type, str) else message_type
             )
         self._msg_t &= 0xFF
         self._id = RF24NetworkHeader.__next_id
