@@ -197,11 +197,16 @@ address_repr()
         >>> address_repr(b"1Node")
         '65646f4e31'
 
-    :Return:
+    :param bytes,bytearray buf: The buffer of bytes to convert into a hexlified
+        string.
+    :param bool reverse: A `bool` to control the resulting endianess. `True`
+        outputs the result as big endian. `False` outputs the result as little
+        endian. This parameter defaults to `True` since `bytearray` and `bytes`
+        objects are stored in big endian but written in little endian.
+
+    :Returns:
         A string of hexidecimal characters in big endian form of the
-        specified ``addr`` parameter.
-    :param bytes,bytearray addr: The address to convert into a hexlified
-        string
+        specified ``buf`` parameter.
 
 is_plus_variant
 ******************************

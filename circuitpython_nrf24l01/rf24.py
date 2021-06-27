@@ -40,11 +40,12 @@ DYN_PL_LEN = const(0x1C)  # dynamic payloads status for all pipes
 TX_FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
 
 
-def address_repr(addr):
-    """Convert a bytearray into a hexlified string (in big endian)."""
+def address_repr(buf, reverse=True):
+    """Convert a buffer into a hexlified string."""
     rev_str = ""
-    for char in range(len(addr) - 1, -1, -1):
-        rev_str += ("" if addr[char] > 0x0F else "0") + hex(addr[char])[2:]
+    order = range(len(buf) - 1, -1, -1) if reverse else range(len(buf))
+    for byte in order:
+        rev_str += ("" if buf[byte] > 0x0F else "0") + hex(buf[byte])[2:]
     return rev_str
 
 

@@ -93,7 +93,7 @@ nrf.queue.logger.setLevel(NETWORK_DEBUG_MINIMAL)
 packets_sent = [0]
 
 
-def master(count=5):
+def master(count=5, interval=2):
     """Transmits 2 incrementing long ints every 2 second"""
     nrf.listen = True  # stay in active RX mode when not sleeping/TXing
     failures = 0
@@ -102,7 +102,7 @@ def master(count=5):
         nrf.update()
         now = time.monotonic()
         # If it's time to send a message, send it!
-        if now >= start_timer + 2:
+        if now >= start_timer + interval:
             start_timer = now
             count -= 1
             ok = nrf.send(
@@ -115,7 +115,7 @@ def master(count=5):
     print(failures, "failures detected. Leaving TX role.")
 
 
-def master_frag(count=5):
+def master_frag(count=5, interval=2):
     """Transmits 2 incrementing long ints every 2 second"""
     nrf.listen = True  # stay in active RX mode when not sleeping/TXing
     failures = 0
@@ -124,7 +124,7 @@ def master_frag(count=5):
         nrf.update()
         now = time.monotonic()
         # If it's time to send a message, send it!
-        if now >= start_timer + 2:
+        if now >= start_timer + interval:
             start_timer = now
             count -= 1
             length = (packets_sent[0] + 24) % nrf.max_message_length

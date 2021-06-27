@@ -120,7 +120,7 @@ class RF24Network(RadioMixin):
         self._addr_mask = 0
 
         # setup members specific to network node
-        #: enable (`True`) or disable (`False`) multicasting
+        #: enable/disable (`True`/`False`) multicasting
         self.allow_multicast = True
         self._tx_timeout = 25000
         self._rx_timeout = 3 * self._tx_timeout
@@ -131,10 +131,10 @@ class RF24Network(RadioMixin):
         ATTiny-based board, set this to ``72``."""
 
         # init internal frame buffer
-        self.fragmentation = True
         #: enable/disable (`True`/`False`) message fragmentation
-        self.queue = QueueFrag(self.max_message_length)
+        self.fragmentation = True
         #: The queue (FIFO) of recieved frames for this node
+        self.queue = QueueFrag(self.max_message_length)
 
         # setup radio
         self._rf24.auto_ack = 0x3E
@@ -243,7 +243,7 @@ class RF24Network(RadioMixin):
         self._log(
             NETWORK_DEBUG,
             "address for pipe {} using address {} is {}".format(
-                pipe_number, oct(node_address), address_repr(bytearray(result))
+                pipe_number, oct(node_address), address_repr(bytearray(result), False)
             ),
         )
         return bytearray(result)
@@ -379,13 +379,13 @@ class RF24Network(RadioMixin):
 
     @property
     def peek_header(self) -> RF24NetworkHeader:
-        """:Returns: the next available message's header (a `RF24NetworkHeader` object)
+        """Get the next available message's header (a `RF24NetworkHeader` object)
         from the internal queue without removing it from the queue."""
         return self.queue.peek.header
 
     @property
     def peek(self) -> RF24NetworkFrame:
-        """:Returns: the next available header & message (as a `RF24NetworkFrame`
+        """Get the next available header & message (as a `RF24NetworkFrame`
             object) from the internal queue without removing it from the queue.
         """
         return self.queue.peek
