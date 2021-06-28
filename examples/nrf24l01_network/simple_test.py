@@ -70,10 +70,18 @@ nrf = RF24(spi, csn, ce_pin)
 # usually run with nRF24L01 transceivers in close proximity
 nrf.pa_level = -12
 
-# to use different addresses on a pair of radios, we need a variable to
+# to use different addresses on a set of radios, we need a variable to
 # uniquely identify which address this radio will use
 radio_number = int(
     input("Which radio is this? Enter '0', '1', or octal int. Defaults to '0' ") or "0",
+    8,  # octal base
+)
+# allow specifying the examples' master*() behavior's target for transmiting messages
+destination_node = int(
+    input(
+        "To which radio should we transmit to? Enter '0', '1', or octal int. "
+        "Defaults to '1' "
+    ) or "1",
     8,  # octal base
 )
 
@@ -102,12 +110,11 @@ def master(count=5, interval=2):
     while failures < 6 and count:
         nrf.update()
         now = time.monotonic()
-        # If it's time to send a message, send it!
-        if now >= start_timer + interval:
+        if now >= start_timer + interval:  # If it's time to send a message, send it!
             start_timer = now
             count -= 1
             ok = nrf.send(
-                RF24NetworkHeader(not bool(radio_number % 8)),
+                RF24NetworkHeader(destination_node),
                 struct.pack("LL", int(time.monotonic_ns() / 1000000), packets_sent[0]),
             )
             failures += not ok
@@ -124,13 +131,12 @@ def master_frag(count=5, interval=2):
     while failures < 6 and count:
         nrf.update()
         now = time.monotonic()
-        # If it's time to send a message, send it!
-        if now >= start_timer + interval:
+        if now >= start_timer + interval:  # If it's time to send a message, send it!
             start_timer = now
             count -= 1
             length = (packets_sent[0] + MAX_FRAG_SIZE) % nrf.max_message_length
             ok = nrf.send(
-                RF24NetworkHeader(not bool(radio_number % 8)),
+                RF24NetworkHeader(destination_node),
                 bytes(range(length)),
             )
             failures += not ok
@@ -162,7 +168,6 @@ def slave(timeout=6):
                 "length", len(payload.message),
             )
             start_timer = time.monotonic()  # reset timer
-        # time.sleep(0.05)  # wait 50 ms
 
 
 def slave_frag(timeout=6):
@@ -186,16 +191,11 @@ def slave_frag(timeout=6):
                 "reserved (frag id)", payload.header.reserved,
                 "length", len(payload.message),
             )
-            # print("message:", end="")
-            # for byte in payload.message:
-            #     print(hex(byte)[2:] + " ", end="")
-            print("")
             start_timer = time.monotonic()  # reset timer
-        # time.sleep(0.05)  # wait 50 ms
 
 
-# pylint: disable=too-many-branches
 def set_role():
+    # pylint: disable=too-many-branches
     """Set the role using stdin stream. Timeout arg for slave() can be
     specified using a space delimiter (e.g. 'R 10' calls `slave(10)`)
 
@@ -242,8 +242,8 @@ def set_role():
         nrf.power = 0
         return False
     print(user_input[0], "is an unrecognized input. Please try again.")
+    # pylint: enable=too-many-branches
     return set_role()
-# pylint: enable=too-many-branches
 
 
 print("    nrf24l01_network/simple_test")  # print example name
