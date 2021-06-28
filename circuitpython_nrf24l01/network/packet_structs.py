@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 """This module contains the data structures used foe network packets."""
 import struct
-
+from .constants import NETWORK_MULTICAST_ADDR
 
 def _is_addr_valid(address):
     """Test is a given address is a valid RF24Network node address."""
@@ -143,7 +143,7 @@ class RF24NetworkHeader:
     def is_valid(self) -> bool:
         """A `bool` that describes if the `header` addresses are valid or not."""
         if _is_addr_valid(self._from):
-            return _is_addr_valid(self._to)
+            return _is_addr_valid(self._to) or self._to == NETWORK_MULTICAST_ADDR
         return False
 
 

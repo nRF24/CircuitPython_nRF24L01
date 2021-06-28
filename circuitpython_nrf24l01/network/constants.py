@@ -30,6 +30,8 @@ network usage."""
 NETWORK_DEFAULT_ADDR = const(0o4444)  #: used as a sentinel during routing messages
 #: Maximum message size for a single frame's message (does not including header)
 MAX_FRAG_SIZE = const(24)
+#: A reserved node address for multicasting messages
+NETWORK_MULTICAST_ADDR = const(0o100)
 
 
 # sending behavior types

@@ -37,6 +37,7 @@ from .constants import (
     NETWORK_FRAG_MORE,
     NETWORK_FRAG_LAST,
     NETWORK_DEFAULT_ADDR,
+    NETWORK_MULTICAST_ADDR,
     NETWORK_ADDR_RESPONSE,
     NETWORK_ADDR_REQUEST,
     NETWORK_ACK,
@@ -57,7 +58,7 @@ from .constants import (
 
 
 def _level_to_address(level):
-    """translate octal tree ``level`` into a node_address"""
+    """translate decimal tree ``level`` into an octal node address"""
     level_addr = 0
     if level:
         level_addr = 1 << ((level - 1) * 3)
@@ -170,6 +171,7 @@ class RF24Network(RadioMixin):
         if _is_addr_valid(val):
             self._addr = val
             self._addr_mask = 0
+            self._multicast_level = 0
             mask = 0xFFFF
             while self._addr & mask:
                 mask = (mask << 3) & 0xFFFF
@@ -203,6 +205,20 @@ class RF24Network(RadioMixin):
     @multicast_relay.setter
     def multicast_relay(self, enable):
         self._multicast_relay = enable and self.allow_multicast
+
+    @property
+    def multicast_level(self):
+        """override the default multicast level which is set by the
+        `node_address` attribute"""
+        return self._multicast_level
+
+    @multicast_level.setter
+    def multicast_level(self, level):
+        level = min(6, max(level, 0))
+        self._multicast_level = level
+        self._rf24.listen = False
+        self._rf24.open_rx_pipe(0, self._pipe_address(_level_to_address(level), 0))
+        self._rf24.listen = True
 
     @property
     def parent_pipe(self):
@@ -277,15 +293,16 @@ class RF24Network(RadioMixin):
                 keep_updating = self._handle_frame_for_this_node(frame)
             else:  # frame was not directed to this node
                 keep_updating = self._handle_frame_for_other_node(frame)
+                # conditionally indicate its a routed payload
                 if (
                     self.multicast_relay
-                    and frame.header.to_node == 0o100
+                    and frame.header.to_node == NETWORK_MULTICAST_ADDR
                     and ret_val == NETWORK_POLL
                     and self._addr != NETWORK_DEFAULT_ADDR
                 ):
                     ret_val = 0
                 elif self._addr != NETWORK_DEFAULT_ADDR:  # multicast not enabled
-                    ret_val = 0  # indicate its a routed payload
+                    ret_val = 0
             if not keep_updating:
                 return ret_val
         # end while _rf24.available()
@@ -296,28 +313,28 @@ class RF24Network(RadioMixin):
         :Returns: `False` if the frame is not consumed or `True` if the frame
             is consumed.
         """
-        ret_val = frame.header.message_type
-        if ret_val == NETWORK_PING:
+        msg_t = frame.header.message_type
+        if msg_t == NETWORK_PING:
             return True
 
         # used for RF24Mesh
-        if ret_val == NETWORK_ADDR_RESPONSE:
+        if msg_t == NETWORK_ADDR_RESPONSE:
             requester = NETWORK_DEFAULT_ADDR
             if requester != self._addr:
                 frame.header.to_node = requester
-                self.write(frame, USER_TX_TO_PHYSICAL_ADDRESS)
+                self.write(frame, frame.header.to_node, USER_TX_TO_PHYSICAL_ADDRESS)
                 return True
-        if ret_val == NETWORK_ADDR_REQUEST and self._addr:
+        if msg_t == NETWORK_ADDR_REQUEST and self._addr:
             frame.header.from_node = self._addr
             frame.header.to_node = 0
-            self.write(frame, TX_NORMAL)
+            self.write(frame, frame.header.to_node, TX_NORMAL)
             return True
 
         if (
             self.ret_sys_msg
-            and ret_val > MAX_USER_DEFINED_HEADER_TYPE
-            or ret_val == NETWORK_ACK
-            and ret_val not in (
+            and msg_t > MAX_USER_DEFINED_HEADER_TYPE
+            or msg_t == NETWORK_ACK
+            and msg_t not in (
                 NETWORK_FRAG_FIRST,
                 NETWORK_FRAG_MORE,
                 NETWORK_FRAG_LAST,
@@ -325,13 +342,13 @@ class RF24Network(RadioMixin):
             )
         ):
             self._log(
-                NETWORK_DEBUG_ROUTING, "Received system payload type " + ret_val
+                NETWORK_DEBUG_ROUTING, "Received system payload type " + msg_t
             )
             return False
 
         self.queue.enqueue(frame)
-        if ret_val == NETWORK_EXTERNAL_DATA:
-            self._log(NETWORK_DEBUG_MINIMAL, "return external data type")
+        if msg_t == NETWORK_EXTERNAL_DATA:
+            self._log(NETWORK_DEBUG_MINIMAL, "Returned external data type")
             return False
         return False
 
@@ -340,8 +357,8 @@ class RF24Network(RadioMixin):
         :Returns: `False` if the frame is not consumed or `True` if the frame
             is consumed.
         """
-        if self.multicast_relay:
-            if frame.header.to_node == 0o100:
+        if self.allow_multicast:
+            if frame.header.to_node == NETWORK_MULTICAST_ADDR:
                 if (
                     frame.header.message_type == NETWORK_POLL
                     and self._addr != NETWORK_DEFAULT_ADDR
@@ -349,7 +366,7 @@ class RF24Network(RadioMixin):
                 ):
                     frame.header.to_node = frame.header.from_node
                     frame.header.from_node = self._addr
-                    self.write(frame, USER_TX_TO_PHYSICAL_ADDRESS)
+                    self.write(frame, frame.header.to_node, USER_TX_TO_PHYSICAL_ADDRESS)
                     return False
                 self.queue.enqueue(frame)
                 if self.multicast_relay:
@@ -359,16 +376,21 @@ class RF24Network(RadioMixin):
                             frame.header.from_node, frame.header.to_node
                         ),
                     )
-                    if not self._addr >> 3:
-                        time.sleep(0.0024)
-                    time.sleep((self._addr % 4) * 0.0006)
+                    # if not self._addr >> 3:
+                    #     time.sleep(0.0024)
+                    # time.sleep((self._addr % 4) * 0.0006)
+                    self.write(
+                        frame,
+                        (_level_to_address(self._multicast_level) << 3) & 0xffff,
+                        USER_TX_MULTICAST
+                    )
                 if frame.header.message_type == NETWORK_EXTERNAL_DATA:
                     return True
             elif self._addr != NETWORK_DEFAULT_ADDR:
-                self.write(frame, 1)  # pass it along
+                self.write(frame, frame.header.to_node, TX_ROUTED)  # pass it along
                 return True  # indicate its a routed payload
         elif self._addr != NETWORK_DEFAULT_ADDR:  # multicast not enabled
-            self.write(frame, 1)
+            self.write(frame, frame.header.to_node, TX_ROUTED)
             return True
         return False
 
@@ -398,17 +420,15 @@ class RF24Network(RadioMixin):
         """
         return self.queue.dequeue
 
-    def set_multicast_level(self, level):
-        """Set the pipe 0 address according to octal tree ``level``"""
-        self._multicast_level = level
-        self._rf24.listen = False
-        self._rf24.open_rx_pipe(0, self._pipe_address(_level_to_address(level), 0))
-
-    def multicast(self, header: RF24NetworkHeader, message, level):
-        """Broadcast a message to all nodes on a certain address level"""
-        header.to_node = 0o100
-        header.from_node = self.node_address
-        return self.send(header, message, _level_to_address(level))
+    def multicast(self, header: RF24NetworkHeader, message, level=None):
+        """Broadcast a ``message`` to all nodes on a certain address ``level``"""
+        if not isinstance(header, RF24NetworkHeader):
+            raise TypeError("header is not a RF24NetworkHeader object")
+        if not isinstance(message, (bytes, bytearray)):
+            raise TypeError("message is not a byteaarray or bytes object")
+        level = min(6, max(level, 0)) if level is not None else self._multicast_level
+        header.to_node = NETWORK_MULTICAST_ADDR
+        return self.write(RF24NetworkFrame(header, message), _level_to_address(level))
 
     def send(self, header: RF24NetworkHeader, message, traffic_direct=AUTO_ROUTING):
         """Deliver a ``message`` according to the ``header`` information."""
@@ -437,8 +457,11 @@ class RF24Network(RadioMixin):
             self._log(NETWORK_DEBUG_FRAG_L2, prompt + "sent successfully")
         return True
 
-    def write(self,
-        frame: RF24NetworkFrame, traffic_direct=AUTO_ROUTING, send_type=TX_NORMAL
+    def write(
+        self,
+        frame: RF24NetworkFrame,
+        traffic_direct=AUTO_ROUTING,
+        send_type=TX_NORMAL
     ):
         """Deliver a constructed ``frame`` routed as ``traffic_direct``"""
         if not isinstance(frame, RF24NetworkFrame):
@@ -447,7 +470,7 @@ class RF24Network(RadioMixin):
         if traffic_direct != AUTO_ROUTING:
             # Payload is multicast to the first node, and routed normally to the next
             send_type = USER_TX_TO_LOGICAL_ADDRESS
-            if frame.header.to_node == 0o100:
+            if frame.header.to_node == NETWORK_MULTICAST_ADDR:
                 send_type = USER_TX_MULTICAST
             if frame.header.to_node == traffic_direct:
                 # Payload is multicast to the first node, which is the recipient
