@@ -43,6 +43,7 @@ from .constants import (
     NETWORK_EXTERNAL_DATA,
     NETWORK_PING,
     NETWORK_POLL,
+    AUTO_ROUTING,
     TX_NORMAL,
     TX_ROUTED,
     USER_TX_TO_PHYSICAL_ADDRESS,
@@ -118,23 +119,25 @@ class RF24Network(RadioMixin):
         self._network_flags = 0
         self._addr = 0
         self._addr_mask = 0
-
-        # setup members specific to network node
-        #: enable/disable (`True`/`False`) multicasting
-        self.allow_multicast = True
         self._tx_timeout = 25000
         self._rx_timeout = 3 * self._tx_timeout
         self._multicast_relay = True
+
+        #: enable/disable (`True`/`False`) multicasting
+        self.allow_multicast = True
+        #: enable/disable (`True`/`False`) message fragmentation
+        self.fragmentation = True
         self.ret_sys_msg = False  #: for use with RF24Mesh
         self.max_message_length = 144
         """If a network node is driven by the TMRh20 RF24Network library on a
         ATTiny-based board, set this to ``72``."""
-
-        # init internal frame buffer
-        #: enable/disable (`True`/`False`) message fragmentation
-        self.fragmentation = True
         #: The queue (FIFO) of recieved frames for this node
         self.queue = QueueFrag(self.max_message_length)
+        #: Each byte in this list is used as the unique byte per pipe and child node.
+        self.address_suffix = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
+        self.address_prefix = 0xCC
+        """The base address used for all pipes' address bytes before mutating with
+        `address_suffix`."""
 
         # setup radio
         self._rf24.auto_ack = 0x3E
@@ -142,11 +145,6 @@ class RF24Network(RadioMixin):
         self.node_address = node_address
         self._rf24.listen = True
 
-        self.address_suffix = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
-        """Each byte in this list is used as the unique byte per pipe and child node."""
-        self.address_prefix = 0xCC
-        """The base address used for all pipes' address bytes before mutating with
-        `address_suffix`."""
 
     def __enter__(self):
         self.node_address = self._addr
@@ -223,27 +221,27 @@ class RF24Network(RadioMixin):
             return None
         return self._addr & (self._addr_mask >> 3)
 
-    def _pipe_address(self, node_address, pipe_number):
+    def _pipe_address(self, node_addr, pipe_number):
         """translate node address for use on all pipes"""
-        result, count, dec = ([self.address_prefix] * 5, 1, node_address)
+        result, count, dec = ([self.address_prefix] * 5, 1, node_addr)
         while dec:
             if not self.allow_multicast or (
-                self.allow_multicast and (pipe_number or not node_address)
+                self.allow_multicast and (pipe_number or not node_addr)
             ):
                 result[count] = self.address_suffix[dec % 8]
             dec = int(dec / 8)
             count += 1
 
         if not self.allow_multicast or (
-            self.allow_multicast and (pipe_number or not node_address)
+            self.allow_multicast and (pipe_number or not node_addr)
         ):
             result[0] = self.address_suffix[pipe_number]
-        elif self.allow_multicast and (not pipe_number or node_address):
+        elif self.allow_multicast and (not pipe_number or node_addr):
             result[1] = self.address_suffix[count - 1]
         self._log(
             NETWORK_DEBUG,
             "address for pipe {} using address {} is {}".format(
-                pipe_number, oct(node_address), address_repr(bytearray(result), False)
+                pipe_number, oct(node_addr), address_repr(bytearray(result))
             ),
         )
         return bytearray(result)
@@ -265,11 +263,12 @@ class RF24Network(RadioMixin):
             ret_val = frame.header.message_type
             self._log(
                 NETWORK_DEBUG,
-                "Received packet: from {} to {} type {} frag_id {}".format(
+                "Received packet: from {} to {} type {} frag_id {}\n\t{}".format(
                     frame.header.from_node,
                     frame.header.to_node,
                     frame.header.message_type,
                     frame.header.reserved,
+                    address_repr(frame.buffer, reverse=False, delimit=" ")
                 )
             )
             keep_updating = False
@@ -411,7 +410,7 @@ class RF24Network(RadioMixin):
         header.from_node = self.node_address
         return self.send(header, message, _level_to_address(level))
 
-    def send(self, header: RF24NetworkHeader, message, traffic_direct=0):
+    def send(self, header: RF24NetworkHeader, message, traffic_direct=AUTO_ROUTING):
         """Deliver a ``message`` according to the ``header`` information."""
         if not isinstance(header, RF24NetworkHeader):
             raise TypeError("header is not a RF24NetworkHeader object")
@@ -420,16 +419,16 @@ class RF24Network(RadioMixin):
         frame = RF24NetworkFrame(header=header, message=message)
         return self.write(frame, traffic_direct)
 
-    def _write_frag(self, frame: RF24NetworkFrame, traffic_direct):
+    def _write_frag(self, frame: RF24NetworkFrame, traffic_direct, send_type):
         """write a message fragmented into multiple payloads"""
         if len(frame.message) > self.max_message_length and self.fragmentation:
             raise ValueError("message is too large to fragment")
         frames = _frame_frags(_frag_msg(frame.message), frame.header)
         for i, frm in enumerate(frames):
-            result = self.write(frm, traffic_direct)
+            result = self.write(frm, traffic_direct, send_type)
             retries = 0
             while not result and retries < 3:
-                result = self.write(frm, traffic_direct)
+                result = self.write(frm, traffic_direct, send_type)
                 retries += 1
             prompt = "Frag {} of {} ".format(i + 1, len(frames))
             if not result:
@@ -438,49 +437,46 @@ class RF24Network(RadioMixin):
             self._log(NETWORK_DEBUG_FRAG_L2, prompt + "sent successfully")
         return True
 
-    def write(self, frame: RF24NetworkFrame, traffic_direct=0o70):
+    def write(self, frame: RF24NetworkFrame, traffic_direct=AUTO_ROUTING, send_type=TX_NORMAL):
         """Deliver a constructed ``frame`` routed as ``traffic_direct``"""
         if not isinstance(frame, RF24NetworkFrame):
             raise TypeError("expected object of type RF24NetworkFrame.")
         frame.header.from_node = self._addr
-        frame.header.to_node = int(traffic_direct)
-        if traffic_direct != 0o70:
+        if traffic_direct != AUTO_ROUTING:
+            # Payload is multicast to the first node, and routed normally to the next
             send_type = USER_TX_TO_LOGICAL_ADDRESS
             if frame.header.to_node == 0o100:
                 send_type = USER_TX_MULTICAST
             if frame.header.to_node == traffic_direct:
+                # Payload is multicast to the first node, which is the recipient
                 send_type = USER_TX_TO_PHYSICAL_ADDRESS
 
-            # write(traffic_direct, send_type)
-            traffic_direct = send_type
-        else:
-            traffic_direct = TX_NORMAL
-
-        result = False
+        # break message into fragments and send multiple resulting frames
         if len(frame.message) > MAX_FRAG_SIZE and self.fragmentation:
-            return self._write_frag(frame, traffic_direct)
+            return self._write_frag(frame, traffic_direct, send_type)
 
         # send the frame
+        result = False
         to_node, to_pipe, use_multicast = self._logical_to_physical(
-            frame.header.to_node, traffic_direct
+            frame.header.to_node, send_type
         )
         result = self._write_to_pipe(frame, to_node, to_pipe, use_multicast)
         if not result:
             self._log(
                 NETWORK_DEBUG_ROUTING,
-                "Failed to send to {} via {} on pipe {}".format(
+                "Failed sending to {} via {} at pipe {}".format(
                     oct(frame.header.to_node), oct(to_node), to_pipe
                 ),
             )
         if (
-            traffic_direct == TX_ROUTED
+            send_type == TX_ROUTED
             and result
             and to_node == frame.header.to_node
             and frame.is_ack_type
         ):
             # respond with a network ACK
             ack_to_node, ack_to_pipe, use_multicast = self._logical_to_physical(
-                frame.header.from_node, TX_ROUTED
+                frame.header.to_node, TX_ROUTED
             )
             ack_ok = self._write_to_pipe(frame, ack_to_node, ack_to_pipe, use_multicast)
             self._log(
@@ -497,7 +493,7 @@ class RF24Network(RadioMixin):
             result
             and to_node != frame.header.to_node
             and frame.is_ack_type
-            and traffic_direct in (0, 3)
+            and traffic_direct in (TX_NORMAL, USER_TX_TO_LOGICAL_ADDRESS)
         ):
             # wait for Network ACK
             if self._network_flags & FLAG_FAST_FRAG:
@@ -531,6 +527,12 @@ class RF24Network(RadioMixin):
         else:
             self._rf24.set_auto_ack(1, 0)
         self._log(
+            NETWORK_DEBUG_ROUTING,
+            "auto-ack on pipe 0 is {}".format(
+                "on" if self._rf24.get_auto_ack(0) else "off"
+            )
+        )
+        self._log(
             NETWORK_DEBUG,
             "Sending type {} with ID {} from {} to {} on pipe {}".format(
                 frame.header.message_type,
@@ -550,30 +552,42 @@ class RF24Network(RadioMixin):
         self._rf24.set_auto_ack(0, 0)
         return result
 
-    def _address_of_pipe(self, _address, _pipe):
-        """return the node_address on a specified pipe"""
-        temp_mask = self._addr_mask >> 3
-        count_bits = 0
-        while temp_mask:
-            temp_mask >>= 1
-            count_bits += 1
-        return _address | (_pipe << count_bits)
+    # the following function was ported from the C++ lib, but
+    # this function isn't internally used & provides no usable info to user
+    # def address_of_pipe(self, _address, _pipe):
+    #     """return the node_address on a specified pipe"""
+    #     temp_mask = self._addr_mask >> 3
+    #     count_bits = 0
+    #     while temp_mask:
+    #         temp_mask >>= 1
+    #         count_bits += 1
+    #     return _address | (_pipe << count_bits)
 
     def _logical_to_physical(self, to_node, to_pipe, use_multicast=False):
         """translates logical routing to physical address and data pipe number with
         a use_multicast flag"""
+        converted_to_node = self.parent
+        converted_to_pipe = self.parent_pipe
         if to_pipe > TX_ROUTED:
+            self._log(NETWORK_DEBUG_ROUTING, "{} > TX_ROUTED".format(to_pipe))
             use_multicast = True
-            to_pipe = 0
+            converted_to_pipe = 0
+            converted_to_node = to_node
         elif self._is_direct_child(to_node):
-            to_pipe = 5
+            self._log(
+                NETWORK_DEBUG_ROUTING,
+                "{} is a direct child of {}".format(to_node, self.node_address)
+            )
+            converted_to_node = to_node
+            converted_to_pipe = 5
         elif self._is_descendant(to_node):
-            to_node = self._direct_child_route_to(to_node)
-            to_pipe = 5
-        else:
-            to_node = self.parent
-            to_pipe = self.parent_pipe
-        return (to_node, to_pipe, use_multicast)
+            self._log(
+                NETWORK_DEBUG_ROUTING,
+                "{} is a descendant of {}".format(to_node, self.node_address)
+            )
+            converted_to_node = self._direct_child_route_to(to_node)
+            converted_to_pipe = 5
+        return (converted_to_node, converted_to_pipe, use_multicast)
 
     def _is_descendant(self, address):
         """Is the given ``node_address`` a descendant of `node_address`"""

@@ -7,6 +7,7 @@ import struct
 from circuitpython_nrf24l01.rf24 import RF24
 from circuitpython_nrf24l01.network.constants import (
     # NETWORK_DEBUG,
+    MAX_FRAG_SIZE,
     NETWORK_DEBUG_MINIMAL
 )
 from circuitpython_nrf24l01.network.rf24_network import (
@@ -106,7 +107,7 @@ def master(count=5, interval=2):
             start_timer = now
             count -= 1
             ok = nrf.send(
-                RF24NetworkHeader(not bool(radio_number % 8), "t"),
+                RF24NetworkHeader(not bool(radio_number % 8)),
                 struct.pack("LL", int(time.monotonic_ns() / 1000000), packets_sent[0]),
             )
             failures += not ok
@@ -127,9 +128,9 @@ def master_frag(count=5, interval=2):
         if now >= start_timer + interval:
             start_timer = now
             count -= 1
-            length = (packets_sent[0] + 24) % nrf.max_message_length
+            length = (packets_sent[0] + MAX_FRAG_SIZE) % nrf.max_message_length
             ok = nrf.send(
-                RF24NetworkHeader(not bool(radio_number % 8), "t"),
+                RF24NetworkHeader(not bool(radio_number % 8)),
                 bytes(range(length)),
             )
             failures += not ok

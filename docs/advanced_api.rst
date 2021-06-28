@@ -203,6 +203,8 @@ address_repr()
         outputs the result as big endian. `False` outputs the result as little
         endian. This parameter defaults to `True` since `bytearray` and `bytes`
         objects are stored in big endian but written in little endian.
+    :param str delimit: A `chr` or `str` to use as a delimiter between bytes.
+        Defaults to an empty string.
 
     :Returns:
         A string of hexidecimal characters in big endian form of the

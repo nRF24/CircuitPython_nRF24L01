@@ -40,13 +40,13 @@ DYN_PL_LEN = const(0x1C)  # dynamic payloads status for all pipes
 TX_FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
 
 
-def address_repr(buf, reverse=True):
+def address_repr(buf, reverse=True, delimit=""):
     """Convert a buffer into a hexlified string."""
-    rev_str = ""
+    ret_str = ""
     order = range(len(buf) - 1, -1, -1) if reverse else range(len(buf))
     for byte in order:
-        rev_str += ("" if buf[byte] > 0x0F else "0") + hex(buf[byte])[2:]
-    return rev_str
+        ret_str += delimit + ("" if buf[byte] > 0x0F else "0") + hex(buf[byte])[2:]
+    return ret_str[1:] if delimit else ret_str
 
 
 class RF24:
