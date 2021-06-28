@@ -437,7 +437,9 @@ class RF24Network(RadioMixin):
             self._log(NETWORK_DEBUG_FRAG_L2, prompt + "sent successfully")
         return True
 
-    def write(self, frame: RF24NetworkFrame, traffic_direct=AUTO_ROUTING, send_type=TX_NORMAL):
+    def write(self,
+        frame: RF24NetworkFrame, traffic_direct=AUTO_ROUTING, send_type=TX_NORMAL
+    ):
         """Deliver a constructed ``frame`` routed as ``traffic_direct``"""
         if not isinstance(frame, RF24NetworkFrame):
             raise TypeError("expected object of type RF24NetworkFrame.")
