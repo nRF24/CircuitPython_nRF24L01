@@ -16,8 +16,8 @@ from circuitpython_nrf24l01.rf24 import RF24
 irq_pin = digitalio.DigitalInOut(board.D12)
 irq_pin.switch_to_input()  # make sure its an input object
 # change these (digital output) pins accordingly
-ce = digitalio.DigitalInOut(board.D4)
-csn = digitalio.DigitalInOut(board.D5)
+ce_pin = digitalio.DigitalInOut(board.D4)
+csn_pin = digitalio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
 # available SPI pins, board.SCK, board.MOSI, board.MISO
@@ -25,7 +25,7 @@ spi = board.SPI()  # init spi bus object
 
 # we'll be using the dynamic payload size feature (enabled by default)
 # initialize the nRF24L01 on the spi bus object
-nrf = RF24(spi, csn, ce)
+nrf = RF24(spi, csn_pin, ce_pin)
 
 # this example uses the ACK payload to trigger the IRQ pin active for
 # the "on data received" event
@@ -55,9 +55,9 @@ nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
 def _ping_and_prompt():
     """transmit 1 payload, wait till irq_pin goes active, print IRQ status
     flags."""
-    ce.value = 1  # tell the nRF24L01 to prepare sending a single packet
+    nrf.ce_pin = 1  # tell the nRF24L01 to prepare sending a single packet
     time.sleep(0.00001)  # mandatory 10 microsecond pulse starts transmission
-    ce.value = 0  # end 10 us pulse; use only 1 buffer from TX FIFO
+    nrf.ce_pin = 0  # end 10 us pulse; use only 1 buffer from TX FIFO
     while irq_pin.value:  # IRQ pin is active when LOW
         pass
     print("IRQ pin went active LOW.")

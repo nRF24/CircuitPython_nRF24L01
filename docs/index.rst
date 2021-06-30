@@ -16,22 +16,24 @@
     :caption: API Reference
     :hidden:
 
-    basic_api
-    advanced_api
-    configure_api
-    ble_api
+    core_api/basic_api
+    core_api/advanced_api
+    core_api/configure_api
+    core_api/ble_api
 
 .. toctree::
     :caption: Network API Reference
     :hidden:
 
-    network_api
+    network_docs/structs
+    network_docs/base_api
+    network_docs/constants
 
 .. toctree::
     :caption: Troubleshooting
     :hidden:
 
-    using_logger
+    network_docs/using_logger
     troubleshooting
 
 .. toctree::

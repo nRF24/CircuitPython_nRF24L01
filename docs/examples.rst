@@ -182,6 +182,15 @@ transmission.
     :start-at: import time
     :end-before: def set_role():
 
+Network Simple Test
+-------------------
+
+.. literalinclude:: ../examples/nrf24l01_network_simple_test.py
+    :caption: examples/nrf24l01_network_simple_test.py
+    :start-at: import time
+    :end-before: def set_role():
+
+
 OTA compatibility
 =================
 

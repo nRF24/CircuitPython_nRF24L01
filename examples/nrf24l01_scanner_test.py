@@ -18,21 +18,20 @@ from circuitpython_nrf24l01.wrapper import RPiDIO, DigitalInOut
 
 # default values that allow using no radio module (for testing only)
 spi = None
-csn = None
+csn_pin = None
 ce_pin = None
 
 try:  # on CircuitPython & Linux
     import board
-
     # change these (digital output) pins accordingly
     ce_pin = DigitalInOut(board.D4)
-    csn = DigitalInOut(board.D5)
+    csn_pin = DigitalInOut(board.D5)
 
     try:  # on Linux
         import spidev
 
         spi = spidev.SpiDev()  # for a faster interface on linux
-        csn = 0  # use CE0 on default bus (even faster than using any pin)
+        csn_pin = 0  # use CE0 on default bus (even faster than using any pin)
         if RPiDIO is not None:  # RPi.GPIO lib is present
             # RPi.GPIO is faster than CircuitPython on Linux
             ce_pin = RPiDIO(22)  # using pin gpio22 (BCM numbering)
@@ -50,12 +49,12 @@ except ImportError:  # on MicroPython
 
     # instantiate the integers representing micropython pins as
     # DigitalInOut compatible objects
-    csn = DigitalInOut(5)
+    csn_pin = DigitalInOut(5)
     ce_pin = DigitalInOut(4)
 
 # initialize the nRF24L01 on the spi bus object
-nrf = RF24(spi, csn, ce_pin)
-# On Linux, csn value is a bit coded
+nrf = RF24(spi, csn_pin, ce_pin)
+# On Linux, csn_pin value is a bit coded
 #                 0 = bus 0, CE0  # SPI bus 0 is enabled by default
 #                10 = bus 1, CE0  # enable SPI bus 2 prior to running this
 #                21 = bus 2, CE1  # enable SPI bus 1 prior to running this

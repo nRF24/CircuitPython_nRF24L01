@@ -12,14 +12,14 @@ try:
     import digitalio
 except (NotImplementedError, NameError):
     USE_SHIM = True
-    print("logging shim on x86.")
+    print("using a shim on unsupported platform.")
 
 from circuitpython_nrf24l01.rf24 import RF24
 from circuitpython_nrf24l01.fake_ble import FakeBLE
 
 # change these (digital output) pins accordingly
-ce = None if USE_SHIM else digitalio.DigitalInOut(board.D4)
-csn = None if USE_SHIM else digitalio.DigitalInOut(board.D5)
+ce_pin = None if USE_SHIM else digitalio.DigitalInOut(board.D4)
+csn_pin = None if USE_SHIM else digitalio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
 # available SPI pins, board.SCK, board.MOSI, board.MISO
@@ -27,7 +27,7 @@ spi = None if USE_SHIM else board.SPI()  # init spi bus object
 
 # initialize the nRF24L01 objects on the spi bus object
 # the first object will have all the features enabled
-nrf = RF24(spi, csn, ce)
+nrf = RF24(spi, csn_pin, ce_pin)
 # enable the option to use custom ACK payloads
 nrf.ack = True
 # set the static payload length to 8 bytes
@@ -36,7 +36,7 @@ nrf.payload_length = 8
 nrf.pa_level = -18
 
 # the second object has most features disabled/altered
-ble = FakeBLE(spi, csn, ce)
+ble = FakeBLE(spi, csn_pin, ce_pin)
 # the IRQ pin is configured to only go active on "data fail"
 # NOTE BLE operations prevent the IRQ pin going active on "data fail" events
 ble.interrupt_config(data_recv=False, data_sent=False)

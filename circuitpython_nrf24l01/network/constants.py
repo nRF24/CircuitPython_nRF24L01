@@ -97,10 +97,10 @@ Any (non-master) node receiving a message of this type will manually forward
 it to the master node using a normal network write.
 """
 NETWORK_ADDR_RESPONSE = const(128)
-"""This message type is used to manually route custom messages containing a
-single RF24Network address.
+"""Used by RF24Mesh.
 
-Used by RF24Mesh.
+This message type is used to manually route custom messages containing a
+single RF24Network address.
 
 If a node receives a message of this type that is directly addressed to it, it
 will read the included message, and forward the payload on to the proper
