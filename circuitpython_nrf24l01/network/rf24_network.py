@@ -446,16 +446,15 @@ class RF24Network(RadioMixin):
         frames = _frame_frags(_frag_msg(frame.message), frame.header)
         for i, frm in enumerate(frames):
             result = self.write(frm, traffic_direct, send_type)
-            retries = 0
-            while not result and retries < 3:
-                if (
-                    frm.header.to_node != self.parent
-                    or not self._is_direct_child(frm.header.to_node)
-                ):
-                    # allow some time for other node to forward the fragment
-                    time.sleep(self.tx_timeout / 100)
-                result = self.write(frm, traffic_direct, send_type)
-                retries += 1
+            timeout = int(time.monotonic_ns() / 1000000) + self._tx_timeout
+            while not result and int(time.monotonic_ns() / 1000000) < timeout:
+                # if (
+                #     frm.header.to_node != self.parent
+                #     or not self._is_direct_child(frm.header.to_node)
+                # ):
+                #     # allow some time for other node to forward the fragment
+                #     time.sleep(self.tx_timeout / 1000)
+                result = self._rf24.resend(send_only=True)
             prompt = ""
             if self.logger is not None:
                 prompt = "Frag {} of {} ".format(i + 1, len(frames))
@@ -576,7 +575,7 @@ class RF24Network(RadioMixin):
         timeout = int(time.monotonic_ns() / 1000000) + self._tx_timeout
         if not self._network_flags & FLAG_FAST_FRAG:
             while not result and int(time.monotonic_ns() / 1000000) < timeout:
-                result = self._rf24.resend()
+                result = self._rf24.resend(send_only=True)
         self._rf24.set_auto_ack(0, 0)
         return result
 
