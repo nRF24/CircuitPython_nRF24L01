@@ -448,12 +448,6 @@ class RF24Network(RadioMixin):
             result = self.write(frm, traffic_direct, send_type)
             timeout = int(time.monotonic_ns() / 1000000) + self._tx_timeout
             while not result and int(time.monotonic_ns() / 1000000) < timeout:
-                # if (
-                #     frm.header.to_node != self.parent
-                #     or not self._is_direct_child(frm.header.to_node)
-                # ):
-                #     # allow some time for other node to forward the fragment
-                #     time.sleep(self.tx_timeout / 1000)
                 result = self._rf24.resend(send_only=True)
             prompt = ""
             if self.logger is not None:
@@ -571,7 +565,7 @@ class RF24Network(RadioMixin):
         )
         self._rf24.open_tx_pipe(self._pipe_address(to_node, to_pipe))
 
-        result = self._rf24.send(frame.buffer)
+        result = self._rf24.send(frame.buffer, send_only=True)
         timeout = int(time.monotonic_ns() / 1000000) + self._tx_timeout
         if not self._network_flags & FLAG_FAST_FRAG:
             while not result and int(time.monotonic_ns() / 1000000) < timeout:
