@@ -448,9 +448,17 @@ class RF24Network(RadioMixin):
             result = self.write(frm, traffic_direct, send_type)
             retries = 0
             while not result and retries < 3:
+                if (
+                    frm.header.to_node != self.parent
+                    or not self._is_direct_child(frm.header.to_node)
+                ):
+                    # allow some time for other node to forward the fragment
+                    time.sleep(self.tx_timeout / 100)
                 result = self.write(frm, traffic_direct, send_type)
                 retries += 1
-            prompt = "Frag {} of {} ".format(i + 1, len(frames))
+            prompt = ""
+            if self.logger is not None:
+                prompt = "Frag {} of {} ".format(i + 1, len(frames))
             if not result:
                 self._log(NETWORK_DEBUG_FRAG, prompt + "failed to send. Aborting")
                 return False

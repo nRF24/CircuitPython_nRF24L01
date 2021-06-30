@@ -26,6 +26,7 @@ from ..rf24 import RF24
 logging = None  # pylint: disable=invalid-name
 try:
     import logging
+    logging.basicConfig()
 except ImportError:
     try:
         import adafruit_logging as logging
