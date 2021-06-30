@@ -71,12 +71,12 @@ nrf.pa_level = -12
 
 # to use different addresses on a set of radios, we need a variable to
 # uniquely identify which address this radio will use
-radio_number = int(
+this_node = int(
     input("Which radio is this? Enter '0', '1', or octal int. Defaults to '0' ") or "0",
     8,  # octal base
 )
 # allow specifying the examples' master*() behavior's target for transmiting messages
-destination_node = int(
+other_node = int(
     input(
         "To which radio should we transmit to? Enter '0', '1', or octal int. "
         "Defaults to '1' "
@@ -84,8 +84,8 @@ destination_node = int(
     8,  # octal base
 )
 
-# initialize the network node using `radio_number` as `nrf.node_address`
-nrf = RF24Network(spi, csn_pin, ce_pin, radio_number)
+# initialize the network node using `this_node` as `nrf.node_address`
+nrf = RF24Network(spi, csn_pin, ce_pin, this_node)
 nrf.channel = 90
 
 # set the Power Amplifier level to -12 dBm since this test example is
@@ -113,7 +113,7 @@ def master(count=5, interval=2):
             start_timer = now
             count -= 1
             ok = nrf.send(
-                RF24NetworkHeader(destination_node),
+                RF24NetworkHeader(other_node),
                 struct.pack("LL", int(time.monotonic_ns() / 1000000), packets_sent[0]),
             )
             failures += not ok
@@ -135,7 +135,7 @@ def master_frag(count=5, interval=2):
             count -= 1
             length = (packets_sent[0] + MAX_FRAG_SIZE) % nrf.max_message_length
             ok = nrf.send(
-                RF24NetworkHeader(destination_node),
+                RF24NetworkHeader(other_node),
                 bytes(range(length)),
             )
             failures += not ok

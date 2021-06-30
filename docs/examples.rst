@@ -15,6 +15,8 @@ Ensure your device works with this simple test.
     :caption: examples/nrf24l01_simple_test.py
     :start-at: import time
     :end-before: def set_role():
+    :linenos:
+    :lineno-match:
 
 ACK Payloads Example
 --------------------
@@ -32,6 +34,8 @@ This is a test to show how to use custom acknowledgment payloads.
     :caption: examples/nrf24l01_ack_payload_test.py
     :start-at: import time
     :end-before: def set_role():
+    :linenos:
+    :lineno-match:
 
 Multiceiver Example
 --------------------
@@ -68,6 +72,8 @@ transceiver. This technique is called `"Multiceiver" in the nRF24L01 Specificati
     :caption: examples/nrf24l01_multiceiver_test.py
     :start-at: import time
     :end-before: def set_role():
+    :linenos:
+    :lineno-match:
 
 Scanner Example
 ---------------
@@ -84,6 +90,8 @@ radio-emitting sources (i.e. WiFi, Bluetooth, or etc).
     :caption: examples/nrf24l01_scanner_test.py
     :start-at: import time
     :end-before: def set_role():
+    :linenos:
+    :lineno-match:
 
 Reading the scanner output
 **************************
@@ -125,6 +133,8 @@ example script (in this library), and it runs **very** quickly.
     :caption: examples/nrf24l01_interrupt_test.py
     :start-at: import time
     :end-before: def set_role():
+    :linenos:
+    :lineno-match:
 
 Library-Specific Features
 =========================
@@ -147,6 +157,8 @@ data, but it uses the :meth:`~circuitpython_nrf24l01.rf24.RF24.write()` function
     :caption: examples/nrf24l01_stream_test.py
     :start-at: import time
     :end-before: def set_role():
+    :linenos:
+    :lineno-match:
 
 Context Example
 ---------------
@@ -159,6 +171,8 @@ This is a test to show how to use `with` blocks to manage multiple different nRF
 .. literalinclude:: ../examples/nrf24l01_context_test.py
     :caption: examples/nrf24l01_context_test.py
     :start-at: USE_SHIM = False
+    :linenos:
+    :lineno-match:
 
 Manual ACK Example
 ------------------
@@ -181,14 +195,22 @@ transmission.
     :caption: examples/nrf24l01_manual_ack_test.py
     :start-at: import time
     :end-before: def set_role():
+    :linenos:
+    :lineno-match:
 
 Network Simple Test
 -------------------
+
+The following network example is designed to be compatible with TMRh20's RF24Network
+examples, but this example allows the user to specify the examples' node addresses
+at runtime.
 
 .. literalinclude:: ../examples/nrf24l01_network_simple_test.py
     :caption: examples/nrf24l01_network_simple_test.py
     :start-at: import time
     :end-before: def set_role():
+    :linenos:
+    :lineno-match:
 
 
 OTA compatibility
@@ -206,6 +228,8 @@ This is a test to show how to use the nRF24L01 as a BLE advertising beacon using
     :caption: examples/nrf24l01_fake_ble_test.py
     :start-at: import time
     :end-before: def set_role():
+    :linenos:
+    :lineno-match:
 
 TMRh20's Arduino library
 ------------------------
