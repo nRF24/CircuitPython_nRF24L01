@@ -46,7 +46,7 @@ class RF24NetworkHeader:
     """
 
     def __init__(self, to_node=None, message_type=None):
-        self._from = 0
+        self._from = None
         self._to = to_node or 0
         self._to &= 0xFFFF
         self._msg_t = 0
@@ -142,7 +142,7 @@ class RF24NetworkHeader:
     @property
     def is_valid(self) -> bool:
         """A `bool` that describes if the `header` addresses are valid or not."""
-        if _is_addr_valid(self._from):
+        if self._from is not None and _is_addr_valid(self._from):
             return _is_addr_valid(self._to) or self._to == NETWORK_MULTICAST_ADDR
         return False
 

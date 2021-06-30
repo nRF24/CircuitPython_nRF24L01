@@ -280,8 +280,8 @@ class RF24Network(RadioMixin):
             self._log(
                 NETWORK_DEBUG,
                 "Received packet: from {} to {} type {} frag_id {}\n\t{}".format(
-                    frame.header.from_node,
-                    frame.header.to_node,
+                    oct(frame.header.from_node),
+                    oct(frame.header.to_node),
                     frame.header.message_type,
                     frame.header.reserved,
                     address_repr(frame.buffer, reverse=False, delimit=" ")
@@ -466,7 +466,8 @@ class RF24Network(RadioMixin):
         """Deliver a constructed ``frame`` routed as ``traffic_direct``"""
         if not isinstance(frame, RF24NetworkFrame):
             raise TypeError("expected object of type RF24NetworkFrame.")
-        frame.header.from_node = self._addr
+        if frame.header.from_node is None:
+            frame.header.from_node = self._addr
         if traffic_direct != AUTO_ROUTING:
             # Payload is multicast to the first node, and routed normally to the next
             send_type = USER_TX_TO_LOGICAL_ADDRESS
@@ -525,9 +526,9 @@ class RF24Network(RadioMixin):
                 self._network_flags &= ~FLAG_FAST_FRAG
                 self._rf24.set_auto_ack(0, 0)
             self._rf24.listen = True
-            rx_timeout = time.monotonic_ns() / 1000 + self._rx_timeout
+            rx_timeout = int(time.monotonic_ns() / 1000000) + self._rx_timeout
             while self.update() != NETWORK_ACK:
-                if time.monotonic_ns() / 1000 > rx_timeout:
+                if int(time.monotonic_ns() / 1000000) > rx_timeout:
                     result = False
                     self._log(
                         NETWORK_DEBUG_ROUTING,
@@ -552,12 +553,6 @@ class RF24Network(RadioMixin):
         else:
             self._rf24.set_auto_ack(1, 0)
         self._log(
-            NETWORK_DEBUG_ROUTING,
-            "auto-ack on pipe 0 is {}".format(
-                "on" if self._rf24.get_auto_ack(0) else "off"
-            )
-        )
-        self._log(
             NETWORK_DEBUG,
             "Sending type {} with ID {} from {} to {} on pipe {}".format(
                 frame.header.message_type,
@@ -570,9 +565,9 @@ class RF24Network(RadioMixin):
         self._rf24.open_tx_pipe(self._pipe_address(to_node, to_pipe))
 
         result = self._rf24.send(frame.buffer)
-        timeout = time.monotonic_ns() / 1000 + self._tx_timeout
+        timeout = int(time.monotonic_ns() / 1000000) + self._tx_timeout
         if not self._network_flags & FLAG_FAST_FRAG:
-            while not result and time.monotonic_ns() / 1000 < timeout:
+            while not result and int(time.monotonic_ns() / 1000000) < timeout:
                 result = self._rf24.resend()
         self._rf24.set_auto_ack(0, 0)
         return result
@@ -594,22 +589,13 @@ class RF24Network(RadioMixin):
         converted_to_node = self.parent
         converted_to_pipe = self.parent_pipe
         if to_pipe > TX_ROUTED:
-            self._log(NETWORK_DEBUG_ROUTING, "{} > TX_ROUTED".format(to_pipe))
             use_multicast = True
             converted_to_pipe = 0
             converted_to_node = to_node
         elif self._is_direct_child(to_node):
-            self._log(
-                NETWORK_DEBUG_ROUTING,
-                "{} is a direct child of {}".format(to_node, self.node_address)
-            )
             converted_to_node = to_node
             converted_to_pipe = 5
         elif self._is_descendant(to_node):
-            self._log(
-                NETWORK_DEBUG_ROUTING,
-                "{} is a descendant of {}".format(to_node, self.node_address)
-            )
             converted_to_node = self._direct_child_route_to(to_node)
             converted_to_pipe = 5
         return (converted_to_node, converted_to_pipe, use_multicast)
