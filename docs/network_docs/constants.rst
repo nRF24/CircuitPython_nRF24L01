@@ -1,6 +1,8 @@
 Network Constants
 ========================
 
+.. versionadded:: 2.1.0
+
 Sending Behavior Types
 ----------------------
 

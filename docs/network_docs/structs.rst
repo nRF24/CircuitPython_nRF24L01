@@ -1,8 +1,9 @@
 Network Data Structures
 =======================
 
-These classes are used to structure the payload data for wireless network transactions.
+.. versionadded:: 2.1.0
 
+These classes are used to structure the payload data for wireless network transactions.
 
 Header()
 -----------------

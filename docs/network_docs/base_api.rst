@@ -1,6 +1,8 @@
 RF24Network API
 ===============
 
+.. versionadded:: 2.1.0
+
 RF24Network()
 -----------------
 
