@@ -522,24 +522,29 @@ class RF24Network(RadioMixin):
             and frame.is_ack_type
             and traffic_direct in (TX_NORMAL, USER_TX_TO_LOGICAL_ADDRESS)
         ):
-            # wait for Network ACK
-            if self._network_flags & FLAG_FAST_FRAG:
-                self._network_flags &= ~FLAG_FAST_FRAG
-                self._rf24.set_auto_ack(0, 0)
-            self._rf24.listen = True
-            rx_timeout = int(time.monotonic_ns() / 1000000) + self._rx_timeout
-            while self.update() != NETWORK_ACK:
-                if int(time.monotonic_ns() / 1000000) > rx_timeout:
-                    result = False
-                    self._log(
-                        NETWORK_DEBUG_ROUTING,
-                        "No Network ACK received from {} (pipe{})".format(
-                            oct(to_node), to_pipe
-                        ),
-                    )
-                    break
+            result = self._wait_for_network_ack(to_node, to_pipe)
         if not self._network_flags & FLAG_FAST_FRAG:
             self._rf24.listen = True
+        return result
+
+    def _wait_for_network_ack(self, to_node, to_pipe):
+        """wait for network ack from target node"""
+        result = True
+        if self._network_flags & FLAG_FAST_FRAG:
+            self._network_flags &= ~FLAG_FAST_FRAG
+            self._rf24.set_auto_ack(0, 0)
+        self._rf24.listen = True
+        rx_timeout = int(time.monotonic_ns() / 1000000) + self._rx_timeout
+        while self.update() != NETWORK_ACK:
+            if int(time.monotonic_ns() / 1000000) > rx_timeout:
+                result = False
+                break
+        self._log(
+            NETWORK_DEBUG_ROUTING,
+            "Network ACK {}received from {} (pipe{})".format(
+                "" if result else "not ", oct(to_node), to_pipe
+            ),
+        )
         return result
 
     def _write_to_pipe(self, frame: RF24NetworkFrame, to_node, to_pipe, use_multicast):
