@@ -67,6 +67,7 @@ jobs:
       - name: PyLint
         run: |
           pylint --disable=too-many-instance-attributes,too-many-public-methods,too-many-arguments,duplicate-code circuitpython_nrf24l01/*.py
+          pylint --disable=too-many-instance-attributes,too-many-public-methods,too-many-arguments,duplicate-code circuitpython_nrf24l01/*/*.py
           ([[ ! -d "examples" ]] || pylint --disable=invalid-name,c-extension-no-member,duplicate-code $( find . -path "./examples/*.py" ))
 
       - name: Build assets

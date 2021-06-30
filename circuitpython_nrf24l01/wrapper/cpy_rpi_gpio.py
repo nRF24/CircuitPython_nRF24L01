@@ -1,6 +1,6 @@
 """This module contains a wrapper class for RPi.GPIO as digitalio.DigitalInOut"""
 
-import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO  # pylint: disable=consider-using-from-import
 
 
 class RPiDIO:
