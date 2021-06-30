@@ -201,6 +201,8 @@ transmission.
 Network Simple Test
 -------------------
 
+.. versionadded:: 2.1.0
+
 The following network example is designed to be compatible with TMRh20's RF24Network
 examples, but this example allows the user to specify the examples' node addresses
 at runtime.

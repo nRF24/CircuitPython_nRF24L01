@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """All the constants related to managing a network with nRF24L01 radios."""
+__version__ = "0.0.0-auto.0"
+__repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 from micropython import const
 
 

@@ -1,5 +1,6 @@
 """wrappers for MicroPython's machine.Pin as CircuitPython's digitalio  API"""
-
+__version__ = "0.0.0-auto.0"
+__repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 from machine import Pin  # pylint: disable=import-error
 
 # pylint: disable=too-few-public-methods,missing-class-docstring

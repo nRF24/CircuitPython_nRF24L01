@@ -1,5 +1,6 @@
 """This module contains a wrapper class for RPi.GPIO as digitalio.DigitalInOut"""
-
+__version__ = "0.0.0-auto.0"
+__repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import RPi.GPIO as GPIO  # pylint: disable=consider-using-from-import
 
 

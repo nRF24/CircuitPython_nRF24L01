@@ -22,6 +22,8 @@
 """
 A module to contain the basic queue implementation for the stack of received messages.
 """
+__version__ = "0.0.0-auto.0"
+__repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 from .network_mixin import logging
 from .constants import (
     NETWORK_FRAG_FIRST,

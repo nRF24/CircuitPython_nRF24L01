@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """This module contains the data structures used foe network packets."""
+__version__ = "0.0.0-auto.0"
+__repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import struct
 from .constants import NETWORK_MULTICAST_ADDR
 

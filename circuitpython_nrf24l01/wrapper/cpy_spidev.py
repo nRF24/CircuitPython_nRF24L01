@@ -1,4 +1,6 @@
 """This module contains a wrapper class for `spidev.SpiDev` in CPython on Linux"""
+__version__ = "0.0.0-auto.0"
+__repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 
 
 class SPIDevCtx:
