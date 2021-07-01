@@ -67,14 +67,18 @@ class Queue:
     @property
     def peek(self) -> RF24NetworkFrame:
         """return First Out element without removing it from the queue"""
-        return self._list[0]
+        if self._list:
+            return self._list[0]
+        return None
 
     @property
     def dequeue(self) -> RF24NetworkFrame:
         """return and remove the First Out element from the queue"""
-        ret_val = self._list[0]
-        del self._list[0]
-        return ret_val
+        if self._list:
+            ret_val = self._list[0]
+            del self._list[0]
+            return ret_val
+        return None
 
     def __len__(self):
         """return the number of the enqueued items"""

@@ -26,7 +26,7 @@ import time
 from .network_mixin import RadioMixin
 from ..rf24 import address_repr
 from .packet_structs import RF24NetworkFrame, RF24NetworkHeader, _is_addr_valid
-from .queue import QueueFrag
+from .queue import Queue, QueueFrag
 from .constants import (
     NETWORK_DEBUG_MINIMAL,
     NETWORK_DEBUG,
@@ -123,11 +123,10 @@ class RF24Network(RadioMixin):
         self._tx_timeout = 25000
         self._rx_timeout = 3 * self._tx_timeout
         self._multicast_relay = True
+        self._frag_enabled = True
 
         #: enable/disable (`True`/`False`) multicasting
         self.allow_multicast = True
-        #: enable/disable (`True`/`False`) message fragmentation
-        self.fragmentation = True
         self.ret_sys_msg = False  #: for use with RF24Mesh
         self.max_message_length = 144
         """If a network node is driven by the TMRh20 RF24Network library on a
@@ -183,14 +182,37 @@ class RF24Network(RadioMixin):
                 self._rf24.open_rx_pipe(i, self._pipe_address(val, i))
 
     @property
+    def fragmentation(self):
+        """Enable/disable (`True`/`False`) the message fragmentation feature."""
+        return self._frag_enabled
+
+    @fragmentation.setter
+    def fragmentation(self, enabled):
+        enabled = bool(enabled)
+        if enabled != self._frag_enabled:
+            prev_q = self.queue
+            new_q = None
+            if enabled:
+                self.max_message_length = 144
+                new_q = QueueFrag(self.max_message_length)
+            else:
+                self.max_message_length = MAX_FRAG_SIZE
+                new_q = Queue(self.max_message_length)
+            while len(prev_q):
+                new_q.enqueue(prev_q.dequeue)
+            self.queue = new_q
+            del prev_q
+            self._frag_enabled = enabled
+
+    @property
     def tx_timeout(self):
         """The timeout (in milliseconds) to wait for successful transmission.
-        Defaults to 25. The rx_timeout will be three times this value."""
-        return self._tx_timeout / 1000
+        Defaults to 25. The internal rx_timeout will be three times this value."""
+        return int(self._tx_timeout / 1000)
 
     @tx_timeout.setter
     def tx_timeout(self, val):
-        self._tx_timeout = min(val, 1000)
+        self._tx_timeout = max(val * 1000, 1000)
         self._rx_timeout = 3 * self._tx_timeout
 
     @property
@@ -441,8 +463,6 @@ class RF24Network(RadioMixin):
 
     def _write_frag(self, frame: RF24NetworkFrame, traffic_direct, send_type):
         """write a message fragmented into multiple payloads"""
-        if len(frame.message) > self.max_message_length and self.fragmentation:
-            raise ValueError("message is too large to fragment")
         frames = _frame_frags(_frag_msg(frame.message), frame.header)
         for i, frm in enumerate(frames):
             result = self.write(frm, traffic_direct, send_type)
@@ -467,6 +487,8 @@ class RF24Network(RadioMixin):
         """Deliver a constructed ``frame`` routed as ``traffic_direct``"""
         if not isinstance(frame, RF24NetworkFrame):
             raise TypeError("expected object of type RF24NetworkFrame.")
+        if len(frame.message) > self.max_message_length:
+            raise ValueError("message's length is too large!")
         if frame.header.from_node is None:
             frame.header.from_node = self._addr
         if traffic_direct != AUTO_ROUTING:
@@ -479,7 +501,7 @@ class RF24Network(RadioMixin):
                 send_type = USER_TX_TO_PHYSICAL_ADDRESS
 
         # break message into fragments and send multiple resulting frames
-        if len(frame.message) > MAX_FRAG_SIZE and self.fragmentation:
+        if len(frame.message) > MAX_FRAG_SIZE and self._frag_enabled:
             return self._write_frag(frame, traffic_direct, send_type)
 
         # send the frame
@@ -502,8 +524,10 @@ class RF24Network(RadioMixin):
             and frame.is_ack_type
         ):
             # respond with a network ACK
+            frame.header.message_type = NETWORK_ACK
+            frame.header.to_node = frame.header.from_node
             ack_to_node, ack_to_pipe, use_multicast = self._logical_to_physical(
-                frame.header.to_node, TX_ROUTED
+                frame.header.from_node, TX_ROUTED
             )
             ack_ok = self._write_to_pipe(frame, ack_to_node, ack_to_pipe, use_multicast)
             self._log(
