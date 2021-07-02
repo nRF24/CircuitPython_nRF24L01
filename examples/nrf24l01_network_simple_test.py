@@ -102,7 +102,7 @@ if nrf.logger is not None:
 packets_sent = [0]
 
 
-def master(count=5, interval=2, frag=False):
+def master(count=5, frag=False, interval=2):
     """Transmits 2 incrementing long ints every 2 second
 
     :param int count: the max number of messages to transmit.
@@ -171,6 +171,8 @@ def set_role():
         input(
             "*** Enter 'R' for receiver role.\n"
             "*** Enter 'T' for transmitter role.\n"
+            "*** Enter 'T <payload count> 1' or 'R <timeout seconds> 1' "
+            "to demonstrate fragmented messages.\n"
             "*** Enter 'Q' to quit example.\n"
         )
         or "?"

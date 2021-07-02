@@ -45,6 +45,7 @@ Features currently supported
 * fake BLE module for sending BLE beacon advertisments from the nRF24L01 as outlined by `Dmitry Grinberg in his write-up (including C source code) <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_.
 * Multiceiver\ :sup:`TM` mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). See the `Multiceiver Example <examples.html#multiceiver-example>`_
 * Networking capability that allows thousands of transveivers to interact with each other.
+
   * This does not mean the radio can connect to WiFi. The networking implementation is a custom protocol ported from TMRh20's RF24Network library.
 
 
@@ -53,23 +54,18 @@ Dependencies
 
 This driver depends on:
 
-* `Adafruit CircuitPython Firmware <https://github.com/adafruit/circuitpython>`_ or the
+* `Adafruit CircuitPython Firmware <https://circuitpython.org/downloads>`_ or the
   `Adafruit_Blinka library <https://github.com/adafruit/Adafruit_Blinka>`_ for Linux
   SoC boards like Raspberry Pi
 * `Adafruit_CircuitPython_BusDevice
   <https://github.com/adafruit/Adafruit_CircuitPython_BusDevice>`_ (specifically the
-  :py:mod:`~adafruit_bus_device.spi_device`)
+  :py:mod:`~adafruit_bus_device.spi_device` module)
 
-  .. note:: As of CircuitPython 6.2.0-beta1 the adafruit_bus_device library is included
-      with the firmware (the UF2 file). However, devices running CircuitPython 6.1.0 or
-      earlier need to have the adafruit_bus_device library installed manually in the
-      CIRCUITPY drive's "lib" folder.
+  .. tip:: Use CircuitPython v6.3.0 or newer because faster SPI execution yields
+      faster transmissions.
 
-      .. tip:: Use CircuitPython 6.2.0 or newer because faster SPI transactions yield
-          faster transmissions.
-
-      The adafruit_bus_device library is installed automatically on Linux when
-      `Installing from PyPI`_.
+The adafruit_bus_device and Adafruit_Blinka libraries are installed automatically on Linux when installing
+this library.
 
 Please ensure all dependencies are available on the CircuitPython filesystem.
 This is easily achieved by downloading
@@ -212,11 +208,16 @@ About the nRF24L01+PA+LNA modules
 
 You may find variants of the nRF24L01 transceiver that are marketed as "nRF24L01+PA+LNA".
 These modules are distinct in the fact that they come with a detachable (SMA-type) antenna.
-They employ seperate RFX24C01 IC with the antenna for enhanced Power Amplification (PA) and
+They employ additional circuitry with the antenna for enhanced Power Amplification (PA) and
 Low Noise Amplification (LNA) features. While they boast greater range with the same
 functionality, they are subject to a couple lesser known (and lesser advertised) drawbacks:
 
-1. Stronger power source. Below is a chart of advertised current requirements that many MCU
+Additional requirements for the PA/LNA modules
+**********************************************
+
+These requirements are dependent on what manufacturer produced the radio module.
+
+1. Needs a stronger power source. Below is a chart of advertised current requirements that many MCU
    boards' 3V regulators may not be able to provide (after supplying power to internal
    components).
 
@@ -227,6 +228,9 @@ functionality, they are subject to a couple lesser known (and lesser advertised)
        "Emission mode current(peak)", "115 mA"
        "Receive Mode current(peak)", "45 mA"
        "Power-down mode current", "4.2 µA"
+
+   .. important:: These values may be different depending on what manufacturer produced the radio module.
+       Please consult the manufacturer's specifications or datasheet.
 
 2. Needs shielding from electromagnetic interference. Shielding usually works best when
    it has a path to ground (GND pin), but this connection to the GND pin is not required.
