@@ -317,14 +317,20 @@ class RF24Network(RadioMixin):
                 keep_updating = self._handle_frame_for_other_node(frame)
                 # conditionally indicate its a routed payload
                 if (
-                    self.multicast_relay
+                    self.allow_multicast
                     and frame.header.to_node == NETWORK_MULTICAST_ADDR
                     and ret_val == NETWORK_POLL
                     and self._addr != NETWORK_DEFAULT_ADDR
                 ):
-                    ret_val = 0
+                    ret_val = 0  # indicate it is a routed payload
                 elif self._addr != NETWORK_DEFAULT_ADDR:  # multicast not enabled
-                    ret_val = 0
+                    ret_val = 0  # indicate it is a routed payload
+            if (
+                frame.header.message_type == NETWORK_FRAG_LAST
+                and frame.header.reserved == NETWORK_EXTERNAL_DATA
+            ):
+                ret_val = NETWORK_EXTERNAL_DATA
+
             if not keep_updating:
                 return ret_val
         # end while _rf24.available()
@@ -381,15 +387,16 @@ class RF24Network(RadioMixin):
         """
         if self.allow_multicast:
             if frame.header.to_node == NETWORK_MULTICAST_ADDR:
-                if (
-                    frame.header.message_type == NETWORK_POLL
-                    and self._addr != NETWORK_DEFAULT_ADDR
-                    and not self._network_flags & FLAG_NO_POLL
-                ):
-                    frame.header.to_node = frame.header.from_node
-                    frame.header.from_node = self._addr
-                    self.write(frame, frame.header.to_node, USER_TX_TO_PHYSICAL_ADDRESS)
-                    return False
+                if frame.header.message_type == NETWORK_POLL:
+                    if (
+                        self._addr != NETWORK_DEFAULT_ADDR
+                        and not self._network_flags & FLAG_NO_POLL
+                    ):
+                        frame.header.to_node = frame.header.from_node
+                        frame.header.from_node = self._addr
+                        time.sleep(self.parent_pipe / 1000)
+                        self.write(frame, frame.header.to_node, USER_TX_TO_PHYSICAL_ADDRESS)
+                    return True
                 self.queue.enqueue(frame)
                 if self.multicast_relay:
                     self._log(
@@ -398,21 +405,24 @@ class RF24Network(RadioMixin):
                             frame.header.from_node, frame.header.to_node
                         ),
                     )
-                    # if not self._addr >> 3:
-                    #     time.sleep(0.0024)
-                    # time.sleep((self._addr % 4) * 0.0006)
+                    if not self._addr >> 3:
+                        time.sleep(0.0024)
+                    time.sleep((self._addr % 4) * 0.0006)
                     self.write(
                         frame,
                         (_level_to_address(self._multicast_level) << 3) & 0xffff,
                         USER_TX_MULTICAST
                     )
-                if frame.header.message_type == NETWORK_EXTERNAL_DATA:
-                    return True
-            elif self._addr != NETWORK_DEFAULT_ADDR:
+                if (
+                    frame.header.message_type == NETWORK_FRAG_LAST
+                    and frame.header.reserved == NETWORK_EXTERNAL_DATA
+                ):
+                    return False
+            elif self._addr != NETWORK_DEFAULT_ADDR:  # multicast is enabled
                 self.write(frame, frame.header.to_node, TX_ROUTED)  # pass it along
-                return True  # indicate its a routed payload
+                return True
         elif self._addr != NETWORK_DEFAULT_ADDR:  # multicast not enabled
-            self.write(frame, frame.header.to_node, TX_ROUTED)
+            self.write(frame, frame.header.to_node, TX_ROUTED)  # pass it along
             return True
         return False
 
@@ -505,7 +515,6 @@ class RF24Network(RadioMixin):
             return self._write_frag(frame, traffic_direct, send_type)
 
         # send the frame
-        result = False
         to_node, to_pipe, use_multicast = self._logical_to_physical(
             frame.header.to_node, send_type
         )
@@ -592,7 +601,9 @@ class RF24Network(RadioMixin):
                 to_pipe,
             ),
         )
-        self._rf24.open_tx_pipe(self._pipe_address(to_node, to_pipe))
+        addr = self._pipe_address(to_node, to_pipe)
+        if self._rf24.address() != addr:
+            self._rf24.open_tx_pipe(addr)
 
         result = self._rf24.send(frame.buffer, send_only=True)
         timeout = int(time.monotonic_ns() / 1000000) + self._tx_timeout

@@ -27,6 +27,8 @@ from .constants import NETWORK_MULTICAST_ADDR
 
 def _is_addr_valid(address):
     """Test is a given address is a valid RF24Network node address."""
+    if address == NETWORK_MULTICAST_ADDR:
+        return True
     byte_count = 0
     while address:
         if (not 0 <= (address & 7) < 8) or (byte_count > 5):
@@ -145,7 +147,7 @@ class RF24NetworkHeader:
     def is_valid(self) -> bool:
         """A `bool` that describes if the `header` addresses are valid or not."""
         if self._from is not None and _is_addr_valid(self._from):
-            return _is_addr_valid(self._to) or self._to == NETWORK_MULTICAST_ADDR
+            return _is_addr_valid(self._to)
         return False
 
 
