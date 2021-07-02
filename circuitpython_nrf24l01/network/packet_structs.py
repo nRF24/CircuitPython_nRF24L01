@@ -31,7 +31,7 @@ def _is_addr_valid(address):
         return True
     byte_count = 0
     while address:
-        if (not 0 <= (address & 7) < 8) or (byte_count > 5):
+        if (not 0 < (address & 7) <= 5) or (byte_count > 5):
             return False
         address >>= 3
         byte_count += 1

@@ -126,7 +126,9 @@ class QueueFrag(Queue):
         if self._logger is not None:
             prompt = "queueing fragment id {}.{} ".format(
                 frame.header.frame_id,
-                frame.header.reserved,
+                frame.header.reserved
+                if frame.header.message_type != NETWORK_FRAG_LAST
+                else 1,
             )
         if (
             self._frag_cache is not None

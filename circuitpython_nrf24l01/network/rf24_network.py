@@ -301,11 +301,11 @@ class RF24Network(RadioMixin):
             ret_val = frame.header.message_type
             self._log(
                 NETWORK_DEBUG,
-                "Received packet: from {} to {} type {} frag_id {}\n\t{}".format(
+                "Received packet: from {} to {} type {} id {}\n\t{}".format(
                     oct(frame.header.from_node),
                     oct(frame.header.to_node),
                     frame.header.message_type,
-                    frame.header.reserved,
+                    frame.header.frame_id,
                     address_repr(frame.buffer, reverse=False, delimit=" ")
                 )
             )
@@ -315,7 +315,8 @@ class RF24Network(RadioMixin):
                 keep_updating = self._handle_frame_for_this_node(frame)
             else:  # frame was not directed to this node
                 keep_updating = self._handle_frame_for_other_node(frame)
-                # conditionally indicate its a routed payload
+
+                # conditionally adjust return value
                 if (
                     self.allow_multicast
                     and frame.header.to_node == NETWORK_MULTICAST_ADDR
@@ -345,7 +346,6 @@ class RF24Network(RadioMixin):
         if msg_t == NETWORK_PING:
             return True
 
-        # used for RF24Mesh
         if msg_t == NETWORK_ADDR_RESPONSE:
             requester = NETWORK_DEFAULT_ADDR
             if requester != self._addr:
@@ -357,7 +357,6 @@ class RF24Network(RadioMixin):
             frame.header.to_node = 0
             self.write(frame, frame.header.to_node, TX_NORMAL)
             return True
-
         if (
             self.ret_sys_msg
             and msg_t > MAX_USER_DEFINED_HEADER_TYPE
@@ -375,8 +374,11 @@ class RF24Network(RadioMixin):
             return False
 
         self.queue.enqueue(frame)
-        if msg_t == NETWORK_EXTERNAL_DATA:
-            self._log(NETWORK_DEBUG_MINIMAL, "Returned external data type")
+        if (
+            msg_t == NETWORK_FRAG_LAST
+            and frame.header.reserved == NETWORK_EXTERNAL_DATA
+        ):
+            self._log(NETWORK_DEBUG_MINIMAL, "Received external data type")
             return False
         return False
 
@@ -395,7 +397,11 @@ class RF24Network(RadioMixin):
                         frame.header.to_node = frame.header.from_node
                         frame.header.from_node = self._addr
                         time.sleep(self.parent_pipe / 1000)
-                        self.write(frame, frame.header.to_node, USER_TX_TO_PHYSICAL_ADDRESS)
+                        self.write(
+                            frame,
+                            frame.header.to_node,
+                            USER_TX_TO_PHYSICAL_ADDRESS
+                        )
                     return True
                 self.queue.enqueue(frame)
                 if self.multicast_relay:

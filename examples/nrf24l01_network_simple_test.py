@@ -101,9 +101,13 @@ nrf.queue.logger.setLevel(NETWORK_DEBUG)
 packets_sent = [0]
 
 
-def master(count=5, interval=2):
-    """Transmits 2 incrementing long ints every 2 second"""
-    nrf.listen = True  # stay in active RX mode when not sleeping/TXing
+def master(count=5, interval=2, frag=False):
+    """Transmits 2 incrementing long ints every 2 second
+
+    :param int count: the max number of messages to transmit.
+    :param int interval: time spent between transmitting messages.
+    :param bool frag: only use fragmented messages.
+    """
     failures = 0
     start_timer = time.monotonic()
     while failures < 6 and count:
@@ -112,89 +116,49 @@ def master(count=5, interval=2):
         if now >= start_timer + interval:  # If it's time to send a message, send it!
             start_timer = now
             count -= 1
-            ok = nrf.send(
-                RF24NetworkHeader(other_node),
-                struct.pack("LL", int(time.monotonic_ns() / 1000000), packets_sent[0]),
-            )
-            failures += not ok
-            print("Sending %d..." % packets_sent[0], "ok." if ok else "failed.")
             packets_sent[0] += 1
-    print(failures, "failures detected. Leaving TX role.")
-
-
-def master_frag(count=5, interval=2):
-    """Transmits 2 incrementing long ints every 2 second"""
-    nrf.listen = True  # stay in active RX mode when not sleeping/TXing
-    failures = 0
-    start_timer = time.monotonic()
-    while failures < 6 and count:
-        nrf.update()
-        now = time.monotonic()
-        if now >= start_timer + interval:  # If it's time to send a message, send it!
-            start_timer = now
-            count -= 1
-            length = (packets_sent[0] + MAX_FRAG_SIZE) % nrf.max_message_length
-            ok = nrf.send(
-                RF24NetworkHeader(other_node),
-                bytes(range(length)),
+            length = 8
+            message = struct.pack(
+                "LL",
+                int(time.monotonic_ns() / 1000000),
+                packets_sent[0]
             )
+            if frag:
+                length = (packets_sent[0] + MAX_FRAG_SIZE) % nrf.max_message_length
+                message = bytes(range(length))
+            ok = nrf.send(RF24NetworkHeader(other_node), message)
             failures += not ok
             print(
                 "Sending {} (len {})...".format(packets_sent[0], length),
                 "ok." if ok else "failed."
             )
-            packets_sent[0] += 1
     print(failures, "failures detected. Leaving TX role.")
 
 
-def slave(timeout=6):
+def slave(timeout=6, frag=False):
     """Listen for any payloads and print the transaction
 
     :param int timeout: The number of seconds to wait (with no transmission)
         until exiting function.
+    :param bool frag: only use fragmented messages.
     """
-    nrf.listen = True  # put radio in RX mode
-
     start_timer = time.monotonic()
     while (time.monotonic() - start_timer) < timeout:
         if nrf.update():
             start_timer = time.monotonic()  # reset timer
         while nrf.available():
             payload = nrf.read()
+            print("Received payload", end="")
+            if not frag:
+                print(struct.unpack("<LL", bytes(payload.message)), end="")
             print(
-                "Received payload", struct.unpack("<LL", bytes(payload.message)),
-                "from", oct(payload.header.from_node),
+                " from", oct(payload.header.from_node),
                 "to", oct(payload.header.to_node),
-                "length", len(payload.message),
-            )
-
-
-def slave_frag(timeout=6):
-    """Listen for any payloads and print the transaction
-
-    :param int timeout: The number of seconds to wait (with no transmission)
-        until exiting function.
-    """
-    nrf.listen = True  # put radio in RX mode
-
-    start_timer = time.monotonic()
-    while (time.monotonic() - start_timer) < timeout:
-        if nrf.update():
-            start_timer = time.monotonic()  # reset timer
-        while nrf.available():
-            payload = nrf.read()
-            print(
-                "Received payload from", oct(payload.header.from_node),
-                "to", oct(payload.header.to_node),
-                "type", payload.header.message_type,
-                "id", payload.header.frame_id,
-                "reserved (frag id)", payload.header.reserved,
                 "length", len(payload.message),
             )
 
 
 def set_role():
-    # pylint: disable=too-many-branches
     """Set the role using stdin stream. Timeout arg for slave() can be
     specified using a space delimiter (e.g. 'R 10' calls `slave(10)`)
 
@@ -205,47 +169,38 @@ def set_role():
     user_input = (
         input(
             "*** Enter 'R' for receiver role.\n"
-            "*** Enter 'RF' for receiver role with fragmentation.\n"
             "*** Enter 'T' for transmitter role.\n"
-            "*** Enter 'TF' for transmitter role with fragmentation.\n"
             "*** Enter 'Q' to quit example.\n"
         )
         or "?"
     )
     user_input = user_input.split()
     if user_input[0].upper().startswith("R"):
-        if user_input[0].upper().endswith("F"):
-            if len(user_input) > 1:
-                slave_frag(int(user_input[1]))
+        if len(user_input) > 1:
+            if len(user_input) > 2:
+                slave(int(user_input[1]), int(user_input[2]))
             else:
-                slave_frag()
-        else:
-            if len(user_input) > 1:
                 slave(int(user_input[1]))
-            else:
-                slave()
+        else:
+            slave()
         return True
     if user_input[0].upper().startswith("T"):
-        if user_input[0].upper().endswith("F"):
-            if len(user_input) > 1:
-                master_frag(int(user_input[1]))
+        if len(user_input) > 1:
+            if len(user_input) > 2:
+                master(int(user_input[1]), int(user_input[2]))
             else:
-                master_frag()
-        else:
-            if len(user_input) > 1:
                 master(int(user_input[1]))
-            else:
-                master()
+        else:
+            master()
         return True
     if user_input[0].upper().startswith("Q"):
         nrf.power = 0
         return False
     print(user_input[0], "is an unrecognized input. Please try again.")
-    # pylint: enable=too-many-branches
     return set_role()
 
 
-print("    nrf24l01_network/simple_test")  # print example name
+print("    nrf24l01_network_simple_test")  # print example name
 
 if __name__ == "__main__":
 
@@ -257,4 +212,4 @@ if __name__ == "__main__":
         nrf.power = 0
 else:
     print("    Run master() on transmitter.\n    Run slave() on receiver.")
-    print("    Use master_frag() or slave_frag() demonstrate message fragmentation.")
+    print("    Pass keyword arg `frag=True` to demonstrate message fragmentation.")
