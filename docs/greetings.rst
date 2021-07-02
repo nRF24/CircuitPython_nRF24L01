@@ -44,9 +44,9 @@ Features currently supported
 * An nRF24L01 driven by this library can communicate with a nRF24L01 on an Arduino driven by the `TMRh20 RF24 library <http://tmrh20.github.io/RF24/>`_. See the `nrf24l01_2arduino_handling_data.py <examples.html#TMRh20-s-arduino-library>`_ example.
 * fake BLE module for sending BLE beacon advertisments from the nRF24L01 as outlined by `Dmitry Grinberg in his write-up (including C source code) <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_.
 * Multiceiver\ :sup:`TM` mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). See the `Multiceiver Example <examples.html#multiceiver-example>`_
-* compatible with logging standard library
+* Networking capability that allows thousands of transveivers to interact with each other.
+  * This does not mean the radio can connect to WiFi. The networking implementation is a custom protocol ported from TMRh20's RF24Network library.
 
-  .. seealso:: See `Optional Dependencies`_.
 
 Dependencies
 --------------------------
@@ -75,19 +75,12 @@ Please ensure all dependencies are available on the CircuitPython filesystem.
 This is easily achieved by downloading
 `the Adafruit library and driver bundle <https://github.com/adafruit/Adafruit_CircuitPython_Bundle>`_.
 
-.. note:: This library supports Python 3.7 or newer because the examples use
+.. note:: This library supports Python 3.7 or newer because it use
     the function `time.monotonic_ns() <https://docs.python.org/3.7/library/
     time.html#time.monotonic_ns>`_ which returns an arbitrary time "counter"
     as an `int` of nanoseconds. CircuitPython firmware also supports
     :py:func:`time.monotonic_ns()`.
 
-Optional Dependencies
----------------------
-
-CircuitPython firmware does not come with logging to save space.
-For `Using logger(s) <using_logger.html#using-logger--page-root>`_:
-
-- copy the :mod:`adafruit_logging` module to your CIRCUITPY drive's ``lib`` folder
 
 Installing from PyPI
 --------------------

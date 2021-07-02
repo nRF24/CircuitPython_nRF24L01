@@ -115,10 +115,10 @@ About the lite version
 
 This library contains a "lite" version of ``rf24.py`` titled ``rf24_lite.py``. It has been
 developed to save space on microcontrollers with limited amount of RAM and/or storage (like
-boards using the ATSAMD21 M0). The following functionality has been removed from the lite
+boards using the ATSAMD21). The following functionality has been removed from the lite
 version:
 
-* The `FakeBLE` class is not compatible with the ``rf24_lite.py`` module.
+* The `FakeBLE` and `RF24Network` classes are not compatible with the ``rf24_lite.py`` module.
 * `is_plus_variant` is removed, meaning the
   lite version is not compatibility with the older non-plus variants of the nRF24L01.
 * `address()` removed.
