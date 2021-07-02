@@ -33,15 +33,11 @@ except ImportError:
     except ImportError:
         pass  # proceed without logging capability
 
-
-class RadioMixin:
-    def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
-        self._rf24 = RF24(spi, csn, ce_pin, spi_frequency=spi_frequency)
+class LoggerMixin:
+    def __init__(self):
         self._logger = None
         if logging is not None:
             self._logger = logging.getLogger(type(self).__name__)
-            self._logger.setLevel(logging.DEBUG if spi is None else logging.INFO)
-        super().__init__()
 
     @property
     def logger(self):
@@ -53,11 +49,15 @@ class RadioMixin:
         if logging is not None and isinstance(val, logging.Logger):
             self._logger = val
 
-    def _log(self, level, prompt, force_print=False):
-        if self.logger is not None:
-            self.logger.log(level, prompt)
-        elif force_print:
-            print(prompt)
+    def _log(self, level, prompt):
+        if self._logger is not None:
+            self._logger.log(level, prompt)
+
+
+class RadioMixin(LoggerMixin):
+    def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
+        self._rf24 = RF24(spi, csn, ce_pin, spi_frequency=spi_frequency)
+        super().__init__()
 
     @property
     def channel(self):

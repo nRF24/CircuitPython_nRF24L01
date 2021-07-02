@@ -33,7 +33,6 @@
     :caption: Troubleshooting
     :hidden:
 
-    network_docs/using_logger
     troubleshooting
 
 .. toctree::

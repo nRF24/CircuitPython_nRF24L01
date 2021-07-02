@@ -24,7 +24,7 @@ A module to contain the basic queue implementation for the stack of received mes
 """
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
-from .network_mixin import logging
+from .network_mixin import LoggerMixin
 from .constants import (
     NETWORK_FRAG_FIRST,
     NETWORK_FRAG_MORE,
@@ -34,7 +34,7 @@ from .constants import (
 from .packet_structs import RF24NetworkFrame
 
 
-class Queue:
+class Queue(LoggerMixin):
     """A class that wraps python's list implementation with RF24Network Queue behavior
 
     :param int size: The maximum size that can be enqueued at once.
@@ -44,9 +44,7 @@ class Queue:
         self._max_q_size = max_queue_size
         self._max_msg_len = max_message_length
         self._list = []
-        self._logger = None
-        if logging is not None:
-            self._logger = logging.getLogger(type(self).__name__)
+        super().__init__()
 
     def enqueue(self, frame: RF24NetworkFrame) -> bool:
         """add a `RF24NetworkFrame` to the queue."""
@@ -83,22 +81,6 @@ class Queue:
     def __len__(self):
         """return the number of the enqueued items"""
         return len(self._list)
-
-    @property
-    def logger(self):
-        """Get/Set the current ``Logger()``."""
-        return self._logger
-
-    @logger.setter
-    def logger(self, val):
-        if logging is not None and isinstance(val, logging.Logger):
-            self._logger = val
-
-    def _log(self, level, prompt, force_print=False):
-        if self.logger is not None:
-            self.logger.log(level, prompt)
-        elif force_print:
-            print(prompt)
 
 
 class QueueFrag(Queue):

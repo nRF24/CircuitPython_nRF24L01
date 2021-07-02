@@ -8,7 +8,6 @@ from circuitpython_nrf24l01.rf24 import RF24
 from circuitpython_nrf24l01.network.constants import (
     NETWORK_DEBUG,
     MAX_FRAG_SIZE,
-    # NETWORK_DEBUG_MINIMAL
 )
 from circuitpython_nrf24l01.network.rf24_network import (
     RF24Network,
@@ -92,10 +91,12 @@ nrf.channel = 90
 # usually run with nRF24L01 transceivers in close proximity
 nrf.pa_level = -12
 
-# log debug msgs specific to RF24Network.
-# use NETWORK_DEBUG_MINIMAL for less verbosity
-nrf.logger.setLevel(NETWORK_DEBUG)
-nrf.queue.logger.setLevel(NETWORK_DEBUG)
+if nrf.logger is not None:
+    # log debug msgs specific to RF24Network.
+    # use NETWORK_DEBUG_MINIMAL for less verbosity
+    nrf.logger.setLevel(NETWORK_DEBUG)
+    nrf.queue.logger.setLevel(NETWORK_DEBUG)
+
 # using the python keyword global is bad practice. Instead we'll use a 1 item
 # list to store our float number for the payloads sent/received
 packets_sent = [0]
@@ -144,15 +145,15 @@ def slave(timeout=6, frag=False):
     """
     start_timer = time.monotonic()
     while (time.monotonic() - start_timer) < timeout:
-        if nrf.update():
-            start_timer = time.monotonic()  # reset timer
+        nrf.update()
         while nrf.available():
+            start_timer = time.monotonic()  # reset timer
             payload = nrf.read()
-            print("Received payload", end="")
+            print("Received payload", end=" ")
             if not frag:
-                print(struct.unpack("<LL", bytes(payload.message)), end="")
+                print(struct.unpack("<LL", bytes(payload.message)), end=" ")
             print(
-                " from", oct(payload.header.from_node),
+                "from", oct(payload.header.from_node),
                 "to", oct(payload.header.to_node),
                 "length", len(payload.message),
             )
