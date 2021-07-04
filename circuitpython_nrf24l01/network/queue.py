@@ -55,7 +55,7 @@ class Queue(LoggerMixin):
             return False
         for frm in self._list:
             if (
-                frm.header.to_node == frame.header.to_node
+                frm.header.from_node == frame.header.from_node
                 and frm.header.frame_id == frame.header.frame_id
             ):
                 return False  # already enqueued this frame

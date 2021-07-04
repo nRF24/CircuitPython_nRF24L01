@@ -36,11 +36,14 @@ MAX_FRAG_SIZE = const(24)
 NETWORK_MULTICAST_ADDR = const(0o100)
 MESH_LOOKUP_TIMEOUT = const(135)
 """The time (inmilliseconds) that a non-master mesh node will wait for a response when
-requesting am ID from the master node"""
+requesting am ID from the master node."""
 #: the max number of contacts made when mesh node is polling for a new address
 MESH_MAX_POLL = const(4)
 #: The max number of children for 1 mesh node
 MESH_MAX_CHILDREN = const(4)
+MESH_WRITE_TIMEOUT = const(115)
+"""The time (in milliseconds) to get the network address of a node's ID (for
+:py:meth:`~circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.send()` operations)."""
 
 # sending behavior types
 #: Send a message with automatic network rounting

@@ -128,7 +128,7 @@ class RF24Network(RadioMixin):
         #: The queue (FIFO) of recieved frames for this node
         self.queue = QueueFrag(self.max_message_length)
         #: A buffer containing the last frame received by the network node
-        self.frame_cache = bytearray(0)
+        self.frame_cache = RF24NetworkFrame()
         #: Each byte in this list is used as the unique byte per pipe and child node.
         self.address_suffix = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
         self.address_prefix = 0xCC
@@ -159,7 +159,7 @@ class RF24Network(RadioMixin):
     def print_details(self, dump_pipes=True):
         """.. seealso:: :py:meth:`~circuitpython_nrf24l01.rf24.RF24.print_details()`"""
         self._rf24.print_details(dump_pipes)
-        print("Network node address__", oct(self.node_address))
+        print("Network node address__", oct(self._addr))
 
     @property
     def node_address(self):
@@ -289,8 +289,6 @@ class RF24Network(RadioMixin):
         """keep the network layer current; returns the next header"""
         ret_val = 0  # sentinal indicating there is nothing to report
         while self._rf24.available():
-            # grab the frame from RX FIFO
-            self.frame_cache = RF24NetworkFrame()
             if (
                 not self.frame_cache.decode(self._rf24.read())
                 or not self.frame_cache.header.is_valid

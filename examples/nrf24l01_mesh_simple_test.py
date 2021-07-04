@@ -5,9 +5,7 @@ This example was written to be used on 2 devices acting as 'nodes'.
 import time
 import struct
 from circuitpython_nrf24l01.network.constants import NETWORK_DEBUG, MAX_FRAG_SIZE
-from circuitpython_nrf24l01.network.packet_structs import RF24NetworkHeader
-from circuitpython_nrf24l01.network.rf24_network import RF24Network
-
+from circuitpython_nrf24l01.network.rf24_mesh import RF24Mesh
 
 # import wrappers to imitate circuitPython's DigitalInOut
 from circuitpython_nrf24l01.wrapper import RPiDIO, DigitalInOut
@@ -52,12 +50,10 @@ except ImportError:  # on MicroPython
     csn_pin = DigitalInOut(5)
     ce_pin = DigitalInOut(4)
 
-
 # to use different addresses on a set of radios, we need a variable to
 # uniquely identify which address this radio will use
 this_node = int(
-    input("Which radio is this? Enter '0', '1', or octal int. Defaults to '0' ") or "0",
-    8,  # octal base
+    input("Which radio is this? Enter '0', '1', or octal int. Defaults to '0' ") or "0"
 )
 # allow specifying the examples' master*() behavior's target for transmiting messages
 other_node = int(
@@ -65,16 +61,21 @@ other_node = int(
         "To which radio should we transmit to? Enter '0', '1', or octal int. "
         "Defaults to '1' "
     ) or "1",
-    8,  # octal base
 )
 
-# initialize the network node using `this_node` as `nrf.node_address`
-nrf = RF24Network(spi, csn_pin, ce_pin, this_node)
+# initialize the mesh node object
+nrf = RF24Mesh(spi, csn_pin, ce_pin)
 nrf.channel = 90
 
 # set the Power Amplifier level to -12 dBm since this test example is
 # usually run with nRF24L01 transceivers in close proximity
 nrf.pa_level = -12
+
+print("Connecting to network...", end=" ")
+# give this node a unique ID number and connect to network
+nrf.node_id = this_node
+nrf.renew_address()
+print("assigned address:", oct(nrf.node_address))
 
 if nrf.logger is not None:
     # log debug msgs specific to RF24Network.
@@ -112,7 +113,7 @@ def master(count=5, frag=False, interval=2):
             if frag:
                 length = (packets_sent[0] + MAX_FRAG_SIZE) % nrf.max_message_length
                 message = bytes(range(length))
-            ok = nrf.send(RF24NetworkHeader(other_node), message)
+            ok = nrf.send(message, "M", other_node)
             failures += not ok
             print(
                 "Sending {} (len {})...".format(packets_sent[0], length),
@@ -188,7 +189,7 @@ def set_role():
     return set_role()
 
 
-print("    nrf24l01_network_simple_test")  # print example name
+print("    nrf24l01_mesh_simple_test")  # print example name
 
 if __name__ == "__main__":
 

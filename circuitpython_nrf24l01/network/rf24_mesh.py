@@ -24,9 +24,7 @@ __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 import struct
-from circuitpython_nrf24l01.network.packet_structs import RF24NetworkHeader
 from .constants import (
-    MESH_ADDR_RELEASE,
     NETWORK_ADDR_REQUEST,
     NETWORK_ADDR_RESPONSE,
     NETWORK_DEBUG,
@@ -34,13 +32,16 @@ from .constants import (
     NETWORK_DEFAULT_ADDR,
     NETWORK_MULTICAST_ADDR,
     NETWORK_POLL,
+    FLAG_NO_POLL,
+    MESH_ADDR_RELEASE,
     MESH_ADDR_LOOKUP,
     MESH_ID_LOOKUP,
     MESH_LOOKUP_TIMEOUT,
+    MESH_WRITE_TIMEOUT,
     MESH_MAX_POLL,
     MESH_MAX_CHILDREN,
 )
-from .packet_structs import RF24NetworkHeader  #, RF24NetworkFrame
+from .packet_structs import RF24NetworkHeader
 from .rf24_network import RF24Network
 
 
@@ -55,11 +56,7 @@ def _get_level(address: int) -> int:
 
 class RF24Mesh(RF24Network):
     """A descendant of the base class `RF24Network` that adds easy Mesh networking
-    capability.
-
-    .. seealso:: For all parameters' descriptions, see the
-        :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' contructor documentation.
-    """
+    capability."""
     def __init__(self, spi, csn_pin, ce_pin, spi_frequency=10000000):
         super().__init__(
             spi,
@@ -69,9 +66,9 @@ class RF24Mesh(RF24Network):
             spi_frequency=spi_frequency
         )
 
-        #: 1-byte ID number unique to the network node (not the same as `node_address`)
+        # 1-byte ID number unique to the network node (not the same as `node_address`)
         self._node_id = 0
-        #: allow/disallow child node to connect to this network node
+        # allow child nodes to connect to this network node
         self.allow_children = True
         self.less_blocking_helper_function = None
         """Requesting a new address can take a while since it sequentially attempts to
@@ -174,11 +171,12 @@ class RF24Mesh(RF24Network):
                 return False
         return True
 
-    def check_connection(self):
+    @property
+    def check_connection(self) -> bool:
         """Check for network conectivity."""
         return not self.get_address(self.node_id) < 1
 
-    def update(self):
+    def update(self) -> int:
         """checks for incoming network data and returns last message type (if any)"""
         msg_t = super().update()
         if self._addr == NETWORK_DEFAULT_ADDR:
@@ -249,7 +247,7 @@ class RF24Mesh(RF24Network):
                 header.message_type = NETWORK_ADDR_RESPONSE
                 header.to_node = header.from_node
 
-                self.set_address(header.reserved, new_addr)
+                self._set_address(header.reserved, new_addr)
                 if header.from_node != NETWORK_DEFAULT_ADDR:
                     if not super().send(header, struct.pack("<H", new_addr)):
                         self._rf24.resend()
@@ -258,7 +256,7 @@ class RF24Mesh(RF24Network):
                 break
         # pylint: enable=too-many-branches
 
-    def set_address(self, node_id, address, search_by_address=False):
+    def _set_address(self, node_id, address, search_by_address=False):
         """Set or change a node_id and network address pair on the master node."""
         for n_id, addr in self._addr_dict:
             if not search_by_address:
@@ -272,10 +270,27 @@ class RF24Mesh(RF24Network):
                     break
         # self.save_dhcp()
 
-    # def send(self, header, message):
-    #     """Send a frame"""
-    #     super().send(header, message)
+    # pylint: disable=arguments-renamed
+    def send(self, message, message_type, to_node_id) -> bool:
+        """Send a message to a node id."""
+        to_node = 0
+        timeout = time.monotonic_ns() + MESH_WRITE_TIMEOUT * 1000000
+        retry_delay = 5
+        while to_node < 0:
+            to_node = self.get_address(to_node_id)
+            if time.monotonic_ns() > timeout or to_node == -2:
+                return False
+            retry_delay += 10
+            time.sleep(retry_delay / 1000)
+        return self.write(to_node, message, message_type)
 
+    def write(self, to_node, message, message_type):
+        """send a message to a node address."""
+        if self._addr == NETWORK_DEFAULT_ADDR:
+            return False
+        return super().send(RF24NetworkHeader(to_node, message_type), message)
+
+    # pylint: enable=arguments-renamed
     def _request_address(self, level: int) -> bool:
         """Get a new address assigned from the master node"""
         self._log(NETWORK_DEBUG, "Mesh requesting address from master")
@@ -337,3 +352,12 @@ class RF24Mesh(RF24Network):
             if time.monotonic_ns() > timeout or len(responders) >= MESH_MAX_POLL:
                 break
         return responders
+
+    @property
+    def allow_children(self):
+        """allow/disallow child node to connect to this network node."""
+        return bool(self.network_flags & FLAG_NO_POLL)
+
+    @allow_children.setter
+    def allow_children(self, allow):
+        self.network_flags &= (~FLAG_NO_POLL if allow else FLAG_NO_POLL)
