@@ -27,7 +27,7 @@ from .constants import NETWORK_MULTICAST_ADDR
 
 def _is_addr_valid(address):
     """Test is a given address is a valid RF24Network node address."""
-    if address == NETWORK_MULTICAST_ADDR:
+    if address in (NETWORK_MULTICAST_ADDR, NETWORK_MULTICAST_ADDR >> 3):
         return True
     byte_count = 0
     while address:

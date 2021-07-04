@@ -34,7 +34,13 @@ NETWORK_DEFAULT_ADDR = const(0o4444)  #: used as a sentinel during routing messa
 MAX_FRAG_SIZE = const(24)
 #: A reserved node address for multicasting messages
 NETWORK_MULTICAST_ADDR = const(0o100)
-
+MESH_LOOKUP_TIMEOUT = const(135)
+"""The time (inmilliseconds) that a non-master mesh node will wait for a response when
+requesting am ID from the master node"""
+#: the max number of contacts made when mesh node is polling for a new address
+MESH_MAX_POLL = const(4)
+#: The max number of children for 1 mesh node
+MESH_MAX_CHILDREN = const(4)
 
 # sending behavior types
 #: Send a message with automatic network rounting
@@ -109,6 +115,14 @@ will read the included message, and forward the payload on to the proper
 recipient. This allows nodes to forward multicast messages to the master node,
 receive a response, and forward it back to the requester.
 """
+
+# No Network ACK types
+#: the message type when manually expiring a leased address
+MESH_ADDR_RELEASE = const(197)
+#: the message type to request a mesh node's network address from its unique ID
+MESH_ADDR_LOOKUP = const(196)
+#: the message type to request a mesh node's unique ID number from its node address
+MESH_ID_LOOKUP = const(198)
 
 # fragmented message types (used in the `header.reserved` attribute)
 #: Used to indicate the first frame of fragmented messages

@@ -382,7 +382,7 @@ class RF24:
         self._config |= (not data_fail) << 4 | (not data_sent) << 5
         self._reg_write(CONFIGURE, self._config)
 
-    def print_details(self, dump_pipes=False):
+    def print_details(self, dump_pipes=True):
         """This debuggung function outputs all details about the nRF24L01."""
         observer = 0
         _fifo = 17

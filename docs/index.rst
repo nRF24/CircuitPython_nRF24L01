@@ -27,6 +27,8 @@
 
     network_docs/structs
     network_docs/base_api
+    network_docs/network_api
+    network_docs/mesh_api
     network_docs/constants
 
 .. toctree::

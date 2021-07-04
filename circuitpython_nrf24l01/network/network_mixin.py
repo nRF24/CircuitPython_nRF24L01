@@ -33,6 +33,7 @@ except ImportError:
     except ImportError:
         pass  # proceed without logging capability
 
+
 class LoggerMixin:
     def __init__(self):
         self._logger = None
