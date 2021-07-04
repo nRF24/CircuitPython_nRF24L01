@@ -18,6 +18,13 @@ Reserved Network Message Types
 
 .. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_ACK
 .. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_EXTERNAL_DATA
+.. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_PING
+.. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_POLL
+.. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_ADDR_REQUEST
+.. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_ADDR_RESPONSE
+.. autodata:: circuitpython_nrf24l01.network.constants.MESH_ADDR_RELEASE
+.. autodata:: circuitpython_nrf24l01.network.constants.MESH_ADDR_LOOKUP
+.. autodata:: circuitpython_nrf24l01.network.constants.MESH_ID_LOOKUP
 
 Generic Network constants
 ----------------------------

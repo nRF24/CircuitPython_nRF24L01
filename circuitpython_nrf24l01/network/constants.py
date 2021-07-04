@@ -65,12 +65,7 @@ USER_TX_MULTICAST = const(4)
 .. seealso::
     :meth:`~circuitpython_nrf24l01.network.rf24_network.RF24Network.multicast_relay()`
 """
-#: The message type used when forwarding acknowledgements directed to origin
-NETWORK_ACK = const(193)
-NETWORK_EXTERNAL_DATA = const(131)
-"""Used for bridging different network protocols between an RF24Network
-and LAN/WLAN networks (unsupported at this time as this operation requires
-a gateway implementation)"""
+
 
 # flags for managing queue while receiving message fragments
 #: prevents reading additional data from the radio when buffers are full.
@@ -89,6 +84,12 @@ FLAG_NO_POLL = const(8)  #: Used to discard any `NETWORK_POLL` message types
 
 
 # constants used to define `RF24NetworkHeader.message_type`
+#: The message type used when forwarding acknowledgements directed to origin
+NETWORK_ACK = const(193)
+NETWORK_EXTERNAL_DATA = const(131)
+"""Used for bridging different network protocols between an RF24Network
+and LAN/WLAN networks (unsupported at this time as this operation requires
+a gateway implementation)"""
 NETWORK_PING = const(130)
 """Used for network pings. Messages of this type are automatically discarded
 because the RF24.auto_ack feature will serve up the response."""
@@ -119,13 +120,14 @@ recipient. This allows nodes to forward multicast messages to the master node,
 receive a response, and forward it back to the requester.
 """
 
-# No Network ACK types
+# No Network ACK message types
 #: the message type when manually expiring a leased address
 MESH_ADDR_RELEASE = const(197)
 #: the message type to request a mesh node's network address from its unique ID
 MESH_ADDR_LOOKUP = const(196)
 #: the message type to request a mesh node's unique ID number from its node address
 MESH_ID_LOOKUP = const(198)
+
 
 # fragmented message types (used in the `header.reserved` attribute)
 #: Used to indicate the first frame of fragmented messages
