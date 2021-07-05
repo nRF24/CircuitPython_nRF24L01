@@ -356,26 +356,21 @@ derivitive children
 .. autoclass:: circuitpython_nrf24l01.fake_ble.TemperatureServiceData
     :show-inheritance:
 
-    This class's `data` attribute accepts a `float` value as
-    input and returns a `bytes` object that conforms to the Bluetooth
-    Health Thermometer Measurement format as defined in the `GATT
-    Specifications Supplement. <https://www.bluetooth.org/DocMan/handlers/
-    DownloadDoc.ashx?doc_id=502132&vId=542989>`_
+    .. seealso:: Bluetooth Health Thermometer Measurement format as defined in the
+        `GATT Specifications Supplement.
+        <https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=502132&vId=542989>`_
 
 .. autoclass:: circuitpython_nrf24l01.fake_ble.BatteryServiceData
     :show-inheritance:
 
-    The class's `data` attribute accepts a 1-byte unsigned `int` value as
-    input and returns a `bytes` object that conforms to the Bluetooth
-    Battery Level format as defined in the `GATT Specifications
-    Supplement. <https://www.bluetooth.org/DocMan/handlers/
-    DownloadDoc.ashx?doc_id=502132&vId=542989>`_
+    .. seealso:: The Bluetooth Battery Level format as defined in the
+        `GATT Specifications Supplement.
+        <https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=502132&vId=542989>`_
 
 .. autoclass:: circuitpython_nrf24l01.fake_ble.UrlServiceData
     :members: pa_level_at_1_meter
     :show-inheritance:
 
-    This class's `data` attribute accepts a `str` of URL data as input, and
-    returns the URL as a `bytes` object where some of the URL parts are
-    encoded using `Eddystone byte codes as defined by the specifications.
-    <https://github.com/google/eddystone/tree/master/eddystone-url>`_
+    .. seealso::
+        `Eddystone byte codes as defined by the specifications.
+        <https://github.com/google/eddystone/tree/master/eddystone-url>`_

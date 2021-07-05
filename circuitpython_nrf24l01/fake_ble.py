@@ -268,28 +268,17 @@ class ServiceData:
         return self._type
 
     @property
-    def data(self):
-        """The service's data. This is a `bytearray`, and its format is
-        defined by relative Bluetooth Service Specifications (and GATT
-        supplemental specifications)."""
-        return self._data
-
-    @data.setter
-    def data(self, value):
-        self._data = value
-
-    @property
     def buffer(self):
         """Get the representation of the instantiated object as an
         immutable `bytes` object (read-only)."""
-        return bytes(self._type + self.data)
+        return bytes(self._type + self._data)
 
     def __len__(self):
         """For convenience, this class is compatible with python's builtin
         :py:func:`len()` method. In this context, this will return the length
         of the object (in bytes) as it would appear in the advertisement
         payload."""
-        return len(self._type) + len(self.data)
+        return len(self._type) + len(self._data)
 
 
 class TemperatureServiceData(ServiceData):
@@ -299,7 +288,12 @@ class TemperatureServiceData(ServiceData):
     def __init__(self):
         super().__init__(0x1809)
 
-    @ServiceData.data.setter
+    @property
+    def data(self):
+        """This class's `data` attribute is a `float` value."""
+        return struct.unpack("<i", self._data[:3] + b"\0")[0] / 100
+
+    @data.setter
     def data(self, value):
         value = struct.pack("<i", int(value * 100) & 0xFFFFFF)
         self._data = value[:3] + bytes([0xFE])
@@ -312,7 +306,12 @@ class BatteryServiceData(ServiceData):
     def __init__(self):
         super().__init__(0x180F)
 
-    @ServiceData.data.setter
+    @property
+    def data(self):
+        """The class's `data` attribute is a 1-byte unsigned `int` value."""
+        return int(self._data[0])
+
+    @data.setter
     def data(self, value):
         self._data = struct.pack(">B", value)
 
@@ -324,6 +323,27 @@ class UrlServiceData(ServiceData):
     def __init__(self):
         super().__init__(0xFEAA)
         self._type += bytes([0x10]) + struct.pack(">b", -25)
+
+    byte_codes = {
+        "http://www.": "\x00",
+        "https://www.": "\x01",
+        "http://": "\x02",
+        "https://": "\x03",
+        ".com/": "\x00",
+        ".org/": "\x01",
+        ".edu/": "\x02",
+        ".net/": "\x03",
+        ".info/": "\x04",
+        ".biz/": "\x05",
+        ".gov/": "\x06",
+        ".com": "\x07",
+        ".org": "\x08",
+        ".edu": "\x09",
+        ".net": "\x0A",
+        ".info": "\x0B",
+        ".biz": "\x0C",
+        ".gov": "\x0D"
+    }
 
     @property
     def pa_level_at_1_meter(self):
@@ -340,23 +360,16 @@ class UrlServiceData(ServiceData):
     def uuid(self):
         return self._type[:2]
 
-    @ServiceData.data.setter
-    def data(self, value):
-        value = value.replace("http://www.", "\x00")
-        value = value.replace("https://www.", "\x01")
-        value = value.replace("http://", "\x02")
-        value = value.replace("https://", "\x03")
-        value = value.replace(".com/", "\x00")
-        value = value.replace(".org/", "\x01")
-        value = value.replace(".edu/", "\x02")
-        value = value.replace(".net/", "\x03")
-        value = value.replace(".info/", "\x04")
-        value = value.replace(".biz/", "\x05")
-        value = value.replace(".gov/", "\x06")
-        value = value.replace(".com", "\x07")
-        value = value.replace(".org", "\x08")
-        value = value.replace(".edu", "\x09")
-        value = value.replace(".net", "\x0A")
-        value = value.replace(".info", "\x0B")
-        value = value.replace(".biz", "\x0C")
-        self._data = value.replace(".gov", "\x0D").encode("utf-8")
+    @property
+    def data(self):
+        """This class's `data` attribute is a `str` of URL data."""
+        value = self._data.decode()
+        for section, b_code in UrlServiceData.byte_codes.items():
+            value = value.replace(b_code, section)
+        return value
+
+    @data.setter
+    def data(self, value: str):
+        for section, b_code in UrlServiceData.byte_codes.items():
+            value = value.replace(section, b_code)
+        self._data = value.encode("utf-8")
