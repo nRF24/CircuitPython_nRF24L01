@@ -78,7 +78,7 @@ class RF24Mesh(RF24Network):
         of requesting a new address."""
 
         # force super().update() to return system message types
-        super().ret_sys_msg = True
+        self.ret_sys_msg = True
         # A `dict` of assigned addresses paired to the Mesh nod'es unique ID number
         self._addr_dict = {}
         self._do_dhcp = False  # flag used to manage updating the _addr_dict
@@ -112,7 +112,8 @@ class RF24Mesh(RF24Network):
         if self._rf24.available():
             self.update()
 
-        super()._begin(NETWORK_DEFAULT_ADDR)
+        if self._addr != NETWORK_DEFAULT_ADDR:
+            super()._begin(NETWORK_DEFAULT_ADDR)
         total_requests, request_counter = (0, 0)
         end_timer = time.monotonic() + timeout
         while not self._request_address(request_counter):
@@ -300,7 +301,7 @@ class RF24Mesh(RF24Network):
             "Got {} responses on level {}".format(len(contacts), level)
         )
         if not contacts:
-            return 0
+            return False
 
         new_addy = -1
         for contact in contacts:

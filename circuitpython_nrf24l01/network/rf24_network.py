@@ -479,13 +479,9 @@ class RF24Network(RadioMixin):
 
     def multicast(self, header: RF24NetworkHeader, message, level=None):
         """Broadcast a ``message`` to all nodes on a certain address ``level``"""
-        if not isinstance(header, RF24NetworkHeader):
-            raise TypeError("header is not a RF24NetworkHeader object")
-        if not isinstance(message, (bytes, bytearray)):
-            raise TypeError("message is not a byteaarray or bytes object")
         level = min(6, max(level, 0)) if level is not None else self._multicast_level
         header.to_node = NETWORK_MULTICAST_ADDR
-        return self.write(RF24NetworkFrame(header, message), _level_to_address(level))
+        return self.send(header, message, _level_to_address(level))
 
     def send(self, header: RF24NetworkHeader, message, traffic_direct=AUTO_ROUTING):
         """Deliver a ``message`` according to the ``header`` information."""

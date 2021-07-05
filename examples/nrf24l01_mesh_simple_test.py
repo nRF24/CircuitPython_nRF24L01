@@ -53,13 +53,12 @@ except ImportError:  # on MicroPython
 # to use different addresses on a set of radios, we need a variable to
 # uniquely identify which address this radio will use
 this_node = int(
-    input("Which radio is this? Enter '0', '1', or octal int. Defaults to '0' ") or "0"
+    input("Which radio is this? Enter a unique int. Defaults to '0' ") or "0"
 )
 # allow specifying the examples' master*() behavior's target for transmiting messages
 other_node = int(
     input(
-        "To which radio should we transmit to? Enter '0', '1', or octal int. "
-        "Defaults to '1' "
+        "To which radio should we transmit to? Enter a unique int. Defaults to '1' "
     ) or "1",
 )
 

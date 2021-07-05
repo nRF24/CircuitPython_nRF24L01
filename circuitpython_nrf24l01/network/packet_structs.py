@@ -133,7 +133,7 @@ class RF24NetworkHeader:
         """:Returns: The entire header as a `bytes` object."""
         return struct.pack(
             "HHHBB",
-            self._from,
+            0o7777 if self._from is None else self._from,
             self._to,
             self._id,
             self._msg_t,
