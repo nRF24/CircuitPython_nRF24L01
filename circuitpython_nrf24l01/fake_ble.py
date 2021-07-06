@@ -240,19 +240,24 @@ class FakeBLE(RF24):
         if super().available():
             self.rx_cache = super().read(self.payload_length)
             self.rx_cache = self.whiten(reverse_bits(self.rx_cache))
-            end = self.payload_length
-            for i in range(end - 2, 0, -1):
-                if self.rx_cache[i] != self.rx_cache[-1]:
-                    end = self.payload_length if i == end - 2 else end + 1
-                    break
-            if self.rx_cache[end - 3:end] != crc24_ble(self.rx_cache[:end - 3]):
+            end = self.rx_cache[1] + 2
+            if (
+                end > 30
+                and self.rx_cache[end:end + 3] != crc24_ble(self.rx_cache[:end])
+            ):
                 # self.rx_cache = bytearray(0)  # clear invalid cache
                 return False
+            # print("recv'd:", self.rx_cache)
+            # print("crc:", self.rx_cache[end - 3: end])
             new_q = QueueElement()
             new_q.mac = bytes(self.rx_cache[2 : 8])
             i = 9
-            while i < end - 2:
+            while i < end:
                 size = self.rx_cache[i]
+                if size + i + 1 > end or i + 1 > end:
+                    # data seems malformed. just append the buffer & move on
+                    new_q.data.append(self.rx_cache[i: end])
+                    break
                 result = decode_data_struct(
                     bytes(self.rx_cache[i + 1 : i + 1 + size]),
                     size
@@ -336,10 +341,10 @@ def decode_data_struct(buf, len_buf):
             ret_val._data = buf[3:]
         elif service_data_uuid == BATTERY_UUID:
             ret_val = BatteryServiceData()
-            ret_val._data = buf[3]
+            ret_val._data = buf[3:]
         elif service_data_uuid == EDDYSTONE_UUID:
             ret_val = UrlServiceData()
-            ret_val._type[3] = buf[4]
+            ret_val._type = ret_val._type[:3] + buf[4:5]
             ret_val._data = buf[5:]
         # pylint: enable=protected-access
     return ret_val

@@ -12,6 +12,7 @@ from circuitpython_nrf24l01.fake_ble import (
     BatteryServiceData,
     TemperatureServiceData,
 )
+from circuitpython_nrf24l01.rf24 import address_repr
 
 # import wrappers to imitate circuitPython's DigitalInOut
 from circuitpython_nrf24l01.wrapper import RPiDIO, DigitalInOut
@@ -172,7 +173,24 @@ def slave(timeout=6):
     while time.monotonic() <= end_timer:
         if nrf.available():
             result = nrf.read()
-            print("recevied payload from MAC address {}".format(result.mac))
+            print(
+                "recevied payload from MAC address {}".format(
+                    address_repr(result.mac, delimit=":")
+                )
+            )
+            if result.name is not None:
+                print("\tdevice name:", result.name)
+            if result.pa_level is not None:
+                print("\tdevice transmitting PA Level:", result.pa_level)
+            for service_data in result.data:
+                if isinstance(service_data, TemperatureServiceData):
+                    print("\tTemperature:", service_data.data)
+                if isinstance(service_data, BatteryServiceData):
+                    print("\tBattery capacity remaining:", service_data.data)
+                if isinstance(service_data, UrlServiceData):
+                    print("\tURL advertised:", service_data.data)
+                if isinstance(service_data, (bytearray, bytes)):
+                    print("\traw buffer (unknowmn format):", service_data)
 
 
 # pylint: disable=too-many-branches
