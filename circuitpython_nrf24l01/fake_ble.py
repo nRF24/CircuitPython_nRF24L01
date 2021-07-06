@@ -25,7 +25,7 @@ found here
 from os import urandom
 import struct
 from micropython import const
-from .rf24 import RF24
+from .rf24 import RF24, address_repr
 
 
 def swap_bits(original):
@@ -248,6 +248,7 @@ class FakeBLE(RF24):
             self.rx_cache = super().read(self.payload_length)
             self.rx_cache = self.whiten(reverse_bits(self.rx_cache))
             end = self.rx_cache[1] + 2
+            self.rx_cache = self.rx_cache[: end + 3]
             if (
                 end > 30
                 and self.rx_cache[end:end + 3] != crc24_ble(self.rx_cache[:end])
@@ -258,10 +259,10 @@ class FakeBLE(RF24):
             # print("crc:", self.rx_cache[end: end + 3])
             new_q = QueueElement()
             new_q.mac = bytes(self.rx_cache[2 : 8])
-            i = 9
+            i = 8
             while i < end:
                 size = self.rx_cache[i]
-                if size + i + 1 > end or i + 1 > end:
+                if size + i + 1 > end or i + 1 > end or not size:
                     # data seems malformed. just append the buffer & move on
                     new_q.data.append(self.rx_cache[i: end])
                     break
@@ -272,6 +273,8 @@ class FakeBLE(RF24):
                     new_q.name = result
                 elif isinstance(result, (ServiceData, bytearray)):
                     new_q.data.append(result)
+                elif result is None:  # decoding failed
+                    new_q.data.append(self.rx_cache[i : i + 1 + size])
                 i += 1 + size
             self.rx_queue.append(new_q)
         return bool(self.rx_queue)
@@ -327,12 +330,16 @@ EDDYSTONE_UUID = const(0xFEAA)  #: The Eddystone Service UUID number
 
 def decode_data_struct(buf):
     """Decode a data structure in a received BLE payload."""
+    print("decoding", address_repr(buf, 0, " "))
     if buf[0] not in (0x16, 0xFF, 0x0A, 0x08, 0x09):
         return None  # unknown/unsupported "chunk" of data
     if buf[0] == 0x0A:  # if data is a BLE device's TX-ing PA Level
-        return struct.unpack("<b", buf[1:])[0]  # return a signed int
+        return struct.unpack("b", buf[1:2])[0]  # return a signed int
     if buf[0] in (0x08, 0x09):  # if data is a BLE device name
-        return buf[1:].decode()  # return a string
+        try:
+            return buf[1:].decode()  # return a string
+        except UnicodeError:
+            return None
     if buf[0] == 0xFF:  # if it is a custom/user-defined data format
         return buf  # return the raw buffer as a value
     ret_val = None

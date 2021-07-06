@@ -190,7 +190,10 @@ def slave(timeout=6):
                 if isinstance(service_data, UrlServiceData):
                     print("\tURL advertised:", service_data.data)
                 if isinstance(service_data, (bytearray, bytes)):
-                    print("\traw buffer (unknowmn format):", service_data)
+                    print(
+                        "\traw buffer (unknowmn format):",
+                        address_repr(service_data, False, " ")
+                    )
 
 
 # pylint: disable=too-many-branches
