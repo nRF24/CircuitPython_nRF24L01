@@ -175,6 +175,7 @@ def slave(timeout=6):
             print("recevied payload from MAC address {}".format(result.mac))
 
 
+# pylint: disable=too-many-branches
 def set_role():
     """Set the role using stdin stream. Count arg for all functions can be
     specified using a space delimiter (e.g. 'T 10' calls `send_temp(10)`)
