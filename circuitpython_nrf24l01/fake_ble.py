@@ -25,7 +25,7 @@ found here
 from os import urandom
 import struct
 from micropython import const
-from .rf24 import RF24, address_repr
+from .rf24 import RF24
 
 
 def swap_bits(original):
@@ -70,6 +70,7 @@ def crc24_ble(data, deg_poly=0x65B, init_val=0x555555):
 
 BLE_FREQ = (2, 26, 80)
 """The BLE channel number is different from the nRF channel number."""
+
 
 class QueueElement:
     """A data structure used for storing a received BLE payloads in a queue."""
@@ -234,23 +235,18 @@ class FakeBLE(RF24):
         if value in BLE_FREQ:
             self._channel = value
             self._reg_write(0x05, value)
-        # else:
-        #     print("channel {} is not a valid BLE frequency".format(value))
 
     def available(self):
         if super().available():
             self.rx_cache = super().read(self.payload_length)
             self.rx_cache = self.whiten(reverse_bits(self.rx_cache))
-            # print("received:\n\t", address_repr(self.rx_cache, False, " "))
             end = self.payload_length
             for i in range(end - 2, 0, -1):
                 if self.rx_cache[i] != self.rx_cache[-1]:
                     end = self.payload_length if i == end - 2 else end + 1
                     break
-            # print("crc24:", address_repr(self.rx_cache[end - 3:end], False, " "))
             if self.rx_cache[end - 3:end] != crc24_ble(self.rx_cache[:end - 3]):
                 # self.rx_cache = bytearray(0)  # clear invalid cache
-                # print("crc24 is invalid")
                 return False
             new_q = QueueElement()
             new_q.mac = bytes(self.rx_cache[2 : 8])
