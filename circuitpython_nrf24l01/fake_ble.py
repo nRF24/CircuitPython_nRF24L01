@@ -24,7 +24,8 @@ found here
 <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_"""
 from os import urandom
 import struct
-from .rf24 import RF24
+from micropython import const
+from .rf24 import RF24, address_repr
 
 
 def swap_bits(original):
@@ -70,13 +71,25 @@ def crc24_ble(data, deg_poly=0x65B, init_val=0x555555):
 BLE_FREQ = (2, 26, 80)
 """The BLE channel number is different from the nRF channel number."""
 
+class QueueElement:
+    """A data structure used for storing a received BLE payloads in a queue."""
+    def __init__(self):
+        self.mac = None  #: The transmitting device's MAC address
+        self.name = None  #: The transmitting device's name (if any)
+        self.pa_level = None
+        """The transmitting device's PA Level (if included in the received payload).
+
+        .. note:: This value does not represent the received signal strength.
+            The nRF24L01 will receive anything over a -64 dbm threshold."""
+        self.data = []  #: A list of the transmitting device's data structures (if any)
+
 
 class FakeBLE(RF24):
     """A class to implement BLE advertisements using the nRF24L01."""
 
     def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
         super().__init__(spi, csn, ce_pin, spi_frequency=spi_frequency)
-        self._curr_freq = 0
+        self._curr_freq = 2
         self._show_dbm = False
         self._ble_name = None
         self._mac = urandom(6)
@@ -87,6 +100,10 @@ class FakeBLE(RF24):
         self._tx_address[:4] = b"\x71\x91\x7D\x6B"
         with self:
             super().open_rx_pipe(0, b"\x71\x91\x7D\x6B\0")
+        self.rx_queue = []  #: The internal queue of received BLE payloads' data
+        self.rx_cache = bytearray(0)
+        """The internal cache used when validating received BLE payloads."""
+        self.hop_channel()
 
     def __exit__(self, *exc):
         self._show_dbm = False
@@ -127,7 +144,8 @@ class FakeBLE(RF24):
     @property
     def show_pa_level(self):
         """If this attribute is `True`, the payload will automatically include
-        the nRF24L01's `pa_level` in the advertisement."""
+        the nRF24L01's :attr:`~circuitpython_nrf24l01.rf24.RF24.pa_level` in the
+        advertisement."""
         return bool(self._show_dbm)
 
     @show_pa_level.setter
@@ -219,6 +237,51 @@ class FakeBLE(RF24):
         # else:
         #     print("channel {} is not a valid BLE frequency".format(value))
 
+    def available(self):
+        if super().available():
+            self.rx_cache = super().read(self.payload_length)
+            self.rx_cache = self.whiten(reverse_bits(self.rx_cache))
+            # print("received:\n\t", address_repr(self.rx_cache, False, " "))
+            end = self.payload_length
+            for i in range(end - 2, 0, -1):
+                if self.rx_cache[i] != self.rx_cache[-1]:
+                    end = self.payload_length if i == end - 2 else end + 1
+                    break
+            # print("crc24:", address_repr(self.rx_cache[end - 3:end], False, " "))
+            if self.rx_cache[end - 3:end] != crc24_ble(self.rx_cache[:end - 3]):
+                # self.rx_cache = bytearray(0)  # clear invalid cache
+                # print("crc24 is invalid")
+                return False
+            new_q = QueueElement()
+            new_q.mac = bytes(self.rx_cache[2 : 8])
+            i = 9
+            while i < end - 2:
+                size = self.rx_cache[i]
+                result = decode_data_struct(
+                    bytes(self.rx_cache[i + 1 : i + 1 + size]),
+                    size
+                )
+                if isinstance(result, int):
+                    new_q.pa_level = result
+                elif isinstance(result, str):
+                    new_q.name = result
+                elif isinstance(result, (ServiceData, bytearray)):
+                    new_q.data.append(result)
+                i += 1 + size
+            self.rx_queue.append(new_q)
+            return True
+        return False
+
+    # pylint: disable=arguments-differ
+    def read(self):
+        """Get the First Out element from the queue."""
+        if self.rx_queue:
+            ret_val = self.rx_queue[0]
+            del self.rx_queue[0]
+            return ret_val
+        return None
+
+    # pylint: enable=arguments-differ
     # pylint: disable=unused-argument
     @RF24.dynamic_payloads.setter
     def dynamic_payloads(self, val):
@@ -251,6 +314,39 @@ class FakeBLE(RF24):
         raise RuntimeWarning("BLE implentation only uses 1 address")
 
     # pylint: enable=unused-argument
+
+
+TEMPERATURE_UUID = const(0x1809)  #: The Temperature Service UUID number
+BATTERY_UUID = const(0x180F)  #: The Battery Service UUID number
+EDDYSTONE_UUID = const(0xFEAA)  #: The Eddystone Service UUID number
+
+
+def decode_data_struct(buf, len_buf):
+    """Decode a data structure in a received BLE payload."""
+    if buf[0] not in (0x16, 0xFF, 0x0A, 0x08, 0x09):
+        return None  # unknown/unsupported "chunk" of data
+    if buf[0] == 0xFF:  # if it is a custom/user-defined data format
+        return buf[1:]  # return the raw buffer as a value
+    if buf[0] in (0x08, 0x09):  # if data is a BLE device name
+        return buf[1:].decode()  # return a string
+    if buf[0] == 0x0A:  # if data is a BLE device's TX-ing PA Level
+        return struct.unpack("<b", buf[1:])[0]  # return a signed int
+    ret_val = None
+    if buf[0] == 0x16 and len_buf >= 4: # if it is service data
+        service_data_uuid = struct.unpack("<H", buf[1:3])[0]
+        # pylint: disable=protected-access
+        if service_data_uuid == TEMPERATURE_UUID:
+            ret_val = TemperatureServiceData()
+            ret_val._data = buf[3:]
+        elif service_data_uuid == BATTERY_UUID:
+            ret_val = BatteryServiceData()
+            ret_val._data = buf[3]
+        elif service_data_uuid == EDDYSTONE_UUID:
+            ret_val = UrlServiceData()
+            ret_val._type[3] = buf[4]
+            ret_val._data = buf[5:]
+        # pylint: enable=protected-access
+    return ret_val
 
 
 class ServiceData:
@@ -286,7 +382,7 @@ class TemperatureServiceData(ServiceData):
     temperature data values as a `float` value."""
 
     def __init__(self):
-        super().__init__(0x1809)
+        super().__init__(TEMPERATURE_UUID)
 
     @property
     def data(self):
@@ -304,7 +400,7 @@ class BatteryServiceData(ServiceData):
     battery charge percentage as a 1-byte value."""
 
     def __init__(self):
-        super().__init__(0x180F)
+        super().__init__(BATTERY_UUID)
 
     @property
     def data(self):
@@ -321,7 +417,7 @@ class UrlServiceData(ServiceData):
     URL data as a `bytes` value."""
 
     def __init__(self):
-        super().__init__(0xFEAA)
+        super().__init__(EDDYSTONE_UUID)
         self._type += bytes([0x10]) + struct.pack(">b", -25)
 
     byte_codes = {

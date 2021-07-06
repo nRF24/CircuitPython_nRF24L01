@@ -165,6 +165,16 @@ def send_url(count=50):
                 time.sleep(0.2)
 
 
+def slave(timeout=6):
+    """read and decipher BLE payloads for `timeout` seconds."""
+    nrf.listen = True
+    end_timer = time.monotonic() + timeout
+    while time.monotonic() <= end_timer:
+        if nrf.available():
+            result = nrf.read()
+            print("recevied payload from MAC address {}".format(result.mac))
+
+
 def set_role():
     """Set the role using stdin stream. Count arg for all functions can be
     specified using a space delimiter (e.g. 'T 10' calls `send_temp(10)`)
@@ -179,6 +189,7 @@ def set_role():
             " charge.\n"
             "*** Enter 'T' to broadcast the device name & a temperature\n"
             "*** Enter 'U' to broadcast a custom URL link\n"
+            "*** Enter 'R' to receive BLE payloads\n"
             "*** Enter 'Q' to quit example.\n"
         )
         or "?"
@@ -202,6 +213,12 @@ def set_role():
         else:
             send_url()
         return True
+    if user_input[0].upper().startswith("R"):
+        if len(user_input) > 1:
+            slave(int(user_input[1]))
+        else:
+            slave()
+        return True
     if user_input[0].upper().startswith("Q"):
         nrf.power = False
         return False
@@ -222,5 +239,6 @@ else:
     print(
         "    Run master() to broadcast the device name, pa_level, & battery "
         "charge\n    Run send_temp() to broadcast the device name & a "
-        "temperature\n    Run send_url() to broadcast a custom URL link"
+        "temperature\n    Run send_url() to broadcast a custom URL link\n"
+        "    Run slave() to receive BLE payloads."
     )

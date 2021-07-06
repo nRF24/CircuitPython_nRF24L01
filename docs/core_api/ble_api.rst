@@ -148,6 +148,27 @@ BLE_FREQ
         26, 38
         80, 39
 
+QueueElement class
+********************
+
+.. autoclass:: circuitpython_nrf24l01.fake_ble.QueueElement
+    :members:
+
+decode_data_struct()
+********************
+
+.. autofunction:: circuitpython_nrf24l01.fake_ble.decode_data_struct
+
+    :param bytes,bytearray buf: The buffer containing the BLE data structure.
+    :param int len_buf: The length of the ``buf`` parameter
+
+    :Returns:
+        - `None` if the payload is not supported or otherwise unknown
+        - A signed `int` if the structure contained the tranmitter's PA Level
+        - A `str` if the structure contained the transmitting device's name
+        - A `bytearray` or `bytes` object if the structure uses a custom user-defined specification
+        - A child of the `ServiceData` class if the structure matched the appropriate specifications
+
 FakeBLE class
 -------------
 
@@ -301,6 +322,50 @@ advertise()
         ble.advertise(buffers)
         ble.hop_channel()
 
+available()
+**************
+
+.. versionchanged:: overriden in v2.1.0 to validate & decipher received BLE data
+
+.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.available
+
+    This method will take the first available data from the radio's RX FIFO and
+    validate the payload using the 24bit CRC checksum at the end of the payload.
+    If the payload is indeed a valid BLE transmission that fit within the 32 bytes
+    that the nRF24L01 can capture, then this method will decipher the data within
+    the payload and enqueue the resulting `QueueElement` in the internal `rx_queue`.
+
+    .. tip:: Use :meth:`~circuitpython_nrf24l01.fake_ble.FakeBLE.read()` to fetch the
+        deciphered data.
+
+    :Returns:
+        - `True` if payload was received *and* validated
+        - `False` if no payload was received or the received payload could not be
+          deciphered.
+
+rx_queue
+****************
+
+.. versionadded:: v2.1.0
+.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.rx_queue
+
+rx_cache
+****************
+
+.. versionadded:: v2.1.0
+.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.rx_cache
+
+read()
+****************
+
+.. versionchanged:: overriden in v2.1.0 to fetch deciphered BLE data from the `rx_queue`
+
+.. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.read
+
+    :Returns:
+        - `None` if nothing is the internal `rx_queue`
+        - A `QueueElement` object from the front of the `rx_queue` (like a FIFO buffer)
+
 channel
 ####################
 
@@ -354,6 +419,7 @@ derivitive children
 *******************
 
 .. autoclass:: circuitpython_nrf24l01.fake_ble.TemperatureServiceData
+    :members: data
     :show-inheritance:
 
     .. seealso:: Bluetooth Health Thermometer Measurement format as defined in the
@@ -361,6 +427,7 @@ derivitive children
         <https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=502132&vId=542989>`_
 
 .. autoclass:: circuitpython_nrf24l01.fake_ble.BatteryServiceData
+    :members: data
     :show-inheritance:
 
     .. seealso:: The Bluetooth Battery Level format as defined in the
@@ -368,7 +435,7 @@ derivitive children
         <https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=502132&vId=542989>`_
 
 .. autoclass:: circuitpython_nrf24l01.fake_ble.UrlServiceData
-    :members: pa_level_at_1_meter
+    :members: pa_level_at_1_meter, data
     :show-inheritance:
 
     .. seealso::
