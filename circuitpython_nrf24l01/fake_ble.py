@@ -334,7 +334,7 @@ def decode_data_struct(buf):
     if buf[0] not in (0x16, 0xFF, 0x0A, 0x08, 0x09, 0x01):
         # '0x01' means BLE requied flags -> just ignore them for now
         return None  # unknown/unsupported "chunk" of data
-    if buf[0] == 0x0A:  # if data is a BLE device's TX-ing PA Level
+    if buf[0] == 0x0A and len(buf) == 2:  # if data is a BLE device's TX-ing PA Level
         return struct.unpack("b", buf[1:2])[0]  # return a signed int
     if buf[0] in (0x08, 0x09):  # if data is a BLE device name
         try:
@@ -434,7 +434,7 @@ class BatteryServiceData(ServiceData):
     @data.setter
     def data(self, value: int):
         if isinstance(value, int):
-            self._data = struct.pack(">BLE requied flags", value)
+            self._data = struct.pack("B", value)
         elif isinstance(value, (bytes, bytearray)):
             self._data = value
 
