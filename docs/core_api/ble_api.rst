@@ -335,7 +335,7 @@ available()
     the payload and enqueue the resulting `QueueElement` in the internal `rx_queue`.
 
     .. tip:: Use :meth:`~circuitpython_nrf24l01.fake_ble.FakeBLE.read()` to fetch the
-        deciphered data.
+        decoded data.
 
     :Returns:
         - `True` if payload was received *and* validated
@@ -348,11 +348,24 @@ rx_queue
 .. versionadded:: v2.1.0
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.rx_queue
 
+Each Element in this queue is a `QueueElement` object whose members are set according to the
+output of `decode_data_struct()`. The :meth:`~circuitpython_nrf24l01.fake_ble.FakeBLE.read()`
+function will remove & return the first element in this queue.
+
+.. hint::
+    This attribute is exposed for debugging purposes, but it can also be used by applications.
+
 rx_cache
 ****************
 
 .. versionadded:: v2.1.0
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.rx_cache
+
+This attribute is only used by :meth:`~circuitpython_nrf24l01.fake_ble.FakeBLE.available()`
+to cache the data from the top level of the radio's RX FIFO then validate & decode it.
+
+.. hint::
+    This attribute is exposed for debugging purposes.
 
 read()
 ****************
@@ -366,14 +379,14 @@ read()
         - A `QueueElement` object from the front of the `rx_queue` (like a FIFO buffer)
 
 channel
-####################
+******************
 
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.channel
 
     The only allowed channels are those contained in the `BLE_FREQ` tuple.
 
 interrupt_config()
-####################
+******************
 
 .. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.interrupt_config
 
@@ -438,5 +451,5 @@ derivitive children
     :show-inheritance:
 
     .. seealso::
-        `Eddystone byte codes as defined by the specifications.
-        <https://github.com/google/eddystone/tree/master/eddystone-url>`_
+        Google's `Eddystone-URL specifications
+        <https://github.com/google/eddystone/tree/master/eddystone-url>`_.

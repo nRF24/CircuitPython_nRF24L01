@@ -73,16 +73,22 @@ BLE_FREQ = (2, 26, 80)
 
 
 class QueueElement:
-    """A data structure used for storing a received BLE payloads in a queue."""
+    """A data structure used for storing received & decoded BLE payloads in
+    the `FakeBLE.rx_queue`."""
+
     def __init__(self):
-        self.mac = None  #: The transmitting device's MAC address
-        self.name = None  #: The transmitting device's name (if any)
+        self.mac = None  #: The transmitting BLE device's MAC address
+        self.name = None  #: The transmitting BLE device's name (if any)
         self.pa_level = None
         """The transmitting device's PA Level (if included in the received payload).
 
         .. note:: This value does not represent the received signal strength.
             The nRF24L01 will receive anything over a -64 dbm threshold."""
-        self.data = []  #: A list of the transmitting device's data structures (if any)
+        self.data = []
+        """A `list` of the transmitting device's data structures (if any).
+        If an element in this `list` is not an instance (or descendant) of the
+        `ServiceData` class, then it is likely a custom or user defined speification -
+        in which case it will be a `bytearray` object."""
 
 
 class FakeBLE(RF24):
@@ -101,7 +107,7 @@ class FakeBLE(RF24):
         self._tx_address[:4] = b"\x71\x91\x7D\x6B"
         with self:
             super().open_rx_pipe(0, b"\x71\x91\x7D\x6B\0")
-        self.rx_queue = []  #: The internal queue of received BLE payloads' data
+        self.rx_queue = []  #: The internal queue of received BLE payloads' data.
         self.rx_cache = bytearray(0)
         """The internal cache used when validating received BLE payloads."""
         self.hop_channel()
@@ -237,6 +243,7 @@ class FakeBLE(RF24):
             self._reg_write(0x05, value)
 
     def available(self):
+        """A `bool` describing if there is a payload in the `rx_queue`."""
         if super().available():
             self.rx_cache = super().read(self.payload_length)
             self.rx_cache = self.whiten(reverse_bits(self.rx_cache))
@@ -246,7 +253,7 @@ class FakeBLE(RF24):
                 and self.rx_cache[end:end + 3] != crc24_ble(self.rx_cache[:end])
             ):
                 # self.rx_cache = bytearray(0)  # clear invalid cache
-                return False
+                return bool(self.rx_queue)
             # print("recv'd:", self.rx_cache)
             # print("crc:", self.rx_cache[end: end + 3])
             new_q = QueueElement()
@@ -258,7 +265,7 @@ class FakeBLE(RF24):
                     # data seems malformed. just append the buffer & move on
                     new_q.data.append(self.rx_cache[i: end])
                     break
-                result = decode_data_struct(bytes(self.rx_cache[i + 1 : i + 1 + size]))
+                result = decode_data_struct(self.rx_cache[i + 1 : i + 1 + size])
                 if isinstance(result, int):
                     new_q.pa_level = result
                 elif isinstance(result, str):
@@ -267,8 +274,7 @@ class FakeBLE(RF24):
                     new_q.data.append(result)
                 i += 1 + size
             self.rx_queue.append(new_q)
-            return True
-        return False
+        return bool(self.rx_queue)
 
     # pylint: disable=arguments-differ
     def read(self):
@@ -328,24 +334,22 @@ def decode_data_struct(buf):
     if buf[0] in (0x08, 0x09):  # if data is a BLE device name
         return buf[1:].decode()  # return a string
     if buf[0] == 0xFF:  # if it is a custom/user-defined data format
-        return buf[1:]  # return the raw buffer as a value
+        return buf  # return the raw buffer as a value
     ret_val = None
     if buf[0] == 0x16: # if it is service data
         service_data_uuid = struct.unpack("<H", buf[1:3])[0]
-        # pylint: disable=protected-access
         if service_data_uuid == TEMPERATURE_UUID:
             ret_val = TemperatureServiceData()
-            ret_val._data = buf[3:]
+            ret_val.data = buf[3:]
         elif service_data_uuid == BATTERY_UUID:
             ret_val = BatteryServiceData()
-            ret_val._data = buf[3:]
+            ret_val.data = buf[3:]
         elif service_data_uuid == EDDYSTONE_UUID:
             ret_val = UrlServiceData()
-            ret_val._type = ret_val._type[:3] + buf[4:5]
-            ret_val._data = buf[5:]
+            ret_val.pa_level_at_1_meter = buf[4:5]
+            ret_val.data = buf[5:]
         else:
             ret_val = buf
-        # pylint: enable=protected-access
     return ret_val
 
 
@@ -362,6 +366,15 @@ class ServiceData:
         """This returns the 16-bit Service UUID as a `bytearray` in little
         endian. (read-only)"""
         return self._type
+
+    @property
+    def data(self):
+        """This attribute is a `bytearray` or `bytes` object."""
+        return self._data
+
+    @data.setter
+    def data(self, value):
+        self._data = value
 
     @property
     def buffer(self):
@@ -386,13 +399,16 @@ class TemperatureServiceData(ServiceData):
 
     @property
     def data(self):
-        """This class's `data` attribute is a `float` value."""
+        """This attribute is a `float` value."""
         return struct.unpack("<i", self._data[:3] + b"\0")[0] / 100
 
     @data.setter
-    def data(self, value):
-        value = struct.pack("<i", int(value * 100) & 0xFFFFFF)
-        self._data = value[:3] + bytes([0xFE])
+    def data(self, value: float):
+        if isinstance(value, float):
+            value = struct.pack("<i", int(value * 100) & 0xFFFFFF)
+            self._data = value[:3] + bytes([0xFE])
+        elif isinstance(value, (bytes, bytearray)):
+            self._data = value
 
 
 class BatteryServiceData(ServiceData):
@@ -404,12 +420,15 @@ class BatteryServiceData(ServiceData):
 
     @property
     def data(self):
-        """The class's `data` attribute is a 1-byte unsigned `int` value."""
+        """The attribute is a 1-byte unsigned `int` value."""
         return int(self._data[0])
 
     @data.setter
-    def data(self, value):
-        self._data = struct.pack(">B", value)
+    def data(self, value: int):
+        if isinstance(value, int):
+            self._data = struct.pack(">B", value)
+        elif isinstance(value, (bytes, bytearray)):
+            self._data = value
 
 
 class UrlServiceData(ServiceData):
@@ -450,7 +469,10 @@ class UrlServiceData(ServiceData):
 
     @pa_level_at_1_meter.setter
     def pa_level_at_1_meter(self, value):
-        self._type = self._type[:-1] + struct.pack(">b", int(value))
+        if isinstance(value, int):
+            self._type = self._type[:-1] + struct.pack(">b", int(value))
+        elif isinstance(value, (bytes, bytearray)):
+            self._type = self._type[:-1] + value[:1]
 
     @property
     def uuid(self):
@@ -458,7 +480,7 @@ class UrlServiceData(ServiceData):
 
     @property
     def data(self):
-        """This class's `data` attribute is a `str` of URL data."""
+        """This attribute is a `str` of URL data."""
         value = self._data.decode()
         for section, b_code in UrlServiceData.byte_codes.items():
             value = value.replace(b_code, section)
@@ -466,6 +488,9 @@ class UrlServiceData(ServiceData):
 
     @data.setter
     def data(self, value: str):
-        for section, b_code in UrlServiceData.byte_codes.items():
-            value = value.replace(section, b_code)
-        self._data = value.encode("utf-8")
+        if isinstance(value, str):
+            for section, b_code in UrlServiceData.byte_codes.items():
+                value = value.replace(section, b_code)
+            self._data = value.encode("utf-8")
+        elif isinstance(value, (bytes, bytearray)):
+            self._data = value
