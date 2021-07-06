@@ -248,7 +248,7 @@ class FakeBLE(RF24):
                 # self.rx_cache = bytearray(0)  # clear invalid cache
                 return False
             # print("recv'd:", self.rx_cache)
-            # print("crc:", self.rx_cache[end - 3: end])
+            # print("crc:", self.rx_cache[end: end + 3])
             new_q = QueueElement()
             new_q.mac = bytes(self.rx_cache[2 : 8])
             i = 9
