@@ -181,12 +181,12 @@ def slave(timeout=6):
             if result.name is not None:
                 print("\tdevice name:", result.name)
             if result.pa_level is not None:
-                print("\tdevice transmitting PA Level:", result.pa_level)
+                print("\tdevice transmitting PA Level:", result.pa_level, "dbm")
             for service_data in result.data:
                 if isinstance(service_data, TemperatureServiceData):
-                    print("\tTemperature:", service_data.data)
+                    print("\tTemperature:", service_data.data, "C")
                 if isinstance(service_data, BatteryServiceData):
-                    print("\tBattery capacity remaining:", service_data.data)
+                    print("\tBattery capacity remaining:", service_data.data, "%")
                 if isinstance(service_data, UrlServiceData):
                     print("\tURL advertised:", service_data.data)
                 if isinstance(service_data, (bytearray, bytes)):

@@ -258,10 +258,7 @@ class FakeBLE(RF24):
                     # data seems malformed. just append the buffer & move on
                     new_q.data.append(self.rx_cache[i: end])
                     break
-                result = decode_data_struct(
-                    bytes(self.rx_cache[i + 1 : i + 1 + size]),
-                    size
-                )
+                result = decode_data_struct(bytes(self.rx_cache[i + 1 : i + 1 + size]))
                 if isinstance(result, int):
                     new_q.pa_level = result
                 elif isinstance(result, str):
@@ -322,18 +319,18 @@ BATTERY_UUID = const(0x180F)  #: The Battery Service UUID number
 EDDYSTONE_UUID = const(0xFEAA)  #: The Eddystone Service UUID number
 
 
-def decode_data_struct(buf, len_buf):
+def decode_data_struct(buf):
     """Decode a data structure in a received BLE payload."""
     if buf[0] not in (0x16, 0xFF, 0x0A, 0x08, 0x09):
         return None  # unknown/unsupported "chunk" of data
-    if buf[0] == 0xFF:  # if it is a custom/user-defined data format
-        return buf[1:]  # return the raw buffer as a value
-    if buf[0] in (0x08, 0x09):  # if data is a BLE device name
-        return buf[1:].decode()  # return a string
     if buf[0] == 0x0A:  # if data is a BLE device's TX-ing PA Level
         return struct.unpack("<b", buf[1:])[0]  # return a signed int
+    if buf[0] in (0x08, 0x09):  # if data is a BLE device name
+        return buf[1:].decode()  # return a string
+    if buf[0] == 0xFF:  # if it is a custom/user-defined data format
+        return buf[1:]  # return the raw buffer as a value
     ret_val = None
-    if buf[0] == 0x16 and len_buf >= 4: # if it is service data
+    if buf[0] == 0x16: # if it is service data
         service_data_uuid = struct.unpack("<H", buf[1:3])[0]
         # pylint: disable=protected-access
         if service_data_uuid == TEMPERATURE_UUID:
@@ -346,6 +343,8 @@ def decode_data_struct(buf, len_buf):
             ret_val = UrlServiceData()
             ret_val._type = ret_val._type[:3] + buf[4:5]
             ret_val._data = buf[5:]
+        else:
+            ret_val = buf
         # pylint: enable=protected-access
     return ret_val
 

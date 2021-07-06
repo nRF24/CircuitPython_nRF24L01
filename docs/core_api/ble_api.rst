@@ -160,13 +160,12 @@ decode_data_struct()
 .. autofunction:: circuitpython_nrf24l01.fake_ble.decode_data_struct
 
     :param bytes,bytearray buf: The buffer containing the BLE data structure.
-    :param int len_buf: The length of the ``buf`` parameter
 
     :Returns:
         - `None` if the payload is not supported or otherwise unknown
         - A signed `int` if the structure contained the tranmitter's PA Level
         - A `str` if the structure contained the transmitting device's name
-        - A `bytearray` or `bytes` object if the structure uses a custom user-defined specification
+        - A `bytearray` or `bytes` object if the structure uses a custom or user-defined specification
         - A child of the `ServiceData` class if the structure matched the appropriate specifications
 
 FakeBLE class
