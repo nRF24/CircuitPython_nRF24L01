@@ -78,7 +78,12 @@ EDDYSTONE_UUID = const(0xFEAA)  #: The Eddystone Service UUID number
 
 class QueueElement:
     """A data structure used for storing received & decoded BLE payloads in
-    the `FakeBLE.rx_queue`."""
+    the `FakeBLE.rx_queue`.
+
+    :param bytes,bytearray buffer: the validated BLE payload (not including
+        the CRC checksum). The buffer passed here is decoded into this class's
+        properties.
+    """
 
     def __init__(self, buffer):
         #: The transmitting BLE device's MAC address
@@ -92,8 +97,8 @@ class QueueElement:
         self.data = []
         """A `list` of the transmitting device's data structures (if any).
         If an element in this `list` is not an instance (or descendant) of the
-        `ServiceData` class, then it is likely a custom or user defined speification -
-        in which case it will be a `bytearray` object."""
+        `ServiceData` class, then it is likely a custom, user-defined, or unsupported
+        speification - in which case it will be a `bytearray` object."""
         end = buffer[1] + 2
         i = 8
         while i < end:
