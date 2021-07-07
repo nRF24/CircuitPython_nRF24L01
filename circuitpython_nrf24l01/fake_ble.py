@@ -71,13 +71,18 @@ def crc24_ble(data, deg_poly=0x65B, init_val=0x555555):
 BLE_FREQ = (2, 26, 80)
 """The BLE channel number is different from the nRF channel number."""
 
+TEMPERATURE_UUID = const(0x1809)  #: The Temperature Service UUID number
+BATTERY_UUID = const(0x180F)  #: The Battery Service UUID number
+EDDYSTONE_UUID = const(0xFEAA)  #: The Eddystone Service UUID number
+
 
 class QueueElement:
     """A data structure used for storing received & decoded BLE payloads in
     the `FakeBLE.rx_queue`."""
 
-    def __init__(self):
-        self.mac = None  #: The transmitting BLE device's MAC address
+    def __init__(self, buffer):
+        #: The transmitting BLE device's MAC address
+        self.mac = bytes(buffer[2 : 8])
         self.name = None  #: The transmitting BLE device's name (if any)
         self.pa_level = None
         """The transmitting device's PA Level (if included in the received payload).
@@ -89,6 +94,52 @@ class QueueElement:
         If an element in this `list` is not an instance (or descendant) of the
         `ServiceData` class, then it is likely a custom or user defined speification -
         in which case it will be a `bytearray` object."""
+        end = buffer[1] + 2
+        i = 8
+        while i < end:
+            size = buffer[i]
+            if size + i + 1 > end or i + 1 > end or not size:
+                # data seems malformed. just append the buffer & move on
+                self.data.append(buffer[i: end])
+                break
+            result = self._decode_data_struct(buffer[i + 1 : i + 1 + size])
+            if not result:  # decoding failed
+                self.data.append(buffer[i : i + 1 + size])
+            i += 1 + size
+
+    def _decode_data_struct(self, buf):
+        """Decode a data structure in a received BLE payload."""
+        print("decoding", address_repr(buf, 0, " "))
+        if buf[0] not in (0x16, 0xFF, 0x0A, 0x08, 0x09, 0x01):
+            # '0x01' means BLE requied flags -> just ignore them for now
+            return False  # unknown/unsupported "chunk" of data
+        if buf[0] == 0x0A and len(buf) == 2:  # if data is the device's TX-ing PA Level
+            self.pa_level = struct.unpack("b", buf[1:2])[0]
+        if buf[0] in (0x08, 0x09):  # if data is a BLE device name
+            try:
+                self.name = buf[1:].decode()
+            except UnicodeError:
+                return False
+        if buf[0] == 0xFF:  # if it is a custom/user-defined data format
+            self.data.append(buf)  # return the raw buffer as a value
+        if buf[0] == 0x16: # if it is service data
+            service_data_uuid = struct.unpack("<H", buf[1:3])[0]
+            if service_data_uuid == TEMPERATURE_UUID:
+                service = TemperatureServiceData()
+                service.data = buf[3:]
+                self.data.append(service)
+            elif service_data_uuid == BATTERY_UUID:
+                service = BatteryServiceData()
+                service.data = buf[3:]
+                self.data.append(service)
+            elif service_data_uuid == EDDYSTONE_UUID:
+                service = UrlServiceData()
+                service.pa_level_at_1_meter = buf[4:5]
+                service.data = buf[5:]
+                self.data.append(service)
+            else:
+                self.data.append(buf)
+        return True
 
 
 class FakeBLE(RF24):
@@ -250,33 +301,12 @@ class FakeBLE(RF24):
             end = self.rx_cache[1] + 2
             self.rx_cache = self.rx_cache[: end + 3]
             if (
-                end > 30
-                and self.rx_cache[end:end + 3] != crc24_ble(self.rx_cache[:end])
+                end < 30
+                and self.rx_cache[end:end + 3] == crc24_ble(self.rx_cache[:end])
             ):
-                # self.rx_cache = bytearray(0)  # clear invalid cache
-                return bool(self.rx_queue)
-            # print("recv'd:", self.rx_cache)
-            # print("crc:", self.rx_cache[end: end + 3])
-            new_q = QueueElement()
-            new_q.mac = bytes(self.rx_cache[2 : 8])
-            i = 8
-            while i < end:
-                size = self.rx_cache[i]
-                if size + i + 1 > end or i + 1 > end or not size:
-                    # data seems malformed. just append the buffer & move on
-                    new_q.data.append(self.rx_cache[i: end])
-                    break
-                result = decode_data_struct(self.rx_cache[i + 1 : i + 1 + size])
-                if isinstance(result, int):
-                    new_q.pa_level = result
-                elif isinstance(result, str):
-                    new_q.name = result
-                elif isinstance(result, (ServiceData, bytearray)):
-                    new_q.data.append(result)
-                elif result is None:  # decoding failed
-                    new_q.data.append(self.rx_cache[i : i + 1 + size])
-                i += 1 + size
-            self.rx_queue.append(new_q)
+                # print("recv'd:", self.rx_cache)
+                # print("crc:", self.rx_cache[end: end + 3])
+                self.rx_queue.append(QueueElement(self.rx_cache))
         return bool(self.rx_queue)
 
     # pylint: disable=arguments-differ
@@ -321,44 +351,6 @@ class FakeBLE(RF24):
         raise RuntimeWarning("BLE implentation only uses 1 address")
 
     # pylint: enable=unused-argument
-
-
-TEMPERATURE_UUID = const(0x1809)  #: The Temperature Service UUID number
-BATTERY_UUID = const(0x180F)  #: The Battery Service UUID number
-EDDYSTONE_UUID = const(0xFEAA)  #: The Eddystone Service UUID number
-
-
-def decode_data_struct(buf):
-    """Decode a data structure in a received BLE payload."""
-    print("decoding", address_repr(buf, 0, " "))
-    if buf[0] not in (0x16, 0xFF, 0x0A, 0x08, 0x09, 0x01):
-        # '0x01' means BLE requied flags -> just ignore them for now
-        return None  # unknown/unsupported "chunk" of data
-    if buf[0] == 0x0A and len(buf) == 2:  # if data is a BLE device's TX-ing PA Level
-        return struct.unpack("b", buf[1:2])[0]  # return a signed int
-    if buf[0] in (0x08, 0x09):  # if data is a BLE device name
-        try:
-            return buf[1:].decode()  # return a string
-        except UnicodeError:
-            return None
-    if buf[0] == 0xFF:  # if it is a custom/user-defined data format
-        return buf  # return the raw buffer as a value
-    ret_val = None
-    if buf[0] == 0x16: # if it is service data
-        service_data_uuid = struct.unpack("<H", buf[1:3])[0]
-        if service_data_uuid == TEMPERATURE_UUID:
-            ret_val = TemperatureServiceData()
-            ret_val.data = buf[3:]
-        elif service_data_uuid == BATTERY_UUID:
-            ret_val = BatteryServiceData()
-            ret_val.data = buf[3:]
-        elif service_data_uuid == EDDYSTONE_UUID:
-            ret_val = UrlServiceData()
-            ret_val.pa_level_at_1_meter = buf[4:5]
-            ret_val.data = buf[5:]
-        else:
-            ret_val = buf
-    return ret_val
 
 
 class ServiceData:

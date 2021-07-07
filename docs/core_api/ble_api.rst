@@ -154,20 +154,6 @@ QueueElement class
 .. autoclass:: circuitpython_nrf24l01.fake_ble.QueueElement
     :members:
 
-decode_data_struct()
-********************
-
-.. autofunction:: circuitpython_nrf24l01.fake_ble.decode_data_struct
-
-    :param bytes,bytearray buf: The buffer containing the BLE data structure.
-
-    :Returns:
-        - `None` if the payload is not supported or otherwise unknown
-        - A signed `int` if the structure contained the tranmitter's PA Level
-        - A `str` if the structure contained the transmitting device's name
-        - A `bytearray` or `bytes` object if the structure uses a custom or user-defined specification
-        - A child of the `ServiceData` class if the structure matched the appropriate specifications
-
 FakeBLE class
 -------------
 
@@ -349,7 +335,7 @@ rx_queue
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.rx_queue
 
 Each Element in this queue is a `QueueElement` object whose members are set according to the
-output of `decode_data_struct()`. The :meth:`~circuitpython_nrf24l01.fake_ble.FakeBLE.read()`
+its internal decoding algorithm. The :meth:`~circuitpython_nrf24l01.fake_ble.FakeBLE.read()`
 function will remove & return the first element in this queue.
 
 .. hint::
