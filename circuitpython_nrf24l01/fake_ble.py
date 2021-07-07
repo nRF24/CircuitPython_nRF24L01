@@ -83,6 +83,8 @@ class QueueElement:
     :param bytes,bytearray buffer: the validated BLE payload (not including
         the CRC checksum). The buffer passed here is decoded into this class's
         properties.
+
+    .. versionadded:: v2.1.0
     """
 
     def __init__(self, buffer):
