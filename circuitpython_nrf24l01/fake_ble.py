@@ -328,7 +328,7 @@ class FakeBLE(RF24):
     # pylint: disable=unused-argument
     @RF24.dynamic_payloads.setter
     def dynamic_payloads(self, val):
-        raise NotImplementedError("adjusting dynamic_payloads breaks BLE specifications")
+        raise NotImplementedError("using dynamic_payloads breaks BLE specifications")
 
     @RF24.data_rate.setter
     def data_rate(self, val):
@@ -340,7 +340,7 @@ class FakeBLE(RF24):
 
     @RF24.auto_ack.setter
     def auto_ack(self, val):
-        raise NotImplementedError("adjusting auto_ack breaks BLE specifications")
+        raise NotImplementedError("using auto_ack breaks BLE specifications")
 
     @RF24.ack.setter
     def ack(self, val):
@@ -348,7 +348,7 @@ class FakeBLE(RF24):
 
     @RF24.crc.setter
     def crc(self, val):
-        raise NotImplementedError("adjusting crc breaks BLE specifications")
+        raise NotImplementedError("BLE specifications only use crc24")
 
     def open_rx_pipe(self, pipe_number, address):
         raise NotImplementedError("BLE implementation only uses 1 address on pipe 0")
