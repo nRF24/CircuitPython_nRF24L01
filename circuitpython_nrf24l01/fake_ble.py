@@ -117,8 +117,7 @@ class QueueElement:
     def _decode_data_struct(self, buf):
         """Decode a data structure in a received BLE payload."""
         print("decoding", address_repr(buf, 0, " "))
-        if buf[0] not in (0x16, 0xFF, 0x0A, 0x08, 0x09, 0x01):
-            # '0x01' means BLE requied flags -> just ignore them for now
+        if buf[0] not in (0x16, 0x0A, 0x08, 0x09):
             return False  # unknown/unsupported "chunk" of data
         if buf[0] == 0x0A and len(buf) == 2:  # if data is the device's TX-ing PA Level
             self.pa_level = struct.unpack("b", buf[1:2])[0]
@@ -329,33 +328,33 @@ class FakeBLE(RF24):
     # pylint: disable=unused-argument
     @RF24.dynamic_payloads.setter
     def dynamic_payloads(self, val):
-        raise RuntimeWarning("adjusting dynamic_payloads breaks BLE specifications")
+        raise NotImplementedError("adjusting dynamic_payloads breaks BLE specifications")
 
     @RF24.data_rate.setter
     def data_rate(self, val):
-        raise RuntimeWarning("adjusting data_rate breaks BLE specifications")
+        raise NotImplementedError("adjusting data_rate breaks BLE specifications")
 
     @RF24.address_length.setter
     def address_length(self, val):
-        raise RuntimeWarning("adjusting address_length breaks BLE specifications")
+        raise NotImplementedError("adjusting address_length breaks BLE specifications")
 
     @RF24.auto_ack.setter
     def auto_ack(self, val):
-        raise RuntimeWarning("adjusting auto_ack breaks BLE specifications")
+        raise NotImplementedError("adjusting auto_ack breaks BLE specifications")
 
     @RF24.ack.setter
     def ack(self, val):
-        raise RuntimeWarning("adjusting ack breaks BLE specifications")
+        raise NotImplementedError("adjusting ack breaks BLE specifications")
 
     @RF24.crc.setter
     def crc(self, val):
-        raise RuntimeWarning("adjusting crc breaks BLE specifications")
+        raise NotImplementedError("adjusting crc breaks BLE specifications")
 
     def open_rx_pipe(self, pipe_number, address):
-        raise RuntimeWarning("BLE implementation only uses 1 address on pipe 0")
+        raise NotImplementedError("BLE implementation only uses 1 address on pipe 0")
 
     def open_tx_pipe(self, address):
-        raise RuntimeWarning("BLE implentation only uses 1 address")
+        raise NotImplementedError("BLE implentation only uses 1 address")
 
     # pylint: enable=unused-argument
 
@@ -396,6 +395,9 @@ class ServiceData:
         payload."""
         return len(self._type) + len(self._data)
 
+    def __repr__(self) -> str:
+        return address_repr(self.buffer, False)
+
 
 class TemperatureServiceData(ServiceData):
     """This derivitive of the `ServiceData` class can be used to represent
@@ -407,7 +409,7 @@ class TemperatureServiceData(ServiceData):
     @property
     def data(self):
         """This attribute is a `float` value."""
-        return struct.unpack("<i", self._data[:3] + b"\0")[0] / 100
+        return struct.unpack("<i", self._data[:3] + b"\0")[0] * 10 ** -2
 
     @data.setter
     def data(self, value: float):
@@ -417,6 +419,8 @@ class TemperatureServiceData(ServiceData):
         elif isinstance(value, (bytes, bytearray)):
             self._data = value
 
+    def __repr__(self) -> str:
+        return "Temperature: {} C".format(self.data)
 
 class BatteryServiceData(ServiceData):
     """This derivitive of the `ServiceData` class can be used to represent
@@ -436,6 +440,9 @@ class BatteryServiceData(ServiceData):
             self._data = struct.pack("B", value)
         elif isinstance(value, (bytes, bytearray)):
             self._data = value
+
+    def __repr__(self) -> str:
+        return "Battery capacity remaining: %d %%" % self.data
 
 
 class UrlServiceData(ServiceData):
@@ -501,3 +508,6 @@ class UrlServiceData(ServiceData):
             self._data = value.encode("utf-8")
         elif isinstance(value, (bytes, bytearray)):
             self._data = value
+
+    def __repr__(self) -> str:
+        return "Advertised URL: %s" % self.data

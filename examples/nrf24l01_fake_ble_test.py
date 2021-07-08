@@ -183,17 +183,10 @@ def slave(timeout=6):
             if result.pa_level is not None:
                 print("\tdevice transmitting PA Level:", result.pa_level, "dbm")
             for service_data in result.data:
-                if isinstance(service_data, TemperatureServiceData):
-                    print("\tTemperature:", service_data.data, "C")
-                if isinstance(service_data, BatteryServiceData):
-                    print("\tBattery capacity remaining:", service_data.data, "%")
-                if isinstance(service_data, UrlServiceData):
-                    print("\tURL advertised:", service_data.data)
                 if isinstance(service_data, (bytearray, bytes)):
-                    print(
-                        "\traw buffer (unknowmn format):",
-                        address_repr(service_data, False, " ")
-                    )
+                    print("\traw buffer:", address_repr(service_data, False, " "))
+                else:
+                    print(repr(service_data))
 
 
 # pylint: disable=too-many-branches
