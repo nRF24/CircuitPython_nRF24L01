@@ -277,11 +277,12 @@ class RF24:
             is_pwr_up = self._config & 2
             self._config = (self._config & 0xFC) | 3
             self._reg_write(CONFIGURE, self._config)
-            # time.sleep(0.00015)  # mandatory wait to power up radio
+            if not is_pwr_up:
+                time.sleep(0.00015)  # mandatory wait to power up radio
             if self._status & 0x70:
                 self.clear_status_flags()
             self.ce_pin = 1  # mandatory pulse is > 130 µs
-            time.sleep(0.00013 + 0.00015 * is_pwr_up)
+            time.sleep(0.00013)
         else:
             if self._features & 6 == 6 and ((self._aa & self._dyn_pl) & 1):
                 self.flush_tx()
@@ -848,10 +849,12 @@ class RF24:
         self.clear_status_flags()
         if self.tx_full:
             return False
+        is_power_up = self._config & 2
         if self._config & 3 != 2:  # is radio powered up in TX mode?
             self._config = (self._config & 0x7C) | 2
             self._reg_write(CONFIGURE, self._config)
-            time.sleep(0.00016)
+            if not is_power_up:
+                time.sleep(0.00016)
         if not bool((self._dyn_pl & 1) and (self._features & 4)):
             if len(buf) < self._pl_len[0]:
                 buf += b"\0" * (self._pl_len[0] - len(buf))
