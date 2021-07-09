@@ -233,12 +233,16 @@ whiten()
     :returns: A `bytearray` of the ``data`` with the whitening algorythm
         applied.
 
+    .. note:: `advertise()` and
+        :meth:`~circuitpython_nrf24l01.fake_ble.FakeBLE.available()` uses
+        this function internally to prevent improper usage.
     .. warning:: This function uses the currently set BLE channel as a
-        base case for the whitening coefficient. Do not call
-        `hop_channel()` before using this function to de-whiten received
-        payloads (which isn't officially supported yet). Note that
-        `advertise()` uses this function internally to prevent such
-        improper usage.
+        base case for the whitening coefficient.
+
+        Do not call `hop_channel()` before calling
+        :meth:`~circuitpython_nrf24l01.fake_ble.FakeBLE.available()`
+        because this function needs to know the correct BLE channel to
+        properly de-whiten received payloads.
 
 len_available()
 ******************
