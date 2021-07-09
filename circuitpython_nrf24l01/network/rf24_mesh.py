@@ -328,7 +328,7 @@ class RF24Mesh(RF24Network):
         if not contacts:
             return False
 
-        new_addy = -1
+        new_addy = None
         for contact in contacts:
             head = RF24NetworkHeader(contact, NETWORK_ADDR_REQUEST)
             head.reserved = self._addr
@@ -347,11 +347,19 @@ class RF24Mesh(RF24Network):
                         mask <<= 3
                         mask += 7
                     new_addy &= mask
+                    self._log(
+                        NETWORK_DEBUG,
+                        "{} vs {}; new address check {}!".format(
+                            new_addy,
+                            contact,
+                            "failed" if new_addy != contact else "passed"
+                        )
+                    )
                     if new_addy == contact:
                         break
                 if self.less_blocking_helper_function is not None:
                     self.less_blocking_helper_function()  # pylint: disable=not-callable
-        if new_addy == -1:
+        if new_addy is None:
             return False
 
         super()._begin(new_addy)

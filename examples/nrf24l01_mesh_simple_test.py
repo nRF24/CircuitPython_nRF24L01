@@ -50,6 +50,9 @@ except ImportError:  # on MicroPython
     csn_pin = DigitalInOut(5)
     ce_pin = DigitalInOut(4)
 
+except NotImplementedError: # running on PC (no GPIO)
+    pass  # using a shim
+
 # to use different addresses on a set of radios, we need a variable to
 # uniquely identify which address this radio will use
 this_node = int(
@@ -136,7 +139,7 @@ def slave(timeout=6, frag=False):
             payload = nrf.read()
             print("Received payload", end=" ")
             if not frag:
-                print(struct.unpack("<LL", bytes(payload.message)), end=" ")
+                print(struct.unpack("<L", bytes(payload.message)), end=" ")
             print(
                 "from", oct(payload.header.from_node),
                 "to", oct(payload.header.to_node),
@@ -165,24 +168,19 @@ def set_role():
     user_input = user_input.split()
     if user_input[0].upper().startswith("R"):
         if len(user_input) > 1:
-            if len(user_input) > 2:
-                slave(int(user_input[1]), int(user_input[2]))
-            else:
-                slave(int(user_input[1]))
+            slave(*[int(x) for x in user_input[1:]])
         else:
             slave()
         return True
     if user_input[0].upper().startswith("T"):
         if len(user_input) > 1:
-            if len(user_input) > 2:
-                master(int(user_input[1]), int(user_input[2]))
-            else:
-                master(int(user_input[1]))
+            master(*[int(x) for x in user_input[1:]])
         else:
             master()
         return True
     if user_input[0].upper().startswith("Q"):
         nrf.power = 0
+        nrf.release_address()
         return False
     print(user_input[0], "is an unrecognized input. Please try again.")
     return set_role()

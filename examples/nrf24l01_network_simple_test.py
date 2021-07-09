@@ -52,6 +52,8 @@ except ImportError:  # on MicroPython
     csn_pin = DigitalInOut(5)
     ce_pin = DigitalInOut(4)
 
+except NotImplementedError: # running on PC (no GPIO)
+    pass  # using a shim
 
 # to use different addresses on a set of radios, we need a variable to
 # uniquely identify which address this radio will use
@@ -165,19 +167,13 @@ def set_role():
     user_input = user_input.split()
     if user_input[0].upper().startswith("R"):
         if len(user_input) > 1:
-            if len(user_input) > 2:
-                slave(int(user_input[1]), int(user_input[2]))
-            else:
-                slave(int(user_input[1]))
+            slave(*[int(x) for x in user_input[1:]])
         else:
             slave()
         return True
     if user_input[0].upper().startswith("T"):
         if len(user_input) > 1:
-            if len(user_input) > 2:
-                master(int(user_input[1]), int(user_input[2]))
-            else:
-                master(int(user_input[1]))
+            master(*[int(x) for x in user_input[1:]])
         else:
             master()
         return True

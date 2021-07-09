@@ -52,6 +52,9 @@ except ImportError:  # on MicroPython
     csn_pin = DigitalInOut(5)
     ce_pin = DigitalInOut(4)
 
+except NotImplementedError: # running on PC (no GPIO)
+    pass  # using a shim
+
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(spi, csn_pin, ce_pin)
 # On Linux, csn_pin value is a bit coded

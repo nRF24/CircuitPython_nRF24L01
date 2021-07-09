@@ -52,6 +52,9 @@ except ImportError:  # on MicroPython
     csn_pin = DigitalInOut(5)
     ce_pin = DigitalInOut(4)
 
+except NotImplementedError: # running on PC (no GPIO)
+    pass  # using a shim
+
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(spi, csn_pin, ce_pin)
 # On Linux, csn_pin value is a bit coded
@@ -155,10 +158,8 @@ def set_role():
             base()
         return True
     if user_input[0].upper().startswith("T"):
-        if len(user_input) > 2:
-            node(int(user_input[1]), int(user_input[2]))
-        elif len(user_input) > 1:
-            node(int(user_input[1]))
+        if len(user_input) > 1:
+            node(*[int(x) for x in user_input[1:]])
         else:
             node()
         return True

@@ -5,25 +5,54 @@ display settings after changing contexts ( & thus configurations)
 
     .. warning:: This script is not compatible with the rf24_lite module
 """
-# pylint: disable=wrong-import-position
-USE_SHIM = False
-try:
-    import board
-    import digitalio
-except (NotImplementedError, NameError):
-    USE_SHIM = True
-    print("using a shim on unsupported platform.")
-
 from circuitpython_nrf24l01.rf24 import RF24
 from circuitpython_nrf24l01.fake_ble import FakeBLE
 
-# change these (digital output) pins accordingly
-ce_pin = None if USE_SHIM else digitalio.DigitalInOut(board.D4)
-csn_pin = None if USE_SHIM else digitalio.DigitalInOut(board.D5)
+# import wrappers to imitate circuitPython's DigitalInOut
+from circuitpython_nrf24l01.wrapper import RPiDIO, DigitalInOut
 
-# using board.SPI() automatically selects the MCU's
-# available SPI pins, board.SCK, board.MOSI, board.MISO
-spi = None if USE_SHIM else board.SPI()  # init spi bus object
+# RPiDIO is wrapper for RPi.GPIO on Linux
+# DigitalInOut is a wrapper for machine.Pin() on MicroPython
+#   or simply digitalio.DigitalInOut on CircuitPython and Linux
+
+# default values that allow using no radio module (for testing only)
+spi = None
+csn_pin = None
+ce_pin = None
+
+try:  # on CircuitPython & Linux
+    import board
+    # change these (digital output) pins accordingly
+    ce_pin = DigitalInOut(board.D4)
+    csn_pin = DigitalInOut(board.D5)
+
+    try:  # on Linux
+        import spidev
+
+        spi = spidev.SpiDev()  # for a faster interface on linux
+        csn_pin = 0  # use CE0 on default bus (even faster than using any pin)
+        if RPiDIO is not None:  # RPi.GPIO lib is present
+            # RPi.GPIO is faster than CircuitPython on Linux
+            ce_pin = RPiDIO(22)  # using pin gpio22 (BCM numbering)
+
+    except ImportError:  # on CircuitPython only
+        # using board.SPI() automatically selects the MCU's
+        # available SPI pins, board.SCK, board.MOSI, board.MISO
+        spi = board.SPI()  # init spi bus object
+
+except ImportError:  # on MicroPython
+    from machine import SPI
+
+    # the argument passed here changes according to the board used
+    spi = SPI(1)
+
+    # instantiate the integers representing micropython pins as
+    # DigitalInOut compatible objects
+    csn_pin = DigitalInOut(5)
+    ce_pin = DigitalInOut(4)
+
+except NotImplementedError: # running on PC (no GPIO)
+    pass  # using a shim
 
 # initialize the nRF24L01 objects on the spi bus object
 # the first object will have all the features enabled
