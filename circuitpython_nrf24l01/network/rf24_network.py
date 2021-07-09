@@ -286,11 +286,11 @@ class RF24Network(RadioMixin):
         return bytearray(result)
 
     def update(self):
-        """keep the network layer current; returns the next header"""
+        """keep the network layer current; returns the received message type"""
         return self._net_update()
 
     def _net_update(self):
-        """keep the network layer current; returns the next header"""
+        """keep the network layer current; returns the received message type"""
         ret_val = 0  # sentinal indicating there is nothing to report
         while self._rf24.available():
             if (

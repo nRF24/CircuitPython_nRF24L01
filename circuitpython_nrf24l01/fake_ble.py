@@ -78,7 +78,7 @@ EDDYSTONE_UUID = const(0xFEAA)  #: The Eddystone Service UUID number
 
 class QueueElement:
     """A data structure used for storing received & decoded BLE payloads in
-    the `FakeBLE.rx_queue`.
+    the :attr:`~circuitpython_nrf24l01.fake_ble.FakeBLE.rx_queue`.
 
     :param bytes,bytearray buffer: the validated BLE payload (not including
         the CRC checksum). The buffer passed here is decoded into this class's
@@ -164,7 +164,8 @@ class FakeBLE(RF24):
         self._tx_address[:4] = b"\x71\x91\x7D\x6B"
         with self:
             super().open_rx_pipe(0, b"\x71\x91\x7D\x6B\0")
-        self.rx_queue = []  #: The internal queue of received BLE payloads' data.
+        #: The internal queue of received BLE payloads' data.
+        self.rx_queue = []
         self.rx_cache = bytearray(0)
         """The internal cache used when validating received BLE payloads."""
         self.hop_channel()

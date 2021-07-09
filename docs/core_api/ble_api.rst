@@ -210,6 +210,13 @@ show_pa_level
         really only useful for some applications to calculate proximity to the
         nRF24L01 transceiver.
 
+channel
+******************
+
+.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.channel
+
+    The only allowed channels are those contained in the `BLE_FREQ` tuple.
+
 hop_channel()
 *************
 
@@ -318,7 +325,7 @@ available()
     validate the payload using the 24bit CRC checksum at the end of the payload.
     If the payload is indeed a valid BLE transmission that fit within the 32 bytes
     that the nRF24L01 can capture, then this method will decipher the data within
-    the payload and enqueue the resulting `QueueElement` in the internal `rx_queue`.
+    the payload and enqueue the resulting `QueueElement` in the `rx_queue`.
 
     .. tip:: Use :meth:`~circuitpython_nrf24l01.fake_ble.FakeBLE.read()` to fetch the
         decoded data.
@@ -332,6 +339,7 @@ rx_queue
 ****************
 
 .. versionadded:: v2.1.0
+
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.rx_queue
 
 Each Element in this queue is a `QueueElement` object whose members are set according to the
@@ -345,6 +353,7 @@ rx_cache
 ****************
 
 .. versionadded:: v2.1.0
+
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.rx_cache
 
 This attribute is only used by :meth:`~circuitpython_nrf24l01.fake_ble.FakeBLE.available()`
@@ -363,13 +372,6 @@ read()
     :Returns:
         - `None` if nothing is the internal `rx_queue`
         - A `QueueElement` object from the front of the `rx_queue` (like a FIFO buffer)
-
-channel
-******************
-
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.channel
-
-    The only allowed channels are those contained in the `BLE_FREQ` tuple.
 
 interrupt_config()
 ******************

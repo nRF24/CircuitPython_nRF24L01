@@ -170,7 +170,7 @@ This is a test to show how to use `with` blocks to manage multiple different nRF
 
 .. literalinclude:: ../examples/nrf24l01_context_test.py
     :caption: examples/nrf24l01_context_test.py
-    :start-at: USE_SHIM = False
+    :start-at: from circuitpython_nrf24l01.rf24 import RF24
     :linenos:
     :lineno-match:
 
