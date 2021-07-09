@@ -113,6 +113,7 @@ class RF24Network(RadioMixin):
         self._multicast_level = 0
         self._addr = 0
         self._addr_mask = 0
+        self._addr_mask_inverted = 0
         self._tx_timeout = 25000
         self._rx_timeout = 3 * self._tx_timeout
         self._multicast_relay = True
@@ -176,6 +177,7 @@ class RF24Network(RadioMixin):
             while self._addr & mask:
                 mask = (mask << 3) & 0xFFFF
                 self._multicast_level += 1
+            self._addr_mask_inverted = mask
             while not mask & 7:
                 self._addr_mask = (self._addr_mask << 3) | 7
                 mask >>= 3
@@ -670,7 +672,7 @@ class RF24Network(RadioMixin):
     def _is_direct_child(self, address):
         """Is the given ``address`` a direct child of `node_address`"""
         if self._is_descendant(address):
-            return not address & ((~self._addr_mask) << 3)
+            return not address & (self._addr_mask_inverted << 3)
         return False
 
     def _direct_child_route_to(self, address):
