@@ -107,12 +107,8 @@ def master(count=5, frag=False, interval=2):
             start_timer = now
             count -= 1
             packets_sent[0] += 1
-            length = 8
-            message = struct.pack(
-                "LL",
-                int(time.monotonic_ns() / 1000000),
-                packets_sent[0]
-            )
+            length = 4
+            message = struct.pack("LL", int(time.monotonic_ns() / 1000000))
             if frag:
                 length = (packets_sent[0] + MAX_FRAG_SIZE) % nrf.max_message_length
                 message = bytes(range(length))
