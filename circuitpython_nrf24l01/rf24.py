@@ -274,13 +274,14 @@ class RF24:
             elif self._pipe0_read_addr is None and self._open_pipes & 1:
                 self._open_pipes &= 0x3E  # close_rx_pipe(0) is slower
                 self._reg_write(OPEN_PIPES, self._open_pipes)
+            is_pwr_up = self._config & 2
             self._config = (self._config & 0xFC) | 3
             self._reg_write(CONFIGURE, self._config)
-            time.sleep(0.00015)  # mandatory wait to power up radio
+            # time.sleep(0.00015)  # mandatory wait to power up radio
             if self._status & 0x70:
                 self.clear_status_flags()
             self.ce_pin = 1  # mandatory pulse is > 130 µs
-            time.sleep(0.00013)
+            time.sleep(0.00013 + 0.00015 * is_pwr_up)
         else:
             if self._features & 6 == 6 and ((self._aa & self._dyn_pl) & 1):
                 self.flush_tx()

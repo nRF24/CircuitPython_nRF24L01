@@ -83,7 +83,7 @@ if nrf.logger is not None:
     nrf.queue.logger.setLevel(NETWORK_DEBUG)
 
 # using the python keyword global is bad practice. Instead we'll use a 1 item
-# list to store our float number for the payloads sent/received
+# list to store our number of the payloads sent
 packets_sent = [0]
 
 

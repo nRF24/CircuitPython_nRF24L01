@@ -15,6 +15,10 @@
     :target: https://pepy.tech/project/circuitpython-nrf24l01
     :alt: Total PyPI downloads
 
+.. image:: https://open.vscode.dev/badges/open-in-vscode.svg
+    :target: https://open.vscode.dev/2bndy5/CircuitPython_nRF24L01
+    :alt: Open in Visual Studio Code
+
 Read The Docs
 =============
 

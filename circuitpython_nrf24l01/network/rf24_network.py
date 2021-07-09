@@ -287,6 +287,10 @@ class RF24Network(RadioMixin):
 
     def update(self):
         """keep the network layer current; returns the next header"""
+        return self._net_update()
+
+    def _net_update(self):
+        """keep the network layer current; returns the next header"""
         ret_val = 0  # sentinal indicating there is nothing to report
         while self._rf24.available():
             if (
@@ -375,7 +379,7 @@ class RF24Network(RadioMixin):
             )
         ):
             self._log(
-                NETWORK_DEBUG_ROUTING, "Received system payload type " + msg_t
+                NETWORK_DEBUG_ROUTING, "Received system payload type " + str(msg_t)
             )
             return False
 
@@ -481,33 +485,12 @@ class RF24Network(RadioMixin):
         """Broadcast a ``message`` to all nodes on a certain address ``level``"""
         level = min(6, max(level, 0)) if level is not None else self._multicast_level
         header.to_node = NETWORK_MULTICAST_ADDR
-        return self.send(header, message, _level_to_address(level))
+        return self.write(RF24NetworkFrame(header, message), _level_to_address(level))
 
     def send(self, header: RF24NetworkHeader, message, traffic_direct=AUTO_ROUTING):
         """Deliver a ``message`` according to the ``header`` information."""
-        if not isinstance(header, RF24NetworkHeader):
-            raise TypeError("header is not a RF24NetworkHeader object")
-        if not isinstance(message, (bytes, bytearray)):
-            raise TypeError("message is not a byteaarray or bytes object")
         frame = RF24NetworkFrame(header=header, message=message)
         return self.write(frame, traffic_direct)
-
-    def _write_frag(self, frame: RF24NetworkFrame, traffic_direct, send_type):
-        """write a message fragmented into multiple payloads"""
-        frames = _frame_frags(_frag_msg(frame.message), frame.header)
-        for i, frm in enumerate(frames):
-            result = self.write(frm, traffic_direct, send_type)
-            timeout = int(time.monotonic_ns() / 1000000) + self._tx_timeout
-            while not result and int(time.monotonic_ns() / 1000000) < timeout:
-                result = self._rf24.resend(send_only=True)
-            prompt = ""
-            if self.logger is not None:
-                prompt = "Frag {} of {} ".format(i + 1, len(frames))
-            if not result:
-                self._log(NETWORK_DEBUG_FRAG, prompt + "failed to send. Aborting")
-                return False
-            self._log(NETWORK_DEBUG_FRAG_L2, prompt + "sent successfully")
-        return True
 
     def write(
         self,
@@ -537,7 +520,8 @@ class RF24Network(RadioMixin):
 
         # send the frame
         to_node, to_pipe, use_multicast = self._logical_to_physical(
-            frame.header.to_node, send_type
+            frame.header.to_node if traffic_direct == AUTO_ROUTING else traffic_direct,
+            send_type
         )
         result = self._write_to_pipe(frame, to_node, to_pipe, use_multicast)
         if not result:
@@ -581,6 +565,23 @@ class RF24Network(RadioMixin):
             self._rf24.listen = True
         return result
 
+    def _write_frag(self, frame: RF24NetworkFrame, traffic_direct, send_type):
+        """write a message fragmented into multiple payloads"""
+        frames = _frame_frags(_frag_msg(frame.message), frame.header)
+        for i, frm in enumerate(frames):
+            result = self.write(frm, traffic_direct, send_type)
+            timeout = int(time.monotonic_ns() / 1000000) + self._tx_timeout
+            while not result and int(time.monotonic_ns() / 1000000) < timeout:
+                result = self._rf24.resend(send_only=True)
+            prompt = ""
+            if self.logger is not None:
+                prompt = "Frag {} of {} ".format(i + 1, len(frames))
+            if not result:
+                self._log(NETWORK_DEBUG_FRAG, prompt + "failed to send. Aborting")
+                return False
+            self._log(NETWORK_DEBUG_FRAG_L2, prompt + "sent successfully")
+        return True
+
     def _wait_for_network_ack(self, to_node, to_pipe):
         """wait for network ack from target node"""
         result = True
@@ -607,7 +608,7 @@ class RF24Network(RadioMixin):
         if not frame.header.is_valid:
             return result
         if not self.network_flags & FLAG_FAST_FRAG:
-            self.listen = True
+            self.listen = False
         if use_multicast:
             self._rf24.set_auto_ack(0, 0)
         else:

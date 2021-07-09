@@ -51,8 +51,7 @@ class RF24NetworkHeader:
 
     def __init__(self, to_node=None, message_type=None):
         self._from = None
-        self._to = to_node or 0
-        self._to &= 0xFFFF
+        self._to = (to_node or 0) & 0xFFFF
         self._msg_t = 0
         if message_type is not None:
             # convert the first char in `message_type` to int if it is a string
@@ -164,10 +163,12 @@ class RF24NetworkFrame:
     """
 
     def __init__(self, header: RF24NetworkHeader=None, message=None):
-        self.header = header
+        if header is not None and not isinstance(header, RF24NetworkHeader):
+            raise TypeError("header must be a RF24NetworkHeader object")
+        if message is not None and not isinstance(message, (bytes, bytearray)):
+            raise TypeError("message must be a `bytes` or `bytearray` object")
+        self.header = RF24NetworkHeader() if header is None else header
         """The `RF24NetworkHeader` of the message."""
-        if not isinstance(header, RF24NetworkHeader):
-            self.header = RF24NetworkHeader()
         self.message = bytearray(0) if message is None else bytearray(message)
         """The entire message or a fragment of the message allocated to this
         frame. This attribute is a `bytearray`."""

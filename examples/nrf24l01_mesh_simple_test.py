@@ -64,17 +64,21 @@ other_node = int(
 
 # initialize the mesh node object
 nrf = RF24Mesh(spi, csn_pin, ce_pin)
-nrf.channel = 90
+nrf.channel = 97
 
 # set the Power Amplifier level to -12 dBm since this test example is
 # usually run with nRF24L01 transceivers in close proximity
 nrf.pa_level = -12
 
-print("Connecting to network...", end=" ")
-# give this node a unique ID number and connect to network
 nrf.node_id = this_node
-nrf.renew_address()
-print("assigned address:", oct(nrf.node_address))
+if this_node:
+    print("Connecting to network...", end=" ")
+    # give this node a unique ID number and connect to network
+    nrf.renew_address()
+    print("assigned address:", oct(nrf.node_address))
+else:
+    nrf.node_address = nrf.get_node_id()
+    print("Acting as mesh network master node.")
 
 if nrf.logger is not None:
     # log debug msgs specific to RF24Network.
@@ -83,7 +87,7 @@ if nrf.logger is not None:
     nrf.queue.logger.setLevel(NETWORK_DEBUG)
 
 # using the python keyword global is bad practice. Instead we'll use a 1 item
-# list to store our float number for the payloads sent/received
+# list to store our number of the payloads sent
 packets_sent = [0]
 
 
