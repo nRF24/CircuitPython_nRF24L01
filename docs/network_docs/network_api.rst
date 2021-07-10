@@ -31,21 +31,45 @@ peek
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.peek
 
+    :Returns: A `RF24NetworkFrame` object. However, the data returned is not removed
+        from the internal `queue`.
+
 peek_header
 -----------
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.peek_header
+
+    :Returns: A `RF24NetworkHeader` object. However, the data returned is not removed
+        from the internal `queue`.
 
 read()
 -----------
 
 .. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.read
 
+    This function differs from `peek` because this function also removes the header &
+    message from the internal `queue`.
+
+    :Returns: A `RF24NetworkFrame` object.
+
 send()
 -----------
 
 .. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.send
 
+    :param RF24NetworkHeader header: The outgoing frame's header. It is important to
+        have the header's `to_node` attribute set to the target network node's address.
+    :param bytes,bytearray message: The outgoing frame's message.
+
+        .. note:: Be mindful of the message's size as this cannot exceed `MAX_FRAG_SIZE`
+            (24 bytes) if `fragmentation` is disabled. If `fragmentation` is enabled (it is by default), then the message's size must be less than
+            `max_message_length`
+    :param int traffic_direct: The specified direction of the frame. By default, this
+        will use the automatic routing mechanisms. However, this parameter can be set to
+        the header's `to_node` for direct transmission to the target network node; meaning the transmission will be attempted in only 1 hop - no routing through other network nodes.
+
+        .. tip:: Only set this parameter if the transmission is going to a network node
+            on the same network level.
 
 Advanced API
 ************
@@ -55,34 +79,72 @@ node_address
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.node_address
 
+    Setting this attribute will alter the physical addresses used on the radio's data
+    pipes and the default `multicast_level` value.
+
+    .. warning:: If this attribute is set to an invald network address, then nothing is
+        done and the invalid address is ignored.
+
 multicast()
 -----------
 
 .. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.multicast
+
+    .. seealso:: `multicast_level`, `multicast_relay`, and `allow_multicast`
 
 write()
 -----------
 
 .. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.write
 
+    :param RF24NetworkFrame frame: The complete frame to send. It is important to
+        have the header's `to_node` attribute set to the target network node's address.
+    :param int traffic_direct: The specified direction of the frame. By default, this
+        will use the automatic routing mechanisms. However, this parameter can be set to
+        the header's `to_node` for direct transmission to the target network node; meaning the transmission will be attempted in only 1 hop - no routing through other network nodes.
+
+        .. tip:: Only set this parameter if the transmission is going to a network node
+            on the same network level.
+    :param int send_type: The behavior to use when sending a frame. This parameter is
+        overridden if the ``traffic_direct`` parameter is set to anything other than its
+        default value. This parameter should be considered reserved for special
+        applicable use cases (like `RF24Mesh`).
+
 parent
 -----------
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.parent
 
+    Returns `None` if on the network's master node.
+
 Configuration API
 *****************
+
+max_message_length
+------------------
+
+.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.max_message_length
+
+    By default this is set to ``144``. If a network node is driven by the TMRh20
+    RF24Network library on a ATTiny-based board, set this to ``72`` (as per TMRh20's
+    RF24Network library default behavior).
 
 multicast_relay
 ---------------
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.multicast_relay
 
+    Duplicate frames are filtered out, so multiple forwarding nodes at the
+    same level should not interfere. Forwarded payloads will also be
+    received.
+
 multicast_level
 ---------------
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.multicast_level
 
+    Setting this attribute will also change the physical address on the radio's RX data
+    pipe 0.
 
 tx_timeout
 ---------------
@@ -95,8 +157,16 @@ fragmentation
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.fragmentation
 
+    Changing this attribute's state will also appropriately changes the type of `Queue`
+    (or `QueueFrag`) object used for storing incoming network packets. Disabling
+    fragmentation can save some memory (not as much as TMRh20's RF24Network library's
+    ``DISABLE_FRAGMENTATION`` macro), but messages will be limited to 24 bytes
+    (`MAX_FRAG_SIZE`) maximum.
 
 allow_multicast
 ---------------
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.allow_multicast
+
+    This attribute affects the physical address translation done by setting the `node_address`,
+    all incoming multicasted frames, and `multicast_relay` behavior.

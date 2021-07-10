@@ -13,7 +13,7 @@
     examples
 
 .. toctree::
-    :caption: API Reference
+    :caption: Core API Reference
     :hidden:
 
     core_api/basic_api

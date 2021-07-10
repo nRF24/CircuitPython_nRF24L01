@@ -67,8 +67,7 @@ USER_TX_MULTICAST = const(4)
 """
 
 
-# flags for managing queue while receiving message fragments
-#: prevents reading additional data from the radio when buffers are full.
+# flags for managing external system's desired behavior
 FLAG_HOLD_INCOMING = const(1)
 FLAG_BYPASS_HOLDS = const(2)
 """mainly for use with RF24Mesh as follows:
@@ -79,8 +78,8 @@ FLAG_BYPASS_HOLDS = const(2)
 #. Address renewal takes place and is set
 #. Holds Enabled (bypass flag off)
 """
-FLAG_FAST_FRAG = const(4)  #: Disable the radio's `auto_ack` on pipe 0
-FLAG_NO_POLL = const(8)  #: Used to discard any `NETWORK_POLL` message types
+FLAG_FAST_FRAG = const(4)
+FLAG_NO_POLL = const(8)
 
 
 # constants used to define `RF24NetworkHeader.message_type`
@@ -147,5 +146,3 @@ NETWORK_DEBUG_MINIMAL = const(11)
 NETWORK_DEBUG_ROUTING = const(12)
 #: shows debugging info about fragmented messages
 NETWORK_DEBUG_FRAG = const(13)
-#: shows advanced debugging info about fragmented messages
-NETWORK_DEBUG_FRAG_L2 = const(14)

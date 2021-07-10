@@ -56,4 +56,3 @@ Debugging Levels
 .. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_DEBUG_MINIMAL
 .. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_DEBUG_ROUTING
 .. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_DEBUG_FRAG
-.. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_DEBUG_FRAG_L2

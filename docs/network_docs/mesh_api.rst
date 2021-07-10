@@ -3,11 +3,23 @@ RF24Mesh API
 
 .. versionadded:: 2.1.0
 
+.. seealso:: Documentation for:
+
+    1. `Shared Networking API <base_api.html#>`_
+    2. `Network Data Structures <structs.html>`_
+    3. `Network Constants <constants.html>`_
+    4. `RF24Network API <network_api.html>`_ (especially the `node_address` and
+       :meth:`~circuitpython_nrf24l01.network.rf24_network.RF24Network.write()`)
+
+
 RF24Mesh class
 **************
 
 .. autoclass:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh
     :show-inheritance:
+
+    .. seealso:: For all parameters' descriptions, see the
+        :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' contructor documentation.
 
 Basic API
 *********
@@ -21,11 +33,6 @@ send()
 --------
 
 .. automethod:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.send
-
-write()
---------
-
-.. automethod:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.write
 
 node_id
 -------------

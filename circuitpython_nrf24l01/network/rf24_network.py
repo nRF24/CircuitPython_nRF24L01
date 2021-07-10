@@ -31,7 +31,6 @@ from .constants import (
     NETWORK_DEBUG_MINIMAL,
     NETWORK_DEBUG,
     NETWORK_DEBUG_FRAG,
-    NETWORK_DEBUG_FRAG_L2,
     NETWORK_DEBUG_ROUTING,
     NETWORK_FRAG_FIRST,
     NETWORK_FRAG_MORE,
@@ -114,18 +113,16 @@ class RF24Network(RadioMixin):
         self._addr = 0
         self._addr_mask = 0
         self._addr_mask_inverted = 0
-        self._tx_timeout = 25000
+        self._tx_timeout = 25
         self._rx_timeout = 3 * self._tx_timeout
         self._multicast_relay = True
         self._frag_enabled = True
 
         #: enable/disable (`True`/`False`) multicasting
         self.allow_multicast = True
-        self.ret_sys_msg = False  #: for use with RF24Mesh
-        self.network_flags = 0  #: for use with RF24Mesh
-        self.max_message_length = 144
-        """If a network node is driven by the TMRh20 RF24Network library on a
-        ATTiny-based board, set this to ``72``."""
+        self.ret_sys_msg = False  #: Force `update()` to return on system message types.
+        self.network_flags = 0  #: Flags that affect Network node behavior.
+        self.max_message_length = 144  #: The maximum length of a frame's message.
         #: The queue (FIFO) of recieved frames for this node
         self.queue = QueueFrag(self.max_message_length)
         #: A buffer containing the last frame received by the network node
@@ -211,20 +208,17 @@ class RF24Network(RadioMixin):
     def tx_timeout(self):
         """The timeout (in milliseconds) to wait for successful transmission.
         Defaults to 25. The internal rx_timeout will be three times this value."""
-        return int(self._tx_timeout / 1000)
+        return self._tx_timeout
 
     @tx_timeout.setter
     def tx_timeout(self, val):
-        self._tx_timeout = max(val * 1000, 1000)
+        self._tx_timeout = int(max(val, 1))
         self._rx_timeout = 3 * self._tx_timeout
 
     @property
     def multicast_relay(self):
-        """Enabling this will allow this node to automatically forward
-        received multicast frames to the next highest multicast level.
-        Duplicate frames are filtered out, so multiple forwarding nodes at the
-        same level should not interfere. Forwarded payloads will also be
-        received."""
+        """Enabling this attribute will allow this node to automatically forward
+        received multicasted frames to the next highest multicast level."""
         return self.allow_multicast and self._multicast_relay
 
     @multicast_relay.setter
@@ -233,7 +227,7 @@ class RF24Network(RadioMixin):
 
     @property
     def multicast_level(self):
-        """override the default multicast level which is set by the
+        """Override the default multicast level which is set by the
         `node_address` attribute"""
         return self._multicast_level
 
@@ -439,7 +433,7 @@ class RF24Network(RadioMixin):
                     and self.frame_cache.header.reserved == NETWORK_EXTERNAL_DATA
                 ):
                     return False
-            elif self._addr != NETWORK_DEFAULT_ADDR:  # multicast is enabled
+            elif self._addr != NETWORK_DEFAULT_ADDR:
                 # pass it along
                 self.write(
                     self.frame_cache,
@@ -458,29 +452,21 @@ class RF24Network(RadioMixin):
         return False
 
     def available(self) -> bool:
-        """Is there a message for this node?"""
+        """Is there a message waiting in the `queue`?"""
         return bool(len(self.queue))
 
     @property
     def peek_header(self) -> RF24NetworkHeader:
-        """Get the next available message's header (a `RF24NetworkHeader` object)
-        from the internal queue without removing it from the queue."""
+        """Get the next available header from internal queue."""
         return self.queue.peek.header
 
     @property
     def peek(self) -> RF24NetworkFrame:
-        """Get the next available header & message (as a `RF24NetworkFrame`
-            object) from the internal queue without removing it from the queue.
-        """
+        """Get the next available header & message from internal queue."""
         return self.queue.peek
 
     def read(self) -> RF24NetworkFrame:
-        """Get the next available header & message from internal queue. This
-        differs from `peek` because this function also removes the header &
-        message from the internal queue.
-
-        :Returns: A `RF24NetworkFrame` object.
-        """
+        """Get the next available header & message from internal queue."""
         return self.queue.dequeue
 
     def multicast(self, header: RF24NetworkHeader, message, level=None):
@@ -500,7 +486,7 @@ class RF24Network(RadioMixin):
         traffic_direct=AUTO_ROUTING,
         send_type=TX_NORMAL
     ):
-        """Deliver a constructed ``frame`` routed as ``traffic_direct``"""
+        """Deliver a pre-constructed ``frame``"""
         if not isinstance(frame, RF24NetworkFrame):
             raise TypeError("expected object of type RF24NetworkFrame.")
         if len(frame.message) > self.max_message_length:
@@ -516,8 +502,8 @@ class RF24Network(RadioMixin):
                 # Payload is multicast to the first node, which is the recipient
                 send_type = USER_TX_TO_PHYSICAL_ADDRESS
 
-        # break message into fragments and send multiple resulting frames
         if len(frame.message) > MAX_FRAG_SIZE and self._frag_enabled:
+            # break message into fragments and send the multiple resulting frames
             return self._write_frag(frame, traffic_direct, send_type)
 
         # send the frame
@@ -572,16 +558,16 @@ class RF24Network(RadioMixin):
         frames = _frame_frags(_frag_msg(frame.message), frame.header)
         for i, frm in enumerate(frames):
             result = self.write(frm, traffic_direct, send_type)
-            timeout = int(time.monotonic_ns() / 1000000) + self._tx_timeout
-            while not result and int(time.monotonic_ns() / 1000000) < timeout:
-                result = self._rf24.resend(send_only=True)
-            prompt = ""
-            if self.logger is not None:
-                prompt = "Frag {} of {} ".format(i + 1, len(frames))
+            self._log(
+                NETWORK_DEBUG_FRAG,
+                "Frag {} of {} {}".format(
+                    i + 1,
+                    len(frames),
+                    "sent successfully" if result else "failed to send. Aborting"
+                )
+            )
             if not result:
-                self._log(NETWORK_DEBUG_FRAG, prompt + "failed to send. Aborting")
                 return False
-            self._log(NETWORK_DEBUG_FRAG_L2, prompt + "sent successfully")
         return True
 
     def _wait_for_network_ack(self, to_node, to_pipe):
