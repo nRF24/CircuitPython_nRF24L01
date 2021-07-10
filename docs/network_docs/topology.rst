@@ -35,25 +35,25 @@ All network nodes in the following graphs are labeled with Logical addresses.
         "0o1" [fontcolor="#FEFEFE" color="#FEFEFE"];
         "0o2" [fontcolor="#FEFEFE" color="#FEFEFE"];
         "0o11" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o12" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o13" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o14" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o15" [fontcolor="#FEFEFE" color="#FEFEFE"];
         "0o21" [fontcolor="#FEFEFE" color="#FEFEFE"];
+        "0o31" [fontcolor="#FEFEFE" color="#FEFEFE"];
+        "0o41" [fontcolor="#FEFEFE" color="#FEFEFE"];
+        "0o51" [fontcolor="#FEFEFE" color="#FEFEFE"];
+        "0o12" [fontcolor="#FEFEFE" color="#FEFEFE"];
         "0o22" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o23" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o24" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o25" [fontcolor="#FEFEFE" color="#FEFEFE"];
+        "0o32" [fontcolor="#FEFEFE" color="#FEFEFE"];
+        "0o42" [fontcolor="#FEFEFE" color="#FEFEFE"];
+        "0o52" [fontcolor="#FEFEFE" color="#FEFEFE"];
         "0o1" -> "0o11"  [arrowhead=none color="#FEFEFE"];
-        "0o1" -> "0o12"  [arrowhead=none color="#FEFEFE"];
-        "0o1" -> "0o13"  [arrowhead=none color="#FEFEFE"];
-        "0o1" -> "0o14"  [arrowhead=none color="#FEFEFE"];
-        "0o1" -> "0o15"  [arrowhead=none color="#FEFEFE"];
-        "0o2" -> "0o21"  [arrowhead=none color="#FEFEFE"];
+        "0o1" -> "0o21"  [arrowhead=none color="#FEFEFE"];
+        "0o1" -> "0o31"  [arrowhead=none color="#FEFEFE"];
+        "0o1" -> "0o41"  [arrowhead=none color="#FEFEFE"];
+        "0o1" -> "0o51"  [arrowhead=none color="#FEFEFE"];
+        "0o2" -> "0o12"  [arrowhead=none color="#FEFEFE"];
         "0o2" -> "0o22"  [arrowhead=none color="#FEFEFE"];
-        "0o2" -> "0o23"  [arrowhead=none color="#FEFEFE"];
-        "0o2" -> "0o24"  [arrowhead=none color="#FEFEFE"];
-        "0o2" -> "0o25"  [arrowhead=none color="#FEFEFE"];
+        "0o2" -> "0o32"  [arrowhead=none color="#FEFEFE"];
+        "0o2" -> "0o42"  [arrowhead=none color="#FEFEFE"];
+        "0o2" -> "0o52"  [arrowhead=none color="#FEFEFE"];
     }
 
 .. graphviz::
@@ -63,26 +63,26 @@ All network nodes in the following graphs are labeled with Logical addresses.
         bgcolor="#39393988";
         "0o21" [fontcolor="#FEFEFE" color="#FEFEFE"];
         "0o31" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o211" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o212" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o213" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o214" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o215" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o311" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o312" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o313" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o314" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o315" [fontcolor="#FEFEFE" color="#FEFEFE"];
-        "0o21" -> "0o211"  [arrowhead=none color="#FEFEFE"];
-        "0o21" -> "0o212"  [arrowhead=none color="#FEFEFE"];
-        "0o21" -> "0o213"  [arrowhead=none color="#FEFEFE"];
-        "0o21" -> "0o214"  [arrowhead=none color="#FEFEFE"];
-        "0o21" -> "0o215"  [arrowhead=none color="#FEFEFE"];
-        "0o31" -> "0o311"  [arrowhead=none color="#FEFEFE"];
-        "0o31" -> "0o312"  [arrowhead=none color="#FEFEFE"];
-        "0o31" -> "0o313"  [arrowhead=none color="#FEFEFE"];
-        "0o31" -> "0o314"  [arrowhead=none color="#FEFEFE"];
-        "0o31" -> "0o315"  [arrowhead=none color="#FEFEFE"];
+        "0o121" [fontcolor="#FEFEFE" color="#FEFEFE"];
+        "0o221" [fontcolor="#FEFEFE" color="#FEFEFE"];
+        "0o321" [fontcolor="#FEFEFE" color="#FEFEFE"];
+        "0o421" [fontcolor="#FEFEFE" color="#FEFEFE"];
+        "0o521" [fontcolor="#FEFEFE" color="#FEFEFE"];
+        "0o131" [fontcolor="#FEFEFE" color="#FEFEFE"];
+        "0o231" [fontcolor="#FEFEFE" color="#FEFEFE"];
+        "0o331" [fontcolor="#FEFEFE" color="#FEFEFE"];
+        "0o431" [fontcolor="#FEFEFE" color="#FEFEFE"];
+        "0o531" [fontcolor="#FEFEFE" color="#FEFEFE"];
+        "0o21" -> "0o121"  [arrowhead=none color="#FEFEFE"];
+        "0o21" -> "0o221"  [arrowhead=none color="#FEFEFE"];
+        "0o21" -> "0o321"  [arrowhead=none color="#FEFEFE"];
+        "0o21" -> "0o421"  [arrowhead=none color="#FEFEFE"];
+        "0o21" -> "0o521"  [arrowhead=none color="#FEFEFE"];
+        "0o31" -> "0o131"  [arrowhead=none color="#FEFEFE"];
+        "0o31" -> "0o231"  [arrowhead=none color="#FEFEFE"];
+        "0o31" -> "0o331"  [arrowhead=none color="#FEFEFE"];
+        "0o31" -> "0o431"  [arrowhead=none color="#FEFEFE"];
+        "0o31" -> "0o531"  [arrowhead=none color="#FEFEFE"];
     }
 
 Hopefully, you can see the pattern by now. There can be up to a maximum of 4 network levels (that's 0-3).
@@ -91,7 +91,7 @@ Physical addresses vs Logical addresses
 ***************************************
 
 - The Physical address is the 5-byte address assigned to the radio's data pipes.
-- The Logical address is the 2-byte integer representing a network node.
+- The Logical address is the 12-bit integer representing a network node.
   The Logical address uses an octal counting scheme.
 
 Translating Logical to Physical
