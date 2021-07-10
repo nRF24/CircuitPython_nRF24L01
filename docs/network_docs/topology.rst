@@ -85,7 +85,7 @@ All network nodes in the following graphs are labeled with Logical addresses.
         "0o31" -> "0o315"  [arrowhead=none color="#FEFEFE"];
     }
 
-Hopefully, you can see the pattern by now. There can be up to a maximum of 4 network levels.
+Hopefully, you can see the pattern by now. There can be up to a maximum of 5 network levels (that's 0-4).
 
 Physical addresses vs Logical addresses
 ***************************************

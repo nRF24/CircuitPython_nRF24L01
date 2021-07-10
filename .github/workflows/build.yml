@@ -56,10 +56,12 @@ jobs:
         run: |
           source actions-ci/install.sh
 
-      - name: Pip install pylint & Sphinx stuff
+      - name: Pip install pylint & Sphinx stuff (and graphviz)
         run: |
           pip install pylint
           pip install -r docs/requirements.txt
+          sudo apt install graphviz
+
 
       - name: Library version
         run: git describe --dirty --always --tags
