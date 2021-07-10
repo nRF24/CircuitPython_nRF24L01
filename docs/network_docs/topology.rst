@@ -28,7 +28,7 @@ All network nodes in the following graphs are labeled with Logical addresses.
     }
 
 .. graphviz::
-    :caption: Network Level 1 (demonstrating only 2 child nodes)
+    :caption: Network Level 1 (demonstrating only 2 child nodes as parents)
 
     digraph "NetworkTopology1" {
         bgcolor="#39393988"
@@ -57,7 +57,7 @@ All network nodes in the following graphs are labeled with Logical addresses.
     }
 
 .. graphviz::
-    :caption: Network Level 2 (demonstrating 2 child nodes)
+    :caption: Network Level 2 (demonstrating only 2 child nodes as parents)
 
     digraph "NetworkTopology2" {
         bgcolor="#39393988";
@@ -85,7 +85,7 @@ All network nodes in the following graphs are labeled with Logical addresses.
         "0o31" -> "0o315"  [arrowhead=none color="#FEFEFE"];
     }
 
-Hopefully, you can see the pattern by now. There can be up to a maximum of 5 network levels (that's 0-4).
+Hopefully, you can see the pattern by now. There can be up to a maximum of 4 network levels (that's 0-3).
 
 Physical addresses vs Logical addresses
 ***************************************
@@ -114,38 +114,38 @@ For example:
         :caption: The Logical address of the master node: ``0o0``
 
         The resulting physical addresses of the master node's children:
-        Physical address on pipe 1 is 0xCCCCCCCC3C using Logical address 0o0
-        Physical address on pipe 2 is 0xCCCCCCCC33 using Logical address 0o0
-        Physical address on pipe 3 is 0xCCCCCCCCCE using Logical address 0o0
-        Physical address on pipe 4 is 0xCCCCCCCC3E using Logical address 0o0
-        Physical address on pipe 5 is 0xCCCCCCCCE3 using Logical address 0o0
+        Physical address on pipe 1 is 0xCCCCCCCC3C using the parent's Logical address 0o0
+        Physical address on pipe 2 is 0xCCCCCCCC33 using the parent's Logical address 0o0
+        Physical address on pipe 3 is 0xCCCCCCCCCE using the parent's Logical address 0o0
+        Physical address on pipe 4 is 0xCCCCCCCC3E using the parent's Logical address 0o0
+        Physical address on pipe 5 is 0xCCCCCCCCE3 using the parent's Logical address 0o0
 
     .. code-block:: text
         :caption: The Logical address of the master node's first child: ``0o1``
 
         The resulting physical addresses of the master node's first child's children:
-        Physical address on pipe 1 is 0xCCCCCC3C3C using Logical address 0o1
-        Physical address on pipe 2 is 0xCCCCCC3C33 using Logical address 0o1
-        Physical address on pipe 3 is 0xCCCCCC3CCe using Logical address 0o1
-        Physical address on pipe 4 is 0xCCCCCC3C3E using Logical address 0o1
-        Physical address on pipe 5 is 0xCCCCCC3CE3 using Logical address 0o1
+        Physical address on pipe 1 is 0xCCCCCC3C3C using the parent's Logical address 0o1
+        Physical address on pipe 2 is 0xCCCCCC3C33 using the parent's Logical address 0o1
+        Physical address on pipe 3 is 0xCCCCCC3CCe using the parent's Logical address 0o1
+        Physical address on pipe 4 is 0xCCCCCC3C3E using the parent's Logical address 0o1
+        Physical address on pipe 5 is 0xCCCCCC3CE3 using the parent's Logical address 0o1
 
     .. code-block:: text
         :caption: The Logical address of the master node's second child: ``0o2``
 
         The resulting physical addresses of the master node's second child's children:
-        Physical address on pipe 1 is 0xCCCCCC333C using Logical address 0o2
-        Physical address on pipe 2 is 0xCCCCCC3333 using Logical address 0o2
-        Physical address on pipe 3 is 0xCCCCCC33Ce using Logical address 0o2
-        Physical address on pipe 4 is 0xCCCCCC333E using Logical address 0o2
-        Physical address on pipe 5 is 0xCCCCCC33E3 using Logical address 0o2
+        Physical address on pipe 1 is 0xCCCCCC333C using the parent's Logical address 0o2
+        Physical address on pipe 2 is 0xCCCCCC3333 using the parent's Logical address 0o2
+        Physical address on pipe 3 is 0xCCCCCC33Ce using the parent's Logical address 0o2
+        Physical address on pipe 4 is 0xCCCCCC333E using the parent's Logical address 0o2
+        Physical address on pipe 5 is 0xCCCCCC33E3 using the parent's Logical address 0o2
 
     .. code-block:: text
         :caption:  The Logical address of the master node's first child's first child: ``0o11``
 
         The resulting physical addresses of the master node's first child's first child's children:
-        Physical address on pipe 1 is 0xCCCC3C3C3C using Logical address 0o11
-        Physical address on pipe 2 is 0xCCCC3C3C33 using Logical address 0o11
-        Physical address on pipe 3 is 0xCCCC3C3CCe using Logical address 0o11
-        Physical address on pipe 4 is 0xCCCC3C3C3E using Logical address 0o11
-        Physical address on pipe 5 is 0xCCCC3C3CE3 using Logical address 0o11
+        Physical address on pipe 1 is 0xCCCC3C3C3C using the parent's Logical address 0o11
+        Physical address on pipe 2 is 0xCCCC3C3C33 using the parent's Logical address 0o11
+        Physical address on pipe 3 is 0xCCCC3C3CCe using the parent's Logical address 0o11
+        Physical address on pipe 4 is 0xCCCC3C3C3E using the parent's Logical address 0o11
+        Physical address on pipe 5 is 0xCCCC3C3CE3 using the parent's Logical address 0o11
