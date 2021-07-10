@@ -575,7 +575,7 @@ class RF24Network(RadioMixin):
         result = True
         if self.network_flags & FLAG_FAST_FRAG:
             self.network_flags &= ~FLAG_FAST_FRAG
-            self._rf24.set_auto_ack(0, 0)
+            self._rf24.auto_ack = 0x3E
         self._rf24.listen = True
         rx_timeout = int(time.monotonic_ns() / 1000000) + self._rx_timeout
         while self.update() != NETWORK_ACK:
@@ -597,10 +597,7 @@ class RF24Network(RadioMixin):
             return result
         if not self.network_flags & FLAG_FAST_FRAG:
             self.listen = False
-        if use_multicast:
-            self._rf24.set_auto_ack(0, 0)
-        else:
-            self._rf24.set_auto_ack(1, 0)
+        self._rf24.auto_ack = 0x3E + (not use_multicast)
         self._log(
             NETWORK_DEBUG,
             "Sending type {} with ID {} from {} to {} on pipe {}".format(
@@ -620,7 +617,7 @@ class RF24Network(RadioMixin):
         if not self.network_flags & FLAG_FAST_FRAG:
             while not result and int(time.monotonic_ns() / 1000000) < timeout:
                 result = self._rf24.resend(send_only=True)
-        self._rf24.set_auto_ack(0, 0)
+        self._rf24.auto_ack = 0x3E
         return result
 
     # the following function was ported from the C++ lib, but
