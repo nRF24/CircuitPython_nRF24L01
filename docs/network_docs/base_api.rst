@@ -35,13 +35,18 @@ extensibility via external applications or systems.
 address_prefix
 --------------
 
-.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.address_prefix
+.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.address_prefix
+
+    .. seealso::
+        The usage of this attribute is more explained in the `Topology page <topology.html#physical-addresses-vs-logical-addresses>`_
 
 address_suffix
 --------------
 
-.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.address_suffix
+.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.address_suffix
 
+    .. seealso::
+        The usage of this attribute is more explained in the `Topology page <topology.html#physical-addresses-vs-logical-addresses>`_
 
 frame_cache
 -----------
@@ -72,7 +77,8 @@ A 4-bit variable in which each bit corresponds to a specific behavioral modifica
     :widths: 2, 4, 10
 
     0, ``FLAG_HOLD_INCOMING``, "Prevents reading additional data from the radio when buffers are full."
-    1, ``FLAG_BYPASS_HOLDS``, "- Ensure no data in radio buffers, else exit
+    1, ``FLAG_BYPASS_HOLDS``, "
+    - Ensure no data in radio buffers, else exit
     - Address is changed to multicast address for renewal
     - Holds Cleared (bypass flag is set)
     - Address renewal takes place and is set

@@ -168,3 +168,6 @@ html [data-md-color-primary=blue] .md-nav--primary .md-nav__title--site {
 table {
   background-color: hsl(0, 0%, 16%);
 }
+.md-typeset code,.md-typeset pre {
+    color:#b3e2f9;
+}

@@ -25,6 +25,7 @@
     :caption: Network API Reference
     :hidden:
 
+    network_docs/topology
     network_docs/structs
     network_docs/base_api
     network_docs/network_api

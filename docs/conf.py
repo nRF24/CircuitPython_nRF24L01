@@ -32,6 +32,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
+    "sphinx.ext.graphviz",
     "sphinx_copybutton",
     # "rst2pdf.pdfbuilder",  # for local pdf builder support
 ]
