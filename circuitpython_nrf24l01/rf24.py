@@ -156,7 +156,7 @@ class RF24:
 
     @property
     def ce_pin(self):
-        """control the CE pin (for advanced usage)"""
+        """Control the radio's CE pin (for advanced usage)"""
         return self._ce_pin.value if self._ce_pin is not None else False
 
     @ce_pin.setter
@@ -300,14 +300,14 @@ class RF24:
 
     def available(self):
         """A `bool` describing if there is a payload in the RX FIFO."""
-        return self.update() and self.pipe is not None
+        return self.update() and (self._status >> 1) < 6
 
     def any(self):
         """This function reports the next available payload's length (in bytes)."""
         if self.available():
             if self._features & 4:
                 return self._reg_read(0x60)
-            return self._pl_len[self.pipe]
+            return self._pl_len[(self._status >> 1) & 7]
         return 0
 
     def read(self, length=None):
@@ -327,16 +327,16 @@ class RF24:
             for b in buf:
                 result.append(self.send(b, ask_no_ack, force_retry, send_only))
             return result
-        if self.irq_df or self.tx_full:
+        if self._status & 0x40 or self._status & 1:
             self.flush_tx()
-        if not send_only and self.pipe is not None:
+        if not send_only and (self._status >> 1) < 6:
             self.flush_rx()
         self.write(buf, ask_no_ack)
         up_cnt = 0
         while self._spi is not None and not self._status & 0x30:
             up_cnt += self.update()
         # self.ce_pin = 0  # keep it high, so subsequent calls are faster
-        result = self.irq_ds
+        result = bool(self._status & 0x20)
         # print(
         #     "send() waited {} updates DS: {} DR: {} DF: {}".format(
         #         up_cnt, self.irq_ds, self.irq_dr, self.irq_df
@@ -745,7 +745,7 @@ class RF24:
     def data_rate(self, speed):
         if not speed in (1, 2, 250):
             raise ValueError("data_rate must be 1 (Mbps), 2 (Mbps), or 250 (kbps)")
-        if not self.is_plus_variant and speed == 250:
+        if not self._is_plus_variant and speed == 250:
             raise NotImplementedError(
                 "250 kbps data rate is not available for the non-plus "
                 "variants of the nRF24L01 transceivers."
@@ -828,21 +828,20 @@ class RF24:
         if self.fifo(True, True):
             return result
         self.ce_pin = 0
-        if not send_only and self.pipe is not None:
+        if not send_only and (self._status >> 1) < 6:
             self.flush_rx()
-        if self._status & 0x70:
-            self.clear_status_flags()
+        self.clear_status_flags()
         # self._reg_write(0xE3)
         self.ce_pin = 1
         up_cnt = 0
         while self._spi is not None and not self._status & 0x30:
             up_cnt += self.update()
         self.ce_pin = 0
-        result = self.irq_ds
+        result = bool(self._status & 0x20)
         # print("resend() waited {} updates DS: {} DR: {} DF: {}".format(
         #     up_cnt, self.irq_ds, self.irq_dr, self.irq_df
         # ))
-        if result and self.irq_dr and not send_only:
+        if result and self._status & 0x40 and not send_only:
             return self.read()
         return result
 
@@ -852,7 +851,7 @@ class RF24:
         if not buf or len(buf) > 32:
             raise ValueError("buffer must have a length in range [1, 32]")
         self.clear_status_flags()
-        if self.tx_full:
+        if self._status & 1:
             return False
         is_power_up = self._config & 2
         if self._config & 3 != 2:  # is radio powered up in TX mode?
