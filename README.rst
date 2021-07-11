@@ -22,8 +22,7 @@
 Read The Docs
 =============
 
-Documentation for this library is hosted at
-`ReadTheDocs.org <http://circuitpython-nrf24l01.rtfd.io/>`_
+Documentation for this library is hosted at https://circuitpython-nrf24l01.rtfd.io/
 
 About this Library
 ==================

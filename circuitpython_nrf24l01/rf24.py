@@ -168,6 +168,7 @@ class RF24:
         in_buf = bytearray([0, 0])
         if self._spi is not None:
             with self._spi as spi:
+                # time.sleep(0.000005)
                 spi.write_readinto(bytes([reg, 0]), in_buf)
         self._status = in_buf[0]
         # print("SPI read 1 byte from", hex(reg), hex(in_buf[1]))
@@ -177,6 +178,7 @@ class RF24:
         in_buf = bytearray(buf_len + 1)
         if self._spi is not None:
             with self._spi as spi:
+                # time.sleep(0.000005)
                 spi.write_readinto(bytes([reg] + [0] * buf_len), in_buf)
         self._status = in_buf[0]
         # print("SPI read {} bytes from {} {}".format(
@@ -188,6 +190,7 @@ class RF24:
         in_buf = bytearray(len(out_buf) + 1)
         if self._spi is not None:
             with self._spi as spi:
+                # time.sleep(0.000005)
                 spi.write_readinto(bytes([0x20 | reg]) + out_buf, in_buf)
         self._status = in_buf[0]
         # print("SPI write {} bytes to {} {}".format(
@@ -201,6 +204,7 @@ class RF24:
         in_buf = bytearray(len(out_buf))
         if self._spi is not None:
             with self._spi as spi:
+                # time.sleep(0.000005)
                 spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         # if reg != 0xFF:
@@ -300,7 +304,7 @@ class RF24:
 
     def available(self):
         """A `bool` describing if there is a payload in the RX FIFO."""
-        return self.update() and (self._status >> 1) < 6
+        return self.update() and self._status >> 1 & 7 < 6
 
     def any(self):
         """This function reports the next available payload's length (in bytes)."""
@@ -327,9 +331,9 @@ class RF24:
             for b in buf:
                 result.append(self.send(b, ask_no_ack, force_retry, send_only))
             return result
-        if self._status & 0x40 or self._status & 1:
+        if self._status & 0x10 or self._status & 1:
             self.flush_tx()
-        if not send_only and (self._status >> 1) < 6:
+        if not send_only and self._status >> 1 & 7 < 6:
             self.flush_rx()
         self.write(buf, ask_no_ack)
         up_cnt = 0
