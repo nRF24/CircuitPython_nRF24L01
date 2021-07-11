@@ -40,13 +40,18 @@ DYN_PL_LEN = const(0x1C)  # dynamic payloads status for all pipes
 TX_FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
 
 
+def hex_upper(number):
+    """Same as calling hex().upper() but without the prefix '0x'."""
+    return (("" if number > 0x0F else "0") + hex(number)[2:]).upper()
+
+
 def address_repr(buf, reverse=True, delimit=""):
     """Convert a buffer into a hexlified string."""
     ret_str = ""
     order = range(len(buf) - 1, -1, -1) if reverse else range(len(buf))
     for byte in order:
-        ret_str += delimit + ("" if buf[byte] > 0x0F else "0") + hex(buf[byte])[2:]
-    return ret_str[1:] if delimit else ret_str
+        ret_str += delimit + hex_upper(buf[byte])
+    return ret_str[len(delimit):]
 
 
 class RF24:

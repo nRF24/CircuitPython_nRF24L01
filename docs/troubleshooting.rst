@@ -127,13 +127,15 @@ version:
 
   .. code-block:: python
 
+      from circuitpython_nrf24l01.rf24 import address_repr, hex_upper
       # let `nrf` be the instantiated RF24 object
       def dump_registers(end=0x1e):
           for i in range(end):
+              reg = "0x" + hex_upper(i)
               if i in (0xA, 0xB, 0x10):
-                  print(hex(i), "=", nrf._reg_read_bytes(i))
+                  print(reg, "=", "0x" + address_repr(nrf._reg_read_bytes(i)))
               elif i not in (0x18, 0x19, 0x1a, 0x1b):
-                  print(hex(i), "=", hex(nrf._reg_read(i)))
+                  print(reg, "=", "0x" + hex_upper(nrf._reg_read(i)))
 * :attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads` applies to all
   pipes, not individual pipes. This attribute will return
   a `bool` instead of an `int`.
