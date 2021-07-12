@@ -44,7 +44,7 @@ Features currently supported
 * An nRF24L01 driven by this library can communicate with a nRF24L01 on an Arduino driven by the `TMRh20 RF24 library <http://tmrh20.github.io/RF24/>`_. See the `nrf24l01_2arduino_handling_data.py <examples.html#TMRh20-s-arduino-library>`_ example.
 * fake BLE module for sending BLE beacon advertisments from the nRF24L01 as outlined by `Dmitry Grinberg in his write-up (including C source code) <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_.
 * Multiceiver\ :sup:`TM` mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). See the `Multiceiver Example <examples.html#multiceiver-example>`_
-* Networking capability that allows thousands of transveivers to interact with each other.
+* Networking capability that allows thousands of tranceivers to interact with each other.
 
   * This does not mean the radio can connect to WiFi. The networking implementation is a custom protocol ported from TMRh20's RF24Network library.
 
@@ -57,21 +57,25 @@ This driver depends on:
 * `Adafruit CircuitPython Firmware <https://circuitpython.org/downloads>`_ or the
   `Adafruit_Blinka library <https://github.com/adafruit/Adafruit_Blinka>`_ for Linux
   SoC boards like Raspberry Pi
-* `Adafruit_CircuitPython_BusDevice
-  <https://github.com/adafruit/Adafruit_CircuitPython_BusDevice>`_ (specifically the
-  :py:mod:`~adafruit_bus_device.spi_device` module)
+* `adafruit_bus_device` (specifically the :py:class:`~adafruit_bus_device.SPIDevice` class)
 
   .. tip:: Use CircuitPython v6.3.0 or newer because faster SPI execution yields
       faster transmissions.
+* The `SpiDev <https://pypi.org/project/spidev/>`_ module is a C-extention that executes
+  SPI transactions faster than Adafruit's PureIO library (a dependency of the adafruit_blinka library).
 
-The adafruit_bus_device and Adafruit_Blinka libraries are installed automatically on Linux when installing
-this library.
+  * You can optionally use the `RPi.GPIO <https://sourceforge.net/p/raspberry-gpio-python/wiki/Home/>`_
+    library (see examples) for faster execution of digital GPIO pin manipulation.
 
-Please ensure all dependencies are available on the CircuitPython filesystem.
-This is easily achieved by downloading
-`the Adafruit library and driver bundle <https://github.com/adafruit/Adafruit_CircuitPython_Bundle>`_.
+The `adafruit_bus_device`, `Adafruit_Blinka library <https://github.com/adafruit/Adafruit_Blinka>`_,
+and `SpiDev <https://pypi.org/project/spidev/>`_ libraries
+are installed automatically on Linux when installing this library.
 
-.. note:: This library supports Python 3.7 or newer because it use
+.. versionadded:: v2.1.0 Added support for the
+    `SpiDev <https://pypi.org/project/spidev/>`_ module and optional
+    `RPi.GPIO <https://sourceforge.net/p/raspberry-gpio-python/wiki/Home/>`_ library
+
+.. important:: This library supports Python 3.7 or newer because it use
     the function `time.monotonic_ns() <https://docs.python.org/3.7/library/
     time.html#time.monotonic_ns>`_ which returns an arbitrary time "counter"
     as an `int` of nanoseconds. CircuitPython firmware also supports
@@ -109,21 +113,34 @@ Pinout
 .. image:: https://lastminuteengineers.com/wp-content/uploads/2018/07/Pinout-nRF24L01-Wireless-Transceiver-Module.png
     :target: https://lastminuteengineers.com/nrf24l01-arduino-wireless-communication/#nrf24l01-transceiver-module-pinout
 
-The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) that can only be connected to their counterparts on the MCU (microcontroller unit). The other 2 essential pins (CE & CSN) can be connected to any digital output pins. Lastly, the only optional pin on the nRf24L01 GPIOs is the IRQ (interrupt; a digital output that's active when low) pin and is only connected to the MCU via a digital input pin during the interrupt example. The following pinout is used in the example codes of this library's `examples <examples.html>`_.
+The nRF24L01 is controlled through SPI so there are 3 pins (SCK, MOSI, & MISO) that can only be
+connected to their counterparts on the MCU (microcontroller unit). The other 2 essential pins
+(CE & CSN) can be connected to any digital output pins. Lastly, the only optional GPIO pin on the
+nRF24L01 is the IRQ (interrupt; a digital output that's active when low) pin and is only connected
+to the MCU via a digital input pin during the interrupt example.
 
-.. csv-table::
-    :header: nRF2401, "Raspberry Pi", "ItsyBitsy M4"
+
+.. csv-table:: The pins used in `this library's examples <examples.html>`_.
+    :header: nRF2401, "ItsyBitsy M4", "Raspberry Pi"
+    :widths: 2, 6, 22
+
 
     GND, GND, GND
-    VCC, 3V, 3.3V
-    CE, GPIO4, D4
-    CSN, GPIO5, D5
-    SCK, "GPIO11 (SCK)", SCK
-    MOSI, "GPIO10 (MOSI)", MOSI
-    MISO, "GPIO9 (MISO)", MISO
-    IRQ, GPIO12, D12
+    VCC, 3.3V, 3V
+    CE, D4, "- GPIO4 if using CircuitPython's :py:class:`~digitalio.DigitalInOut`
+    - GPIO22 if using the `RPi.GPIO <https://sourceforge.net/p/raspberry-gpio-python/wiki/Home/>`_ library"
+    CSN, D5, "- GPIO5 if using CircuitPython's :py:class:`~adafruit_bus_device.SPIDevice`
+    - GPIO8 (CE0) if using the `SpiDev <https://pypi.org/project/spidev/>`_ module"
+    SCK, SCK, "GPIO11 (SCK)"
+    MOSI, MOSI, "GPIO10 (MOSI)"
+    MISO, MISO, "GPIO9 (MISO)"
+    IRQ, D12, GPIO12
 
-.. tip:: User reports and personal experiences have improved results if there is a capacitor of 100 mirofarads [+ another optional 0.1 microfarads capacitor for added stability] connected in parrallel to the VCC and GND pins.
+.. tip:: User reports and personal experiences have improved results if there is a capacitor of
+    100 mirofarads (+ another optional 0.1 microfarads capacitor for added stability) connected
+    in parrallel to the VCC and GND pins.
+.. important:: The nRF24L01's VCC pin is not 5V compliant.
+    All other nRF24L01 pins *should* be 5V compliant, but it is safer to assume they are not.
 
 Using The Examples
 ==================
@@ -147,11 +164,11 @@ All examples can be imported from within an interactive python REPL.
            Run slave() on receiver
            Run master() on transmitter
        >>> master()
-       Transmission successful! Time to Transmit: 6993.972 us. Sent: 0.0
-       Transmission successful! Time to Transmit: 6563.277 us. Sent: 0.01
-       Transmission successful! Time to Transmit: 6453.385 us. Sent: 0.02
-       Transmission successful! Time to Transmit: 6338.29 us. Sent: 0.03
-       Transmission successful! Time to Transmit: 6440.163 us. Sent: 0.04
+       Transmission successful! Time to Transmit: 3906.25 us. Sent: 0.0
+       Transmission successful! Time to Transmit: 2929.69 us. Sent: 0.01
+       Transmission successful! Time to Transmit: 2929.69 us. Sent: 0.02
+       Transmission successful! Time to Transmit: 3906.25 us. Sent: 0.03
+       Transmission successful! Time to Transmit: 4882.81 us. Sent: 0.04
 
 For CircuitPython devices
 ---------------------------
@@ -283,8 +300,8 @@ The following are only ideas; they are not currently supported by this circuitpy
   pins <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.
   html>`_ (uses custom bitbanging SPI functions and an external circuit involving a
   resistor and a capacitor)
-* network linking layer, maybe something like `TMRh20's RF24Network
-  <http://nRF24.github.io/RF24Network/>`_
+* TCI/IP OSI layer, maybe something like `TMRh20's RF24Ethernet
+  <http://nRF24.github.io/RF24Ethernet/>`_
 * implement the Gazelle-based protocol used by the BBC micro-bit (`makecode.com's radio
   blocks <https://makecode.microbit.org/reference/radio>`_).
 
@@ -292,14 +309,35 @@ The following are only ideas; they are not currently supported by this circuitpy
 Sphinx documentation
 -----------------------
 
-Sphinx is used to build the documentation based on rST files and comments in the code. First,
-install dependencies (feel free to reuse the virtual environment from `above <greetings.html#installing-from-pypi>`_):
+Sphinx and Graphviz are used to build the documentation based on rST files and comments in the code.
+
+Install Graphviz
+****************
+On Windows, installing Graphviz library is done differently. Check out the
+`Graphviz downloads page <https://graphviz.org/download/>`_. Besure that the ``graphiz/bin``
+directory is in the ``PATH`` environment variable (there's an option in the installer for this).
+After Graphviz is installed, reboot the PC so the updated ``PATH`` environment variable takes affect.
+
+On Linux, just run:
+
+.. code-block:: shell
+
+    sudo apt-get install graphviz
+
+Installing Sphinx necessities
+*****************************
+
+First, install dependencies (feel free to reuse the virtual environment from
+`above <greetings.html#installing-from-pypi>`_):
 
 .. code-block:: shell
 
     python3 -m venv .env
     source .env/bin/activate
-    pip install Sphinx sphinx-rtd-theme
+    pip install Sphinx sphinx-material sphinx-copybutton
+
+Building the documentation
+**************************
 
 Now, once you have the virtual environment activated:
 
@@ -308,6 +346,6 @@ Now, once you have the virtual environment activated:
     cd docs
     sphinx-build -E -W -b html . _build
 
-This will output the documentation to ``docs/_build``. Open the index.html in your browser to
-view them. It will also (due to -W) error out on any warning like the Github action, Build CI,
-does. This is a good way to locally verify it will pass.
+This will output the documentation to ``docs/_build`` directory. Open the *index.html* in your
+browser to view them. It will also (due to -W) error out on any warning like the Github action,
+Build CI, does. This is a good way to locally verify it will pass.

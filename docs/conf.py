@@ -45,10 +45,6 @@ autodoc_member_order = "bysource"
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "BusDevice": (
-        "https://circuitpython.readthedocs.io/projects/busdevice/en/latest/",
-        None,
-    ),
     "CircuitPython": ("https://circuitpython.readthedocs.io/en/latest/", None),
     "Adafruit_logging": ("https://circuitpython.readthedocs.io/projects/logging/en/latest/", None),
 }
