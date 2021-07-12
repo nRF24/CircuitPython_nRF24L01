@@ -339,7 +339,6 @@ class RF24:
         up_cnt = 0
         while self._spi is not None and not self._status & 0x30:
             up_cnt += self.update()
-        # self.ce_pin = 0  # keep it high, so subsequent calls are faster
         result = bool(self._status & 0x20)
         # print(
         #     "send() waited {} updates DS: {} DR: {} DF: {}".format(
@@ -381,6 +380,11 @@ class RF24:
     def irq_df(self):
         """A `bool` that represents the "Data Failed" interrupted flag. (read-only)"""
         return bool(self._status & 0x10)
+
+    def update(self):
+        """This function gets an updated status byte over SPI."""
+        self._reg_write(0xFF)
+        return True
 
     def clear_status_flags(self, data_recv=True, data_sent=True, data_fail=True):
         """This clears the interrupt flags in the status register."""
@@ -784,7 +788,7 @@ class RF24:
         length = min(2, abs(int(length)))
         length = (length + 1) << 2 if length else 0
         self._config = self._config & 0x73 | length
-        self._reg_write(0, self._config)
+        self._reg_write(CONFIGURE, self._config)
 
     @property
     def power(self):
@@ -820,11 +824,6 @@ class RF24:
         """A read-only `bool` attribute about the LNA gain feature."""
         self._rf_setup = self._reg_read(RF_PA_RATE)
         return bool(self._rf_setup & 1)
-
-    def update(self):
-        """This function gets an updated status byte over SPI."""
-        self._reg_write(0xFF)
-        return True
 
     def resend(self, send_only=False):
         """Manually re-send the first-out payload from TX FIFO buffers."""

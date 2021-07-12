@@ -181,7 +181,7 @@ print_details()
           payloads`` where ``X`` is the `payload_length` (in bytes) the pipe is setup to
           receive when `dynamic_payloads` is disabled for that pipe.
 
-        This parameter's default is `False` and skips this extra information.
+        Set this parameter to `False` to skips this extra information.
 
 address_repr()
 ******************************
