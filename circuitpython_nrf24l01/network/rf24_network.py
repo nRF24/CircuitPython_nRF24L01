@@ -477,8 +477,7 @@ class RF24Network(RadioMixin):
 
     def send(self, header: RF24NetworkHeader, message, traffic_direct=AUTO_ROUTING):
         """Deliver a ``message`` according to the ``header`` information."""
-        frame = RF24NetworkFrame(header=header, message=message)
-        return self.write(frame, traffic_direct)
+        return self.write(RF24NetworkFrame(header, message), traffic_direct)
 
     def write(
         self,
