@@ -27,5 +27,4 @@ QueueFrag
 -----------------
 
 .. autoclass:: circuitpython_nrf24l01.network.queue.QueueFrag
-    :members:
     :show-inheritance:
