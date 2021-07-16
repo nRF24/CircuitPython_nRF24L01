@@ -4,6 +4,7 @@
         specified node - meaning the transmission's automatic routing will begin at the
         network node that is specified with this parameter instead of being automatically
         routed from the transmission actual origin.
+.. |if_nothing_in_queue| replace:: If there is nothing in the `queue`, this method will return
 
 
 RF24Network API
@@ -46,7 +47,7 @@ peek()
 .. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.peek
 
     :Returns: A `RF24NetworkFrame` object. However, the data returned is not removed
-        from the internal `queue`.
+        from the `queue`. |if_nothing_in_queue| `None`.
 
 peek_header()
 -------------
@@ -54,17 +55,26 @@ peek_header()
 .. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.peek_header
 
     :Returns: A `RF24NetworkHeader` object. However, the data returned is not removed
-        from the internal `queue`.
+        from the `queue`. |if_nothing_in_queue| `None`.
+
+peek_message_length()
+---------------------
+
+.. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.peek_message_length
+
+    :Returns: An `int` describing the length of the next available message's length.
+        from the `queue`. |if_nothing_in_queue| ``0``.
 
 read()
 -----------
 
 .. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.read
 
-    This function differs from `peek` because this function also removes the header &
-    message from the internal `queue`.
+    This function differs from `peek()`, `peek_header()`, and `peek_message_length()` because
+    this function also removes the header & message from the `queue`.
 
-    :Returns: A `RF24NetworkFrame` object.
+    :Returns:
+        A `RF24NetworkFrame` object. |if_nothing_in_queue| `None`.
 
 send()
 -----------

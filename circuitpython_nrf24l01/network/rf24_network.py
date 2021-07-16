@@ -454,15 +454,23 @@ class RF24Network(RadioMixin):
         return bool(len(self.queue))
 
     def peek_header(self) -> RF24NetworkHeader:
-        """Get the next available header from internal queue."""
-        return self.queue.peek().header
+        """Get (from `queue`) the next available header."""
+        if len(self.queue):
+            return self.queue.peek().header
+        return None
+
+    def peek_message_length(self) -> int:
+        """Get (from `queue`) the next available message's length."""
+        if len(self.queue):
+            return len(self.queue.peek().message)
+        return 0
 
     def peek(self) -> RF24NetworkFrame:
-        """Get the next available header & message from internal queue."""
+        """Get (from `queue`) the next available header & message."""
         return self.queue.peek()
 
     def read(self) -> RF24NetworkFrame:
-        """Get the next available header & message from internal queue."""
+        """Get (from `queue`) the next available header & message."""
         return self.queue.dequeue()
 
     def multicast(self, header: RF24NetworkHeader, message, level=None):
