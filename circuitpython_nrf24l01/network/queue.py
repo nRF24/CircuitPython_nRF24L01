@@ -47,7 +47,7 @@ class Queue(LoggerMixin):
         self.max_message_length = MAX_FRAG_SIZE
         """The maximum message length (in bytes) allowed in each enqueued frame.
         Any attempt to enqueue a frame that contains a message larger than this
-        parameter's value is discarded."""
+        attribute's value is discarded. Default value is `MAX_FRAG_SIZE` (24 bytes)."""
         self._list = []
         super().__init__()
 

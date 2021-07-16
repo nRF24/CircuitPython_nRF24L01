@@ -124,7 +124,8 @@ class RF24Network(RadioMixin):
         self.network_flags = 0  #: Flags that affect Network node behavior.
         self.max_message_length = 144  #: The maximum length of a frame's message.
         #: The queue (FIFO) of recieved frames for this node
-        self.queue = QueueFrag(self.max_message_length)
+        self.queue = QueueFrag()
+        self.queue.max_message_length = self.max_message_length
         #: A buffer containing the last frame received by the network node
         self.frame_cache = RF24NetworkFrame()
         #: Each byte in this list is used as the unique byte per pipe and child node.
