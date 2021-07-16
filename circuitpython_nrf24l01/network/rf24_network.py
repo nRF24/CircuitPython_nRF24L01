@@ -481,17 +481,17 @@ class RF24Network(RadioMixin):
         send_type=TX_NORMAL
     ):
         """Deliver a pre-constructed ``frame``"""
+        if isinstance(frame, Queue):
+            result = []
+            while len(frame):
+                result.append(self.write(frame.dequeue()))
+            return result
         if not isinstance(frame, RF24NetworkFrame):
             raise TypeError("expected object of type RF24NetworkFrame.")
         if len(frame.message) > self.max_message_length:
             raise ValueError("message's length is too large!")
         if frame.header.from_node is None:
             frame.header.from_node = self._addr
-        if isinstance(frame, Queue):
-            result = []
-            while len(frame):
-                result.append(self.write(frame.dequeue()))
-            return result
         if traffic_direct != AUTO_ROUTING:
             # Payload is multicast to the first node, and routed normally to the next
             send_type = USER_TX_TO_LOGICAL_ADDRESS
@@ -511,13 +511,15 @@ class RF24Network(RadioMixin):
             send_type
         )
         result = self._write_to_pipe(frame, to_node, to_pipe, use_multicast)
-        if not result:
-            self._log(
-                NETWORK_DEBUG_ROUTING,
-                "Failed sending to {} via {} at pipe {}".format(
-                    oct(frame.header.to_node), oct(to_node), to_pipe
-                ),
-            )
+        self._log(
+            NETWORK_DEBUG_ROUTING,
+            "{} to {} via {} at pipe {}".format(
+                "Failed sending" if not result else "Successfully sent",
+                oct(frame.header.to_node),
+                oct(to_node),
+                to_pipe
+            ),
+        )
         if (
             send_type == TX_ROUTED
             and result
