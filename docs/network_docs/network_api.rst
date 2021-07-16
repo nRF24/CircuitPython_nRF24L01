@@ -1,7 +1,21 @@
+.. |traffic_direect| replace:: The specified direction of the frame. By default, this
+        will invoke the automatic routing mechanisms. However, this parameter
+        can be set to a network node's Logical address for direct transmission to the
+        specified node - meaning the transmission's automatic routing will begin at the
+        network node that is specified with this parameter instead of being automatically
+        routed from the transmission actual origin.
+
+
 RF24Network API
 ===============
 
 .. versionadded:: 2.1.0
+
+.. seealso:: Documentation for:
+
+    1. `Shared Networking API <base_api.html#>`_
+    2. `Network Data Structures <structs.html>`_
+    3. `Network Constants <constants.html>`_
 
 RF24Network class
 *****************
@@ -62,14 +76,9 @@ send()
     :param bytes,bytearray message: The outgoing frame's message.
 
         .. note:: Be mindful of the message's size as this cannot exceed `MAX_FRAG_SIZE`
-            (24 bytes) if `fragmentation` is disabled. If `fragmentation` is enabled (it is by default), then the message's size must be less than
-            `max_message_length`
-    :param int traffic_direct: The specified direction of the frame. By default, this
-        will use the automatic routing mechanisms. However, this parameter can be set to
-        the header's `to_node` for direct transmission to the target network node; meaning the transmission will be attempted in only 1 hop - no routing through other network nodes.
-
-        .. tip:: Only set this parameter if the transmission is going to a network node
-            on the same network level.
+            (24 bytes) if `fragmentation` is disabled. If `fragmentation` is enabled (it
+            is by default), then the message's size must be less than `max_message_length`
+    :param int traffic_direct: |traffic_direect|
 
 Advanced API
 ************
@@ -99,16 +108,21 @@ write()
 
     :param RF24NetworkFrame frame: The complete frame to send. It is important to
         have the header's `to_node` attribute set to the target network node's address.
-    :param int traffic_direct: The specified direction of the frame. By default, this
-        will use the automatic routing mechanisms. However, this parameter can be set to
-        the header's `to_node` for direct transmission to the target network node; meaning the transmission will be attempted in only 1 hop - no routing through other network nodes.
-
-        .. tip:: Only set this parameter if the transmission is going to a network node
-            on the same network level.
+        If a `Queue` object is passed, then all frames in the passed `Queue`
+        will be processed in a FIFO (First In First Out) basis.
+    :param int traffic_direct: |traffic_direect|
     :param int send_type: The behavior to use when sending a frame. This parameter is
         overridden if the ``traffic_direct`` parameter is set to anything other than its
         default value. This parameter should be considered reserved for special
         applicable use cases (like `RF24Mesh`).
+
+    :Returns:
+
+        * `True` if transmission of the ``frame`` is successful
+        * `False` if transmission of the ``frame``  is not successful
+        * If a `Queue` object is passed to the ``frame`` parameter, then a
+          `list` of `bool` values that descrbes the result of transmitting the frames in the
+          `Queue` object that was passed.
 
 parent
 -----------

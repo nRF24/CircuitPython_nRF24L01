@@ -191,15 +191,12 @@ class RF24Network(RadioMixin):
         enabled = bool(enabled)
         if enabled != self._frag_enabled:
             prev_q = self.queue
-            new_q = None
-            if enabled:
-                self.max_message_length = 144
-                new_q = QueueFrag(self.max_message_length)
-            else:
-                self.max_message_length = MAX_FRAG_SIZE
-                new_q = Queue(self.max_message_length)
+            new_q = QueueFrag() if enabled else Queue()
+            new_q.max_message_length = self.max_message_length
+            self.max_message_length = 144 if enabled else MAX_FRAG_SIZE
             while len(prev_q):
                 new_q.enqueue(prev_q.dequeue)
+            new_q.max_message_length = self.max_message_length
             self.queue = new_q
             del prev_q
             self._frag_enabled = enabled
@@ -455,19 +452,17 @@ class RF24Network(RadioMixin):
         """Is there a message waiting in the `queue`?"""
         return bool(len(self.queue))
 
-    @property
     def peek_header(self) -> RF24NetworkHeader:
         """Get the next available header from internal queue."""
-        return self.queue.peek.header
+        return self.queue.peek().header
 
-    @property
     def peek(self) -> RF24NetworkFrame:
         """Get the next available header & message from internal queue."""
-        return self.queue.peek
+        return self.queue.peek()
 
     def read(self) -> RF24NetworkFrame:
         """Get the next available header & message from internal queue."""
-        return self.queue.dequeue
+        return self.queue.dequeue()
 
     def multicast(self, header: RF24NetworkHeader, message, level=None):
         """Broadcast a ``message`` to all nodes on a certain address ``level``"""
@@ -492,6 +487,11 @@ class RF24Network(RadioMixin):
             raise ValueError("message's length is too large!")
         if frame.header.from_node is None:
             frame.header.from_node = self._addr
+        if isinstance(frame, Queue):
+            result = []
+            while len(frame):
+                result.append(self.write(frame.dequeue()))
+            return result
         if traffic_direct != AUTO_ROUTING:
             # Payload is multicast to the first node, and routed normally to the next
             send_type = USER_TX_TO_LOGICAL_ADDRESS

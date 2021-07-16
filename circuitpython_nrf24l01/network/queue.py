@@ -30,6 +30,7 @@ from .constants import (
     NETWORK_FRAG_MORE,
     NETWORK_FRAG_LAST,
     NETWORK_DEBUG_FRAG,
+    MAX_FRAG_SIZE,
 )
 from .packet_structs import RF24NetworkFrame
 
@@ -37,20 +38,24 @@ from .packet_structs import RF24NetworkFrame
 class Queue(LoggerMixin):
     """A class that wraps python's list implementation with RF24Network Queue behavior
 
-    :param int size: The maximum size that can be enqueued at once.
+    :param int max_queue_size: The maximum size that can be enqueued at once. Defaults
+        to 6 frames.
     """
 
-    def __init__(self, max_message_length, max_queue_size=6):
+    def __init__(self, max_queue_size=6):
         self._max_q_size = max_queue_size
-        self._max_msg_len = max_message_length
+        self.max_message_length = MAX_FRAG_SIZE
+        """The maximum message length (in bytes) allowed in each enqueued frame.
+        Any attempt to enqueue a frame that contains a message larger than this
+        parameter's value is discarded."""
         self._list = []
         super().__init__()
 
     def enqueue(self, frame: RF24NetworkFrame) -> bool:
-        """add a `RF24NetworkFrame` to the queue."""
+        """Add a `RF24NetworkFrame` to the queue."""
         if (
             self._max_q_size == len(self._list)
-            or len(frame.message) > self._max_msg_len
+            or len(frame.message) > self.max_message_length
         ):
             return False
         for frm in self._list:
@@ -62,16 +67,14 @@ class Queue(LoggerMixin):
         self._list.append(frame)
         return True
 
-    @property
     def peek(self) -> RF24NetworkFrame:
-        """return First Out element without removing it from the queue"""
+        """:Returns: First Out element without removing it from the queue."""
         if self._list:
             return self._list[0]
         return None
 
-    @property
     def dequeue(self) -> RF24NetworkFrame:
-        """return and remove the First Out element from the queue"""
+        """:Returns: and remove the First Out element from the queue."""
         if self._list:
             ret_val = self._list[0]
             del self._list[0]
@@ -79,26 +82,30 @@ class Queue(LoggerMixin):
         return None
 
     def __len__(self):
-        """return the number of the enqueued items"""
+        """:Returns: the number of the enqueued items."""
         return len(self._list)
 
 
 class QueueFrag(Queue):
     """A specialized queue implementation with an additional cache for fragmented frames
 
+    .. note:: This class will only cache 1 fragmented message at a time. If parts of the
+        fragmented message are missing or a new fragmented message is received, then the
+        cache is cleared to avoid memory leaks.
+
     :param int size: The maximum size that can be enqueued at once.
     """
 
-    def __init__(self, max_message_length, max_queue_size=6):
-        super().__init__(max_message_length, max_queue_size)
+    def __init__(self, max_queue_size=6):
+        super().__init__(max_queue_size)
         self._frag_cache = None
 
     def enqueue(self, frame: RF24NetworkFrame) -> bool:
-        """add a `RF24NetworkFrame` to the queue."""
-        if (
-            frame.header.message_type in (
-                NETWORK_FRAG_FIRST, NETWORK_FRAG_MORE, NETWORK_FRAG_LAST
-            )
+        """Add a `RF24NetworkFrame` to the queue."""
+        if frame.header.message_type in (
+            NETWORK_FRAG_FIRST,
+            NETWORK_FRAG_MORE,
+            NETWORK_FRAG_LAST,
         ):
             return self._cache_frag_frame(frame)
         return super().enqueue(frame)
@@ -123,16 +130,16 @@ class QueueFrag(Queue):
             ):
                 self._log(NETWORK_DEBUG_FRAG, prompt + "duplicate 1st fragment dropped")
                 return False  # Already received this fragment
-            if (
-                len(self._frag_cache.message) + len(frame.message) > self._max_msg_len
-                or (
-                    self._frag_cache.header.reserved - 1 != frame.header.reserved
-                    and frame.header.message_type != NETWORK_FRAG_LAST
-                )
+            if len(self._frag_cache.message) + len(
+                frame.message
+            ) > self.max_message_length or (
+                self._frag_cache.header.reserved - 1 != frame.header.reserved
+                and frame.header.message_type != NETWORK_FRAG_LAST
             ):
                 self._log(
                     NETWORK_DEBUG_FRAG,
-                    prompt + "dropping fragment due to excessive size or not sequential"
+                    prompt
+                    + "dropping fragment due to excessive size or not sequential",
                 )
                 return False
             if frame.header.message_type == NETWORK_FRAG_MORE:
@@ -149,11 +156,10 @@ class QueueFrag(Queue):
                 self._frag_cache = None
                 return True
         if frame.header.message_type == NETWORK_FRAG_FIRST:
-            self._log(NETWORK_DEBUG_FRAG,  prompt + "type NETWORK_FRAG_FIRST")
+            self._log(NETWORK_DEBUG_FRAG, prompt + "type NETWORK_FRAG_FIRST")
             self._frag_cache = frame
             return True
         self._log(
-            NETWORK_DEBUG_FRAG,
-            prompt + "dropping fragment due to missing 1st fragment"
+            NETWORK_DEBUG_FRAG, prompt + "dropping fragment due to missing 1st fragment"
         )
         return False
