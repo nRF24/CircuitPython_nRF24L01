@@ -43,7 +43,7 @@ available()
 peek
 ------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.peek
+.. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.peek
 
     :Returns: A `RF24NetworkFrame` object. However, the data returned is not removed
         from the internal `queue`.
@@ -51,7 +51,7 @@ peek
 peek_header
 -----------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.peek_header
+.. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.peek_header
 
     :Returns: A `RF24NetworkHeader` object. However, the data returned is not removed
         from the internal `queue`.
