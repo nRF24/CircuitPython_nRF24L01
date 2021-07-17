@@ -76,8 +76,8 @@ class RF24NetworkHeader:
 
     @property
     def to_node(self):
-        """Describes the message destination using a :ref:`Logical Address
-        <logical address>`. |uint16_t|"""
+        """Describes the message destination using a
+        :ref:`Logical Address <logical address>`. |uint16_t|"""
         return self._to
 
     @to_node.setter
