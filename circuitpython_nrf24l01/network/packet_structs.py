@@ -66,8 +66,8 @@ class RF24NetworkHeader:
 
     @property
     def from_node(self):
-        """Describes the message origin using a :ref:`Logical Address
-        <logical address>`. |uint16_t|"""
+        """Describes the message origin using a
+        :ref:`Logical Address <logical address>`. |uint16_t|"""
         return self._from
 
     @from_node.setter
