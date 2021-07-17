@@ -62,7 +62,7 @@ peek_message_length()
 
 .. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.peek_message_length
 
-    :Returns: An `int` describing the length of the next available message's length.
+    :Returns: An `int` describing the length of the next available message's length
         from the `queue`. |if_nothing_in_queue| ``0``.
 
 read()
