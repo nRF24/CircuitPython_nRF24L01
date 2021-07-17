@@ -1,3 +1,8 @@
+.. |internal_use| replace:: is meant for library internal usage.
+.. |uint16_t| replace:: This value is truncated to a 2-byte unsigned `int`.
+.. |can_be_blank| replace:: These parameters can be left unspecified to create a blank
+    object that can be augmented after instantiation.
+
 Network Data Structures
 =======================
 

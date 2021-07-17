@@ -45,8 +45,7 @@ class RF24NetworkHeader:
     :param int message_type: The pre-defined message type describing
         the message related to this header.
 
-    .. note:: These parameters can be left unspecified to create a blank
-        header that can be augmented after instantiation.
+    .. note:: |can_be_blank|
     """
 
     def __init__(self, to_node=None, message_type=None):
@@ -67,8 +66,8 @@ class RF24NetworkHeader:
 
     @property
     def from_node(self):
-        """Describes the message origin. This attribute is truncated to a
-        2-byte `int`."""
+        """Describes the message origin. |uint16_t|
+        """
         return self._from
 
     @from_node.setter
@@ -77,8 +76,7 @@ class RF24NetworkHeader:
 
     @property
     def to_node(self):
-        """Describes the message destination. This attribute is truncated to a
-        2-byte `int`."""
+        """Describes the message destination. |uint16_t|"""
         return self._to
 
     @to_node.setter
@@ -96,16 +94,16 @@ class RF24NetworkHeader:
 
     @property
     def frame_id(self):
-        """Describes the unique id for the frame. Each frame's id is
-        incremented sequentially, but fragmented frames have the same id.
-        This attribute is truncated to a 2-byte `int`."""
+        """Describes the unique id for the frame. Each frame's id is incremented
+        sequentially, but fragmented frames have the same id. |uint16_t|"""
         return self._id
 
     @property
     def reserved(self):
         """A single byte reserved for network usage. This will be the
         fragment `frame_id` number, but on the last fragment this will be the
-        `message_type`."""
+        `message_type`. `RF24Mesh` will also use this attribute to hold a newly
+        assigned network Logical address for `NETWORK_ADDR_RESPONSE` messages."""
         return self._rsv
 
     @reserved.setter
@@ -113,9 +111,8 @@ class RF24NetworkHeader:
         self._rsv = val & 0xFF
 
     def decode(self, buffer) -> bool:
-        """Decode the frame header from the first 8 bytes of the frame.
-        This function is meant for library internal usage.
-        """
+        """Decode frame's header from the first 8 bytes of a frame's buffer.
+        This function |internal_use|"""
         if len(buffer) < self.__len__():
             return False
         (
@@ -129,7 +126,9 @@ class RF24NetworkHeader:
 
     @property
     def buffer(self) -> bytes:
-        """:Returns: The entire header as a `bytes` object."""
+        """This attribute |internal_use|
+
+        :Returns: The entire header as a `bytes` object."""
         return struct.pack(
             "HHHBB",
             0o7777 if self._from is None else self._from,
@@ -154,12 +153,11 @@ class RF24NetworkFrame:
     """Structure of a single frame for either a fragmented message of payloads
     or a single payload whose message is less than 25 bytes.
 
-    :param RF24NetworkHeader header: The header describing the message's frame
-    :param bytes,bytearray message: The actual message containing the payload
+    :param RF24NetworkHeader header: The header describing the frame's `message`.
+    :param bytes,bytearray message: The actual `message` containing the payload
         or a fragment of a payload.
 
-    .. note:: These parameters can be left unspecified to create a blank
-        header and message that can be augmented after instantiation.
+    .. note:: |can_be_blank|
     """
 
     def __init__(self, header: RF24NetworkHeader=None, message=None):
@@ -168,14 +166,13 @@ class RF24NetworkFrame:
         if message is not None and not isinstance(message, (bytes, bytearray)):
             raise TypeError("message must be a `bytes` or `bytearray` object")
         self.header = RF24NetworkHeader() if header is None else header
-        """The `RF24NetworkHeader` of the message."""
+        """The `RF24NetworkHeader` about the frame's message."""
         self.message = bytearray(0) if message is None else bytearray(message)
         """The entire message or a fragment of the message allocated to this
-        frame. This attribute is a `bytearray`."""
+        frame. This attribute is typically a `bytearray` or `bytes` object."""
 
     def decode(self, buffer) -> bool:
-        """Decode header & message from ``buffer``. This is meant for library internal
-        usage.
+        """Decode `header` & `message` from a ``buffer``. This function |internal_use|
 
         :Returns: `True` if successful; otherwise `False`.
         """
@@ -186,7 +183,9 @@ class RF24NetworkFrame:
 
     @property
     def buffer(self) -> bytes:
-        """Return the entire object as a `bytes` object."""
+        """This attribute |internal_use|
+
+        :Returns:  The entire object as a `bytes` object."""
         return self.header.buffer + bytes(self.message)
 
     def __len__(self):
@@ -194,5 +193,6 @@ class RF24NetworkFrame:
 
     @property
     def is_ack_type(self) -> bool:
-        """Is the frame to expect a network ACK? (for internal use)"""
+        """Is the frame to expect a `NETWORK_ACK` message? This function |internal_use|
+        """
         return 64 < self.header.message_type < 192

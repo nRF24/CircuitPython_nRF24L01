@@ -58,7 +58,7 @@ queue
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.queue
 
-    This attribute's will be an instantiated `Queue` or `QueueFrag` object depending on the state
+    This attribute will be an instantiated `Queue` or `QueueFrag` object depending on the state
     of the `fragmentation` attribute.
 
 ret_sys_msg
