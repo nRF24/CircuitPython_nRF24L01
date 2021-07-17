@@ -162,7 +162,8 @@ class RF24Network(RadioMixin):
 
     @property
     def node_address(self):
-        """get/set the node address for the RF24Network object."""
+        """get/set the node's :ref:`Logical Address <Logical Address>` for the
+        `RF24Network` object."""
         return self._addr
 
     @node_address.setter

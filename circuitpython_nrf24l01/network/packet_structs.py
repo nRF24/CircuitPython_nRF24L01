@@ -26,7 +26,7 @@ import struct
 from .constants import NETWORK_MULTICAST_ADDR
 
 def _is_addr_valid(address):
-    """Test is a given address is a valid RF24Network node address."""
+    """Test if a given address is a valid RF24Network node address."""
     if address in (NETWORK_MULTICAST_ADDR, NETWORK_MULTICAST_ADDR >> 3):
         return True
     byte_count = 0
@@ -41,16 +41,16 @@ def _is_addr_valid(address):
 class RF24NetworkHeader:
     """The header information used for routing network messages.
 
-    :param int to_node: The address designating the message's destination.
-    :param int message_type: The pre-defined message type describing
-        the message related to this header.
+    :param int to_node: The :ref:`Logical Address <logical address>` designating the
+        message's destination.
+    :param int message_type: A 1-byte `int` representing the `message_type`.
 
     .. note:: |can_be_blank|
     """
 
     def __init__(self, to_node=None, message_type=None):
         self._from = None
-        self._to = (to_node or 0) & 0xFFFF
+        self._to = (to_node & 0xFFFF) if to_node is not None else 0
         self._msg_t = 0
         if message_type is not None:
             # convert the first char in `message_type` to int if it is a string
@@ -66,8 +66,8 @@ class RF24NetworkHeader:
 
     @property
     def from_node(self):
-        """Describes the message origin. |uint16_t|
-        """
+        """Describes the message origin using a :ref:`Logical Address
+        <logical address>`. |uint16_t|"""
         return self._from
 
     @from_node.setter
@@ -76,7 +76,8 @@ class RF24NetworkHeader:
 
     @property
     def to_node(self):
-        """Describes the message destination. |uint16_t|"""
+        """Describes the message destination using a :ref:`Logical Address
+        <logical address>`. |uint16_t|"""
         return self._to
 
     @to_node.setter
@@ -85,7 +86,11 @@ class RF24NetworkHeader:
 
     @property
     def message_type(self):
-        """The type of message. This `int` must be less than 256."""
+        """The type of message. This `int` must be less than 256.
+
+        .. seealso::
+            `Reserved Message Types <constants.html#reserved-network-message-types>`_
+        """
         return self._msg_t
 
     @message_type.setter
@@ -94,16 +99,18 @@ class RF24NetworkHeader:
 
     @property
     def frame_id(self):
-        """Describes the unique id for the frame. Each frame's id is incremented
-        sequentially, but fragmented frames have the same id. |uint16_t|"""
+        """The sequential identifying number for the frame (relative to the originating
+        network node). Each sequential frame's ID is incremented, but frames containing
+        fragmented messages have the same ID number. |uint16_t|"""
         return self._id
 
     @property
     def reserved(self):
-        """A single byte reserved for network usage. This will be the
-        fragment `frame_id` number, but on the last fragment this will be the
-        `message_type`. `RF24Mesh` will also use this attribute to hold a newly
-        assigned network Logical address for `NETWORK_ADDR_RESPONSE` messages."""
+        """A single byte reserved for network usage. This will be the sequential ID
+        number for fragmented messages, but on the last message fragment, this will be
+        the `message_type`. `RF24Mesh` will also use this attribute to hold a newly
+        assigned network :ref:`Logical Address <logical address>` for
+        `NETWORK_ADDR_RESPONSE` messages."""
         return self._rsv
 
     @reserved.setter
@@ -143,7 +150,8 @@ class RF24NetworkHeader:
 
     @property
     def is_valid(self) -> bool:
-        """A `bool` that describes if the `header` addresses are valid or not."""
+        """A `bool` that describes if the `header`'s
+        :ref:`Logical Addresses <logical address>` are valid or not."""
         if self._from is not None and _is_addr_valid(self._from):
             return _is_addr_valid(self._to)
         return False

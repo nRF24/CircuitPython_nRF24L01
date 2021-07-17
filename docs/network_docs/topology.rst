@@ -5,9 +5,9 @@ Network Levels
 ****************
 
 Each network is arranged in a tree where the master node (designated with the
-Logical address ``0o0``) is always the top of the tree.
+:ref:`Logical Address <logical address>` ``0o0``) is always the top of the tree.
 
-All network nodes in the following graphs are labeled with Logical addresses.
+All network nodes in the following graphs are labeled with :ref:`Logical Addresses <logical address>`.
 
 .. graphviz::
     :caption: Network Level 0 (demonstrating all possible children)
@@ -87,6 +87,9 @@ All network nodes in the following graphs are labeled with Logical addresses.
 
 Hopefully, you can see the pattern by now. There can be up to a maximum of 4 network levels (that's 0-3).
 
+.. _Physical Address:
+.. _Logical Address:
+
 Physical addresses vs Logical addresses
 ***************************************
 
@@ -98,7 +101,7 @@ Translating Logical to Physical
 -------------------------------
 
 Before translating the Logical address, a single byte is used reptitively as the
-base case for all bytes of any Physical address. This byte is the `address_prefix`
+base case for all bytes of any Physical Address. This byte is the `address_prefix`
 attribute in the `RF24Network` class.
 
 The `RF24Network` class also has a predefined list of bytes used for translating
@@ -106,7 +109,7 @@ unique Logical addresses into unique Physical addresses. This list is called
 `address_suffix`.
 
 For example:
-    The logical address of the network's master node is ``0``. The radio's pipes
+    The Logical Address of the network's master node is ``0``. The radio's pipes
     1-5 start with the `address_prefix`. To make each pipe's Phsyical address unique
     to a child node's Physical address, the `address_suffix` is used.
 

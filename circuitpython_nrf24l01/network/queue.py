@@ -36,10 +36,10 @@ from .packet_structs import RF24NetworkFrame
 
 
 class Queue(LoggerMixin):
-    """A class that wraps python's list implementation with RF24Network Queue behavior
+    """A class that wraps python's list implementation with RF24Network Queue behavior.
 
-    :param int max_queue_size: The maximum size that can be enqueued at once. Defaults
-        to 6 frames.
+    :param int max_queue_size: The maximum number of frames that can be enqueued at
+        once. Defaults to 6 frames.
     """
 
     def __init__(self, max_queue_size=6):
@@ -68,13 +68,13 @@ class Queue(LoggerMixin):
         return True
 
     def peek(self) -> RF24NetworkFrame:
-        """:Returns: First Out element without removing it from the queue."""
+        """:Returns: The First Out element without removing it from the queue."""
         if self._list:
             return self._list[0]
         return None
 
     def dequeue(self) -> RF24NetworkFrame:
-        """:Returns: and remove the First Out element from the queue."""
+        """:Returns: The First Out element and removes it from the queue."""
         if self._list:
             ret_val = self._list[0]
             del self._list[0]
@@ -93,7 +93,8 @@ class QueueFrag(Queue):
         fragmented message are missing or a new fragmented message is received, then the
         cache is cleared to avoid memory leaks.
 
-    :param int size: The maximum size that can be enqueued at once.
+    :param int max_queue_size: The maximum number of frames that can be enqueued at
+        once. Defaults to 6 frames.
     """
 
     def __init__(self, max_queue_size=6):

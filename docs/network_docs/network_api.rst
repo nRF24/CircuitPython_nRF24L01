@@ -1,6 +1,6 @@
 .. |traffic_direect| replace:: The specified direction of the frame. By default, this
         will invoke the automatic routing mechanisms. However, this parameter
-        can be set to a network node's Logical address for direct transmission to the
+        can be set to a network node's :ref:`Logical Address <logical address>` for direct transmission to the
         specified node - meaning the transmission's automatic routing will begin at the
         network node that is specified with this parameter instead of being automatically
         routed from the transmission actual origin.
@@ -98,11 +98,12 @@ node_address
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.node_address
 
-    Setting this attribute will alter the physical addresses used on the radio's data
-    pipes and the default `multicast_level` value.
+    Setting this attribute will alter the :ref:`physical addresses <Physical Address>`
+    used on the radio's data pipes and the default `multicast_level` value.
 
-    .. warning:: If this attribute is set to an invald network address, then nothing is
-        done and the invalid address is ignored.
+    .. warning::
+        If this attribute is set to an invald network
+        :ref:`Logical Address <Logical Address>`, then nothing is done and the invalid address is ignored.
 
 multicast()
 -----------
@@ -167,8 +168,8 @@ multicast_level
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.multicast_level
 
-    Setting this attribute will also change the physical address on the radio's RX data
-    pipe 0.
+    Setting this attribute will also change the :ref:`physical address <Physical Address>`
+    on the radio's RX data pipe 0.
 
 tx_timeout
 ---------------
@@ -192,5 +193,5 @@ allow_multicast
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.allow_multicast
 
-    This attribute affects the physical address translation done by setting the `node_address`,
+    This attribute affects the :ref:`Physical Address <Physical Address>` translation done by setting the `node_address`,
     all incoming multicasted frames, and `multicast_relay` behavior.
