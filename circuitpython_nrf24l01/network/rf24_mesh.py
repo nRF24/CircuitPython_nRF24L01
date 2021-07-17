@@ -202,7 +202,7 @@ class RF24Mesh(RF24Network):
             if msg_t in (MESH_ADDR_LOOKUP, MESH_ID_LOOKUP):
                 self.frame_cache.header.to_node = self.frame_cache.header.from_node
 
-                return_addr = struct.unpack("<H", self.frame_cache.message[:2])
+                return_addr = struct.unpack("<H", self.frame_cache.message[:2])[0]
                 if msg_t == MESH_ADDR_LOOKUP:
                     return_addr = self.get_address(return_addr)
                 else:
@@ -331,7 +331,7 @@ class RF24Mesh(RF24Network):
         new_addy = None
         for contact in contacts:
             head = RF24NetworkHeader(contact, NETWORK_ADDR_REQUEST)
-            head.reserved = self._addr
+            head.reserved = self._node_id
             self._log(NETWORK_DEBUG, "Requesting address from " + oct(contact))
             # do a direct write (no auto-ack)
             self.write(RF24NetworkFrame(head, b""), contact)

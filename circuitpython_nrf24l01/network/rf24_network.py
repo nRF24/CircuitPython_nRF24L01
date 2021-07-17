@@ -272,12 +272,12 @@ class RF24Network(RadioMixin):
             result[0] = self.address_suffix[pipe_number]
         elif self.allow_multicast and (not pipe_number or node_addr):
             result[1] = self.address_suffix[count - 1]
-        self._log(
-            NETWORK_DEBUG,
-            "address for pipe {} using address {} is {}".format(
-                pipe_number, oct(node_addr), address_repr(bytearray(result))
-            ),
-        )
+        # self._log(
+        #     NETWORK_DEBUG,
+        #     "address for pipe {} using address {} is {}".format(
+        #         pipe_number, oct(node_addr), address_repr(bytearray(result))
+        #     ),
+        # )
         return bytearray(result)
 
     def update(self):
@@ -521,15 +521,15 @@ class RF24Network(RadioMixin):
             send_type
         )
         result = self._write_to_pipe(frame, to_node, to_pipe, use_multicast)
-        self._log(
-            NETWORK_DEBUG_ROUTING,
-            "{} to {} via {} at pipe {}".format(
-                "Failed sending" if not result else "Successfully sent",
-                oct(frame.header.to_node),
-                oct(to_node),
-                to_pipe
-            ),
-        )
+        # self._log(
+        #     NETWORK_DEBUG_ROUTING,
+        #     "{} to {} via {} at pipe {}".format(
+        #         "Failed sending" if not result else "Successfully sent",
+        #         oct(frame.header.to_node),
+        #         oct(to_node),
+        #         to_pipe
+        #     ),
+        # )
         if (
             send_type == TX_ROUTED
             and result
