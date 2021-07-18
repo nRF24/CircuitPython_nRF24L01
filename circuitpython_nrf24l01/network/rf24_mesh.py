@@ -157,7 +157,7 @@ class RF24Mesh(RF24Network):
         # if this is a master node
         if not self._addr or self._addr == NETWORK_DEFAULT_ADDR:
             if self._addr != NETWORK_DEFAULT_ADDR:
-                for n_id, addr in self._addr_dict:
+                for n_id, addr in self._addr_dict.items():
                     if addr == address:
                         return n_id
             return -2
@@ -202,15 +202,17 @@ class RF24Mesh(RF24Network):
             if msg_t in (MESH_ADDR_LOOKUP, MESH_ID_LOOKUP):
                 self.frame_cache.header.to_node = self.frame_cache.header.from_node
 
-                return_addr = struct.unpack("<H", self.frame_cache.message[:2])[0]
+                ret_val = 0
                 if msg_t == MESH_ADDR_LOOKUP:
-                    return_addr = self.get_address(return_addr)
+                    ret_val = self.get_address(self.frame_cache.message[0])
                 else:
-                    return_addr = self.get_node_id(return_addr)
+                    ret_val = self.get_node_id(
+                        struct.unpack("<H", self.frame_cache.message[:2])[0]
+                    )
                 self.write(
                     RF24NetworkFrame(
                         self.frame_cache.header,
-                        struct.pack("<H", return_addr)
+                        struct.pack("<H", ret_val)
                     )
                 )
             elif msg_t == MESH_ADDR_RELEASE:
@@ -244,7 +246,7 @@ class RF24Mesh(RF24Network):
             temp = via_node
             while temp:
                 temp >>= 3
-                shift_val += 1
+                shift_val += 3
         else:
             extra_child = True
         for i in range(MESH_MAX_CHILDREN + extra_child, 0, -1):
@@ -282,7 +284,7 @@ class RF24Mesh(RF24Network):
 
     def _set_address(self, node_id, address, search_by_address=False):
         """Set or change a node_id and network address pair on the master node."""
-        for n_id, addr in self._addr_dict:
+        for n_id, addr in self._addr_dict.items():
             if not search_by_address:
                 if n_id == node_id:
                     self._addr_dict[n_id] = address
@@ -292,6 +294,8 @@ class RF24Mesh(RF24Network):
                     del self._addr_dict[n_id]
                     self._addr_dict[node_id] = address
                     break
+        if node_id not in self._addr_dict.keys():
+            self._addr_dict[node_id] = address
         # self.save_dhcp()
 
     # pylint: disable=arguments-renamed

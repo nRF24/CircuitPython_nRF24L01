@@ -140,7 +140,10 @@ def slave(timeout=6, frag=False):
     """
     start_timer = time.monotonic()
     while (time.monotonic() - start_timer) < timeout:
-        nrf.update()
+        if nrf.update() and not nrf.get_node_id():
+            # update() returns on system messages (values > 127)
+            # manage the DHCP list on the master node
+            nrf.dhcp()
         while nrf.available():
             start_timer = time.monotonic()  # reset timer
             payload = nrf.read()

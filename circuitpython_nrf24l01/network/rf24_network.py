@@ -24,7 +24,7 @@ __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from .network_mixin import RadioMixin
-from ..rf24 import address_repr
+# from ..rf24 import address_repr
 from .packet_structs import RF24NetworkFrame, RF24NetworkHeader, _is_addr_valid
 from .queue import FrameQueue, FrameQueueFrag
 from .constants import (
@@ -302,16 +302,16 @@ class RF24Network(RadioMixin):
                 continue
 
             ret_val = self.frame_cache.header.message_type
-            self._log(
-                NETWORK_DEBUG,
-                "Received packet: from {} to {} type {} id {}\n\t{}".format(
-                    oct(self.frame_cache.header.from_node),
-                    oct(self.frame_cache.header.to_node),
-                    self.frame_cache.header.message_type,
-                    self.frame_cache.header.frame_id,
-                    address_repr(self.frame_cache.buffer, reverse=False, delimit=" ")
-                )
-            )
+            # self._log(
+            #     NETWORK_DEBUG,
+            #     "Received packet: from {} to {} type {} id {}\n\t{}".format(
+            #         oct(self.frame_cache.header.from_node),
+            #         oct(self.frame_cache.header.to_node),
+            #         self.frame_cache.header.message_type,
+            #         self.frame_cache.header.frame_id,
+            #         address_repr(self.frame_cache.buffer, reverse=False, delimit=" ")
+            #     )
+            # )
             keep_updating = False
             if self.frame_cache.header.to_node == self._addr:
                 # frame was directed to this node
@@ -522,15 +522,15 @@ class RF24Network(RadioMixin):
             send_type
         )
         result = self._write_to_pipe(frame, to_node, to_pipe, use_multicast)
-        self._log(
-            NETWORK_DEBUG_ROUTING,
-            "{} to {} via {} at pipe {}".format(
-                "Failed sending" if not result else "Successfully sent",
-                oct(frame.header.to_node),
-                oct(to_node),
-                to_pipe
-            ),
-        )
+        # self._log(
+        #     NETWORK_DEBUG_ROUTING,
+        #     "{} to {} via {} at pipe {}".format(
+        #         "Failed sending" if not result else "Successfully sent",
+        #         oct(frame.header.to_node),
+        #         oct(to_node),
+        #         to_pipe
+        #     ),
+        # )
         if (
             send_type == TX_ROUTED
             and result
