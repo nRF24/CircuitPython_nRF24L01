@@ -36,6 +36,7 @@ address_prefix
 --------------
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.address_prefix
+    :annotation: = 0xCC
 
     .. seealso::
         The usage of this attribute is more explained in the `Topology page <topology.html#physical-addresses-vs-logical-addresses>`_
@@ -44,6 +45,7 @@ address_suffix
 --------------
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.address_suffix
+    :annotation: = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
 
     .. seealso::
         The usage of this attribute is more explained in the `Topology page <topology.html#physical-addresses-vs-logical-addresses>`_
@@ -58,7 +60,7 @@ queue
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.queue
 
-    This attribute will be an instantiated `Queue` or `QueueFrag` object depending on the state
+    This attribute will be an instantiated `FrameQueue` or `FrameQueueFrag` object depending on the state
     of the `fragmentation` attribute.
 
 ret_sys_msg
@@ -66,7 +68,7 @@ ret_sys_msg
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.ret_sys_msg
 
-    This attribute is asserted when using `RF24Mesh`.
+    This attribute is asserted on mesh network nodes.
 
 network_flags
 -------------

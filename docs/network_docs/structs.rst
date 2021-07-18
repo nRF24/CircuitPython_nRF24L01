@@ -22,14 +22,14 @@ Frame
 .. autoclass:: circuitpython_nrf24l01.network.packet_structs.RF24NetworkFrame
     :members:
 
-Queue
+FrameQueue
 -----------------
 
-.. autoclass:: circuitpython_nrf24l01.network.queue.Queue
+.. autoclass:: circuitpython_nrf24l01.network.queue.FrameQueue
     :members:
 
-QueueFrag
+FrameQueueFrag
 -----------------
 
-.. autoclass:: circuitpython_nrf24l01.network.queue.QueueFrag
+.. autoclass:: circuitpython_nrf24l01.network.queue.FrameQueueFrag
     :show-inheritance:

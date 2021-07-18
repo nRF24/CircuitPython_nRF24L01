@@ -24,9 +24,9 @@ __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from .network_mixin import RadioMixin
-from ..rf24 import address_repr
+# from ..rf24 import address_repr
 from .packet_structs import RF24NetworkFrame, RF24NetworkHeader, _is_addr_valid
-from .queue import Queue, QueueFrag
+from .queue import FrameQueue, FrameQueueFrag
 from .constants import (
     NETWORK_DEBUG_MINIMAL,
     NETWORK_DEBUG,
@@ -124,14 +124,15 @@ class RF24Network(RadioMixin):
         self.network_flags = 0  #: Flags that affect Network node behavior.
         self.max_message_length = 144  #: The maximum length of a frame's message.
         #: The queue (FIFO) of recieved frames for this node
-        self.queue = QueueFrag()
+        self.queue = FrameQueueFrag()
         self.queue.max_message_length = self.max_message_length
         #: A buffer containing the last frame received by the network node
         self.frame_cache = RF24NetworkFrame()
-        #: Each byte in this list is used as the unique byte per pipe and child node.
         self.address_suffix = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
+        """Each byte in this list corresponds to the unique byte per pipe and child
+        node."""
         self.address_prefix = 0xCC
-        """The base address used for all pipes' address bytes before mutating with
+        """The byte used for all pipes' address' bytes before mutating with
         `address_suffix`."""
 
         # setup radio
@@ -193,7 +194,8 @@ class RF24Network(RadioMixin):
         enabled = bool(enabled)
         if enabled != self._frag_enabled:
             prev_q = self.queue
-            new_q = QueueFrag() if enabled else Queue()
+            new_q = FrameQueueFrag() if enabled else FrameQueue()
+            new_q.max_queue_size = self.queue.max_queue_size
             new_q.max_message_length = self.max_message_length
             self.max_message_length = 144 if enabled else MAX_FRAG_SIZE
             while len(prev_q):
@@ -226,8 +228,8 @@ class RF24Network(RadioMixin):
 
     @property
     def multicast_level(self):
-        """Override the default multicast level which is set by the
-        `node_address` attribute"""
+        """Override the default multicasting network level which is set by the
+        `node_address` attribute."""
         return self._multicast_level
 
     @multicast_level.setter
@@ -281,7 +283,7 @@ class RF24Network(RadioMixin):
         return bytearray(result)
 
     def update(self):
-        """keep the network layer current; returns the received message type"""
+        """This function is used to keep the network layer current."""
         return self._net_update()
 
     def _net_update(self):
@@ -300,16 +302,16 @@ class RF24Network(RadioMixin):
                 continue
 
             ret_val = self.frame_cache.header.message_type
-            self._log(
-                NETWORK_DEBUG,
-                "Received packet: from {} to {} type {} id {}\n\t{}".format(
-                    oct(self.frame_cache.header.from_node),
-                    oct(self.frame_cache.header.to_node),
-                    self.frame_cache.header.message_type,
-                    self.frame_cache.header.frame_id,
-                    address_repr(self.frame_cache.buffer, reverse=False, delimit=" ")
-                )
-            )
+            # self._log(
+            #     NETWORK_DEBUG,
+            #     "Received packet: from {} to {} type {} id {}\n\t{}".format(
+            #         oct(self.frame_cache.header.from_node),
+            #         oct(self.frame_cache.header.to_node),
+            #         self.frame_cache.header.message_type,
+            #         self.frame_cache.header.frame_id,
+            #         address_repr(self.frame_cache.buffer, reverse=False, delimit=" ")
+            #     )
+            # )
             keep_updating = False
             if self.frame_cache.header.to_node == self._addr:
                 # frame was directed to this node
@@ -450,38 +452,39 @@ class RF24Network(RadioMixin):
             return True
         return False
 
-    def available(self) -> bool:
-        """Is there a message waiting in the `queue`?"""
+    def available(self):
+        """:Returns: A `bool` describing if there is a frame waiting in the `queue`."""
         return bool(len(self.queue))
 
-    def peek_header(self) -> RF24NetworkHeader:
+    def peek_header(self):
         """Get (from `queue`) the next available header."""
         if len(self.queue):
             return self.queue.peek().header
         return None
 
-    def peek_message_length(self) -> int:
+    def peek_message_length(self):
         """Get (from `queue`) the next available message's length."""
         if len(self.queue):
             return len(self.queue.peek().message)
         return 0
 
-    def peek(self) -> RF24NetworkFrame:
-        """Get (from `queue`) the next available header & message."""
+    def peek(self):
+        """Get (from `queue`) the next available frame."""
         return self.queue.peek()
 
-    def read(self) -> RF24NetworkFrame:
-        """Get (from `queue`) the next available header & message."""
+    def read(self):
+        """Get (from `queue`) the next available frame."""
         return self.queue.dequeue()
 
     def multicast(self, header: RF24NetworkHeader, message, level=None):
-        """Broadcast a ``message`` to all nodes on a certain address ``level``"""
+        """Broadcast a message to all nodes on a certain
+        `network level <topology.html#network-levels>`_."""
         level = min(6, max(level, 0)) if level is not None else self._multicast_level
         header.to_node = NETWORK_MULTICAST_ADDR
         return self.write(RF24NetworkFrame(header, message), _level_to_address(level))
 
     def send(self, header: RF24NetworkHeader, message, traffic_direct=AUTO_ROUTING):
-        """Deliver a ``message`` according to the ``header`` information."""
+        """Deliver a message according to the header information."""
         return self.write(RF24NetworkFrame(header, message), traffic_direct)
 
     def write(
@@ -490,8 +493,8 @@ class RF24Network(RadioMixin):
         traffic_direct=AUTO_ROUTING,
         send_type=TX_NORMAL
     ):
-        """Deliver a pre-constructed ``frame``"""
-        if isinstance(frame, Queue):
+        """Deliver a network frame."""
+        if isinstance(frame, FrameQueue):
             result = []
             while len(frame):
                 result.append(self.write(frame.dequeue()))
@@ -534,7 +537,7 @@ class RF24Network(RadioMixin):
             send_type == TX_ROUTED
             and result
             and to_node == frame.header.to_node
-            and frame.is_ack_type
+            and frame.is_ack_type()
         ):
             # respond with a network ACK
             frame.header.message_type = NETWORK_ACK
@@ -556,7 +559,7 @@ class RF24Network(RadioMixin):
         if (
             result
             and to_node != frame.header.to_node
-            and frame.is_ack_type
+            and frame.is_ack_type()
             and traffic_direct in (TX_NORMAL, USER_TX_TO_LOGICAL_ADDRESS)
         ):
             result = self._wait_for_network_ack(to_node, to_pipe)
@@ -609,16 +612,16 @@ class RF24Network(RadioMixin):
         if not self.network_flags & FLAG_FAST_FRAG:
             self.listen = False
         self._rf24.auto_ack = 0x3E + (not use_multicast)
-        self._log(
-            NETWORK_DEBUG,
-            "Sending type {} with ID {} from {} to {} on pipe {}".format(
-                frame.header.message_type,
-                frame.header.frame_id,
-                oct(frame.header.from_node),
-                oct(frame.header.to_node),
-                to_pipe,
-            ),
-        )
+        # self._log(
+        #     NETWORK_DEBUG,
+        #     "Sending type {} with ID {} from {} to {} on pipe {}".format(
+        #         frame.header.message_type,
+        #         frame.header.frame_id,
+        #         oct(frame.header.from_node),
+        #         oct(frame.header.to_node),
+        #         to_pipe,
+        #     ),
+        # )
         addr = self._pipe_address(to_node, to_pipe)
         if self._rf24.address() != addr:
             self._rf24.open_tx_pipe(addr)

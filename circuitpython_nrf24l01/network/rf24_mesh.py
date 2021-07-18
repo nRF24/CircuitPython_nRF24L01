@@ -69,12 +69,8 @@ class RF24Mesh(RF24Network):
         self._node_id = 0
         # allow child nodes to connect to this network node
         self.allow_children = True
-        self.less_blocking_helper_function = None
-        """Requesting a new address can take a while since it sequentially attempts to
-        get re-assigned to the first highest network level.
-
-        This variable can be assigned a function to perform during this lengthy process
-        of requesting a new address."""
+        #: This variable can be assigned a function to perform during long operations.
+        self.less_blocking_callback = None
 
         # force self._net_update() to return system message types
         self.ret_sys_msg = True
@@ -97,7 +93,7 @@ class RF24Mesh(RF24Network):
         print("Network node id_______", self.node_id)
 
     def release_address(self) -> bool:
-        """Forces address lease to expire. Useful when disconnecting from network."""
+        """Forces an address lease to expire from the master."""
         if (
             self._addr != NETWORK_DEFAULT_ADDR
             and self.write(
@@ -111,8 +107,8 @@ class RF24Mesh(RF24Network):
             return True
         return False
 
-    def renew_address(self, timeout=7.5) -> int:
-        """Reconnect to the network and renew the node address."""
+    def renew_address(self, timeout=7.5):
+        """Connect to the mesh network and request a new `node_address`."""
         if self._rf24.available():
             self.update()
 
@@ -122,7 +118,7 @@ class RF24Mesh(RF24Network):
         end_timer = time.monotonic() + timeout
         while not self._request_address(request_counter):
             if time.monotonic() >= end_timer:
-                return 0
+                return None
             time.sleep(
                 (50 + ((total_requests + 1) * (request_counter + 1)) * 2) / 1000
             )
@@ -130,21 +126,22 @@ class RF24Mesh(RF24Network):
             total_requests = (total_requests + 1) % 10
         return self._addr
 
-    def get_address(self, _id=None) -> int:
-        """Convert nodeID into a logical network address (as used by `RF24Network`)."""
-        if not _id:
+    def get_address(self, node_id=None) -> int:
+        """Convert a node's unique ID number into its corresponding
+        :ref:`Logical Address <Logical Address>`."""
+        if not node_id:
             return 0
 
         if not self.get_node_id() or self._addr == NETWORK_DEFAULT_ADDR:
             if self._addr != NETWORK_DEFAULT_ADDR:
                 for n_id, addr in self._addr_dict:
-                    if n_id == self.node_id:
+                    if n_id == self._node_id:
                         return addr
             return -2
 
         if self.write(
             RF24NetworkFrame(
-                RF24NetworkHeader(0, MESH_ADDR_LOOKUP), bytes([self.node_id])
+                RF24NetworkHeader(0, MESH_ADDR_LOOKUP), bytes([node_id])
             )
         ):
             if self._wait_for_lookup_response():
@@ -152,9 +149,10 @@ class RF24Mesh(RF24Network):
         return -1
 
     def get_node_id(self, address=None) -> int:
-        """Convert logical network address (as used by `RF24Network`) into a nodeID."""
+        """Convert a node's :ref:`Logical Address <Logical Address>` into its unique ID
+        number."""
         if not address:
-            return self.node_id if address is None else 0
+            return self._node_id if address is None else 0
 
         # if this is a master node
         if not self._addr or self._addr == NETWORK_DEFAULT_ADDR:
@@ -168,7 +166,7 @@ class RF24Mesh(RF24Network):
         if self.write(
             RF24NetworkFrame(
                 RF24NetworkHeader(0, MESH_ID_LOOKUP),
-                struct.pack("<H", self._addr)
+                struct.pack("<H", address)
             )
         ):
             if self._wait_for_lookup_response():
@@ -177,21 +175,20 @@ class RF24Mesh(RF24Network):
 
     def _wait_for_lookup_response(self):
         """returns False if timed out, otherwise True"""
-        timeout = time.monotonic_ns() + MESH_LOOKUP_TIMEOUT / 1000000
-        while self._net_update() != MESH_ID_LOOKUP:
-            if self.less_blocking_helper_function is not None:
-                self.less_blocking_helper_function()  # pylint: disable=not-callable
-            if time.monotonic_ns() > timeout:
+        timeout = time.monotonic() + MESH_LOOKUP_TIMEOUT / 1000
+        while self._net_update() not in (MESH_ID_LOOKUP, MESH_ADDR_LOOKUP):
+            if self.less_blocking_callback is not None:
+                self.less_blocking_callback()  # pylint: disable=not-callable
+            if time.monotonic() > timeout:
                 return False
         return True
 
-    @property
-    def check_connection(self) -> bool:
-        """Check for network conectivity."""
-        return not self.get_address(self.node_id) < 1
+    def check_connection(self):
+        """Check for network conectivity (not for use on master node)."""
+        return not self.get_address(self._node_id) < 1
 
-    def update(self) -> int:
-        """checks for incoming network data and returns last message type (if any)"""
+    def update(self):
+        """Checks for incoming network data and returns last message type (if any)"""
         msg_t = self._net_update()
         if self._addr == NETWORK_DEFAULT_ADDR:
             return msg_t
@@ -295,16 +292,16 @@ class RF24Mesh(RF24Network):
         # self.save_dhcp()
 
     # pylint: disable=arguments-renamed
-    def send(self, message, message_type, to_node_id) -> bool:
+    def send(self, message, message_type, to_node_id):
         """Send a message to a node id."""
         if not isinstance(message, (bytes, bytearray)):
             raise TypeError("message must be a `bytes` or `bytearray` object")
         to_node = 0
-        timeout = time.monotonic_ns() + MESH_WRITE_TIMEOUT * 1000000
+        timeout = time.monotonic() + MESH_WRITE_TIMEOUT / 1000
         retry_delay = 5
         while to_node < 0:
             to_node = self.get_address(to_node_id)
-            if time.monotonic_ns() > timeout or to_node == -2:
+            if time.monotonic() > timeout or to_node == -2:
                 return False
             retry_delay += 10
             time.sleep(retry_delay / 1000)
@@ -318,7 +315,7 @@ class RF24Mesh(RF24Network):
         )
 
     # pylint: enable=arguments-renamed
-    def _request_address(self, level: int) -> bool:
+    def _request_address(self, level: int):
         """Get a new address assigned from the master node"""
         contacts = self._make_contacts(level)
         self._log(
@@ -328,7 +325,7 @@ class RF24Mesh(RF24Network):
         if not contacts:
             return False
 
-        new_addy = None
+        new_addr = None
         for contact in contacts:
             head = RF24NetworkHeader(contact, NETWORK_ADDR_REQUEST)
             head.reserved = self._node_id
@@ -341,29 +338,32 @@ class RF24Mesh(RF24Network):
                     self._net_update() == NETWORK_ADDR_RESPONSE
                     and self.frame_cache.header.reserved == self.node_id
                 ):
-                    new_addy = struct.unpack("<H", self.frame_cache.message[:2])[0]
+                    new_addr = struct.unpack("<H", self.frame_cache.message[:2])[0]
+                    test_addr = new_addr
                     mask = 0
                     for _ in range(_get_level(contact) * 3):
                         mask <<= 3
                         mask += 7
-                    new_addy &= mask
+                    test_addr &= mask
                     self._log(
                         NETWORK_DEBUG,
-                        "{} vs {}; new address check {}!".format(
-                            new_addy,
+                        "{} vs {}; new address ({}) check {}!".format(
+                            test_addr,
                             contact,
-                            "failed" if new_addy != contact else "passed"
+                            oct(new_addr),
+                            "failed" if test_addr != contact else "passed",
                         )
                     )
-                    if new_addy == contact:
+                    if test_addr == contact:
                         break
-                if self.less_blocking_helper_function is not None:
-                    self.less_blocking_helper_function()  # pylint: disable=not-callable
-        if new_addy is None:
+                if self.less_blocking_callback is not None:
+                    self.less_blocking_callback()  # pylint: disable=not-callable
+        if new_addr is None:
             return False
 
-        super()._begin(new_addy)
-        if self.get_node_id(self._addr) != self._addr:
+        super()._begin(new_addr)
+        confirm = self.get_node_id(self._addr) != self._node_id
+        if not confirm or self.get_node_id(self._addr) != self._node_id:
             super()._begin(NETWORK_DEFAULT_ADDR)
             return False
         return True
@@ -389,7 +389,7 @@ class RF24Mesh(RF24Network):
 
     @property
     def allow_children(self):
-        """allow/disallow child node to connect to this network node."""
+        """Allow/disallow child node to connect to this network node."""
         return bool(self.network_flags & FLAG_NO_POLL)
 
     @allow_children.setter

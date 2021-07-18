@@ -43,7 +43,9 @@ class RF24NetworkHeader:
 
     :param int to_node: The :ref:`Logical Address <logical address>` designating the
         message's destination.
-    :param int message_type: A 1-byte `int` representing the `message_type`.
+    :param int,str message_type: A 1-byte `int` representing the `message_type`. If a
+        `str` is passed, then the first character's numeric ASCII representation is
+        used.
 
     .. note:: |can_be_blank|
     """
@@ -88,8 +90,10 @@ class RF24NetworkHeader:
     def message_type(self):
         """The type of message. This `int` must be less than 256.
 
-        .. seealso::
-            `Reserved Message Types <constants.html#reserved-network-message-types>`_
+        .. hint::
+            Users are encouraged to specify a number in range [0, 127] (basically less
+            than or equal to `MAX_USER_DEFINED_HEADER_TYPE`) as there are
+            `Reserved Message Types <constants.html#reserved-network-message-types>`_.
         """
         return self._msg_t
 
@@ -174,12 +178,12 @@ class RF24NetworkFrame:
         if message is not None and not isinstance(message, (bytes, bytearray)):
             raise TypeError("message must be a `bytes` or `bytearray` object")
         self.header = RF24NetworkHeader() if header is None else header
-        """The `RF24NetworkHeader` about the frame's message."""
+        """The `RF24NetworkHeader` about the frame's `message`."""
         self.message = bytearray(0) if message is None else bytearray(message)
-        """The entire message or a fragment of the message allocated to this
+        """The entire message or a fragment of the message allocated to the
         frame. This attribute is typically a `bytearray` or `bytes` object."""
 
-    def decode(self, buffer) -> bool:
+    def decode(self, buffer):
         """Decode `header` & `message` from a ``buffer``. This function |internal_use|
 
         :Returns: `True` if successful; otherwise `False`.
@@ -190,7 +194,7 @@ class RF24NetworkFrame:
         return False
 
     @property
-    def buffer(self) -> bytes:
+    def buffer(self):
         """This attribute |internal_use|
 
         :Returns:  The entire object as a `bytes` object."""
@@ -199,8 +203,7 @@ class RF24NetworkFrame:
     def __len__(self):
         return len(self.header) + len(self.message)
 
-    @property
-    def is_ack_type(self) -> bool:
-        """Is the frame to expect a `NETWORK_ACK` message? This function |internal_use|
-        """
+    def is_ack_type(self):
+        """A `bool` attribute describing if the frame is to expect a `NETWORK_ACK`
+        message. This function |internal_use|"""
         return 64 < self.header.message_type < 192

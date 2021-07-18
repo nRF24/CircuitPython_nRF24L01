@@ -36,6 +36,16 @@ update()
 
 .. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.update
 
+    .. important::
+        It is imperitive that this function be called at least once during the application main
+        loop. For applications that perform long operations on each iteration of its main loop,
+        it is encouraged to call this function more than once when possible.
+
+    :Returns:
+        The latest received message's `message_type`. The returned value is not gotten
+        from frame's in the `queue`, but rather it is only gotten from the messages handled
+        during the function's operation.
+
 available()
 -----------
 
@@ -81,14 +91,26 @@ send()
 
 .. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.send
 
-    :param RF24NetworkHeader header: The outgoing frame's header. It is important to
-        have the header's `to_node` attribute set to the target network node's address.
-    :param bytes,bytearray message: The outgoing frame's message.
+    :param RF24NetworkHeader header: The outgoing frame's `header`. It is important to
+        have the header's `to_node` attribute set to the target network node's
+        :ref:`Logical Address <Logical Address>`.
+    :param bytes,bytearray message: The outgoing frame's `message`.
 
         .. note:: Be mindful of the message's size as this cannot exceed `MAX_FRAG_SIZE`
             (24 bytes) if `fragmentation` is disabled. If `fragmentation` is enabled (it
             is by default), then the message's size must be less than `max_message_length`
     :param int traffic_direct: |traffic_direect|
+
+    :Returns:
+        A `bool` describing if the message has been transmitted. This does not necessarily
+        describe if the message has been received at its target destination.
+
+        .. note::
+            This function will always return `True` if a message is directed to a node's pipe
+            that does not have `auto_ack` enabled (which will likely be pipe 0 in most network
+            contexts).
+        .. tip:: To ensure a message has been delivered to its target destination, set the
+            header's `message_type` to an `int` in range [65, 127].
 
 Advanced API
 ************
@@ -110,7 +132,23 @@ multicast()
 
 .. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.multicast
 
+    :param RF24NetworkHeader header: The outgoing frame's `header`.
+    :param bytes,bytearray message: The outgoing frame's `message`.
+    :param int level: The `network level <topology.html#network-levels>`_ of nodes to broadcast to.
+        If this optional parameter is not specified, then the node's `multicast_level` is used.
+
     .. seealso:: `multicast_level`, `multicast_relay`, and `allow_multicast`
+
+    :Returns:
+        A `bool` describing if the message has been transmitted. This does not necessarily
+        describe if the message has been received at its target destination.
+
+        .. note::
+            This function will always return `True` if a message is directed to a node's pipe
+            that does not have `auto_ack` enabled (which will likely be pipe 0 in most network
+            contexts).
+        .. tip:: To ensure a message has been delivered to its target destination, set the
+            header's `message_type` to an `int` in range [65, 127].
 
 write()
 -----------
@@ -119,7 +157,7 @@ write()
 
     :param RF24NetworkFrame frame: The complete frame to send. It is important to
         have the header's `to_node` attribute set to the target network node's address.
-        If a `Queue` object is passed, then all frames in the passed `Queue`
+        If a `FrameQueue` object is passed, then all frames in the passed `FrameQueue`
         will be processed in a FIFO (First In First Out) basis.
     :param int traffic_direct: |traffic_direect|
     :param int send_type: The behavior to use when sending a frame. This parameter is
@@ -129,11 +167,19 @@ write()
 
     :Returns:
 
-        * `True` if transmission of the ``frame`` is successful
-        * `False` if transmission of the ``frame``  is not successful
-        * If a `Queue` object is passed to the ``frame`` parameter, then a
+        * `True` if the ``frame`` has been transmitted. This does not necessarily
+          describe if the message has been received at its target destination.
+        * `False` if the ``frame``  has not been transmitted.
+        * If a `FrameQueue` object is passed to the ``frame`` parameter, then a
           `list` of `bool` values that descrbes the result of transmitting the frames in the
-          `Queue` object that was passed.
+          `FrameQueue` object that was passed.
+
+        .. note::
+            This function will always return `True` if a message is directed to a node's pipe
+            that does not have `auto_ack` enabled (which will likely be pipe 0 in most network
+            contexts).
+        .. tip:: To ensure a message has been delivered to its target destination, set the
+            frame's header's `message_type` to an `int` in range [65, 127].
 
 parent
 -----------
@@ -171,6 +217,10 @@ multicast_level
     Setting this attribute will also change the :ref:`physical address <Physical Address>`
     on the radio's RX data pipe 0.
 
+    .. seealso::
+        The `network levels <topology.html#network-levels>`_ are explained in more detail on
+        the `topology <topology.html>`_ document.
+
 tx_timeout
 ---------------
 
@@ -182,8 +232,8 @@ fragmentation
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.fragmentation
 
-    Changing this attribute's state will also appropriately changes the type of `Queue`
-    (or `QueueFrag`) object used for storing incoming network packets. Disabling
+    Changing this attribute's state will also appropriately changes the type of `FrameQueue`
+    (or `FrameQueueFrag`) object used for storing incoming network packets. Disabling
     fragmentation can save some memory (not as much as TMRh20's RF24Network library's
     ``DISABLE_FRAGMENTATION`` macro), but messages will be limited to 24 bytes
     (`MAX_FRAG_SIZE`) maximum.

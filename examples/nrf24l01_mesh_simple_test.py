@@ -4,7 +4,11 @@ This example was written to be used on 2 devices acting as 'nodes'.
 """
 import time
 import struct
-from circuitpython_nrf24l01.network.constants import NETWORK_DEBUG, MAX_FRAG_SIZE
+from circuitpython_nrf24l01.network.constants import (
+    NETWORK_DEBUG,
+    MAX_FRAG_SIZE,
+    NETWORK_DEFAULT_ADDR
+)
 from circuitpython_nrf24l01.network.rf24_mesh import RF24Mesh
 
 # import wrappers to imitate circuitPython's DigitalInOut
@@ -73,15 +77,18 @@ nrf.channel = 97
 # usually run with nRF24L01 transceivers in close proximity
 nrf.pa_level = -12
 
-nrf.node_id = this_node
-if this_node:
+nrf.node_id = this_node  # assign this node with the user-specified ID number
+if this_node:  # if this node is not the mesh network master node
     print("Connecting to network...", end=" ")
-    # give this node a unique ID number and connect to network
+    # get this node's assigned address and connect to network
     nrf.renew_address()
-    print("assigned address:", oct(nrf.node_address))
+    if nrf.node_address == NETWORK_DEFAULT_ADDR:
+        print("failed. Please try again manually with `nrf.renew_address()`")
+    else:
+        print("assigned address:", oct(nrf.node_address))
 else:
-    nrf.node_address = nrf.get_node_id()
     print("Acting as mesh network master node.")
+    nrf.node_address = nrf.get_node_id()
 
 if nrf.logger is not None:
     # log debug msgs specific to RF24Network.

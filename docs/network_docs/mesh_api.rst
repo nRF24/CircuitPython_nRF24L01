@@ -8,8 +8,9 @@ RF24Mesh API
     1. `Shared Networking API <base_api.html#>`_
     2. `Network Data Structures <structs.html>`_
     3. `Network Constants <constants.html>`_
-    4. `RF24Network API <network_api.html>`_ (especially the `node_address` and
-       :meth:`~circuitpython_nrf24l01.network.rf24_network.RF24Network.write()`)
+    4. `RF24Network API <network_api.html>`_ (especially the `node_address`,
+       :meth:`~circuitpython_nrf24l01.network.rf24_network.RF24Network.write()`, and
+       :meth:`~circuitpython_nrf24l01.network.rf24_network.RF24Network.update()`)
 
 
 RF24Mesh class
@@ -24,25 +25,55 @@ RF24Mesh class
 Basic API
 *********
 
-update()
---------
-
-.. automethod:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.update
 
 send()
 --------
 
 .. automethod:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.send
 
+    This function will use `get_address()` to fetch the necessary
+    :ref:`Logical Address <Logical Address>` to set the frame's header's `to_node`
+    attribute.
+
+    .. hint::
+        If you already know the destination node's :ref:`Logical Address <Logical Address>`,
+        then you can use :meth:`~circuitpython_nrf24l01.network.rf24_network.RF24Network.write()`
+        for quicker operation.
+
+    :param bytes,bytearray message: The frame's `message` to be transmitted.
+    :param int message_type: The `int` that describes the frame header's `message_type`.
+
+        .. note:: Be mindful of the message's size as this cannot exceed
+            `MAX_FRAG_SIZE` (24 bytes) if `fragmentation` is disabled. If `fragmentation` is
+            enabled (it is by default), then the message's size must be less than
+            :attr:`~circuitpython_nrf24l01.network.rf24_network.RF24Network.max_message_length`.
+    :param int to_node_id: The unique mesh network `node_id` of the frame's destination.
+
 node_id
 -------------
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.node_id
 
+    This is not to be confused with the network node's `node_address`. This attribute is meant to
+    distinguish different mesh network nodes that may, at separate instances, use the same
+    `node_address`. It is up to the developer to make sure each mesh network node uses a different
+    ID number.
+
 renew_address()
 ---------------
 
 .. automethod:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.renew_address
+
+    :param float,int timeout: The amount of time (in seconds) to continue trying to connect
+        and get an assigned :ref:`Logical Address <Logical Address>`. Defaults to 7.5 seconds.
+
+    .. note:: This function automatically sets the `node_address` accordingly.
+
+    :Returns:
+        * If successful: The `node_address` that was set to the newly assigned
+          :ref:`Logical Address <Logical Address>`.
+        * If unsuccessful: `None`, and the `node_address` attribute will be set to
+          `NETWORK_DEFAULT_ADDR` (``0o4444`` in octal or ``2340`` in decimal).
 
 Advanced API
 ************
@@ -52,28 +83,68 @@ get_node_id()
 
 .. automethod:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.get_node_id
 
+    :param int address: The :ref:`Logical Address <Logical Address>` for which
+        a unique `node_id` is assigned from network master node.
+
+    :Returns:
+        - The unique `node_id` assigned to the specified ``address``.
+        - Error codes include
+
+          - ``-2`` means the specified ``address`` has not been assigned a
+            unique `node_id` from the master node or the requesting
+            network node's `node_address` is equal to `NETWORK_DEFAULT_ADDR`.
+          - ``-1`` means the address lookup operation failed due to no network connection
+            or the master node has not assigned a unique `node_id`
+            for the specified ``address``.
+
 get_address()
 -------------
 
 .. automethod:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.get_address
 
-check_connection
-----------------
+    :param int node_id: The unique `node_id` for which a
+        :ref:`Logical Address <Logical Address>` is assigned from network master node.
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.check_connection
+    :Returns:
+        - The :ref:`Logical Address <Logical Address>` assigned to the specified ``node_id``.
+        - Error codes include
+
+          - ``-2`` means the specified ``node_id`` has not been assigned a
+            :ref:`Logical Address <Logical Address>` from the master node or the requesting
+            network node's `node_address` is equal to `NETWORK_DEFAULT_ADDR`.
+          - ``-1`` means the address lookup operation failed due to no network connection
+            or the master node has not assigned a :ref:`Logical Address <Logical Address>`
+            for the specified ``node_id``.
+
+check_connection()
+------------------
+
+.. automethod:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.check_connection
 
 release_address()
 -----------------
 
 .. automethod:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.release_address
 
+    .. hint::
+        This should be called from a mesh network node that is disconnecting from the network.
+        This is also recommended for mesh network nodes that are entering a powered down (or
+        sleep) mode.
 
 allow_children
 --------------
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.allow_children
 
-less_blocking_helper_function
+less_blocking_callback
 -----------------------------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.less_blocking_helper_function
+.. autoattribute:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.less_blocking_callback
+
+    .. note::
+        Requesting a new address (via `renew_address()`) can take a while since it sequentially
+        attempts to get re-assigned to the first available :ref:`Logical Address <Logical Address>`
+        on the highest possible `network level <topology.html#network-levels>`_.
+
+    The assigned function will be called during `renew_address()`, `get_address()` and
+    `get_node_id()`.

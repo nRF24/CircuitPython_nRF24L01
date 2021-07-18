@@ -35,7 +35,7 @@ from .constants import (
 from .packet_structs import RF24NetworkFrame
 
 
-class Queue(LoggerMixin):
+class FrameQueue(LoggerMixin):
     """A class that wraps python's list implementation with RF24Network Queue behavior.
 
     :param int max_queue_size: The maximum number of frames that can be enqueued at
@@ -43,7 +43,8 @@ class Queue(LoggerMixin):
     """
 
     def __init__(self, max_queue_size=6):
-        self._max_q_size = max_queue_size
+        #: The maximum number of frames that can be enqueued at once. Defaults to 6.
+        self.max_queue_size = max_queue_size
         self.max_message_length = MAX_FRAG_SIZE
         """The maximum message length (in bytes) allowed in each enqueued frame.
         Any attempt to enqueue a frame that contains a message larger than this
@@ -51,10 +52,13 @@ class Queue(LoggerMixin):
         self._list = []
         super().__init__()
 
-    def enqueue(self, frame: RF24NetworkFrame) -> bool:
-        """Add a `RF24NetworkFrame` to the queue."""
+    def enqueue(self, frame: RF24NetworkFrame):
+        """Add a `RF24NetworkFrame` to the queue.
+
+        :Returns: `True` if the frame was added to the queue, or `False` if it was not.
+        """
         if (
-            self._max_q_size == len(self._list)
+            self.max_queue_size == len(self._list)
             or len(frame.message) > self.max_message_length
         ):
             return False
@@ -86,12 +90,14 @@ class Queue(LoggerMixin):
         return len(self._list)
 
 
-class QueueFrag(Queue):
+class FrameQueueFrag(FrameQueue):
     """A specialized queue implementation with an additional cache for fragmented frames
 
-    .. note:: This class will only cache 1 fragmented message at a time. If parts of the
-        fragmented message are missing or a new fragmented message is received, then the
-        cache is cleared to avoid memory leaks.
+    .. note:: This class will only cache 1 fragmented message at a time. If parts of
+        the fragmented message are missing (or duplicate fragments are received), then
+        the fragment is discarded. If a new fragmented message is received (before a
+        previous fragmented message is completed and reassembled), then the cache
+        is reused for the new fragmented message to avoid memory leaks.
 
     :param int max_queue_size: The maximum number of frames that can be enqueued at
         once. Defaults to 6 frames.
