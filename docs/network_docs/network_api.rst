@@ -161,8 +161,8 @@ write()
         will be processed in a FIFO (First In First Out) basis.
     :param int traffic_direct: |traffic_direect|
     :param int send_type: The behavior to use when sending a frame. This parameter is
-        overridden if the ``traffic_direct`` and ``send_type`` parameters are set to
-        anything other than their default values. This parameter should be considered
+        overridden if the ``traffic_direct`` parameter is not set to its default value
+        and this parameter is set to its default value. This parameter should be considered
         reserved for special applicable use cases (like `RF24Mesh`).
 
     :Returns:
