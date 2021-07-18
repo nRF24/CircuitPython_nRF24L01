@@ -61,6 +61,14 @@ class RadioMixin(LoggerMixin):
         super().__init__()
 
     @property
+    def power(self):
+        return self._rf24.power
+
+    @power.setter
+    def power(self, val):
+        self._rf24.power = val
+
+    @property
     def channel(self):
         return self._rf24.channel
 
