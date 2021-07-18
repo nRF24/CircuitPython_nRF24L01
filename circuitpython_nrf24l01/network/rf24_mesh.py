@@ -185,7 +185,10 @@ class RF24Mesh(RF24Network):
 
     def check_connection(self):
         """Check for network conectivity (not for use on master node)."""
-        return not self.get_address(self._node_id) < 1
+        # do a double check as a means for manual retry in lack of using auto-ack
+        return not (
+            self.get_address(self._node_id) < 1 or self.get_address(self._node_id) < 1
+        )
 
     def update(self):
         """Checks for incoming network data and returns last message type (if any)"""
@@ -318,10 +321,10 @@ class RF24Mesh(RF24Network):
     def _request_address(self, level: int):
         """Get a new address assigned from the master node"""
         contacts = self._make_contacts(level)
-        self._log(
-            NETWORK_DEBUG,
-            "Got {} responses on level {}".format(len(contacts), level)
-        )
+        # self._log(
+        #     NETWORK_DEBUG,
+        #     "Got {} responses on level {}".format(len(contacts), level)
+        # )
         if not contacts:
             return False
 

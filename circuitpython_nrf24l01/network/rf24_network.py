@@ -349,16 +349,14 @@ class RF24Network(RadioMixin):
         if msg_t == NETWORK_PING:
             return True
 
-        if msg_t == NETWORK_ADDR_RESPONSE:
-            requester = NETWORK_DEFAULT_ADDR
-            if requester != self._addr:
-                self.frame_cache.header.to_node = requester
-                self.write(
-                    self.frame_cache,
-                    self.frame_cache.header.to_node,
-                    USER_TX_TO_PHYSICAL_ADDRESS
-                )
-                return True
+        if msg_t == NETWORK_ADDR_RESPONSE and NETWORK_DEFAULT_ADDR != self._addr:
+            self.frame_cache.header.to_node = NETWORK_DEFAULT_ADDR
+            self.write(
+                self.frame_cache,
+                self.frame_cache.header.to_node,
+                USER_TX_TO_PHYSICAL_ADDRESS
+            )
+            return True
         if msg_t == NETWORK_ADDR_REQUEST and self._addr:
             self.frame_cache.header.from_node = self._addr
             self.frame_cache.header.to_node = 0
@@ -398,8 +396,8 @@ class RF24Network(RadioMixin):
             if self.frame_cache.header.to_node == NETWORK_MULTICAST_ADDR:
                 if self.frame_cache.header.message_type == NETWORK_POLL:
                     if (
-                        self._addr != NETWORK_DEFAULT_ADDR
-                        and not self.network_flags & FLAG_NO_POLL
+                        not self.network_flags & FLAG_NO_POLL
+                        and self._addr != NETWORK_DEFAULT_ADDR
                     ):
                         self.frame_cache.header.to_node = (
                             self.frame_cache.header.from_node
@@ -505,7 +503,7 @@ class RF24Network(RadioMixin):
             raise ValueError("message's length is too large!")
         if frame.header.from_node is None:
             frame.header.from_node = self._addr
-        if traffic_direct != AUTO_ROUTING:
+        if traffic_direct != AUTO_ROUTING and send_type != TX_NORMAL:
             # Payload is multicast to the first node, and routed normally to the next
             send_type = USER_TX_TO_LOGICAL_ADDRESS
             if frame.header.to_node == NETWORK_MULTICAST_ADDR:
