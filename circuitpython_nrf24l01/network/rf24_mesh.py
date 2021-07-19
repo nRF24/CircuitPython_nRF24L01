@@ -214,11 +214,12 @@ class RF24Mesh(RF24Network):
                     self.frame_cache.message = bytes([ret_val])
                 self.write(self.frame_cache)
             elif msg_t == MESH_ADDR_RELEASE:
-                from_addr = self.frame_cache.header.from_node
-                for n_id, addr in self._addr_dict:
-                    if addr == from_addr:
-                        # del self._addr_dict[key]
-                        self._addr_dict[n_id] = 0
+                # pylint discourages `del dict[key]` when searching by value
+                new_dict = {}
+                for n_id, addr in self._addr_dict.items():
+                    if addr != self.frame_cache.header.from_node:
+                        new_dict[n_id] = addr
+                self._addr_dict = new_dict
         return msg_t
 
     def dhcp(self):

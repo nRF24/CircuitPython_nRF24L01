@@ -58,7 +58,7 @@ jobs:
 
       - name: Pip install pylint & Sphinx stuff (and graphviz)
         run: |
-          pip install pylint
+          pip install --force-reinstall pylint
           pip install -r docs/requirements.txt
           sudo apt install graphviz
 
