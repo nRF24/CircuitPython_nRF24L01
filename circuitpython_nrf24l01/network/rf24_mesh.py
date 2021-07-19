@@ -185,10 +185,11 @@ class RF24Mesh(RF24Network):
 
     def check_connection(self):
         """Check for network conectivity (not for use on master node)."""
-        # do a double check as a means for manual retry in lack of using auto-ack
-        return not (
-            self.get_address(self._node_id) < 1 or self.get_address(self._node_id) < 1
-        )
+        # do a double check as a manual retry in lack of using auto-ack
+        if self.get_address(self._node_id) < 1:
+            if self.get_address(self._node_id) < 1:
+                return False
+        return True
 
     def update(self):
         """Checks for incoming network data and returns last message type (if any)"""
@@ -196,7 +197,7 @@ class RF24Mesh(RF24Network):
         if self._addr == NETWORK_DEFAULT_ADDR:
             return msg_t
         if msg_t == NETWORK_ADDR_REQUEST:
-            self._do_dhcp = True
+            self._do_dhcp = True and not self._node_id
 
         if not self.get_node_id():  # if this is the master node
             if msg_t in (MESH_ADDR_LOOKUP, MESH_ID_LOOKUP):
@@ -205,16 +206,13 @@ class RF24Mesh(RF24Network):
                 ret_val = 0
                 if msg_t == MESH_ADDR_LOOKUP:
                     ret_val = self.get_address(self.frame_cache.message[0])
+                    self.frame_cache.message = struct.pack("<H", ret_val)
                 else:
                     ret_val = self.get_node_id(
                         struct.unpack("<H", self.frame_cache.message[:2])[0]
                     )
-                self.write(
-                    RF24NetworkFrame(
-                        self.frame_cache.header,
-                        struct.pack("<H", ret_val)
-                    )
-                )
+                    self.frame_cache.message = bytes([ret_val])
+                self.write(self.frame_cache)
             elif msg_t == MESH_ADDR_RELEASE:
                 from_addr = self.frame_cache.header.from_node
                 for n_id, addr in self._addr_dict:
@@ -227,60 +225,56 @@ class RF24Mesh(RF24Network):
         """Updates the internal `dict` of assigned addresses (master node only). Be
         sure to call this after performing an
         :meth:`~circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.update()`."""
-        # pylint: disable=too-many-branches
         if not self._do_dhcp:
             return
         self._do_dhcp = False
-        header = self.frame_cache.header
         new_addr = 0
-        if not header.reserved or header.message_type != NETWORK_ADDR_REQUEST:
+        if (
+            not self.frame_cache.header.reserved
+            or self.frame_cache.header.message_type != NETWORK_ADDR_REQUEST
+        ):
             self._log(
                 NETWORK_DEBUG,
-                "Got bad node ID or not a NETWORK_ADDR_REQUEST type"
+                "frame_cache: improper node ID or not a NETWORK_ADDR_REQUEST type."
             )
             return
 
-        via_node, shift_val, extra_child = (0, 0, False)
-        if header.from_node != NETWORK_DEFAULT_ADDR:
-            via_node = header.from_node
+        via_node, shift_val = (0, 0)
+        if self.frame_cache.header.from_node != NETWORK_DEFAULT_ADDR:
+            via_node = self.frame_cache.header.from_node
             temp = via_node
             while temp:
                 temp >>= 3
                 shift_val += 3
-        else:
-            extra_child = True
+        extra_child = self.frame_cache.header.from_node == NETWORK_DEFAULT_ADDR
+
         for i in range(MESH_MAX_CHILDREN + extra_child, 0, -1):
             found_addr = False
             new_addr = via_node | (i << shift_val)
             if new_addr == NETWORK_DEFAULT_ADDR:
                 continue
-            for n_id, addr in self._addr_dict:
+            for n_id, addr in self._addr_dict.items():
                 self._log(
                     NETWORK_DEBUG_MINIMAL,
                     "(in _addr_dict) ID: {}, ADDR: {}".format(n_id, oct(addr))
                 )
-                if addr == new_addr and n_id != header.reserved:
+                if addr == new_addr and n_id != self.frame_cache.header.reserved:
                     found_addr = True
                     break
-            if found_addr:
-                self._log(NETWORK_DEBUG, "address {} not assigned.".format(new_addr))
-            else:
-                header.message_type = NETWORK_ADDR_RESPONSE
-                header.to_node = header.from_node
+            if not found_addr:
+                self.frame_cache.header.message_type = NETWORK_ADDR_RESPONSE
+                self.frame_cache.header.to_node = self.frame_cache.header.from_node
 
-                self._set_address(header.reserved, new_addr)
-                if header.from_node != NETWORK_DEFAULT_ADDR:
-                    if not self.write(
-                        RF24NetworkFrame(header, struct.pack("<H", new_addr))
-                    ):
+                self._set_address(self.frame_cache.header.reserved, new_addr)
+                if self.frame_cache.header.from_node != NETWORK_DEFAULT_ADDR:
+                    self.frame_cache.message = struct.pack("<H", new_addr)
+                    if not self.write(self.frame_cache):
                         self._rf24.resend(send_only=True)
                 else:
-                    self.write(
-                        RF24NetworkFrame(header, struct.pack("<H", new_addr)),
-                        header.to_node
-                    )
+                    self.write(self.frame_cache, self.frame_cache.header.to_node)
                 break
-        # pylint: enable=too-many-branches
+            # log an error saying that address couldn't be assigned on the net lvl
+            self._log(NETWORK_DEBUG, "address {} not assigned.".format(new_addr))
 
     def _set_address(self, node_id, address, search_by_address=False):
         """Set or change a node_id and network address pair on the master node."""
@@ -291,7 +285,9 @@ class RF24Mesh(RF24Network):
                     break
             else:
                 if addr == address:
+                    # pylint: disable=unnecessary-dict-index-lookup
                     del self._addr_dict[n_id]
+                    # pylint: enable=unnecessary-dict-index-lookup
                     self._addr_dict[node_id] = address
                     break
         if node_id not in self._addr_dict.keys():
@@ -369,10 +365,12 @@ class RF24Mesh(RF24Network):
             return False
 
         super()._begin(new_addr)
-        confirm = self.get_node_id(self._addr) != self._node_id
-        if not confirm or self.get_node_id(self._addr) != self._node_id:
-            super()._begin(NETWORK_DEFAULT_ADDR)
-            return False
+
+        # do a double check as a manual retry in lack of using auto-ack
+        if self.get_node_id(self._addr) != self._node_id:
+            if self.get_node_id(self._addr) != self._node_id:
+                super()._begin(NETWORK_DEFAULT_ADDR)
+                return False
         return True
 
     def _make_contacts(self, level):

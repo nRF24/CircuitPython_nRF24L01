@@ -149,7 +149,7 @@ def slave(timeout=6, frag=False):
             payload = nrf.read()
             print("Received payload", end=" ")
             if not frag:
-                print(struct.unpack("<L", bytes(payload.message)), end=" ")
+                print(struct.unpack("<L", bytes(payload.message))[0], end=" ")
             print(
                 "from", oct(payload.header.from_node),
                 "to", oct(payload.header.to_node),
