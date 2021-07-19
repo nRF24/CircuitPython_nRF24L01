@@ -267,8 +267,8 @@ class RF24Mesh(RF24Network):
                 self.frame_cache.header.to_node = self.frame_cache.header.from_node
 
                 self._set_address(self.frame_cache.header.reserved, new_addr)
+                self.frame_cache.message = struct.pack("<H", new_addr)
                 if self.frame_cache.header.from_node != NETWORK_DEFAULT_ADDR:
-                    self.frame_cache.message = struct.pack("<H", new_addr)
                     if not self.write(self.frame_cache):
                         self._rf24.resend(send_only=True)
                 else:
