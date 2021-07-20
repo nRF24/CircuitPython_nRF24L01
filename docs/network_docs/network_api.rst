@@ -1,9 +1,3 @@
-.. |traffic_direect| replace:: The specified direction of the frame. By default, this
-        will invoke the automatic routing mechanisms. However, this parameter
-        can be set to a network node's :ref:`Logical Address <logical address>` for direct transmission to the
-        specified node - meaning the transmission's automatic routing will begin at the
-        network node that is specified with this parameter instead of being automatically
-        routed from the transmission actual origin.
 .. |if_nothing_in_queue| replace:: If there is nothing in the `queue`, this method will return
 
 
@@ -99,7 +93,6 @@ send()
         .. note:: Be mindful of the message's size as this cannot exceed `MAX_FRAG_SIZE`
             (24 bytes) if `fragmentation` is disabled. If `fragmentation` is enabled (it
             is by default), then the message's size must be less than `max_message_length`
-    :param int traffic_direct: |traffic_direect|
 
     :Returns:
         A `bool` describing if the message has been transmitted. This does not necessarily
@@ -159,27 +152,26 @@ write()
         have the header's `to_node` attribute set to the target network node's address.
         If a `FrameQueue` object is passed, then all frames in the passed `FrameQueue`
         will be processed in a FIFO (First In First Out) basis.
-    :param int traffic_direct: |traffic_direect|
-    :param int send_type: The behavior to use when sending a frame. This parameter is
-        overridden if the ``traffic_direct`` parameter is not set to its default value
-        and this parameter is set to its default value. This parameter should be considered
-        reserved for special applicable use cases (like `RF24Mesh`).
+    :param int traffic_direct: The specified direction of the frame. By default, this
+        will invoke the automatic routing mechanisms. However, this parameter
+        can be set to a network node's :ref:`Logical Address <logical address>` for direct
+        transmission to the specified node - meaning the transmission's automatic routing
+        will begin at the network node that is specified with this parameter instead of being
+        automatically routed from the transmission actual origin.
 
     :Returns:
 
         * `True` if the ``frame`` has been transmitted. This does not necessarily
           describe if the message has been received at its target destination.
         * `False` if the ``frame``  has not been transmitted.
-        * If a `FrameQueue` object is passed to the ``frame`` parameter, then a
-          `list` of `bool` values that descrbes the result of transmitting the frames in the
-          `FrameQueue` object that was passed.
 
         .. note::
             This function will always return `True` if a message is directed to a node's pipe
             that does not have `auto_ack` enabled (which will likely be pipe 0 in most network
             contexts).
         .. tip:: To ensure a message has been delivered to its target destination, set the
-            frame's header's `message_type` to an `int` in range [65, 127].
+            frame's header's `message_type` to an `int` in range [65, 127] (which should invoke
+            a returning `NETWORK_ACK` message type).
 
 parent
 -----------

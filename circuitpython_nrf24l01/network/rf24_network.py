@@ -351,8 +351,7 @@ class RF24Network(RadioMixin):
 
         if msg_t == NETWORK_ADDR_RESPONSE and NETWORK_DEFAULT_ADDR != self._addr:
             self.frame_cache.header.to_node = NETWORK_DEFAULT_ADDR
-            self.write(
-                self.frame_cache,
+            self._write(
                 self.frame_cache.header.to_node,
                 USER_TX_TO_PHYSICAL_ADDRESS
             )
@@ -360,23 +359,23 @@ class RF24Network(RadioMixin):
         if msg_t == NETWORK_ADDR_REQUEST and self._addr:
             self.frame_cache.header.from_node = self._addr
             self.frame_cache.header.to_node = 0
-            self.write(self.frame_cache, self.frame_cache.header.to_node, TX_NORMAL)
+            self._write(self.frame_cache.header.to_node, TX_NORMAL)
             return True
         if (
             self.ret_sys_msg
             and msg_t > MAX_USER_DEFINED_HEADER_TYPE
             or msg_t == NETWORK_ACK
-            and msg_t not in (
-                NETWORK_FRAG_FIRST,
-                NETWORK_FRAG_MORE,
-                NETWORK_FRAG_LAST,
-                NETWORK_EXTERNAL_DATA
-            )
         ):
             self._log(
                 NETWORK_DEBUG_ROUTING, "Received system payload type " + str(msg_t)
             )
-            return False
+            if msg_t not in (
+                NETWORK_FRAG_FIRST,
+                NETWORK_FRAG_MORE,
+                NETWORK_FRAG_LAST,
+                NETWORK_EXTERNAL_DATA
+            ):
+                return False
 
         self.queue.enqueue(self.frame_cache)
         if (
@@ -404,8 +403,7 @@ class RF24Network(RadioMixin):
                         )
                         self.frame_cache.header.from_node = self._addr
                         time.sleep(self._parent_pipe / 1000)
-                        self.write(
-                            self.frame_cache,
+                        self._write(
                             self.frame_cache.header.to_node,
                             USER_TX_TO_PHYSICAL_ADDRESS
                         )
@@ -422,8 +420,7 @@ class RF24Network(RadioMixin):
                     if not self._addr >> 3:
                         time.sleep(0.0024)
                     time.sleep((self._addr % 4) * 0.0006)
-                    self.write(
-                        self.frame_cache,
+                    self._write(
                         (_level_to_address(self._multicast_level) << 3) & 0xffff,
                         USER_TX_MULTICAST
                     )
@@ -434,19 +431,11 @@ class RF24Network(RadioMixin):
                     return False
             elif self._addr != NETWORK_DEFAULT_ADDR:
                 # pass it along
-                self.write(
-                    self.frame_cache,
-                    self.frame_cache.header.to_node,
-                    TX_ROUTED
-                )
+                self._write(self.frame_cache.header.to_node, TX_ROUTED)
                 return True
         elif self._addr != NETWORK_DEFAULT_ADDR:  # multicast not enabled
             # pass it along
-            self.write(
-                self.frame_cache,
-                self.frame_cache.header.to_node,
-                TX_ROUTED
-            )
+            self._write(self.frame_cache.header.to_node, TX_ROUTED)
             return True
         return False
 
@@ -481,95 +470,34 @@ class RF24Network(RadioMixin):
         header.to_node = NETWORK_MULTICAST_ADDR
         return self.write(RF24NetworkFrame(header, message), _level_to_address(level))
 
-    def send(self, header: RF24NetworkHeader, message, traffic_direct=AUTO_ROUTING):
+    def send(self, header: RF24NetworkHeader, message):
         """Deliver a message according to the header information."""
-        return self.write(RF24NetworkFrame(header, message), traffic_direct)
+        return self.write(RF24NetworkFrame(header, message))
 
-    def write(
-        self,
-        frame: RF24NetworkFrame,
-        traffic_direct=AUTO_ROUTING,
-        send_type=TX_NORMAL
-    ):
+    def write(self, frame: RF24NetworkFrame, traffic_direct=AUTO_ROUTING):
         """Deliver a network frame."""
-        if isinstance(frame, FrameQueue):
-            result = []
-            while len(frame):
-                result.append(self.write(frame.dequeue()))
-            return result
         if not isinstance(frame, RF24NetworkFrame):
             raise TypeError("expected object of type RF24NetworkFrame.")
         if len(frame.message) > self.max_message_length:
             raise ValueError("message's length is too large!")
         if frame.header.from_node is None:
             frame.header.from_node = self._addr
-        if traffic_direct != AUTO_ROUTING and send_type == TX_NORMAL:
-            # Payload is multicast to the first node, and routed normally to the next
-            send_type = USER_TX_TO_LOGICAL_ADDRESS
-            if frame.header.to_node == NETWORK_MULTICAST_ADDR:
-                send_type = USER_TX_MULTICAST
-            if frame.header.to_node == traffic_direct:
-                # Payload is multicast to the first node, which is the recipient
-                send_type = USER_TX_TO_PHYSICAL_ADDRESS
 
         if len(frame.message) > MAX_FRAG_SIZE and self._frag_enabled:
             # break message into fragments and send the multiple resulting frames
-            return self._write_frag(frame, traffic_direct, send_type)
+            return self._write_frag(frame, traffic_direct)
+        return self._pre_write(frame, traffic_direct)
 
-        # send the frame
-        to_node, to_pipe, use_multicast = self._logical_to_physical(
-            frame.header.to_node if traffic_direct == AUTO_ROUTING else traffic_direct,
-            send_type
-        )
-        result = self._write_to_pipe(frame, to_node, to_pipe, use_multicast)
-        # self._log(
-        #     NETWORK_DEBUG_ROUTING,
-        #     "{} to {} via {} at pipe {}".format(
-        #         "Failed sending" if not result else "Successfully sent",
-        #         oct(frame.header.to_node),
-        #         oct(to_node),
-        #         to_pipe
-        #     ),
-        # )
-        if (
-            send_type == TX_ROUTED
-            and result
-            and to_node == frame.header.to_node
-            and frame.is_ack_type()
-        ):
-            # respond with a network ACK
-            frame.header.message_type = NETWORK_ACK
-            frame.header.to_node = frame.header.from_node
-            ack_to_node, ack_to_pipe, use_multicast = self._logical_to_physical(
-                frame.header.from_node, TX_ROUTED
-            )
-            ack_ok = self._write_to_pipe(frame, ack_to_node, ack_to_pipe, use_multicast)
-            self._log(
-                NETWORK_DEBUG_ROUTING,
-                "Network ACK {} origin {} (pipe {})".format(
-                    "reached" if ack_ok else "failed to reach",
-                    oct(frame.header.from_node),
-                    ack_to_pipe,
-                ),
-            )
-
-        # ready radio to continue listening
-        if (
-            result
-            and to_node != frame.header.to_node
-            and frame.is_ack_type()
-            and traffic_direct in (TX_NORMAL, USER_TX_TO_LOGICAL_ADDRESS)
-        ):
-            result = self._wait_for_network_ack(to_node, to_pipe)
-        if not self.network_flags & FLAG_FAST_FRAG:
-            self._rf24.listen = True
-        return result
-
-    def _write_frag(self, frame: RF24NetworkFrame, traffic_direct, send_type):
+    def _write_frag(self, frame: RF24NetworkFrame, traffic_direct):
         """write a message fragmented into multiple payloads"""
         frames = _frame_frags(_frag_msg(frame.message), frame.header)
         for i, frm in enumerate(frames):
-            result = self.write(frm, traffic_direct, send_type)
+            result = self._pre_write(frm, traffic_direct)
+            retries = 3
+            while not result and retries:
+                time.sleep(0.002)
+                result = self._pre_write(frm, traffic_direct)
+                retries -= 1
             self._log(
                 NETWORK_DEBUG_FRAG,
                 "Frag {} of {} {}".format(
@@ -582,7 +510,91 @@ class RF24Network(RadioMixin):
                 return False
         return True
 
-    def _wait_for_network_ack(self, to_node, to_pipe):
+    def _pre_write(self, frame: RF24NetworkFrame, traffic_direct):
+        """Helper to do prep work for _write_to_pipe(); like to TMRh20's _write()"""
+        # copy to frame_cache
+        self.frame_cache = frame
+
+        if traffic_direct != AUTO_ROUTING:
+            # Payload is multicast to the first node, and routed normally to the next
+            send_type = USER_TX_TO_LOGICAL_ADDRESS
+            if frame.header.to_node == NETWORK_MULTICAST_ADDR:
+                send_type = USER_TX_MULTICAST
+            if frame.header.to_node == traffic_direct:
+                # Payload is multicast to the first node, which is the recipient
+                send_type = USER_TX_TO_PHYSICAL_ADDRESS
+            return self._write(traffic_direct, send_type)
+        return self._write(traffic_direct, TX_NORMAL)
+
+    def _write(self, traffic_direct, send_type):
+        """Helper that transmits current frame_cache"""
+        if not self.frame_cache.header.is_valid():
+            return False
+        is_ack_type = self.frame_cache.is_ack_type()
+
+        to_node, to_pipe, use_multicast = self._logical_to_physical(
+            traffic_direct, send_type
+        )
+
+        if send_type == TX_ROUTED and traffic_direct == to_node and is_ack_type:
+            time.sleep(0.002)
+
+        # send the frame
+        result = self._write_to_pipe(to_node, to_pipe, use_multicast)
+        # self._log(
+        #     NETWORK_DEBUG_ROUTING,
+        #     "{} to {} via {} at pipe {}".format(
+        #         "Failed sending" if not result else "Successfully sent",
+        #         oct(frame.header.to_node),
+        #         oct(to_node),
+        #         to_pipe
+        #     ),
+        # )
+
+        # conditionally send the NETWORK_ACK message
+        if (
+            send_type == TX_ROUTED
+            and result
+            and to_node == traffic_direct
+            and is_ack_type
+        ):
+            # respond with a network ACK
+            self.frame_cache.header.message_type = NETWORK_ACK
+            self.frame_cache.header.to_node = self.frame_cache.header.from_node
+            ack_to_node, ack_to_pipe, use_multicast = self._logical_to_physical(
+                self.frame_cache.header.from_node, TX_ROUTED
+            )
+            ack_ok = self._write_to_pipe(ack_to_node, ack_to_pipe, use_multicast)
+            self._log(
+                NETWORK_DEBUG_ROUTING,
+                "Network ACK {} origin {} (pipe {})".format(
+                    "reached" if ack_ok else "failed to reach",
+                    oct(self.frame_cache.header.from_node),
+                    ack_to_pipe,
+                ),
+            )
+
+        # conditionally wait for NETWORK_ACK message
+        if (
+            result
+            and to_node != traffic_direct
+            and is_ack_type
+            and send_type in (TX_NORMAL, USER_TX_TO_LOGICAL_ADDRESS)
+        ):
+            result = self._wait_for_network_ack()
+            self._log(
+                NETWORK_DEBUG_ROUTING,
+                "Network ACK {}received from {} (pipe{})".format(
+                    "" if result else "not ", oct(to_node), to_pipe
+                ),
+            )
+
+        # ready radio to continue listening
+        if not self.network_flags & FLAG_FAST_FRAG:
+            self._rf24.listen = True
+        return result
+
+    def _wait_for_network_ack(self):
         """wait for network ack from target node"""
         result = True
         if self.network_flags & FLAG_FAST_FRAG:
@@ -590,23 +602,15 @@ class RF24Network(RadioMixin):
             self._rf24.auto_ack = 0x3E
         self._rf24.listen = True
         rx_timeout = int(time.monotonic_ns() / 1000000) + self._rx_timeout
-        while self.update() != NETWORK_ACK:
+        while self._net_update() != NETWORK_ACK:
             if int(time.monotonic_ns() / 1000000) > rx_timeout:
                 result = False
                 break
-        self._log(
-            NETWORK_DEBUG_ROUTING,
-            "Network ACK {}received from {} (pipe{})".format(
-                "" if result else "not ", oct(to_node), to_pipe
-            ),
-        )
         return result
 
-    def _write_to_pipe(self, frame: RF24NetworkFrame, to_node, to_pipe, use_multicast):
+    def _write_to_pipe(self, to_node, to_pipe, use_multicast):
         """send prepared frame to a particular network node pipe's RX address."""
         result = False
-        if not frame.header.is_valid:
-            return result
         if not self.network_flags & FLAG_FAST_FRAG:
             self.listen = False
         self._rf24.auto_ack = 0x3E + (not use_multicast)
@@ -624,7 +628,7 @@ class RF24Network(RadioMixin):
         if self._rf24.address() != addr:
             self._rf24.open_tx_pipe(addr)
 
-        result = self._rf24.send(frame.buffer, send_only=True)
+        result = self._rf24.send(self.frame_cache.buffer, send_only=True)
         timeout = int(time.monotonic_ns() / 1000000) + self._tx_timeout
         if not self.network_flags & FLAG_FAST_FRAG:
             while not result and int(time.monotonic_ns() / 1000000) < timeout:

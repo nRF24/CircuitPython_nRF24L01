@@ -114,42 +114,54 @@ For example:
     1-5 start with the `address_prefix`. To make each pipe's Phsyical address unique
     to a child node's Physical address, the `address_suffix` is used.
 
-    .. code-block:: text
-        :caption: The Logical address of the master node: ``0o0``
+    The Logical address of the master node: ``0o0``
 
-        The resulting physical addresses of the master node's children:
-        Physical address on pipe 1 is 0xCCCCCCCC3C using the Logical address 0o0
-        Physical address on pipe 2 is 0xCCCCCCCC33 using the Logical address 0o0
-        Physical address on pipe 3 is 0xCCCCCCCCCE using the Logical address 0o0
-        Physical address on pipe 4 is 0xCCCCCCCC3E using the Logical address 0o0
-        Physical address on pipe 5 is 0xCCCCCCCCE3 using the Logical address 0o0
+    .. csv-table::
+        :header: "pipe", "Phsyical Address (hexadecimal)"
+        :width: 10
+        :widths: 1, 9
 
-    .. code-block:: text
-        :caption: The Logical address of the master node's first child: ``0o1``
+        1, ``CC CC CC CC 3C``
+        2, ``CC CC CC CC 33``
+        3, ``CC CC CC CC CE``
+        4, ``CC CC CC CC 3E``
+        5, ``CC CC CC CC E3``
 
-        The resulting physical addresses of the master node's first child's children:
-        Physical address on pipe 1 is 0xCCCCCC3C3C using the Logical address 0o1
-        Physical address on pipe 2 is 0xCCCCCC3C33 using the Logical address 0o1
-        Physical address on pipe 3 is 0xCCCCCC3CCe using the Logical address 0o1
-        Physical address on pipe 4 is 0xCCCCCC3C3E using the Logical address 0o1
-        Physical address on pipe 5 is 0xCCCCCC3CE3 using the Logical address 0o1
+    The Logical address of the master node's first child: ``0o1``
 
-    .. code-block:: text
-        :caption: The Logical address of the master node's second child: ``0o2``
+    .. csv-table::
+        :header: "pipe", "Phsyical Address (hexadecimal)"
+        :width: 10
+        :widths: 1, 9
 
-        The resulting physical addresses of the master node's second child's children:
-        Physical address on pipe 1 is 0xCCCCCC333C using the Logical address 0o2
-        Physical address on pipe 2 is 0xCCCCCC3333 using the Logical address 0o2
-        Physical address on pipe 3 is 0xCCCCCC33Ce using the Logical address 0o2
-        Physical address on pipe 4 is 0xCCCCCC333E using the Logical address 0o2
-        Physical address on pipe 5 is 0xCCCCCC33E3 using the Logical address 0o2
+        1, ``CC CC CC 3C 3C``
+        2, ``CC CC CC 3C 33``
+        3, ``CC CC CC 3C Ce``
+        4, ``CC CC CC 3C 3E``
+        5, ``CC CC CC 3C E3``
 
-    .. code-block:: text
-        :caption:  The Logical address of the master node's third child's second child's first child: ``0o123``
+    The Logical address of the master node's second child: ``0o2``
 
-        The resulting physical addresses of the master node's first child's first child's children:
-        Physical address on pipe 1 is 0xCC3C33CE3C using the Logical address 0o123
-        Physical address on pipe 2 is 0xCC3C33CE33 using the Logical address 0o123
-        Physical address on pipe 3 is 0xCC3C33CECE using the Logical address 0o123
-        Physical address on pipe 4 is 0xCC3C33CE3E using the Logical address 0o123
-        Physical address on pipe 5 is 0xCC3C33CEE3 using the Logical address 0o123
+    .. csv-table::
+        :header: "pipe", "Phsyical Address (hexadecimal)"
+        :width: 10
+        :widths: 1, 9
+
+        1, ``CC CC CC 33 3C``
+        2, ``CC CC CC 33 33``
+        3, ``CC CC CC 33 Ce``
+        4, ``CC CC CC 33 3E``
+        5, ``CC CC CC 33 E3``
+
+    The Logical address of the master node's third child's second child's first child: ``0o123``
+
+    .. csv-table::
+        :header: "pipe", "Phsyical Address (hexadecimal)"
+        :width: 10
+        :widths: 1, 9
+
+        1, ``CC 3C 33 CE 3C``
+        2, ``CC 3C 33 CE 33``
+        3, ``CC 3C 33 CE CE``
+        4, ``CC 3C 33 CE 3E``
+        5, ``CC 3C 33 CE E3``

@@ -152,10 +152,9 @@ class RF24NetworkHeader:
     def __len__(self):
         return 8
 
-    @property
-    def is_valid(self) -> bool:
-        """A `bool` that describes if the `header`'s
-        :ref:`Logical Addresses <logical address>` are valid or not."""
+    def is_valid(self):
+        """Check if the `header`'s :ref:`Logical Addresses <logical address>` are valid
+        or not."""
         if self._from is not None and _is_addr_valid(self._from):
             return _is_addr_valid(self._to)
         return False
@@ -177,7 +176,7 @@ class RF24NetworkFrame:
             raise TypeError("header must be a RF24NetworkHeader object")
         if message is not None and not isinstance(message, (bytes, bytearray)):
             raise TypeError("message must be a `bytes` or `bytearray` object")
-        self.header = RF24NetworkHeader() if header is None else header
+        self.header = header if header is not None else RF24NetworkHeader()
         """The `RF24NetworkHeader` about the frame's `message`."""
         self.message = bytearray(0) if message is None else bytearray(message)
         """The entire message or a fragment of the message allocated to the
@@ -204,6 +203,6 @@ class RF24NetworkFrame:
         return len(self.header) + len(self.message)
 
     def is_ack_type(self):
-        """A `bool` attribute describing if the frame is to expect a `NETWORK_ACK`
-        message. This function |internal_use|"""
+        """Check if the frame is to expect a `NETWORK_ACK` message. This function
+        |internal_use|"""
         return 64 < self.header.message_type < 192

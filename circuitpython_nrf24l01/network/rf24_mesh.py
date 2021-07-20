@@ -177,7 +177,7 @@ class RF24Mesh(RF24Network):
         """returns False if timed out, otherwise True"""
         timeout = time.monotonic() + MESH_LOOKUP_TIMEOUT / 1000
         while self._net_update() not in (MESH_ID_LOOKUP, MESH_ADDR_LOOKUP):
-            if self.less_blocking_callback is not None:
+            if callable(self.less_blocking_callback):
                 self.less_blocking_callback()  # pylint: disable=not-callable
             if time.monotonic() > timeout:
                 return False
@@ -197,7 +197,7 @@ class RF24Mesh(RF24Network):
         if self._addr == NETWORK_DEFAULT_ADDR:
             return msg_t
         if msg_t == NETWORK_ADDR_REQUEST:
-            self._do_dhcp = True and not self._node_id
+            self._do_dhcp = True
 
         if not self.get_node_id():  # if this is the master node
             if msg_t in (MESH_ADDR_LOOKUP, MESH_ID_LOOKUP):
@@ -214,12 +214,11 @@ class RF24Mesh(RF24Network):
                     self.frame_cache.message = bytes([ret_val])
                 self.write(self.frame_cache)
             elif msg_t == MESH_ADDR_RELEASE:
-                # pylint discourages `del dict[key]` when searching by value
-                new_dict = {}
                 for n_id, addr in self._addr_dict.items():
-                    if addr != self.frame_cache.header.from_node:
-                        new_dict[n_id] = addr
-                self._addr_dict = new_dict
+                    if addr == self.frame_cache.header.from_node:
+                        # pylint: disable=unnecessary-dict-index-lookup
+                        del self._addr_dict[n_id]
+                        # pylint: enable=unnecessary-dict-index-lookup
         return msg_t
 
     def dhcp(self):
@@ -263,19 +262,19 @@ class RF24Mesh(RF24Network):
                     found_addr = True
                     break
             if not found_addr:
+                self._set_address(self.frame_cache.header.reserved, new_addr)
+
                 self.frame_cache.header.message_type = NETWORK_ADDR_RESPONSE
                 self.frame_cache.header.to_node = self.frame_cache.header.from_node
-
-                self._set_address(self.frame_cache.header.reserved, new_addr)
                 self.frame_cache.message = struct.pack("<H", new_addr)
                 if self.frame_cache.header.from_node != NETWORK_DEFAULT_ADDR:
                     if not self.write(self.frame_cache):
-                        self._rf24.resend(send_only=True)
+                        self.write(self.frame_cache)
                 else:
                     self.write(self.frame_cache, self.frame_cache.header.to_node)
                 break
             # log an error saying that address couldn't be assigned on the net lvl
-            self._log(NETWORK_DEBUG, "address {} not assigned.".format(new_addr))
+            self._log(NETWORK_DEBUG, "address {} not allocated.".format(new_addr))
 
     def _set_address(self, node_id, address, search_by_address=False):
         """Set or change a node_id and network address pair on the master node."""
@@ -283,19 +282,18 @@ class RF24Mesh(RF24Network):
             if not search_by_address:
                 if n_id == node_id:
                     self._addr_dict[n_id] = address
-                    break
+                    return
             else:
                 if addr == address:
                     # pylint: disable=unnecessary-dict-index-lookup
                     del self._addr_dict[n_id]
                     # pylint: enable=unnecessary-dict-index-lookup
                     self._addr_dict[node_id] = address
-                    break
-        if node_id not in self._addr_dict.keys():
-            self._addr_dict[node_id] = address
+                    return
+        self._addr_dict[node_id] = address
         # self.save_dhcp()
 
-    # pylint: disable=arguments-renamed
+    # pylint: disable=arguments-renamed,arguments-differ
     def send(self, message, message_type, to_node_id):
         """Send a message to a node id."""
         if not isinstance(message, (bytes, bytearray)):
@@ -318,7 +316,7 @@ class RF24Mesh(RF24Network):
             )
         )
 
-    # pylint: enable=arguments-renamed
+    # pylint: enable=arguments-renamed,arguments-differ
     def _request_address(self, level: int):
         """Get a new address assigned from the master node"""
         contacts = self._make_contacts(level)
@@ -360,7 +358,7 @@ class RF24Mesh(RF24Network):
                     )
                     if test_addr == contact:
                         break
-                if self.less_blocking_callback is not None:
+                if callable(self.less_blocking_callback):
                     self.less_blocking_callback()  # pylint: disable=not-callable
         if new_addr is None:
             return False
