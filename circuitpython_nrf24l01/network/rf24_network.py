@@ -24,7 +24,7 @@ __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from .network_mixin import RadioMixin
-# from ..rf24 import address_repr
+from ..rf24 import address_repr
 from .packet_structs import RF24NetworkFrame, RF24NetworkHeader, _is_addr_valid
 from .queue import FrameQueue, FrameQueueFrag
 from .constants import (
@@ -480,8 +480,6 @@ class RF24Network(RadioMixin):
             raise TypeError("expected object of type RF24NetworkFrame.")
         if len(frame.message) > self.max_message_length:
             raise ValueError("message's length is too large!")
-        if frame.header.from_node is None:
-            frame.header.from_node = self._addr
 
         if len(frame.message) > MAX_FRAG_SIZE and self._frag_enabled:
             # break message into fragments and send the multiple resulting frames
@@ -512,9 +510,9 @@ class RF24Network(RadioMixin):
 
     def _pre_write(self, frame: RF24NetworkFrame, traffic_direct):
         """Helper to do prep work for _write_to_pipe(); like to TMRh20's _write()"""
-        # copy to frame_cache
+        if frame.header.from_node is None:
+            frame.header.from_node = self._addr
         self.frame_cache = frame
-
         if traffic_direct != AUTO_ROUTING:
             # Payload is multicast to the first node, and routed normally to the next
             send_type = USER_TX_TO_LOGICAL_ADDRESS
@@ -524,7 +522,7 @@ class RF24Network(RadioMixin):
                 # Payload is multicast to the first node, which is the recipient
                 send_type = USER_TX_TO_PHYSICAL_ADDRESS
             return self._write(traffic_direct, send_type)
-        return self._write(traffic_direct, TX_NORMAL)
+        return self._write(frame.header.to_node, TX_NORMAL)
 
     def _write(self, traffic_direct, send_type):
         """Helper that transmits current frame_cache"""
