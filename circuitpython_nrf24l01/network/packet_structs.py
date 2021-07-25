@@ -61,7 +61,9 @@ class RF24NetworkHeader:
             )
         self._msg_t &= 0xFF
         self._id = RF24NetworkHeader.__next_id
+        # pylint: disable=unused-private-member
         RF24NetworkHeader.__next_id = (RF24NetworkHeader.__next_id + 1) & 0xFFFF
+        # pylint: enable=unused-private-member
         self._rsv = 0
 
     __next_id = 0
