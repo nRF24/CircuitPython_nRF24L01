@@ -29,7 +29,7 @@ Reserved Network Message Types
 Generic Network constants
 ----------------------------
 
-.. autodata:: circuitpython_nrf24l01.network.constants.MAX_USER_DEFINED_HEADER_TYPE
+.. autodata:: circuitpython_nrf24l01.network.constants.SYS_MSG_TYPES
 .. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_DEFAULT_ADDR
 .. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_MULTICAST_ADDR
 .. autodata:: circuitpython_nrf24l01.network.constants.MAX_FRAG_SIZE

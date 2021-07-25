@@ -58,7 +58,7 @@ jobs:
 
       - name: Pip install pylint & Sphinx stuff (and graphviz)
         run: |
-          pip install --force-reinstall pylint
+          pip install --upgrade setuptools twine wheel pylint
           pip install -r docs/requirements.txt
           sudo apt install graphviz
 
@@ -84,3 +84,8 @@ jobs:
       - name: Build docs
         working-directory: docs
         run: sphinx-build -E -W -b html . _build/html
+
+      - name: Check package distribution
+        run: |
+          python setup.py sdist
+          twine check dist/*

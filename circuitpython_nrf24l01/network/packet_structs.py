@@ -92,7 +92,7 @@ class RF24NetworkHeader:
 
         .. hint::
             Users are encouraged to specify a number in range [0, 127] (basically less
-            than or equal to `MAX_USER_DEFINED_HEADER_TYPE`) as there are
+            than or equal to `SYS_MSG_TYPES`) as there are
             `Reserved Message Types <constants.html#reserved-network-message-types>`_.
         """
         return self._msg_t

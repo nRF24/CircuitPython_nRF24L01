@@ -26,7 +26,7 @@ from micropython import const
 
 
 # generic (internal) constants
-MAX_USER_DEFINED_HEADER_TYPE = const(127)
+SYS_MSG_TYPES = const(127)
 """Any message type above 127 (but cannot exceed 255) are reserved for internal
 network usage."""
 NETWORK_DEFAULT_ADDR = const(0o4444)  #: used as a sentinel during routing messages

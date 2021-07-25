@@ -24,7 +24,7 @@ __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from .network_mixin import RadioMixin
-from ..rf24 import address_repr
+# from ..rf24 import address_repr
 from .packet_structs import RF24NetworkFrame, RF24NetworkHeader, _is_addr_valid
 from .queue import FrameQueue, FrameQueueFrag
 from .constants import (
@@ -49,7 +49,7 @@ from .constants import (
     USER_TX_TO_PHYSICAL_ADDRESS,
     USER_TX_TO_LOGICAL_ADDRESS,
     USER_TX_MULTICAST,
-    MAX_USER_DEFINED_HEADER_TYPE,
+    SYS_MSG_TYPES,
     FLAG_FAST_FRAG,
     FLAG_NO_POLL,
     MAX_FRAG_SIZE,
@@ -361,11 +361,7 @@ class RF24Network(RadioMixin):
             self.frame_cache.header.to_node = 0
             self._write(self.frame_cache.header.to_node, TX_NORMAL)
             return True
-        if (
-            self.ret_sys_msg
-            and msg_t > MAX_USER_DEFINED_HEADER_TYPE
-            or msg_t == NETWORK_ACK
-        ):
+        if self.ret_sys_msg and msg_t > SYS_MSG_TYPES or msg_t == NETWORK_ACK:
             self._log(
                 NETWORK_DEBUG_ROUTING, "Received system payload type " + str(msg_t)
             )
@@ -481,14 +477,20 @@ class RF24Network(RadioMixin):
         if len(frame.message) > self.max_message_length:
             raise ValueError("message's length is too large!")
 
-        if len(frame.message) > MAX_FRAG_SIZE and self._frag_enabled:
-            # break message into fragments and send the multiple resulting frames
-            return self._write_frag(frame, traffic_direct)
-        return self._pre_write(frame, traffic_direct)
+        if len(frame.message) <= MAX_FRAG_SIZE:
+            return self._pre_write(frame, traffic_direct)
 
-    def _write_frag(self, frame: RF24NetworkFrame, traffic_direct):
-        """write a message fragmented into multiple payloads"""
+        if not self._frag_enabled:
+            frame.message = frame.message[:MAX_FRAG_SIZE]
+            return self._pre_write(frame, traffic_direct)
+
+        # break message into fragments and send the multiple resulting frames
         frames = _frame_frags(_frag_msg(frame.message), frame.header)
+
+        if frame.header.to_node != NETWORK_DEFAULT_ADDR:
+            self.network_flags |= FLAG_FAST_FRAG
+            self._rf24.listen = False
+        result = True
         for i, frm in enumerate(frames):
             result = self._pre_write(frm, traffic_direct)
             retries = 3
@@ -505,8 +507,14 @@ class RF24Network(RadioMixin):
                 )
             )
             if not result:
-                return False
-        return True
+                break
+        if self.network_flags & FLAG_FAST_FRAG:
+            # C++ lib uses tx_timeout here to clear all TX FIFO levels. However,
+            # we're only using 1 level (for now - maybe more in a future update)
+            self._rf24.listen = True
+            # self._rf24.auto_ack = 0x3E  # performed by _write_to_pipe()
+            self.network_flags &= ~FLAG_FAST_FRAG
+        return result
 
     def _pre_write(self, frame: RF24NetworkFrame, traffic_direct):
         """Helper to do prep work for _write_to_pipe(); like to TMRh20's _write()"""
