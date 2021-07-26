@@ -219,6 +219,7 @@ class RF24Mesh(RF24Network):
                         # pylint: disable=unnecessary-dict-index-lookup
                         del self._addr_dict[n_id]
                         # pylint: enable=unnecessary-dict-index-lookup
+                        break
         return msg_t
 
     def dhcp(self):

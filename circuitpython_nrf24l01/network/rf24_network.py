@@ -540,7 +540,9 @@ class RF24Network(RadioMixin):
         #         use_multicast,
         #     ),
         # )
-        self._rf24.open_tx_pipe(self._pipe_address(to_node, to_pipe))
+        addr = self._pipe_address(to_node, to_pipe)
+        if not use_multicast or (use_multicast and addr != self.address()):
+            self._rf24.open_tx_pipe(addr)
         if len(self.frame_cache.message) <= MAX_FRAG_SIZE:
             result = self._rf24.send(self.frame_cache.buffer, send_only=True)
             if not result:
