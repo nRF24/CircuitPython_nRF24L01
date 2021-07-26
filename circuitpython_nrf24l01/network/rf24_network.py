@@ -24,14 +24,9 @@ __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from .network_mixin import RadioMixin
-from ..rf24 import address_repr
 from .packet_structs import RF24NetworkFrame, RF24NetworkHeader, _is_addr_valid
 from .queue import FrameQueue, FrameQueueFrag
 from .constants import (
-    NETWORK_DEBUG_MINIMAL,
-    NETWORK_DEBUG,
-    NETWORK_DEBUG_FRAG,
-    NETWORK_DEBUG_ROUTING,
     NETWORK_FRAG_FIRST,
     NETWORK_FRAG_MORE,
     NETWORK_FRAG_LAST,
@@ -54,6 +49,15 @@ from .constants import (
     MAX_FRAG_SIZE,
 )
 
+# pylint: disable=unused-import
+from ..rf24 import address_repr
+from .constants import (
+    NETWORK_DEBUG_MINIMAL,
+    NETWORK_DEBUG,
+    NETWORK_DEBUG_FRAG,
+    NETWORK_DEBUG_ROUTING,
+)
+# pylint: enable=unused-import
 
 def _level_to_address(level):
     """translate decimal tree ``level`` into an octal node address"""
