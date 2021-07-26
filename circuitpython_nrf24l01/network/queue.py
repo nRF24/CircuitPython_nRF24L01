@@ -66,6 +66,7 @@ class FrameQueue(LoggerMixin):
             if (
                 frm.header.from_node == frame.header.from_node
                 and frm.header.frame_id == frame.header.frame_id
+                and frm.header.message_type == frame.header.message_type
             ):
                 return False  # already enqueued this frame
         self._list.append(frame)

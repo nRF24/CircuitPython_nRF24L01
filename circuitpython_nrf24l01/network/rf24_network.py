@@ -63,7 +63,7 @@ def _level_to_address(level):
     return level_addr
 
 
-def _frame_frags(messages, header):
+def frame_frags(messages, header):
     """Add correct frame headers to a fragmented list of messages"""
     queue = FrameQueue()
     last_frame = len(messages) - 1
@@ -86,7 +86,7 @@ def _frame_frags(messages, header):
     return queue
 
 
-def _frag_msg(msg):
+def frag_msg(msg):
     """Fragment a single message into a list of messages"""
     messages = []
     max_len = len(msg)
@@ -597,11 +597,12 @@ class RF24Network(RadioMixin):
                 result = self._tx_standby(self._tx_timeout)
         else:
             # break message into fragments and send the multiple resulting frames
-            frames = _frame_frags(
-                _frag_msg(self.frame_cache.message), self.frame_cache.header
+            frames = frame_frags(
+                frag_msg(self.frame_cache.message), self.frame_cache.header
             )
             count = 0
             total = len(frames)
+            print("total frames =", total)
             while len(frames):
                 result = self._rf24.send(frames.dequeue().buffer, send_only=True)
                 retries = 3
