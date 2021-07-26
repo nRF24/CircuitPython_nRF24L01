@@ -532,14 +532,14 @@ class RF24Network(RadioMixin):
         result = False
         self._rf24.auto_ack = 0x3E + (not use_multicast)
         self.listen = False
-        self._log(
-            NETWORK_DEBUG,
-            "Sending {} on pipe {} (multicasting={})".format(
-                self.frame_cache.header.to_string(),
-                to_pipe,
-                use_multicast,
-            ),
-        )
+        # self._log(
+        #     NETWORK_DEBUG,
+        #     "Sending {} on pipe {} (multicasting={})".format(
+        #         self.frame_cache.header.to_string(),
+        #         to_pipe,
+        #         use_multicast,
+        #     ),
+        # )
         self._rf24.open_tx_pipe(self._pipe_address(to_node, to_pipe))
         if len(self.frame_cache.message) <= MAX_FRAG_SIZE:
             result = self._rf24.send(self.frame_cache.buffer, send_only=True)
