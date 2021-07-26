@@ -350,12 +350,7 @@ class RF24Mesh(RF24Network):
                     and self.frame_cache.header.reserved == self.node_id
                 ):
                     new_addr = struct.unpack("<H", self.frame_cache.message[:2])[0]
-                    test_addr = new_addr
-                    mask = 0
-                    for _ in range(_get_level(contact) * 3):
-                        mask <<= 3
-                        mask += 7
-                    test_addr &= mask
+                    test_addr = new_addr & ~(0xFFFF << (_get_level(contact) * 3))
                     self._log(
                         NETWORK_DEBUG,
                         "{} vs {}; new address ({}) check {}!".format(
