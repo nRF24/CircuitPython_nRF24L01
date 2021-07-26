@@ -50,7 +50,6 @@ from .constants import (
     USER_TX_TO_LOGICAL_ADDRESS,
     USER_TX_MULTICAST,
     SYS_MSG_TYPES,
-    FLAG_FAST_FRAG,
     FLAG_NO_POLL,
     MAX_FRAG_SIZE,
 )
@@ -66,7 +65,7 @@ def _level_to_address(level):
 
 def _frame_frags(messages, header):
     """Add correct frame headers to a fragmented list of messages"""
-    frames = []
+    queue = FrameQueue()
     last_frame = len(messages) - 1
     for i, msg in enumerate(messages):
         # copy header
@@ -83,8 +82,8 @@ def _frame_frags(messages, header):
         else:
             head.message_type = NETWORK_FRAG_MORE
 
-        frames.append(RF24NetworkFrame(header=head, message=msg))
-    return frames
+        queue.enqueue(RF24NetworkFrame(header=head, message=msg))
+    return queue
 
 
 def _frag_msg(msg):
@@ -477,44 +476,9 @@ class RF24Network(RadioMixin):
         if len(frame.message) > self.max_message_length:
             raise ValueError("message's length is too large!")
 
-        if len(frame.message) <= MAX_FRAG_SIZE:
-            return self._pre_write(frame, traffic_direct)
-
-        if not self._frag_enabled:
+        if len(frame.message) > MAX_FRAG_SIZE and not self._frag_enabled:
             frame.message = frame.message[:MAX_FRAG_SIZE]
-            return self._pre_write(frame, traffic_direct)
-
-        # break message into fragments and send the multiple resulting frames
-        frames = _frame_frags(_frag_msg(frame.message), frame.header)
-
-        if frame.header.to_node != NETWORK_DEFAULT_ADDR:
-            self.network_flags |= FLAG_FAST_FRAG
-            self._rf24.listen = False
-        result = True
-        for i, frm in enumerate(frames):
-            result = self._pre_write(frm, traffic_direct)
-            retries = 3
-            while not result and retries:
-                time.sleep(0.002)
-                result = self._pre_write(frm, traffic_direct)
-                retries -= 1
-            self._log(
-                NETWORK_DEBUG_FRAG,
-                "Frag {} of {} {}".format(
-                    i + 1,
-                    len(frames),
-                    "sent successfully" if result else "failed to send. Aborting"
-                )
-            )
-            if not result:
-                break
-        if self.network_flags & FLAG_FAST_FRAG:
-            # C++ lib uses tx_timeout here to clear all TX FIFO levels. However,
-            # we're only using 1 level (for now - maybe more in a future update)
-            self._rf24.listen = True
-            # self._rf24.auto_ack = 0x3E  # performed by _write_to_pipe()
-            self.network_flags &= ~FLAG_FAST_FRAG
-        return result
+        return self._pre_write(frame, traffic_direct)
 
     def _pre_write(self, frame: RF24NetworkFrame, traffic_direct):
         """Helper to do prep work for _write_to_pipe(); like to TMRh20's _write()"""
@@ -596,16 +560,13 @@ class RF24Network(RadioMixin):
             )
 
         # ready radio to continue listening
-        if not self.network_flags & FLAG_FAST_FRAG:
-            self._rf24.listen = True
+        self._rf24.listen = True
         return result
 
     def _wait_for_network_ack(self):
         """wait for network ack from target node"""
         result = True
-        if self.network_flags & FLAG_FAST_FRAG:
-            self.network_flags &= ~FLAG_FAST_FRAG
-            self._rf24.auto_ack = 0x3E
+        self._rf24.auto_ack = 0x3E
         self._rf24.listen = True
         rx_timeout = int(time.monotonic_ns() / 1000000) + self._rx_timeout
         while self._net_update() != NETWORK_ACK:
@@ -617,9 +578,8 @@ class RF24Network(RadioMixin):
     def _write_to_pipe(self, to_node, to_pipe, use_multicast):
         """send prepared frame to a particular network node pipe's RX address."""
         result = False
-        if not self.network_flags & FLAG_FAST_FRAG:
-            self.listen = False
         self._rf24.auto_ack = 0x3E + (not use_multicast)
+        self.listen = False
         # self._log(
         #     NETWORK_DEBUG,
         #     "Sending type {} with ID {} from {} to {} on pipe {}".format(
@@ -630,15 +590,36 @@ class RF24Network(RadioMixin):
         #         to_pipe,
         #     ),
         # )
-        addr = self._pipe_address(to_node, to_pipe)
-        if self._rf24.address() != addr:
-            self._rf24.open_tx_pipe(addr)
-
-        result = self._rf24.send(self.frame_cache.buffer, send_only=True)
-        timeout = int(time.monotonic_ns() / 1000000) + self._tx_timeout
-        if not self.network_flags & FLAG_FAST_FRAG:
-            while not result and int(time.monotonic_ns() / 1000000) < timeout:
-                result = self._rf24.resend(send_only=True)
+        self._rf24.open_tx_pipe(self._pipe_address(to_node, to_pipe))
+        if len(self.frame_cache.message) <= MAX_FRAG_SIZE:
+            result = self._rf24.send(self.frame_cache.buffer, send_only=True)
+            if not result:
+                result = self._tx_standby(self._tx_timeout)
+        else:
+            # break message into fragments and send the multiple resulting frames
+            frames = _frame_frags(
+                _frag_msg(self.frame_cache.message), self.frame_cache.header
+            )
+            count = 0
+            total = len(frames)
+            while len(frames):
+                result = self._rf24.send(frames.dequeue().buffer, send_only=True)
+                retries = 3
+                while not result and retries:
+                    time.sleep(0.002)
+                    result = self._tx_standby(self._tx_timeout)
+                    retries -= 1
+                self._log(
+                    NETWORK_DEBUG_FRAG,
+                    "Frag {} of {} {}".format(
+                        count + 1,
+                        total,
+                        "sent successfully" if result else "failed to send. Aborting"
+                    )
+                )
+                if not result:
+                    break
+                count += 1
         self._rf24.auto_ack = 0x3E
         return result
 

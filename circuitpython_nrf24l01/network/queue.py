@@ -126,17 +126,15 @@ class FrameQueueFrag(FrameQueue):
                 if frame.header.message_type != NETWORK_FRAG_LAST
                 else 1,
             )
+        if frame.header.message_type == NETWORK_FRAG_FIRST:
+            self._log(NETWORK_DEBUG_FRAG, prompt + "type NETWORK_FRAG_FIRST")
+            self._frag_cache = frame
+            return True
         if (
             self._frag_cache is not None
             and frame.header.to_node == self._frag_cache.header.to_node
             and frame.header.frame_id == self._frag_cache.header.frame_id
         ):
-            if (
-                frame.header.message_type == NETWORK_FRAG_FIRST
-                and self._frag_cache.header.message_type == NETWORK_FRAG_FIRST
-            ):
-                self._log(NETWORK_DEBUG_FRAG, prompt + "duplicate 1st fragment dropped")
-                return False  # Already received this fragment
             if len(self._frag_cache.message) + len(
                 frame.message
             ) > self.max_message_length or (
@@ -162,10 +160,6 @@ class FrameQueueFrag(FrameQueue):
                 super().enqueue(self._frag_cache)
                 self._frag_cache = None
                 return True
-        if frame.header.message_type == NETWORK_FRAG_FIRST:
-            self._log(NETWORK_DEBUG_FRAG, prompt + "type NETWORK_FRAG_FIRST")
-            self._frag_cache = frame
-            return True
         self._log(
             NETWORK_DEBUG_FRAG, prompt + "dropping fragment due to missing 1st fragment"
         )

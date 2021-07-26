@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 """A module to hold all usuall accesssible RF24 API via the RF24Network API"""
 # pylint: disable=missing-docstring
+import time
 from ..rf24 import RF24
 
 logging = None  # pylint: disable=invalid-name
@@ -59,6 +60,13 @@ class RadioMixin(LoggerMixin):
     def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
         self._rf24 = RF24(spi, csn, ce_pin, spi_frequency=spi_frequency)
         super().__init__()
+
+    def _tx_standby(self, delta_time):
+        result = False
+        timeout = int(time.monotonic_ns() / 1000000) + delta_time
+        while not result and int(time.monotonic_ns() / 1000000) < timeout:
+            result = self._rf24.resend(send_only=True)
+        return result
 
     @property
     def power(self):

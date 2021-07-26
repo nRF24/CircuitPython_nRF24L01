@@ -171,7 +171,7 @@ class RF24:
                 # time.sleep(0.000005)
                 spi.write_readinto(bytes([reg, 0]), in_buf)
         self._status = in_buf[0]
-        # print("SPI read 1 byte from", hex(reg), hex(in_buf[1]))
+        # print("SPI read 1 byte from", hex_upper(reg), hex_upper(in_buf[1]))
         return in_buf[1]
 
     def _reg_read_bytes(self, reg, buf_len=5):
@@ -182,7 +182,7 @@ class RF24:
                 spi.write_readinto(bytes([reg] + [0] * buf_len), in_buf)
         self._status = in_buf[0]
         # print("SPI read {} bytes from {} {}".format(
-        #     buf_len, hex(reg), "0x" + address_repr(in_buf[1:])
+        #     buf_len, hex_upper(reg), address_repr(in_buf[1:])
         # ))
         return in_buf[1:]
 
@@ -194,7 +194,7 @@ class RF24:
                 spi.write_readinto(bytes([0x20 | reg]) + out_buf, in_buf)
         self._status = in_buf[0]
         # print("SPI write {} bytes to {} {}".format(
-        #     len(out_buf), hex(reg), "0x" + address_repr(out_buf)
+        #     len(out_buf), hex_upper(reg), address_repr(out_buf)
         # ))
 
     def _reg_write(self, reg, value=None):
@@ -211,8 +211,8 @@ class RF24:
         #     print(
         #         "SPI write",
         #         "command" if value is None else "1 byte to",
-        #         hex(out_buf[0]),
-        #         "" if value is None else hex(value),
+        #         hex_upper(reg),
+        #         "" if value is None else hex_upper(value),
         #     )
 
     @property
@@ -827,9 +827,8 @@ class RF24:
 
     def resend(self, send_only=False):
         """Manually re-send the first-out payload from TX FIFO buffers."""
-        result = False
         if self.fifo(True, True):
-            return result
+            return False
         self.ce_pin = 0
         if not send_only and (self._status >> 1) < 6:
             self.flush_rx()
