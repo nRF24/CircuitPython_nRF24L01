@@ -161,6 +161,16 @@ class RF24NetworkHeader:
             return _is_addr_valid(self._to)
         return False
 
+    def to_string(self):
+        """Returns a `str` describing all of the header's attributes."""
+        return "from {} to {} type {} id {} reserved {}".format(
+            oct(self._from),
+            oct(self._to),
+            self._msg_t,
+            self._id,
+            self._rsv,
+        )
+
 
 class RF24NetworkFrame:
     """Structure of a single frame for either a fragmented message of payloads

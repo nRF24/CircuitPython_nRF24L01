@@ -69,7 +69,9 @@ class FrameQueue(LoggerMixin):
                 and frm.header.message_type == frame.header.message_type
             ):
                 return False  # already enqueued this frame
-        self._list.append(frame)
+        new_frame = RF24NetworkFrame()
+        new_frame.decode(frame.buffer)
+        self._list.append(new_frame)
         return True
 
     def peek(self) -> RF24NetworkFrame:
@@ -106,7 +108,7 @@ class FrameQueueFrag(FrameQueue):
 
     def __init__(self, max_queue_size=6):
         super().__init__(max_queue_size)
-        self._frag_cache = None
+        self._frag_cache = RF24NetworkFrame()  # invalid sentinel
 
     def enqueue(self, frame: RF24NetworkFrame) -> bool:
         """Add a `RF24NetworkFrame` to the queue."""
@@ -119,49 +121,35 @@ class FrameQueueFrag(FrameQueue):
         return super().enqueue(frame)
 
     def _cache_frag_frame(self, frame: RF24NetworkFrame) -> bool:
-        prompt = ""
-        if self._logger is not None:
-            prompt = "queueing fragment id {}.{} ".format(
-                frame.header.frame_id,
-                frame.header.reserved
-                if frame.header.message_type != NETWORK_FRAG_LAST
-                else 1,
-            )
         if frame.header.message_type == NETWORK_FRAG_FIRST:
-            self._log(NETWORK_DEBUG_FRAG, prompt + "type NETWORK_FRAG_FIRST")
-            self._frag_cache = frame
+            self._frag_cache.decode(frame.buffer)  # make a copy not a reference
             return True
         if (
-            self._frag_cache is not None
+            self._frag_cache.header.is_valid()
             and frame.header.to_node == self._frag_cache.header.to_node
             and frame.header.frame_id == self._frag_cache.header.frame_id
         ):
-            if len(self._frag_cache.message) + len(
-                frame.message
-            ) > self.max_message_length or (
-                self._frag_cache.header.reserved - 1 != frame.header.reserved
-                and frame.header.message_type != NETWORK_FRAG_LAST
+            if (
+                len(self._frag_cache.message + frame.message) > self.max_message_length
+                or (
+                    self._frag_cache.header.reserved - 1 != frame.header.reserved
+                    and frame.header.message_type != NETWORK_FRAG_LAST
+                )
             ):
                 self._log(
                     NETWORK_DEBUG_FRAG,
-                    prompt
-                    + "dropping fragment due to excessive size or not sequential",
+                    "dropping fragment due to excessive size or not sequential",
                 )
                 return False
-            if frame.header.message_type == NETWORK_FRAG_MORE:
-                self._log(NETWORK_DEBUG_FRAG, prompt + "type NETWORK_FRAG_MORE")
-                self._frag_cache.header = frame.header
+            if frame.header.message_type in (NETWORK_FRAG_MORE, NETWORK_FRAG_LAST):
+                self._frag_cache.header.decode(frame.header.buffer)
                 self._frag_cache.message += frame.message
-                return True
-            if frame.header.message_type == NETWORK_FRAG_LAST:
-                self._log(NETWORK_DEBUG_FRAG, prompt + "type NETWORK_FRAG_LAST")
-                self._frag_cache.header = frame.header
-                self._frag_cache.header.message_type = frame.header.reserved
-                self._frag_cache.message += frame.message
-                super().enqueue(self._frag_cache)
-                self._frag_cache = None
+                if frame.header.message_type == NETWORK_FRAG_LAST:
+                    self._frag_cache.header.message_type = frame.header.reserved
+                    super().enqueue(self._frag_cache)
+                    self._frag_cache = RF24NetworkFrame()  # invalidate cache
                 return True
         self._log(
-            NETWORK_DEBUG_FRAG, prompt + "dropping fragment due to missing 1st fragment"
+            NETWORK_DEBUG_FRAG, "dropping fragment due to missing 1st fragment"
         )
         return False

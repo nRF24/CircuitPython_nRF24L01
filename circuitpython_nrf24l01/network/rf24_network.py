@@ -24,7 +24,7 @@ __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from .network_mixin import RadioMixin
-# from ..rf24 import address_repr
+from ..rf24 import address_repr
 from .packet_structs import RF24NetworkFrame, RF24NetworkHeader, _is_addr_valid
 from .queue import FrameQueue, FrameQueueFrag
 from .constants import (
@@ -66,7 +66,7 @@ def _level_to_address(level):
 def frame_frags(messages, header):
     """Add correct frame headers to a fragmented list of messages"""
     queue = FrameQueue()
-    last_frame = len(messages) - 1
+    last_frame = len(messages)
     for i, msg in enumerate(messages):
         # copy header
         head = RF24NetworkHeader()
@@ -74,7 +74,7 @@ def frame_frags(messages, header):
 
         # make header unique to frag pos & id
         head.reserved = last_frame - i
-        if i == last_frame:
+        if i == last_frame - 1:
             head.message_type = NETWORK_FRAG_LAST
             head.reserved = header.message_type
         elif not i:
@@ -301,16 +301,13 @@ class RF24Network(RadioMixin):
                 continue
 
             ret_val = self.frame_cache.header.message_type
-            # self._log(
-            #     NETWORK_DEBUG,
-            #     "Received packet: from {} to {} type {} id {}\n\t{}".format(
-            #         oct(self.frame_cache.header.from_node),
-            #         oct(self.frame_cache.header.to_node),
-            #         self.frame_cache.header.message_type,
-            #         self.frame_cache.header.frame_id,
-            #         address_repr(self.frame_cache.buffer, reverse=False, delimit=" ")
-            #     )
-            # )
+            self._log(
+                NETWORK_DEBUG,
+                "Received packet: {}\n\t{}".format(
+                    self.frame_cache.header.to_string(),
+                    address_repr(self.frame_cache.buffer, reverse=False, delimit=" ")
+                )
+            )
             keep_updating = False
             if self.frame_cache.header.to_node == self._addr:
                 # frame was directed to this node
@@ -340,10 +337,7 @@ class RF24Network(RadioMixin):
         return ret_val
 
     def _handle_frame_for_this_node(self) -> bool:
-        """
-        :Returns: `False` if the frame is not consumed or `True` if the frame
-            is consumed.
-        """
+        """Returns False if the frame is not consumed or True if consumed"""
         msg_t = self.frame_cache.header.message_type
         if msg_t == NETWORK_PING:
             return True
@@ -382,10 +376,7 @@ class RF24Network(RadioMixin):
         return False
 
     def _handle_frame_for_other_node(self) -> bool:
-        """
-        :Returns: `False` if the frame is not consumed or `True` if the frame
-            is consumed.
-        """
+        """Returns False if the frame is not consumed or True if consumed"""
         if self.allow_multicast:
             if self.frame_cache.header.to_node == NETWORK_MULTICAST_ADDR:
                 if self.frame_cache.header.message_type == NETWORK_POLL:
@@ -602,7 +593,6 @@ class RF24Network(RadioMixin):
             )
             count = 0
             total = len(frames)
-            print("total frames =", total)
             while len(frames):
                 result = self._rf24.send(frames.dequeue().buffer, send_only=True)
                 retries = 3
