@@ -549,16 +549,18 @@ class RF24Network(RadioMixin):
                     "" if result else "not ", oct(to_node), to_pipe
                 ),
             )
+            return result
 
         # ready radio to continue listening
         self._rf24.listen = True
+        self._rf24.auto_ack = 0x3E
         return result
 
     def _wait_for_network_ack(self):
         """wait for network ack from target node"""
         result = True
-        self._rf24.auto_ack = 0x3E
         self._rf24.listen = True
+        self._rf24.auto_ack = 0x3E
         rx_timeout = int(time.monotonic_ns() / 1000000) + self._rx_timeout
         while self._net_update() != NETWORK_ACK:
             if int(time.monotonic_ns() / 1000000) > rx_timeout:
@@ -611,7 +613,6 @@ class RF24Network(RadioMixin):
                 if not result:
                     break
                 count += 1
-        self._rf24.auto_ack = 0x3E
         return result
 
     # the following function was ported from the C++ lib, but
