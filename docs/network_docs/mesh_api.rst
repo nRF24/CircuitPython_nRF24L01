@@ -37,17 +37,17 @@ send()
 
     .. hint::
         If you already know the destination node's :ref:`Logical Address <Logical Address>`,
-        then you can use :meth:`~circuitpython_nrf24l01.network.rf24_network.RF24Network.write()`
+        then you can use :meth:`~circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.write()`
         for quicker operation.
 
-    :param bytes,bytearray message: The frame's `message` to be transmitted.
+    :param int to_node_id: The unique mesh network `node_id` of the frame's destination.
     :param int message_type: The `int` that describes the frame header's `message_type`.
 
         .. note:: Be mindful of the message's size as this cannot exceed
             `MAX_FRAG_SIZE` (24 bytes) if `fragmentation` is disabled. If `fragmentation` is
             enabled (it is by default), then the message's size must be less than
             :attr:`~circuitpython_nrf24l01.network.rf24_network.RF24Network.max_message_length`.
-    :param int to_node_id: The unique mesh network `node_id` of the frame's destination.
+    :param bytes,bytearray message: The frame's `message` to be transmitted.
 
 node_id
 -------------
@@ -115,6 +115,22 @@ get_address()
           - ``-1`` means the address lookup operation failed due to no network connection
             or the master node has not assigned a :ref:`Logical Address <Logical Address>`
             for the specified ``node_id``.
+
+write()
+-----------------
+
+.. automethod:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.write
+
+    :param int to_node_address: The network node's :ref:`Logical Address <Logical Address>`.
+        of the frame's destination. This must be the destination's network `node_address` which is
+        not be confused with a mesh node's `node_id`.
+    :param int message_type: The `int` that describes the frame header's `message_type`.
+
+        .. note:: Be mindful of the message's size as this cannot exceed
+            `MAX_FRAG_SIZE` (24 bytes) if `fragmentation` is disabled. If `fragmentation` is
+            enabled (it is by default), then the message's size must be less than
+            :attr:`~circuitpython_nrf24l01.network.rf24_network.RF24Network.max_message_length`.
+    :param bytes,bytearray message: The frame's `message` to be transmitted.
 
 check_connection()
 ------------------

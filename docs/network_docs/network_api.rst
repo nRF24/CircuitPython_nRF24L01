@@ -218,6 +218,14 @@ tx_timeout
 
 .. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.tx_timeout
 
+    Defaults to 25.
+
+route_timeout
+---------------
+
+.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.route_timeout
+
+    Defaults to 75.
 
 fragmentation
 ---------------

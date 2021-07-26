@@ -79,11 +79,13 @@ class RF24Network(RadioMixin):
         self._addr = 0
         self._addr_mask = 0
         self._addr_mask_inverted = 0
-        self._tx_timeout = 25
-        self._rx_timeout = 3 * self._tx_timeout
         self._multicast_relay = True
         self._frag_enabled = True
 
+        #: The timeout (in milliseconds) to wait for successful transmission.
+        self.tx_timeout = 25
+        #: The timeout (in milliseconds) to wait for transmission's `NETWORK_ACK`.
+        self.route_timeout = 3 * self.tx_timeout
         #: enable/disable (`True`/`False`) multicasting
         self.allow_multicast = True
         self.ret_sys_msg = False  #: Force `update()` to return on system message types.
@@ -170,17 +172,6 @@ class RF24Network(RadioMixin):
             self.queue = new_q
             del prev_q
             self._frag_enabled = enabled
-
-    @property
-    def tx_timeout(self):
-        """The timeout (in milliseconds) to wait for successful transmission.
-        Defaults to 25. The internal rx_timeout will be three times this value."""
-        return self._tx_timeout
-
-    @tx_timeout.setter
-    def tx_timeout(self, val):
-        self._tx_timeout = int(max(val, 1))
-        self._rx_timeout = 3 * self._tx_timeout
 
     @property
     def multicast_relay(self):
@@ -421,25 +412,26 @@ class RF24Network(RadioMixin):
         `network level <topology.html#network-levels>`_."""
         level = min(6, max(level, 0)) if level is not None else self._multicast_level
         header.to_node = NETWORK_MULTICAST_ADDR
-        return self.write(RF24NetworkFrame(header, message), _level_to_address(level))
+        return self._pre_write(
+            RF24NetworkFrame(header, message), _level_to_address(level)
+        )
 
     def send(self, header: RF24NetworkHeader, message):
         """Deliver a message according to the header information."""
-        return self.write(RF24NetworkFrame(header, message))
+        return self._pre_write(RF24NetworkFrame(header, message))
 
     def write(self, frame: RF24NetworkFrame, traffic_direct=AUTO_ROUTING):
         """Deliver a network frame."""
+        return self._pre_write(frame, traffic_direct)
+
+    def _pre_write(self, frame: RF24NetworkFrame, traffic_direct=AUTO_ROUTING):
+        """Helper to do prep work for _write_to_pipe(); like to TMRh20's _write()"""
         if not isinstance(frame, RF24NetworkFrame):
             raise TypeError("expected object of type RF24NetworkFrame.")
         if len(frame.message) > self.max_message_length:
             raise ValueError("message's length is too large!")
-
         if len(frame.message) > MAX_FRAG_SIZE and not self._frag_enabled:
             frame.message = frame.message[:MAX_FRAG_SIZE]
-        return self._pre_write(frame, traffic_direct)
-
-    def _pre_write(self, frame: RF24NetworkFrame, traffic_direct):
-        """Helper to do prep work for _write_to_pipe(); like to TMRh20's _write()"""
         if frame.header.from_node is None:
             frame.header.from_node = self._addr
         self.frame_cache = frame
@@ -528,7 +520,7 @@ class RF24Network(RadioMixin):
         result = True
         self._rf24.listen = True
         self._rf24.auto_ack = 0x3E
-        rx_timeout = int(time.monotonic_ns() / 1000000) + self._rx_timeout
+        rx_timeout = int(time.monotonic_ns() / 1000000) + self.route_timeout
         while self._net_update() != NETWORK_ACK:
             if int(time.monotonic_ns() / 1000000) > rx_timeout:
                 result = False
@@ -552,7 +544,7 @@ class RF24Network(RadioMixin):
         if len(self.frame_cache.message) <= MAX_FRAG_SIZE:
             result = self._rf24.send(self.frame_cache.buffer, send_only=True)
             if not result:
-                result = self._tx_standby(self._tx_timeout)
+                result = self._tx_standby(self.tx_timeout)
         else:
             # break message into fragments and send the multiple resulting frames
             total = bool(len(self.frame_cache.message) % MAX_FRAG_SIZE) + int(
@@ -580,7 +572,7 @@ class RF24Network(RadioMixin):
                 retries = 3
                 while not result and retries:
                     time.sleep(0.002)
-                    result = self._tx_standby(self._tx_timeout)
+                    result = self._tx_standby(self.tx_timeout)
                     retries -= 1
                 # self._log(
                 #     NETWORK_DEBUG_FRAG,
