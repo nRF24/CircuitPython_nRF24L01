@@ -63,43 +63,6 @@ def _level_to_address(level):
     return level_addr
 
 
-def frame_frags(messages, header):
-    """Add correct frame headers to a fragmented list of messages"""
-    queue = FrameQueue()
-    last_frame = len(messages)
-    for i, msg in enumerate(messages):
-        # copy header
-        head = RF24NetworkHeader()
-        head.decode(header.buffer)
-
-        # make header unique to frag pos & id
-        head.reserved = last_frame - i
-        if i == last_frame - 1:
-            head.message_type = NETWORK_FRAG_LAST
-            head.reserved = header.message_type
-        elif not i:
-            head.message_type = NETWORK_FRAG_FIRST
-        else:
-            head.message_type = NETWORK_FRAG_MORE
-
-        queue.enqueue(RF24NetworkFrame(header=head, message=msg))
-    return queue
-
-
-def frag_msg(msg):
-    """Fragment a single message into a list of messages"""
-    messages = []
-    max_len = len(msg)
-    i = 0
-    start = i
-    while i <= max_len:
-        if i - start == MAX_FRAG_SIZE or i == max_len:
-            messages.append(msg[start : i])
-            start = i
-        i += 1
-    return messages
-
-
 class RF24Network(RadioMixin):
     """The object used to instantiate the nRF24L01 as a network node."""
 
@@ -590,13 +553,28 @@ class RF24Network(RadioMixin):
                 result = self._tx_standby(self._tx_timeout)
         else:
             # break message into fragments and send the multiple resulting frames
-            frames = frame_frags(
-                frag_msg(self.frame_cache.message), self.frame_cache.header
+            total = bool(len(self.frame_cache.message) % MAX_FRAG_SIZE) + int(
+                len(self.frame_cache.message) / MAX_FRAG_SIZE
             )
-            count = 0
-            total = len(frames)
-            while len(frames):
-                result = self._rf24.send(frames.dequeue().buffer, send_only=True)
+            msg_t = self.frame_cache.header.message_type
+            for count in range(total):
+                buf_start = count * MAX_FRAG_SIZE
+                buf_end = count * MAX_FRAG_SIZE + MAX_FRAG_SIZE
+                self.frame_cache.header.reserved = total - count
+                if count == total - 1:
+                    self.frame_cache.header.message_type = NETWORK_FRAG_LAST
+                    self.frame_cache.header.reserved = msg_t
+                    buf_end = len(self.frame_cache.message)
+                elif not count:
+                    self.frame_cache.header.message_type = NETWORK_FRAG_FIRST
+                else:
+                    self.frame_cache.header.message_type = NETWORK_FRAG_MORE
+
+                result = self._rf24.send(
+                    self.frame_cache.header.buffer
+                    + self.frame_cache.message[buf_start : buf_end],
+                    send_only=True
+                )
                 retries = 3
                 while not result and retries:
                     time.sleep(0.002)
@@ -612,7 +590,7 @@ class RF24Network(RadioMixin):
                 )
                 if not result:
                     break
-                count += 1
+            self.frame_cache.header.message_type = msg_t
         return result
 
     # the following function was ported from the C++ lib, but
