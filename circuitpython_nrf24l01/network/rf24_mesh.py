@@ -134,7 +134,7 @@ class RF24Mesh(RF24Network):
 
         if not self.get_node_id() or self._addr == NETWORK_DEFAULT_ADDR:
             if self._addr != NETWORK_DEFAULT_ADDR:
-                for n_id, addr in self._addr_dict:
+                for n_id, addr in self._addr_dict.items():
                     if n_id == self._node_id:
                         return addr
             return -2

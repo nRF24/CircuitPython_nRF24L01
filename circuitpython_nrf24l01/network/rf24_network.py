@@ -264,13 +264,13 @@ class RF24Network(RadioMixin):
                 continue
 
             ret_val = self.frame_cache.header.message_type
-            self._log(
-                NETWORK_DEBUG,
-                "Received packet: {}\n\t{}".format(
-                    self.frame_cache.header.to_string(),
-                    address_repr(self.frame_cache.buffer, reverse=False, delimit=" ")
-                )
-            )
+            # self._log(
+            #     NETWORK_DEBUG,
+            #     "Received packet: {}\n\t{}".format(
+            #         self.frame_cache.header.to_string(),
+            #         address_repr(self.frame_cache.buffer, reverse=False, delimit=" ")
+            #     )
+            # )
             keep_updating = False
             if self.frame_cache.header.to_node == self._addr:
                 # frame was directed to this node
@@ -536,16 +536,14 @@ class RF24Network(RadioMixin):
         result = False
         self._rf24.auto_ack = 0x3E + (not use_multicast)
         self.listen = False
-        # self._log(
-        #     NETWORK_DEBUG,
-        #     "Sending type {} with ID {} from {} to {} on pipe {}".format(
-        #         frame.header.message_type,
-        #         frame.header.frame_id,
-        #         oct(frame.header.from_node),
-        #         oct(frame.header.to_node),
-        #         to_pipe,
-        #     ),
-        # )
+        self._log(
+            NETWORK_DEBUG,
+            "Sending {} on pipe {} (multicasting={})".format(
+                self.frame_cache.header.to_string(),
+                to_pipe,
+                use_multicast,
+            ),
+        )
         self._rf24.open_tx_pipe(self._pipe_address(to_node, to_pipe))
         if len(self.frame_cache.message) <= MAX_FRAG_SIZE:
             result = self._rf24.send(self.frame_cache.buffer, send_only=True)
@@ -580,14 +578,14 @@ class RF24Network(RadioMixin):
                     time.sleep(0.002)
                     result = self._tx_standby(self._tx_timeout)
                     retries -= 1
-                self._log(
-                    NETWORK_DEBUG_FRAG,
-                    "Frag {} of {} {}".format(
-                        count + 1,
-                        total,
-                        "sent successfully" if result else "failed to send. Aborting"
-                    )
-                )
+                # self._log(
+                #     NETWORK_DEBUG_FRAG,
+                #     "Frag {} of {} {}".format(
+                #         count + 1,
+                #         total,
+                #         "sent successfully" if result else "failed to send. Aborting"
+                #     )
+                # )
                 if not result:
                     break
             self.frame_cache.header.message_type = msg_t
