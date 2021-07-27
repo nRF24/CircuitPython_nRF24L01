@@ -78,46 +78,48 @@ FLAG_BYPASS_HOLDS = const(2)
 #. Address renewal takes place and is set
 #. Holds Enabled (bypass flag off)
 """
-FLAG_FAST_FRAG = const(4)
+FLAG_FAST_FRAG = const(4)  #: unused due to optimization
 FLAG_NO_POLL = const(8)
 
 
 # constants used to define `RF24NetworkHeader.message_type`
-#: The message type used when forwarding acknowledgements directed to origin
 NETWORK_ACK = const(193)
+"""The message type used when forwarding acknowledgements directed to the
+instigating message's origin. This is not be confused with the radio's `auto_ack`
+attribute. In fact, all messages (except multicasted ones) take advantage of the
+radio's `auto_ack` feature.
+
+.. important:: NETWORK_ACK messages are only sent by the last node in the route to a
+    destination. For example: Node ``0o0`` sends an instigating message to node
+    ``0o11``. The NETWORK_ACK message is sent from node ``0o1`` when it confirms node
+    ``0o11`` received the instigating message.
+.. hint:: This feature is not flawless because it assumes a reliable connection
+    between all necessary network nodes."""
 NETWORK_EXTERNAL_DATA = const(131)
 """Used for bridging different network protocols between an RF24Network
 and LAN/WLAN networks (unsupported at this time as this operation requires
-a gateway implementation)"""
+a RF24Gateway or RF24Ethernet implementation)."""
 NETWORK_PING = const(130)
-"""Used for network pings. Messages of this type are automatically discarded
-because the RF24.auto_ack feature will serve up the response."""
+"""Used for network pings. This `message_type` is automatically discarded
+because the radio's `auto_ack` feature will serve up the response."""
 NETWORK_POLL = const(194)
-"""Used by RF24Mesh.
-
-Messages of this type are used with multi-casting , to find active/available nodes.
-Any node receiving a NETWORK_POLL sent to a multicast address will respond
-directly to the sender with a blank message, indicating the
-address of the available node via the header.
+"""Primarily for RF24Mesh, this `message_type` is used with `NETWORK_MULTICAST_ADDR`
+to find active/available nodes. Any node receiving a NETWORK_POLL sent to a
+`NETWORK_MULTICAST_ADDR` will respond directly to the sender with a blank message,
+indicating the address of the available node via the header's `from_node` attribute.
 """
 NETWORK_ADDR_REQUEST = const(195)
-"""Used by RF24Mesh.
-
-Messages of this type are used for requesting data from network base node.
-Any (non-master) node receiving a message of this type will manually forward
-it to the master node using a normal network write.
-"""
+"""Primarily for RF24Mesh, this `message_type` is used for requesting
+:ref:`Logical Address <Logical Address>` data from the mesh network's master node. Any
+non-master node receiving this `message_type` will manually forward it to the master
+node using normal network routing."""
 NETWORK_ADDR_RESPONSE = const(128)
-"""Used by RF24Mesh.
-
-This message type is used to manually route custom messages containing a
-single RF24Network address.
-
-If a node receives a message of this type that is directly addressed to it, it
-will read the included message, and forward the payload on to the proper
-recipient. This allows nodes to forward multicast messages to the master node,
-receive a response, and forward it back to the requester.
-"""
+"""Primarily for RF24Mesh, this `message_type` is used to in the final step of
+`renew_address()` route a messages containing a newly allocated `node_address`. The
+header's `reserved` attribute for this `message_type` will store the requesting mesh
+node's `node_id` related to the newly assigned `node_address`. Any non-requesting
+network node receiving this `message_type` will forward it to the requesting node
+using normal network routing."""
 
 # No Network ACK message types
 #: the message type when manually expiring a leased address

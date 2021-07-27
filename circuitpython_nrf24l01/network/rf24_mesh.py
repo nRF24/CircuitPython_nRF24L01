@@ -115,7 +115,7 @@ class RF24Mesh(RF24Network):
         if self._addr != NETWORK_DEFAULT_ADDR:
             super()._begin(NETWORK_DEFAULT_ADDR)
         total_requests, request_counter = (0, 0)
-        end_timer = time.monotonic() + timeout
+        end_timer = timeout + time.monotonic()
         while not self._request_address(request_counter):
             if time.monotonic() >= end_timer:
                 return None
@@ -175,11 +175,11 @@ class RF24Mesh(RF24Network):
 
     def _wait_for_lookup_response(self):
         """returns False if timed out, otherwise True"""
-        timeout = time.monotonic() + MESH_LOOKUP_TIMEOUT / 1000
+        timeout = MESH_LOOKUP_TIMEOUT * 1000000 + time.monotonic_ns()
         while self._net_update() not in (MESH_ID_LOOKUP, MESH_ADDR_LOOKUP):
             if callable(self.less_blocking_callback):
                 self.less_blocking_callback()  # pylint: disable=not-callable
-            if time.monotonic() > timeout:
+            if time.monotonic_ns() > timeout:
                 return False
         return True
 
@@ -300,11 +300,11 @@ class RF24Mesh(RF24Network):
         if not isinstance(message, (bytes, bytearray)):
             raise TypeError("message must be a `bytes` or `bytearray` object")
         to_node = -2
-        timeout = time.monotonic() + MESH_WRITE_TIMEOUT / 1000
+        timeout = MESH_WRITE_TIMEOUT * 1000000 + time.monotonic_ns()
         retry_delay = 5
         while to_node < 0:
             to_node = self.get_address(to_node_id)
-            if time.monotonic() > timeout and to_node == -2:
+            if time.monotonic_ns() >= timeout:
                 return False
             retry_delay += 10
             time.sleep(retry_delay / 1000)
@@ -344,8 +344,8 @@ class RF24Mesh(RF24Network):
             self._log(NETWORK_DEBUG, "Requesting address from " + oct(contact))
             # do a direct write (no auto-ack)
             self._pre_write(RF24NetworkFrame(head, b""), contact)
-            timeout = time.monotonic() + 0.225
-            while time.monotonic() < timeout:  # wait for network ack
+            timeout = 225000000 + time.monotonic_ns()
+            while time.monotonic_ns() < timeout:  # wait for network ack
                 if (
                     self._net_update() == NETWORK_ADDR_RESPONSE
                     and self.frame_cache.header.reserved == self.node_id
@@ -381,8 +381,8 @@ class RF24Mesh(RF24Network):
         """Make a list of connections after multicasting a `NETWORK_POLL` message."""
         self.multicast(RF24NetworkHeader(message_type=NETWORK_POLL), b"", level)
         responders = []
-        timeout = time.monotonic() + 0.055
-        while True:
+        timeout = 55000000 + time.monotonic_ns()
+        while time.monotonic_ns() < timeout and len(responders) < MESH_MAX_POLL:
             if self._net_update() == NETWORK_POLL:
                 contacted = self.frame_cache.header.from_node
                 is_duplicate = False
@@ -391,9 +391,6 @@ class RF24Mesh(RF24Network):
                         is_duplicate = True
                 if not is_duplicate:
                     responders.append(contacted)
-
-            if time.monotonic() > timeout or len(responders) >= MESH_MAX_POLL:
-                break
         return responders
 
     @property

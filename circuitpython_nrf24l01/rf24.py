@@ -230,7 +230,7 @@ class RF24:
 
     def open_tx_pipe(self, address):
         """Open a data pipe for TX transmissions."""
-        if self._pipe0_read_addr is not None or self._aa & 1:
+        if self._pipe0_read_addr is not None and self._aa & 1:
             for i, val in enumerate(address):
                 self._pipes[0][i] = val
             self._reg_write_bytes(RX_ADDR_P0, address)

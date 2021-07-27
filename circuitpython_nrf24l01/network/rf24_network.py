@@ -410,7 +410,7 @@ class RF24Network(RadioMixin):
     def multicast(self, header: RF24NetworkHeader, message, level=None):
         """Broadcast a message to all nodes on a certain
         `network level <topology.html#network-levels>`_."""
-        level = min(6, max(level, 0)) if level is not None else self._multicast_level
+        level = min(3, max(level, 0)) if level is not None else self._multicast_level
         header.to_node = NETWORK_MULTICAST_ADDR
         return self._pre_write(
             RF24NetworkFrame(header, message), _level_to_address(level)
@@ -495,7 +495,7 @@ class RF24Network(RadioMixin):
             )
 
         # conditionally wait for NETWORK_ACK message
-        if (
+        elif (
             result
             and to_node != traffic_direct
             and is_ack_type
@@ -512,7 +512,8 @@ class RF24Network(RadioMixin):
 
         # ready radio to continue listening
         self._rf24.listen = True
-        self._rf24.auto_ack = 0x3E
+        if not use_multicast:
+            self._rf24.auto_ack = 0x3E
         return result
 
     def _wait_for_network_ack(self):
@@ -520,9 +521,9 @@ class RF24Network(RadioMixin):
         result = True
         self._rf24.listen = True
         self._rf24.auto_ack = 0x3E
-        rx_timeout = int(time.monotonic_ns() / 1000000) + self.route_timeout
+        rx_timeout = self.route_timeout * 1000000 + time.monotonic_ns()
         while self._net_update() != NETWORK_ACK:
-            if int(time.monotonic_ns() / 1000000) > rx_timeout:
+            if time.monotonic_ns() > rx_timeout:
                 result = False
                 break
         return result

@@ -90,5 +90,5 @@ A 4-bit variable in which each bit corresponds to a specific behavioral modifica
     - Address renewal takes place and is set
     - Holds Enabled (bypass flag off)
     "
-    2, ``FLAG_FAST_FRAG``, "Disable the radio's `auto_ack` on pipe 0"
+    2, ``FLAG_FAST_FRAG``, "Unused due to optmization"
     3, ``FLAG_NO_POLL``, "Used to discard any `NETWORK_POLL` message types"

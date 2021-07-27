@@ -62,9 +62,10 @@ class RadioMixin(LoggerMixin):
         super().__init__()
 
     def _tx_standby(self, delta_time):
+        """``delta_time`` is in milliseconds"""
         result = False
-        timeout = int(time.monotonic_ns() / 1000000) + delta_time
-        while not result and int(time.monotonic_ns() / 1000000) < timeout:
+        timeout = delta_time * 1000000 + time.monotonic_ns()
+        while not result and time.monotonic_ns() < timeout:
             result = self._rf24.resend(send_only=True)
         return result
 
