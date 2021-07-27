@@ -522,9 +522,11 @@ class RF24:
             )
         )
         if dump_pipes:
-            self._dump_pipes()
+            self.print_pipes()
 
-    def _dump_pipes(self):
+    def print_pipes(self):
+        """Prints all information specific to pipe's addresses, RX state, & expected
+        static payload sizes (if configured to use static payloads)."""
         if self._spi is not None:
             self._open_pipes = self._reg_read(OPEN_PIPES)
             self._tx_address = self._reg_read_bytes(TX_ADDRESS)

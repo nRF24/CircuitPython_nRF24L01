@@ -183,6 +183,21 @@ print_details()
 
         Set this parameter to `False` to skips this extra information.
 
+    .. versionchanged:: v2.1.0
+        Changed the default value for the ``dump_pipes`` parameter to `True`
+
+print_pipes()
+******************************
+
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.print_pipes
+
+    This method is called from :meth:`~RF24.print_details()` if the ``dump_pipes`` parameter is
+    set to `True`.
+
+    .. versionchanged:: v2.1.0
+        Changed this method's name from the private method ``_dump_pipes()`` to a public method
+        ``print_pipes()``.
+
 address_repr()
 ******************************
 

@@ -144,12 +144,18 @@ get_payload_length()
 auto_ack
 ******************************
 
-.. note::
-    |mostly_rx_but_tx0| This attribute will intuitively:
-        - enable the automatic acknowledgement feature for pipe 0 if any other data pipe
-          is configured to use the automatic acknowledgement feature.
-        - disable the acknowledgement payload feature (`ack` attribute) when the
-          automatic acknowledgement feature is disabled for data pipe 0.
+.. important::
+    |mostly_rx_but_tx0|
+
+    - This attribute will intuitively disable the acknowledgement payload
+      feature (`ack` attribute) when the automatic acknowledgement feature is disabled for
+      data pipe 0.
+    - When entering in TX mode, the `listen` attribute will ensure data pipe 0 is open to
+      receive automatic acknowledgments for outgoing transmissions.
+    - Be sure to configure this attribute for data pipe 0 before calling `open_tx_pipe()`
+      because the RX address for pipe 0 needs to be overwritten for automatic acknowledgments
+      to be received in TX mode. The `listen` attribute will re-write the RX address for data
+      pipe 0 when entering RX mode if needed.
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.auto_ack
 
@@ -176,7 +182,7 @@ auto_ack
         accepts a list or tuple for control of the automatic acknowledgement feature per pipe.
     .. versionchanged:: 2.0.0
 
-        - returns a integer instead of a boolean
+        - returns an integer instead of a boolean
         - accepts an integer for binary control of the automatic acknowledgement feature
           per pipe
 
