@@ -230,7 +230,7 @@ class RF24:
 
     def open_tx_pipe(self, address):
         """Open a data pipe for TX transmissions."""
-        if self._pipe0_read_addr is not None and self._aa & 1:
+        if self._pipe0_read_addr != address and self._aa & 1:
             for i, val in enumerate(address):
                 self._pipes[0][i] = val
             self._reg_write_bytes(RX_ADDR_P0, address)
@@ -338,10 +338,11 @@ class RF24:
             self.flush_tx()
         if not send_only and self._status >> 1 & 7 < 6:
             self.flush_rx()
-        self.write(buf, ask_no_ack)
         up_cnt = 0
-        while self._spi is not None and not self._status & 0x30 and self._aa & 1:
-            up_cnt += self.update()
+        self.write(buf, ask_no_ack)
+        if self._aa & 1 and self._spi is not None:
+            while not self._status & 0x30:
+                up_cnt += self.update()
         result = bool(self._status & 0x20) or not self._aa & 1
         # print(
         #     "send() waited {} updates DS: {} DR: {} DF: {}".format(
@@ -877,7 +878,7 @@ class RF24:
         self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
         if not write_only:
             self.ce_pin = 1
-        return self.update()
+        return True
 
     def flush_rx(self):
         """Flush all 3 levels of the RX FIFO."""
