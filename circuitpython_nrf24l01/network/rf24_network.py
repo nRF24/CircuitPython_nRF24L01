@@ -262,7 +262,9 @@ class RF24Network(RadioMixin):
             #     NETWORK_DEBUG,
             #     "Received packet: {}\n\t{}".format(
             #         self.frame_cache.header.to_string(),
-            #         address_repr(self.frame_cache.to_bytes(), reverse=False, delimit=" ")
+            #         address_repr(
+            #             self.frame_cache.to_bytes(), reverse=False, delimit=" "
+            #         )
             #     )
             # )
             ret_val = self.frame_cache.header.message_type
