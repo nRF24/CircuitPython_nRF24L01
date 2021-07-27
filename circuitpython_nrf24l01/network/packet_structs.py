@@ -27,7 +27,7 @@ from .constants import NETWORK_MULTICAST_ADDR
 
 def _is_addr_valid(address):
     """Test if a given address is a valid RF24Network node address."""
-    if address in (NETWORK_MULTICAST_ADDR, NETWORK_MULTICAST_ADDR >> 3):
+    if address == NETWORK_MULTICAST_ADDR:
         return True
     byte_count = 0
     while address:
@@ -123,7 +123,7 @@ class RF24NetworkHeader:
     def reserved(self, val):
         self._rsv = val & 0xFF
 
-    def decode(self, buffer) -> bool:
+    def from_bytes(self, buffer) -> bool:
         """Decode frame's header from the first 8 bytes of a frame's buffer.
         This function |internal_use|"""
         if len(buffer) < self.__len__():
@@ -137,8 +137,7 @@ class RF24NetworkHeader:
         ) = struct.unpack("HHHBB", buffer[: self.__len__()])
         return True
 
-    @property
-    def buffer(self) -> bytes:
+    def to_bytes(self):
         """This attribute |internal_use|
 
         :Returns: The entire header as a `bytes` object."""
@@ -194,22 +193,21 @@ class RF24NetworkFrame:
         """The entire message or a fragment of the message allocated to the
         frame. This attribute is typically a `bytearray` or `bytes` object."""
 
-    def decode(self, buffer):
+    def from_bytes(self, buffer):
         """Decode `header` & `message` from a ``buffer``. This function |internal_use|
 
         :Returns: `True` if successful; otherwise `False`.
         """
-        if self.header.decode(buffer):
+        if self.header.from_bytes(buffer):
             self.message = buffer[len(self.header) :]
             return True
         return False
 
-    @property
-    def buffer(self):
+    def to_bytes(self):
         """This attribute |internal_use|
 
         :Returns:  The entire object as a `bytes` object."""
-        return self.header.buffer + bytes(self.message)
+        return self.header.to_bytes() + bytes(self.message)
 
     def __len__(self):
         return len(self.header) + len(self.message)

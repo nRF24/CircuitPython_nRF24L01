@@ -339,12 +339,12 @@ class RF24Mesh(RF24Network):
 
         new_addr = None
         for contact in contacts:
+            self._log(NETWORK_DEBUG, "Requesting address from " + oct(contact))
             head = RF24NetworkHeader(contact, NETWORK_ADDR_REQUEST)
             head.reserved = self._node_id
-            self._log(NETWORK_DEBUG, "Requesting address from " + oct(contact))
             # do a direct write (no auto-ack)
             self._pre_write(RF24NetworkFrame(head, b""), contact)
-            timeout = 225000000 + time.monotonic_ns()
+            timeout = 300000000 + time.monotonic_ns()
             while time.monotonic_ns() < timeout:  # wait for network ack
                 if (
                     self._net_update() == NETWORK_ADDR_RESPONSE
@@ -381,7 +381,7 @@ class RF24Mesh(RF24Network):
         """Make a list of connections after multicasting a `NETWORK_POLL` message."""
         self.multicast(RF24NetworkHeader(message_type=NETWORK_POLL), b"", level)
         responders = []
-        timeout = 55000000 + time.monotonic_ns()
+        timeout = 100000000 + time.monotonic_ns()
         while time.monotonic_ns() < timeout and len(responders) < MESH_MAX_POLL:
             if self._net_update() == NETWORK_POLL:
                 contacted = self.frame_cache.header.from_node

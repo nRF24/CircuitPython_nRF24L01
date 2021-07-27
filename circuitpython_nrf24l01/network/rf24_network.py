@@ -248,7 +248,7 @@ class RF24Network(RadioMixin):
         ret_val = 0  # sentinal indicating there is nothing to report
         while self._rf24.available():
             if (
-                not self.frame_cache.decode(self._rf24.read())
+                not self.frame_cache.from_bytes(self._rf24.read())
                 or not self.frame_cache.header.is_valid
             ):
                 self.logger.log(
@@ -258,60 +258,40 @@ class RF24Network(RadioMixin):
                 )
                 continue
 
-            ret_val = self.frame_cache.header.message_type
             # self._log(
             #     NETWORK_DEBUG,
             #     "Received packet: {}\n\t{}".format(
             #         self.frame_cache.header.to_string(),
-            #         address_repr(self.frame_cache.buffer, reverse=False, delimit=" ")
+            #         address_repr(self.frame_cache.to_bytes(), reverse=False, delimit=" ")
             #     )
             # )
+            ret_val = self.frame_cache.header.message_type
             keep_updating = False
             if self.frame_cache.header.to_node == self._addr:
                 # frame was directed to this node
-                keep_updating = self._handle_frame_for_this_node()
+                keep_updating, ret_val = self._handle_frame_for_this_node(ret_val)
             else:  # frame was not directed to this node
-                keep_updating = self._handle_frame_for_other_node()
-
-                # conditionally adjust return value
-                if (
-                    self.allow_multicast
-                    and self.frame_cache.header.to_node == NETWORK_MULTICAST_ADDR
-                    and ret_val == NETWORK_POLL
-                    and self._addr != NETWORK_DEFAULT_ADDR
-                ):
-                    ret_val = 0  # indicate it is a routed payload
-                elif self._addr != NETWORK_DEFAULT_ADDR:  # multicast not enabled
-                    ret_val = 0  # indicate it is a routed payload
-            if (
-                self.frame_cache.header.message_type == NETWORK_FRAG_LAST
-                and self.frame_cache.header.reserved == NETWORK_EXTERNAL_DATA
-            ):
-                ret_val = NETWORK_EXTERNAL_DATA
+                keep_updating, ret_val = self._handle_frame_for_other_node(ret_val)
 
             if not keep_updating:
                 return ret_val
         # end while _rf24.available()
         return ret_val
 
-    def _handle_frame_for_this_node(self) -> bool:
+    def _handle_frame_for_this_node(self, msg_t):
         """Returns False if the frame is not consumed or True if consumed"""
-        msg_t = self.frame_cache.header.message_type
         if msg_t == NETWORK_PING:
-            return True
+            return (True, msg_t)
 
         if msg_t == NETWORK_ADDR_RESPONSE and NETWORK_DEFAULT_ADDR != self._addr:
             self.frame_cache.header.to_node = NETWORK_DEFAULT_ADDR
-            self._write(
-                self.frame_cache.header.to_node,
-                USER_TX_TO_PHYSICAL_ADDRESS
-            )
-            return True
+            self._write(NETWORK_DEFAULT_ADDR, USER_TX_TO_PHYSICAL_ADDRESS)
+            return (True, msg_t)
         if msg_t == NETWORK_ADDR_REQUEST and self._addr:
             self.frame_cache.header.from_node = self._addr
             self.frame_cache.header.to_node = 0
-            self._write(self.frame_cache.header.to_node, TX_NORMAL)
-            return True
+            self._write(0, TX_NORMAL)
+            return (True, msg_t)
         if self.ret_sys_msg and msg_t > SYS_MSG_TYPES or msg_t == NETWORK_ACK:
             self._log(
                 NETWORK_DEBUG_ROUTING, "Received system payload type " + str(msg_t)
@@ -322,7 +302,7 @@ class RF24Network(RadioMixin):
                 NETWORK_FRAG_LAST,
                 NETWORK_EXTERNAL_DATA
             ):
-                return False
+                return (False, msg_t)
 
         self.queue.enqueue(self.frame_cache)
         if (
@@ -330,28 +310,26 @@ class RF24Network(RadioMixin):
             and self.frame_cache.header.reserved == NETWORK_EXTERNAL_DATA
         ):
             self._log(NETWORK_DEBUG_MINIMAL, "Received external data type")
-            return False
-        return False
+            return (False, NETWORK_EXTERNAL_DATA)
+        return (True, msg_t)
 
-    def _handle_frame_for_other_node(self) -> bool:
+    def _handle_frame_for_other_node(self, msg_t):
         """Returns False if the frame is not consumed or True if consumed"""
         if self.allow_multicast:
             if self.frame_cache.header.to_node == NETWORK_MULTICAST_ADDR:
-                if self.frame_cache.header.message_type == NETWORK_POLL:
-                    if (
-                        not self.network_flags & FLAG_NO_POLL
-                        and self._addr != NETWORK_DEFAULT_ADDR
-                    ):
-                        self.frame_cache.header.to_node = (
-                            self.frame_cache.header.from_node
-                        )
-                        self.frame_cache.header.from_node = self._addr
-                        time.sleep(self._parent_pipe / 1000)
-                        self._write(
-                            self.frame_cache.header.to_node,
-                            USER_TX_TO_PHYSICAL_ADDRESS
-                        )
-                    return True
+                if msg_t == NETWORK_POLL:
+                    if self._addr != NETWORK_DEFAULT_ADDR:
+                        if not self.network_flags & FLAG_NO_POLL:
+                            self.frame_cache.header.to_node = (
+                                self.frame_cache.header.from_node
+                            )
+                            self.frame_cache.header.from_node = self._addr
+                            time.sleep(self._parent_pipe / 1000)
+                            self._write(
+                                self.frame_cache.header.to_node,
+                                USER_TX_TO_PHYSICAL_ADDRESS
+                            )
+                        return (True, 0)
                 self.queue.enqueue(self.frame_cache)
                 if self.multicast_relay:
                     self._log(
@@ -369,19 +347,19 @@ class RF24Network(RadioMixin):
                         USER_TX_MULTICAST
                     )
                 if (
-                    self.frame_cache.header.message_type == NETWORK_FRAG_LAST
+                    msg_t == NETWORK_FRAG_LAST
                     and self.frame_cache.header.reserved == NETWORK_EXTERNAL_DATA
                 ):
-                    return False
+                    return (False, NETWORK_EXTERNAL_DATA)
             elif self._addr != NETWORK_DEFAULT_ADDR:
                 # pass it along
                 self._write(self.frame_cache.header.to_node, TX_ROUTED)
-                return True
+                return (True, 0)
         elif self._addr != NETWORK_DEFAULT_ADDR:  # multicast not enabled
             # pass it along
             self._write(self.frame_cache.header.to_node, TX_ROUTED)
-            return True
-        return False
+            msg_t = 0
+        return (True, msg_t)
 
     def available(self):
         """:Returns: A `bool` describing if there is a frame waiting in the `queue`."""
@@ -545,7 +523,7 @@ class RF24Network(RadioMixin):
         if not use_multicast or (use_multicast and addr != self.address()):
             self._rf24.open_tx_pipe(addr)
         if len(self.frame_cache.message) <= MAX_FRAG_SIZE:
-            result = self._rf24.send(self.frame_cache.buffer, send_only=True)
+            result = self._rf24.send(self.frame_cache.to_bytes(), send_only=True)
             if not result:
                 result = self._tx_standby(self.tx_timeout)
         else:
@@ -568,7 +546,7 @@ class RF24Network(RadioMixin):
                     self.frame_cache.header.message_type = NETWORK_FRAG_MORE
 
                 result = self._rf24.send(
-                    self.frame_cache.header.buffer
+                    self.frame_cache.header.to_bytes()
                     + self.frame_cache.message[buf_start : buf_end],
                     send_only=True
                 )

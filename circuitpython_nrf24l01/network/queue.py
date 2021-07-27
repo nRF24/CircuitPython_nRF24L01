@@ -70,7 +70,7 @@ class FrameQueue(LoggerMixin):
             ):
                 return False  # already enqueued this frame
         new_frame = RF24NetworkFrame()
-        new_frame.decode(frame.buffer)
+        new_frame.from_bytes(frame.to_bytes())
         self._list.append(new_frame)
         return True
 
@@ -122,7 +122,7 @@ class FrameQueueFrag(FrameQueue):
 
     def _cache_frag_frame(self, frame: RF24NetworkFrame) -> bool:
         if frame.header.message_type == NETWORK_FRAG_FIRST:
-            self._frag_cache.decode(frame.buffer)  # make a copy not a reference
+            self._frag_cache.from_bytes(frame.to_bytes())  # make a copy not a reference
             return True
         if (
             self._frag_cache.header.is_valid()
@@ -142,7 +142,7 @@ class FrameQueueFrag(FrameQueue):
                 )
                 return False
             if frame.header.message_type in (NETWORK_FRAG_MORE, NETWORK_FRAG_LAST):
-                self._frag_cache.header.decode(frame.header.buffer)
+                self._frag_cache.header.from_bytes(frame.header.to_bytes())
                 self._frag_cache.message += frame.message
                 if frame.header.message_type == NETWORK_FRAG_LAST:
                     self._frag_cache.header.message_type = frame.header.reserved

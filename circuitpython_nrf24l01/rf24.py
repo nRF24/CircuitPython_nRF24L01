@@ -242,12 +242,10 @@ class RF24:
         """Close a specific data pipe from RX transmissions."""
         if pipe_number < 0 or pipe_number > 5:
             raise IndexError("pipe number must be in range [0, 5]")
-        self._open_pipes = self._reg_read(OPEN_PIPES)
+        self._open_pipes = self._reg_read(OPEN_PIPES) & ~(1 << pipe_number)
         if not pipe_number:
             self._pipe0_read_addr = None
-        if self._open_pipes & (1 << pipe_number):
-            self._open_pipes = self._open_pipes & ~(1 << pipe_number)
-            self._reg_write(OPEN_PIPES, self._open_pipes)
+        self._reg_write(OPEN_PIPES, self._open_pipes)
 
     def open_rx_pipe(self, pipe_number, address):
         """Open a specific data pipe for RX transmissions."""
@@ -275,7 +273,13 @@ class RF24:
     @listen.setter
     def listen(self, is_rx):
         self.ce_pin = 0
+        self._config = self._config & 0xFC | (2 + bool(is_rx))
+        self._reg_write(CONFIGURE, self._config)
+        # start_timer = time.monotonic_ns()
         if is_rx:
+            # time.sleep(0.00015)  # mandatory wait to power up radio
+            self.ce_pin = 1  # mandatory pulse is > 130 µs
+            # start_timer = time.monotonic_ns()
             if (
                 self._pipe0_read_addr is not None
                 and self._pipe0_read_addr != self.address(0)
@@ -286,24 +290,19 @@ class RF24:
             elif self._pipe0_read_addr is None and self._open_pipes & 1:
                 self._open_pipes &= 0x3E  # close_rx_pipe(0) is slower
                 self._reg_write(OPEN_PIPES, self._open_pipes)
-            is_pwr_up = self._config & 2
-            self._config = (self._config & 0xFC) | 3
-            self._reg_write(CONFIGURE, self._config)
-            if not is_pwr_up:
-                time.sleep(0.00015)  # mandatory wait to power up radio
             if self._status & 0x70:
                 self.clear_status_flags()
-            self.ce_pin = 1  # mandatory pulse is > 130 µs
-            time.sleep(0.00013)
+            # wait = 130000
         else:
             if self._features & 6 == 6 and ((self._aa & self._dyn_pl) & 1):
                 self.flush_tx()
             if self._aa & 1 and not self._open_pipes & 1:
                 self._open_pipes |= 1
                 self._reg_write(OPEN_PIPES, self._open_pipes)
-            self._config = self._config & 0xFE | 2
-            self._reg_write(CONFIGURE, self._config)
-            time.sleep(0.00016)
+            # wait = 150000
+        # delta_time = time.monotonic_ns() - start_timer
+        # if delta_time < wait:
+        #     time.sleep((wait - delta_time) / 1000000000)
 
     def available(self):
         """A `bool` describing if there is a payload in the RX FIFO."""
@@ -311,9 +310,10 @@ class RF24:
 
     def any(self):
         """This function reports the next available payload's length (in bytes)."""
-        if self.available():
+        last_dyn_size = self._reg_read(0x60)
+        if self._status >> 1 & 7 < 6:
             if self._features & 4:
-                return self._reg_read(0x60)
+                return last_dyn_size
             return self._pl_len[(self._status >> 1) & 7]
         return 0
 
@@ -339,13 +339,13 @@ class RF24:
         if not send_only and self._status >> 1 & 7 < 6:
             self.flush_rx()
         self.write(buf, ask_no_ack)
-        up_cnt = 0
-        while self._spi is not None and not self._status & 0x30:
+        up_cnt = self.update() - 1
+        while self._spi is not None and not self._status & 0x30 and self._aa & 1:
             up_cnt += self.update()
-        result = bool(self._status & 0x20)
+        result = bool(self._status & 0x20) or not self._aa & 1
         # print(
         #     "send() waited {} updates DS: {} DR: {} DF: {}".format(
-        #         up_cnt, self.irq_ds, self.irq_dr, self.irq_df
+        #         up_cnt + 1, self.irq_ds, self.irq_dr, self.irq_df
         #     )
         # )
         while force_retry and not result:
@@ -865,7 +865,7 @@ class RF24:
             self._config = (self._config & 0x7C) | 2
             self._reg_write(CONFIGURE, self._config)
             if not is_power_up:
-                time.sleep(0.00016)
+                time.sleep(0.00015)
         if not bool((self._dyn_pl & 1) and (self._features & 4)):
             if len(buf) < self._pl_len[0]:
                 buf += b"\0" * (self._pl_len[0] - len(buf))
