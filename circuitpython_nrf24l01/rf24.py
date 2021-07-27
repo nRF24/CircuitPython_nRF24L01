@@ -878,7 +878,7 @@ class RF24:
         self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
         if not write_only:
             self.ce_pin = 1
-        return True
+        return not self._status & 0x10
 
     def flush_rx(self):
         """Flush all 3 levels of the RX FIFO."""
