@@ -51,45 +51,15 @@ class RF24NetworkHeader:
     """
 
     def __init__(self, to_node=None, message_type=None):
-        self._from = None
-        self._to = (to_node & 0xFFFF) if to_node is not None else 0
-        self._msg_t = 0
-        if message_type is not None:
-            # convert the first char in `message_type` to int if it is a string
-            self._msg_t = (
-                ord(message_type[0]) if isinstance(message_type, str) else message_type
-            )
-        self._msg_t &= 0xFF
-        self._id = RF24NetworkHeader.__next_id
-        # pylint: disable=unused-private-member
-        RF24NetworkHeader.__next_id = (RF24NetworkHeader.__next_id + 1) & 0xFFFF
-        # pylint: enable=unused-private-member
-        self._rsv = 0
-
-    __next_id = 0
-
-    @property
-    def from_node(self):
+        self.from_node = None
         """Describes the message origin using a
         :ref:`Logical Address <logical address>`. |uint16_t|"""
-        return self._from
 
-    @from_node.setter
-    def from_node(self, val: int):
-        self._from = val & 0xFFFF
-
-    @property
-    def to_node(self):
+        self.to_node = (to_node & 0xFFF) if to_node is not None else 0
         """Describes the message destination using a
         :ref:`Logical Address <logical address>`. |uint16_t|"""
-        return self._to
 
-    @to_node.setter
-    def to_node(self, val):
-        self._to = val & 0xFFFF
-
-    @property
-    def message_type(self):
+        self.message_type = 0
         """The type of message. This `int` must be less than 256.
 
         .. hint::
@@ -97,43 +67,43 @@ class RF24NetworkHeader:
             than or equal to `SYS_MSG_TYPES`) as there are
             `Reserved Message Types <constants.html#reserved-network-message-types>`_.
         """
-        return self._msg_t
+        if message_type is not None:
+            # convert the first char in `message_type` to int if it is a string
+            self.message_type = (
+                ord(message_type[0]) if isinstance(message_type, str) else message_type
+            )
+        self.message_type &= 0xFF
 
-    @message_type.setter
-    def message_type(self, val):
-        self._msg_t = val & 0xFF
-
-    @property
-    def frame_id(self):
+        self.frame_id = RF24NetworkHeader.__next_id
         """The sequential identifying number for the frame (relative to the originating
         network node). Each sequential frame's ID is incremented, but frames containing
         fragmented messages have the same ID number. |uint16_t|"""
-        return self._id
-
-    @property
-    def reserved(self):
+        # pylint: disable=unused-private-member
+        RF24NetworkHeader.__next_id = (RF24NetworkHeader.__next_id + 1) & 0xFFFF
+        # pylint: enable=unused-private-member
+        self.reserved = 0
         """A single byte reserved for network usage. This will be the sequential ID
         number for fragmented messages, but on the last message fragment, this will be
         the `message_type`. `RF24Mesh` will also use this attribute to hold a newly
         assigned network :ref:`Logical Address <logical address>` for
         `NETWORK_ADDR_RESPONSE` messages."""
-        return self._rsv
 
-    @reserved.setter
-    def reserved(self, val):
-        self._rsv = val & 0xFF
+    __next_id = 0
 
-    def from_bytes(self, buffer) -> bool:
+    def from_bytes(self, buffer):
         """Decode frame's header from the first 8 bytes of a frame's buffer.
-        This function |internal_use|"""
+        This function |internal_use|
+
+        :Returns: `True` if successful; otherwise `False`.
+        """
         if len(buffer) < self.__len__():
             return False
         (
-            self._from,
-            self._to,
-            self._id,
-            self._msg_t,
-            self._rsv,
+            self.from_node,
+            self.to_node,
+            self.frame_id,
+            self.message_type,
+            self.reserved,
         ) = struct.unpack("HHHBB", buffer[: self.__len__()])
         return True
 
@@ -143,11 +113,11 @@ class RF24NetworkHeader:
         :Returns: The entire header as a `bytes` object."""
         return struct.pack(
             "HHHBB",
-            0o7777 if self._from is None else self._from,
-            self._to,
-            self._id,
-            self._msg_t,
-            self._rsv,
+            0o7777 if self.from_node is None else self.from_node & 0xFFF,
+            self.to_node & 0xFFF,
+            self.frame_id & 0xFFFF,
+            self.message_type & 0xFF,
+            self.reserved & 0xFF,
         )
 
     def __len__(self):
@@ -156,18 +126,18 @@ class RF24NetworkHeader:
     def is_valid(self):
         """Check if the `header`'s :ref:`Logical Addresses <logical address>` are valid
         or not."""
-        if self._from is not None and _is_addr_valid(self._from):
-            return _is_addr_valid(self._to)
+        if self.from_node is not None and _is_addr_valid(self.from_node):
+            return _is_addr_valid(self.to_node)
         return False
 
     def to_string(self):
         """Returns a `str` describing all of the header's attributes."""
         return "from {} to {} type {} id {} reserved {}".format(
-            oct(self._from),
-            oct(self._to),
-            self._msg_t,
-            self._id,
-            self._rsv,
+            oct(self.from_node),
+            oct(self.to_node),
+            self.message_type,
+            self.frame_id,
+            self.reserved,
         )
 
 

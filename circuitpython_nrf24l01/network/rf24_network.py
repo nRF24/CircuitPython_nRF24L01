@@ -246,9 +246,13 @@ class RF24Network(RadioMixin):
     def _net_update(self):
         """keep the network layer current; returns the received message type"""
         ret_val = 0  # sentinal indicating there is nothing to report
-        while self._rf24.available():
+        temp_buf = True  # python has no do while
+        while temp_buf:
+            temp_buf = self._rf24.read()
+            if temp_buf is None:
+                return ret_val
             if (
-                not self.frame_cache.from_bytes(self._rf24.read())
+                not self.frame_cache.from_bytes(temp_buf)
                 or not self.frame_cache.header.is_valid
             ):
                 self.logger.log(
@@ -390,30 +394,42 @@ class RF24Network(RadioMixin):
     def multicast(self, header: RF24NetworkHeader, message, level=None):
         """Broadcast a message to all nodes on a certain
         `network level <topology.html#network-levels>`_."""
-        level = min(3, max(level, 0)) if level is not None else self._multicast_level
+        if len(message) > self.max_message_length:
+            raise ValueError("message's length is too large!")
+        level = self._multicast_level if level is None else min(3, max(level, 0))
         header.to_node = NETWORK_MULTICAST_ADDR
+        if header.from_node is None:
+            header.from_node = self._addr
         return self._pre_write(
             RF24NetworkFrame(header, message), _level_to_address(level)
         )
 
     def send(self, header: RF24NetworkHeader, message):
         """Deliver a message according to the header information."""
+        if len(message) > self.max_message_length:
+            raise ValueError("message's length is too large!")
+        if not header.is_valid():
+            return False
+        if header.from_node is None:
+            header.from_node = self._addr
         return self._pre_write(RF24NetworkFrame(header, message))
 
     def write(self, frame: RF24NetworkFrame, traffic_direct=AUTO_ROUTING):
         """Deliver a network frame."""
+        if not isinstance(frame, RF24NetworkFrame):
+            raise TypeError("frame expected object of type RF24NetworkFrame.")
+        if len(frame.message) > self.max_message_length:
+            raise ValueError("message's length is too large!")
+        if frame.header.from_node is None:
+            frame.header.from_node = self._addr
+        if not frame.header.is_valid():
+            return False
         return self._pre_write(frame, traffic_direct)
 
     def _pre_write(self, frame: RF24NetworkFrame, traffic_direct=AUTO_ROUTING):
         """Helper to do prep work for _write_to_pipe(); like to TMRh20's _write()"""
-        if not isinstance(frame, RF24NetworkFrame):
-            raise TypeError("expected object of type RF24NetworkFrame.")
-        if len(frame.message) > self.max_message_length:
-            raise ValueError("message's length is too large!")
         if len(frame.message) > MAX_FRAG_SIZE and not self._frag_enabled:
             frame.message = frame.message[:MAX_FRAG_SIZE]
-        if frame.header.from_node is None:
-            frame.header.from_node = self._addr
         self.frame_cache = frame
         if traffic_direct != AUTO_ROUTING:
             # Payload is multicast to the first node, and routed normally to the next
@@ -428,8 +444,6 @@ class RF24Network(RadioMixin):
 
     def _write(self, traffic_direct, send_type):
         """Helper that transmits current frame_cache"""
-        if not self.frame_cache.header.is_valid():
-            return False
         is_ack_type = self.frame_cache.is_ack_type()
 
         to_node, to_pipe, use_multicast = self._logical_to_physical(
@@ -515,11 +529,10 @@ class RF24Network(RadioMixin):
         self.listen = False
         # self._log(
         #     NETWORK_DEBUG,
-        #     "Sending {} on pipe {} (multicasting={})".format(
+        #     "Sending {} on pipe {}".format(
         #         self.frame_cache.header.to_string(),
         #         to_pipe,
-        #         use_multicast,
-        #     ),
+        #     )
         # )
         addr = self._pipe_address(to_node, to_pipe)
         if not use_multicast or (use_multicast and addr != self.address()):

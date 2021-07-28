@@ -277,9 +277,7 @@ class RF24:
         self._reg_write(CONFIGURE, self._config)
         start_timer = time.monotonic_ns()
         if is_rx:
-            # time.sleep(0.00015)  # mandatory wait to power up radio
-            self.ce_pin = 1  # mandatory pulse is > 130 µs
-            start_timer = time.monotonic_ns()
+            self.ce_pin = 1
             if (
                 self._pipe0_read_addr is not None
                 and self._pipe0_read_addr != self.address(0)
@@ -290,19 +288,18 @@ class RF24:
             elif self._pipe0_read_addr is None and self._open_pipes & 1:
                 self._open_pipes &= 0x3E  # close_rx_pipe(0) is slower
                 self._reg_write(OPEN_PIPES, self._open_pipes)
-            if self._status & 0x70:
-                self.clear_status_flags()
-            wait = 130000
+            # if self._status & 0x70:
+            #     self.clear_status_flags()
         else:
             if self._features & 6 == 6 and ((self._aa & self._dyn_pl) & 1):
                 self.flush_tx()
             if self._aa & 1 and not self._open_pipes & 1:
                 self._open_pipes |= 1
                 self._reg_write(OPEN_PIPES, self._open_pipes)
-            wait = 150000
+        # mandatory wait time is 130 µs
         delta_time = time.monotonic_ns() - start_timer
-        if delta_time < wait:
-            time.sleep((wait - delta_time) / 1000000000)
+        if delta_time < 150000:
+            time.sleep((150000 - delta_time) / 1000000000)
 
     def available(self):
         """A `bool` describing if there is a payload in the RX FIFO."""
@@ -354,6 +351,7 @@ class RF24:
             force_retry -= 1
         if self._status & 0x60 == 0x60 and not send_only:
             result = self.read()
+        # self.ce_pin = 0
         return result
 
     @property
@@ -840,11 +838,12 @@ class RF24:
             self.flush_rx()
         self.clear_status_flags()
         # self._reg_write(0xE3)
-        self.ce_pin = 1
         up_cnt = 0
-        while self._spi is not None and not self._status & 0x30:
-            up_cnt += self.update()
-        self.ce_pin = 0
+        self.ce_pin = 1
+        if self._spi is not None:
+            while not self._status & 0x30:
+                up_cnt += self.update()
+        # self.ce_pin = 0
         result = bool(self._status & 0x20)
         # print("resend() waited {} updates DS: {} DR: {} DF: {}".format(
         #     up_cnt, self.irq_ds, self.irq_dr, self.irq_df

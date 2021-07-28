@@ -30,6 +30,7 @@ from .constants import (
     NETWORK_DEBUG,
     NETWORK_DEBUG_MINIMAL,
     NETWORK_DEFAULT_ADDR,
+    NETWORK_MULTICAST_ADDR,
     NETWORK_POLL,
     FLAG_NO_POLL,
     MESH_ADDR_RELEASE,
@@ -40,8 +41,8 @@ from .constants import (
     MESH_MAX_POLL,
     MESH_MAX_CHILDREN,
 )
-from .packet_structs import RF24NetworkFrame, RF24NetworkHeader
-from .rf24_network import RF24Network
+from .packet_structs import RF24NetworkFrame, RF24NetworkHeader, _is_addr_valid
+from .rf24_network import RF24Network, _level_to_address
 
 
 def _get_level(address: int) -> int:
@@ -107,7 +108,7 @@ class RF24Mesh(RF24Network):
             return True
         return False
 
-    def renew_address(self, timeout=7.5):
+    def renew_address(self, timeout=15):
         """Connect to the mesh network and request a new `node_address`."""
         if self._rf24.available():
             self.update()
@@ -120,7 +121,7 @@ class RF24Mesh(RF24Network):
             if time.monotonic() >= end_timer:
                 return None
             time.sleep(
-                (50 + ((total_requests + 1) * (request_counter + 1)) * 2) / 1000
+                (25 + ((total_requests + 1) * (request_counter + 1)) * 2) / 1000
             )
             request_counter = (request_counter + 1) % 4
             total_requests = (total_requests + 1) % 10
@@ -299,6 +300,10 @@ class RF24Mesh(RF24Network):
         """Send a message to a mesh `node_id`."""
         if not isinstance(message, (bytes, bytearray)):
             raise TypeError("message must be a `bytes` or `bytearray` object")
+        if len(message) > self.max_message_length:
+            raise ValueError("message's length is too large!")
+        if self._addr == NETWORK_DEFAULT_ADDR:
+            return False
         to_node = -2
         timeout = MESH_WRITE_TIMEOUT * 1000000 + time.monotonic_ns()
         retry_delay = 5
@@ -308,23 +313,25 @@ class RF24Mesh(RF24Network):
                 return False
             retry_delay += 10
             time.sleep(retry_delay / 1000)
-        if self._addr == NETWORK_DEFAULT_ADDR:
-            return False
-        return self._pre_write(
-            RF24NetworkFrame(
-                RF24NetworkHeader(to_node, message_type),
-                message,
-            )
+        frame = RF24NetworkFrame(
+            RF24NetworkHeader(to_node, message_type),
+            message,
         )
+        frame.header.from_node = self._addr
+        return self._pre_write(frame)
 
     def write(self, to_node_address, message_type, message):
         """Send a message to a network `node_address`."""
-        return self._pre_write(
-            RF24NetworkFrame(
-                RF24NetworkHeader(to_node_address, message_type),
-                message,
-            )
+        if len(message) > self.max_message_length:
+            raise ValueError("message's length is too large!")
+        if self._addr == NETWORK_DEFAULT_ADDR or not _is_addr_valid(to_node_address):
+            return False
+        frame = RF24NetworkFrame(
+            RF24NetworkHeader(to_node_address, message_type),
+            message,
         )
+        frame.header.from_node = self._addr
+        return self._pre_write(frame)
 
     # pylint: enable=arguments-renamed,arguments-differ
     def _request_address(self, level: int):
@@ -341,10 +348,11 @@ class RF24Mesh(RF24Network):
         for contact in contacts:
             self._log(NETWORK_DEBUG, "Requesting address from " + oct(contact))
             head = RF24NetworkHeader(contact, NETWORK_ADDR_REQUEST)
+            head.from_node = NETWORK_DEFAULT_ADDR
             head.reserved = self._node_id
             # do a direct write (no auto-ack)
             self._pre_write(RF24NetworkFrame(head, b""), contact)
-            timeout = 300000000 + time.monotonic_ns()
+            timeout = 225000000 + time.monotonic_ns()
             while time.monotonic_ns() < timeout:  # wait for network ack
                 if (
                     self._net_update() == NETWORK_ADDR_RESPONSE
@@ -352,36 +360,36 @@ class RF24Mesh(RF24Network):
                 ):
                     new_addr = struct.unpack("<H", self.frame_cache.message[:2])[0]
                     test_addr = new_addr & ~(0xFFFF << (_get_level(contact) * 3))
-                    self._log(
-                        NETWORK_DEBUG,
-                        "{} vs {}; new address ({}) check {}!".format(
-                            test_addr,
-                            contact,
-                            oct(new_addr),
-                            "failed" if test_addr != contact else "passed",
-                        )
-                    )
-                    if test_addr == contact:
+                    if test_addr != contact:
+                        new_addr = None
+                    else:
                         break
-                if callable(self.less_blocking_callback):
-                    self.less_blocking_callback()  # pylint: disable=not-callable
+            if callable(self.less_blocking_callback):
+                self.less_blocking_callback()  # pylint: disable=not-callable
         if new_addr is None:
             return False
+        self._log(NETWORK_DEBUG, "new address {} assigned".format(oct(new_addr)))
 
         super()._begin(new_addr)
 
         # do a double check as a manual retry in lack of using auto-ack
-        if self.get_node_id(self._addr) != self._node_id:
-            if self.get_node_id(self._addr) != self._node_id:
-                super()._begin(NETWORK_DEFAULT_ADDR)
-                return False
+        # if self.get_node_id(self._addr) != self._node_id:
+        #     if self.get_node_id(self._addr) != self._node_id:
+        #         super()._begin(NETWORK_DEFAULT_ADDR)
+        #         return False
         return True
 
     def _make_contacts(self, level):
         """Make a list of connections after multicasting a `NETWORK_POLL` message."""
-        self.multicast(RF24NetworkHeader(message_type=NETWORK_POLL), b"", level)
         responders = []
-        timeout = 100000000 + time.monotonic_ns()
+        frame = RF24NetworkFrame(
+            RF24NetworkHeader(NETWORK_MULTICAST_ADDR, NETWORK_POLL),
+            b"",
+        )
+        frame.header.from_node = NETWORK_DEFAULT_ADDR
+        # self.multicast() does some extra logic to protect from user misuse.
+        self._pre_write(frame, _level_to_address(level))
+        timeout = 55000000 + time.monotonic_ns()
         while time.monotonic_ns() < timeout and len(responders) < MESH_MAX_POLL:
             if self._net_update() == NETWORK_POLL:
                 contacted = self.frame_cache.header.from_node
