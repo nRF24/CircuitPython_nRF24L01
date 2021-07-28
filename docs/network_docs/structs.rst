@@ -38,3 +38,14 @@ Logical Address Validation
 ==========================
 
 .. automethod:: circuitpython_nrf24l01.network.packet_structs.is_address_valid
+
+    :param int address: The :ref:`Logical Address <Logical Address>` to validate.
+
+    :Returns:
+        `True` if the given address can be used as a `node_address` or `to_node`
+        destination. Otherwise, this function returns `False`.
+
+        .. warning::
+            Please note that this function also allows the value ``0o100`` to validate
+            because it is used as the `NETWORK_MULTICAST_ADDR` for multicasted messages.
+            Technically, ``0o100`` is an invalid address.
