@@ -25,8 +25,8 @@ __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import struct
 from .constants import NETWORK_MULTICAST_ADDR
 
-def _is_addr_valid(address):
-    """Test if a given address is a valid RF24Network node address."""
+def is_address_valid(address):
+    """Test if a given address is a valid :ref:`Logical Address <Logical Address>`."""
     if address == NETWORK_MULTICAST_ADDR:
         return True
     byte_count = 0
@@ -126,8 +126,8 @@ class RF24NetworkHeader:
     def is_valid(self):
         """Check if the `header`'s :ref:`Logical Addresses <logical address>` are valid
         or not."""
-        if self.from_node is not None and _is_addr_valid(self.from_node):
-            return _is_addr_valid(self.to_node)
+        if self.from_node is not None and is_address_valid(self.from_node):
+            return is_address_valid(self.to_node)
         return False
 
     def to_string(self):

@@ -41,7 +41,7 @@ from .constants import (
     MESH_MAX_POLL,
     MESH_MAX_CHILDREN,
 )
-from .packet_structs import RF24NetworkFrame, RF24NetworkHeader, _is_addr_valid
+from .packet_structs import RF24NetworkFrame, RF24NetworkHeader, is_address_valid
 from .rf24_network import RF24Network, _level_to_address
 
 
@@ -321,7 +321,7 @@ class RF24Mesh(RF24Network):
         """Send a message to a network `node_address`."""
         if len(message) > self.max_message_length:
             raise ValueError("message's length is too large!")
-        if self._addr == NETWORK_DEFAULT_ADDR or not _is_addr_valid(to_node_address):
+        if self._addr == NETWORK_DEFAULT_ADDR or not is_address_valid(to_node_address):
             return False
         frame = RF24NetworkFrame(
             RF24NetworkHeader(to_node_address, message_type),

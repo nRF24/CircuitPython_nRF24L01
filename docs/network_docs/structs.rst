@@ -3,6 +3,8 @@
 .. |can_be_blank| replace:: These parameters can be left unspecified to create a blank
     object that can be augmented after instantiation.
 
+.. automethod:: circuitpython_nrf24l01.network.packet_structs.is_address_valid
+
 Network Data Structures
 =======================
 

@@ -25,6 +25,7 @@ The follow is a list of `RF24` functions and attributes that are exposed in the
 * :py:meth:`~circuitpython_nrf24l01.rf24.RF24.address`
 * :py:meth:`~circuitpython_nrf24l01.rf24.RF24.interrupt_config`
 * :py:meth:`~circuitpython_nrf24l01.rf24.RF24.print_details`
+* :py:meth:`~circuitpython_nrf24l01.rf24.RF24.print_pipes`
 
 
 External Systems API

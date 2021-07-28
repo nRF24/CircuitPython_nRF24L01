@@ -24,7 +24,7 @@ __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from .network_mixin import RadioMixin
-from .packet_structs import RF24NetworkFrame, RF24NetworkHeader, _is_addr_valid
+from .packet_structs import RF24NetworkFrame, RF24NetworkHeader, is_address_valid
 from .queue import FrameQueue, FrameQueueFrag
 from .constants import (
     NETWORK_FRAG_FIRST,
@@ -50,11 +50,11 @@ from .constants import (
 )
 
 # pylint: disable=unused-import
-from ..rf24 import address_repr
+# from ..rf24 import address_repr
 from .constants import (
     NETWORK_DEBUG_MINIMAL,
     NETWORK_DEBUG,
-    NETWORK_DEBUG_FRAG,
+    # NETWORK_DEBUG_FRAG,
     NETWORK_DEBUG_ROUTING,
 )
 # pylint: enable=unused-import
@@ -71,7 +71,7 @@ class RF24Network(RadioMixin):
     """The object used to instantiate the nRF24L01 as a network node."""
 
     def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
-        if not _is_addr_valid(node_address):
+        if not is_address_valid(node_address):
             raise ValueError("node_address argument is invalid or malformed")
         super().__init__(spi, csn_pin, ce_pin, spi_frequency)
         # setup private members
@@ -137,7 +137,7 @@ class RF24Network(RadioMixin):
 
     @node_address.setter
     def node_address(self, val):
-        if _is_addr_valid(val):
+        if is_address_valid(val):
             self._addr = val
             self._addr_mask = 0
             self._multicast_level = 0
@@ -281,7 +281,6 @@ class RF24Network(RadioMixin):
 
             if not keep_updating:
                 return ret_val
-        # end while _rf24.available()
         return ret_val
 
     def _handle_frame_for_this_node(self, msg_t):
@@ -312,7 +311,8 @@ class RF24Network(RadioMixin):
 
         self.queue.enqueue(self.frame_cache)
         if (
-            msg_t == NETWORK_FRAG_LAST
+            msg_t == NETWORK_EXTERNAL_DATA
+            or msg_t == NETWORK_FRAG_LAST
             and self.frame_cache.header.reserved == NETWORK_EXTERNAL_DATA
         ):
             self._log(NETWORK_DEBUG_MINIMAL, "Received external data type")
@@ -353,7 +353,8 @@ class RF24Network(RadioMixin):
                         USER_TX_MULTICAST
                     )
                 if (
-                    msg_t == NETWORK_FRAG_LAST
+                    msg_t == NETWORK_EXTERNAL_DATA
+                    or msg_t == NETWORK_FRAG_LAST
                     and self.frame_cache.header.reserved == NETWORK_EXTERNAL_DATA
                 ):
                     return (False, NETWORK_EXTERNAL_DATA)
@@ -560,10 +561,9 @@ class RF24Network(RadioMixin):
                 else:
                     self.frame_cache.header.message_type = NETWORK_FRAG_MORE
 
-                result = self._rf24.send(
+                result = self._rf24.write(
                     self.frame_cache.header.to_bytes()
                     + self.frame_cache.message[buf_start : buf_end],
-                    send_only=True
                 )
                 retries = 3
                 while not result and retries:
@@ -582,17 +582,6 @@ class RF24Network(RadioMixin):
                     break
             self.frame_cache.header.message_type = msg_t
         return result
-
-    # the following function was ported from the C++ lib, but
-    # this function isn't internally used & provides no usable info to user
-    # def address_of_pipe(self, _address, _pipe):
-    #     """return the node_address on a specified pipe"""
-    #     temp_mask = self._addr_mask >> 3
-    #     count_bits = 0
-    #     while temp_mask:
-    #         temp_mask >>= 1
-    #         count_bits += 1
-    #     return _address | (_pipe << count_bits)
 
     def _logical_to_physical(self, to_node, to_pipe, use_multicast=False):
         """translates logical routing to physical address and data pipe number with

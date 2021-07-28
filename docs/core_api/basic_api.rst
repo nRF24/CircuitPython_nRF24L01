@@ -86,15 +86,15 @@ listen
 
     Setting this attribute incorporates the proper transitioning to/from RX mode as it involves
     playing with the `power` attribute and the nRF24L01's CE pin. This attribute does not power
-    down the nRF24L01, but will power it up when needed; use `power` attribute set to `False`
+    down the nRF24L01, but will power it up if needed; use `power` attribute set to `False`
     to put the nRF24L01 to sleep.
 
     A valid input value is a `bool` in which:
 
     - `True` enables RX mode. Additionally, per `Appendix B of the nRF24L01+ Specifications
       Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
-      nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, clears the `irq_dr` status flag, and puts nRF24L01 in power up
-      mode. Notice the CE pin is be held HIGH during RX mode.
+      nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1091756>`_, puts nRF24L01 in
+      power up mode. Notice the CE pin is be held HIGH during RX mode.
     - `False` disables RX mode. As mentioned in above link, this puts nRF24L01's power in
       Standby-I mode (CE pin is LOW meaning low current & no transmissions) which is ideal
       for post-reception work. Disabing RX mode doesn't flush the RX FIFO buffers, so

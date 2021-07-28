@@ -166,3 +166,6 @@ class RadioMixin(LoggerMixin):
 
     def interrupt_config(self, data_recv=True, data_sent=True, data_fail=True):
         return self._rf24.interrupt_config(data_recv, data_sent, data_fail)
+
+    def print_pipes(self):
+        return self._rf24.print_pipes()

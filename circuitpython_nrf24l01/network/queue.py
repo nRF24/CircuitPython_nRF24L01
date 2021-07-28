@@ -29,7 +29,7 @@ from .constants import (
     NETWORK_FRAG_FIRST,
     NETWORK_FRAG_MORE,
     NETWORK_FRAG_LAST,
-    NETWORK_DEBUG_FRAG,
+    # NETWORK_DEBUG_FRAG,
     MAX_FRAG_SIZE,
 )
 from .packet_structs import RF24NetworkFrame
@@ -76,17 +76,11 @@ class FrameQueue(LoggerMixin):
 
     def peek(self) -> RF24NetworkFrame:
         """:Returns: The First Out element without removing it from the queue."""
-        if self._list:
-            return self._list[0]
-        return None
+        return None if not self._list else self._list[0]
 
     def dequeue(self) -> RF24NetworkFrame:
         """:Returns: The First Out element and removes it from the queue."""
-        if self._list:
-            ret_val = self._list[0]
-            del self._list[0]
-            return ret_val
-        return None
+        return None if not self._list else self._list.pop(0)
 
     def __len__(self):
         """:Returns: the number of the enqueued items."""
@@ -136,10 +130,10 @@ class FrameQueueFrag(FrameQueue):
                     and frame.header.message_type != NETWORK_FRAG_LAST
                 )
             ):
-                self._log(
-                    NETWORK_DEBUG_FRAG,
-                    "dropping fragment due to excessive size or not sequential",
-                )
+                # self._log(
+                #     NETWORK_DEBUG_FRAG,
+                #     "dropping fragment due to excessive size or not sequential",
+                # )
                 return False
             if frame.header.message_type in (NETWORK_FRAG_MORE, NETWORK_FRAG_LAST):
                 self._frag_cache.header.from_bytes(frame.header.to_bytes())
@@ -149,7 +143,7 @@ class FrameQueueFrag(FrameQueue):
                     super().enqueue(self._frag_cache)
                     self._frag_cache = RF24NetworkFrame()  # invalidate cache
                 return True
-        self._log(
-            NETWORK_DEBUG_FRAG, "dropping fragment due to missing 1st fragment"
-        )
+        # self._log(
+        #     NETWORK_DEBUG_FRAG, "dropping fragment due to missing 1st fragment"
+        # )
         return False

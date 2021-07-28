@@ -363,7 +363,7 @@ class RF24:
     def pipe(self):
         """The number of the data pipe that received the next available
         payload in the RX FIFO. (read only)"""
-        result = (self._status & 0x0E) >> 1
+        result = self._status >> 1 & 7
         if result <= 5 and self._spi is not None:
             return result
         return None
@@ -804,7 +804,7 @@ class RF24:
     def power(self, is_on):
         self._config = self._reg_read(CONFIGURE) & 0x7D | bool(is_on) << 1
         self._reg_write(CONFIGURE, self._config)
-        time.sleep(0.00016)
+        time.sleep(0.00015)
 
     @property
     def pa_level(self):
@@ -877,7 +877,7 @@ class RF24:
         self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
         if not write_only:
             self.ce_pin = 1
-        return True
+        return self._status & 0x10 == 0
 
     def flush_rx(self):
         """Flush all 3 levels of the RX FIFO."""

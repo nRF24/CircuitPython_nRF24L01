@@ -96,7 +96,12 @@ Physical addresses vs Logical addresses
 
 - The Physical address is the 5-byte address assigned to the radio's data pipes.
 - The Logical address is the 12-bit integer representing a network node.
-  The Logical address uses an octal counting scheme.
+  The Logical address uses an octal counting scheme. A valid Logical Address must only
+  contain octal digits in range [1, 5]. The master node is the exception for it uses the
+  number ``0``
+
+  .. tip::
+      Use the `is_address_valid()` function to programatically check a Logical Address for validity.
 
 Translating Logical to Physical
 -------------------------------
