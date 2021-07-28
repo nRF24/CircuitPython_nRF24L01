@@ -128,7 +128,6 @@ def master(count=5, frag=False, interval=2):
                 "Sending {} (len {})...".format(packets_sent[0], length),
                 "ok." if ok else "failed."
             )
-    print(failures, "failures detected. Leaving TX role.")
 
 
 def slave(timeout=6, frag=False):

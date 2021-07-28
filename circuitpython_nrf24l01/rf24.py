@@ -337,10 +337,10 @@ class RF24:
             self.flush_rx()
         up_cnt = 0
         self.write(buf, ask_no_ack)
-        if self._aa & 1 and self._spi is not None:
+        if self._spi is not None:
             while not self._status & 0x30:
                 up_cnt += self.update()
-        result = bool(self._status & 0x20) or not self._aa & 1
+        result = bool(self._status & 0x20)
         # print(
         #     "send() waited {} updates DS: {} DR: {} DF: {}".format(
         #         up_cnt + 1, self.irq_ds, self.irq_dr, self.irq_df

@@ -95,17 +95,15 @@ class RF24Mesh(RF24Network):
 
     def release_address(self) -> bool:
         """Forces an address lease to expire from the master."""
-        if (
-            self._addr != NETWORK_DEFAULT_ADDR
-            and self._pre_write(
-                RF24NetworkFrame(
-                    RF24NetworkHeader(0, MESH_ADDR_RELEASE),
-                    b""
-                )
+        if self._addr != NETWORK_DEFAULT_ADDR:
+            frame =  RF24NetworkFrame(
+                RF24NetworkHeader(0, MESH_ADDR_RELEASE),
+                b""
             )
-        ):
-            super()._begin(NETWORK_DEFAULT_ADDR)
-            return True
+            frame.header.from_node = self._addr
+            if self._pre_write(frame):
+                super()._begin(NETWORK_DEFAULT_ADDR)
+                return True
         return False
 
     def renew_address(self, timeout=15):
@@ -139,12 +137,11 @@ class RF24Mesh(RF24Network):
                     if n_id == node_id:
                         return addr
             return -2
-
-        if self._pre_write(
-            RF24NetworkFrame(
-                RF24NetworkHeader(0, MESH_ADDR_LOOKUP), bytes([node_id])
-            )
-        ):
+        frame = RF24NetworkFrame(
+            RF24NetworkHeader(0, MESH_ADDR_LOOKUP), bytes([node_id])
+        )
+        frame.header.from_node = self._addr
+        if self._pre_write(frame):
             if self._wait_for_lookup_response():
                 return struct.unpack("<H", self.frame_cache.message[:2])[0]
         return -1
@@ -164,12 +161,12 @@ class RF24Mesh(RF24Network):
             return -2
 
         # else this is not a master node; request address lookup from master
-        if self._pre_write(
-            RF24NetworkFrame(
-                RF24NetworkHeader(0, MESH_ID_LOOKUP),
-                struct.pack("<H", address)
-            )
-        ):
+        frame = RF24NetworkFrame(
+            RF24NetworkHeader(0, MESH_ID_LOOKUP),
+            struct.pack("<H", address)
+        )
+        frame.header.from_node = self._addr
+        if self._pre_write(frame):
             if self._wait_for_lookup_response():
                 return self.frame_cache.message[0]
         return -1

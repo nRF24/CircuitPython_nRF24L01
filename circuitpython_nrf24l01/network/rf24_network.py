@@ -459,7 +459,7 @@ class RF24Network(RadioMixin):
         #     NETWORK_DEBUG_ROUTING,
         #     "{} to {} via {} at pipe {}".format(
         #         "Failed sending" if not result else "Successfully sent",
-        #         oct(frame.header.to_node),
+        #         oct(self.frame_cache.header.to_node),
         #         oct(to_node),
         #         to_pipe
         #     ),
