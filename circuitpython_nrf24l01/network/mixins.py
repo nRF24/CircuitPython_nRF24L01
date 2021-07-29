@@ -66,7 +66,7 @@ class NetworkMixin(LoggerMixin):
         self._addr = 0
         self._addr_mask = 0
         self._addr_mask_inverted = 0
-        self._multicast_relay = True
+        self._multicast_relay = False
         self._frag_enabled = True
 
         #: The timeout (in milliseconds) to wait for successful transmission.

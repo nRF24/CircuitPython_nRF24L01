@@ -297,8 +297,8 @@ class RF24Network(NetworkMixin):
                     self._log(
                         NETWORK_DEBUG_ROUTING,
                         "Forwarding multicast frame from {} to {}".format(
-                            self.frame_cache.header.from_node,
-                            self.frame_cache.header.to_node
+                            oct(self.frame_cache.header.from_node),
+                            oct(self.frame_cache.header.to_node)
                         ),
                     )
                     if not self._addr >> 3:
@@ -365,9 +365,9 @@ class RF24Network(NetworkMixin):
         """Deliver a message according to the header information."""
         if len(message) > self.max_message_length:
             raise ValueError("message's length is too large!")
+        header.from_node = self._addr
         if not header.is_valid():
             return False
-        header.from_node = self._addr
         return self._pre_write(RF24NetworkFrame(header, message))
 
     def write(self, frame: RF24NetworkFrame, traffic_direct=AUTO_ROUTING):
@@ -489,9 +489,7 @@ class RF24Network(NetworkMixin):
         #         to_pipe,
         #     )
         # )
-        addr = self._pipe_address(to_node, to_pipe)
-        if addr != self.address():
-            self._rf24.open_tx_pipe(addr)
+        self._rf24.open_tx_pipe(self._pipe_address(to_node, to_pipe))
         if len(self.frame_cache.message) <= MAX_FRAG_SIZE:
             result = self._rf24.send(self.frame_cache.to_bytes(), send_only=True)
             if not result:
@@ -515,9 +513,10 @@ class RF24Network(NetworkMixin):
                 else:
                     self.frame_cache.header.message_type = NETWORK_FRAG_MORE
 
-                result = self._rf24.write(
+                result = self._rf24.send(
                     self.frame_cache.header.to_bytes()
                     + self.frame_cache.message[buf_start : buf_end],
+                    send_only=True
                 )
                 retries = 3
                 while not result and retries:
