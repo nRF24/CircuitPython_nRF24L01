@@ -23,10 +23,15 @@
 __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
-from .network_mixin import RadioMixin
-from .packet_structs import RF24NetworkFrame, RF24NetworkHeader, is_address_valid
-from .queue import FrameQueue, FrameQueueFrag
-from .constants import (
+from .network.mixins import NetworkMixin
+from .network.structs import (
+    RF24NetworkFrame,
+    RF24NetworkHeader,
+    FrameQueue,
+    FrameQueueFrag,
+    is_address_valid
+)
+from .network.constants import (
     NETWORK_FRAG_FIRST,
     NETWORK_FRAG_MORE,
     NETWORK_FRAG_LAST,
@@ -50,11 +55,10 @@ from .constants import (
 )
 
 # pylint: disable=unused-import
-# from ..rf24 import address_repr
-from .constants import (
+# from .rf24 import address_repr
+from .network.constants import (
     NETWORK_DEBUG_MINIMAL,
     NETWORK_DEBUG,
-    # NETWORK_DEBUG_FRAG,
     NETWORK_DEBUG_ROUTING,
 )
 # pylint: enable=unused-import
@@ -67,41 +71,13 @@ def _level_to_address(level):
     return level_addr
 
 
-class RF24Network(RadioMixin):
+class RF24Network(NetworkMixin):
     """The object used to instantiate the nRF24L01 as a network node."""
 
     def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
         if not is_address_valid(node_address):
             raise ValueError("node_address argument is invalid or malformed")
         super().__init__(spi, csn_pin, ce_pin, spi_frequency)
-        # setup private members
-        self._multicast_level = 0
-        self._addr = 0
-        self._addr_mask = 0
-        self._addr_mask_inverted = 0
-        self._multicast_relay = True
-        self._frag_enabled = True
-
-        #: The timeout (in milliseconds) to wait for successful transmission.
-        self.tx_timeout = 25
-        #: The timeout (in milliseconds) to wait for transmission's `NETWORK_ACK`.
-        self.route_timeout = 3 * self.tx_timeout
-        #: enable/disable (`True`/`False`) multicasting
-        self.allow_multicast = True
-        self.ret_sys_msg = False  #: Force `update()` to return on system message types.
-        self.network_flags = 0  #: Flags that affect Network node behavior.
-        self.max_message_length = 144  #: The maximum length of a frame's message.
-        #: The queue (FIFO) of recieved frames for this node
-        self.queue = FrameQueueFrag()
-        self.queue.max_message_length = self.max_message_length
-        #: A buffer containing the last frame received by the network node
-        self.frame_cache = RF24NetworkFrame()
-        self.address_suffix = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
-        """Each byte in this list corresponds to the unique byte per pipe and child
-        node."""
-        self.address_prefix = 0xCC
-        """The byte used for all pipes' address' bytes before mutating with
-        `address_suffix`."""
 
         # setup radio
         self._begin(node_address)
@@ -114,21 +90,6 @@ class RF24Network(RadioMixin):
         self.node_address = node_addr
         self._rf24.listen = True
 
-
-    def __enter__(self):
-        self.node_address = self._addr
-        self._rf24.__enter__()
-        self._rf24.listen = True
-        return self
-
-    def __exit__(self, *exc):
-        return self._rf24.__exit__()
-
-    def print_details(self, dump_pipes=True):
-        """.. seealso:: :py:meth:`~circuitpython_nrf24l01.rf24.RF24.print_details()`"""
-        self._rf24.print_details(dump_pipes)
-        print("Network node address__", oct(self._addr))
-
     @property
     def node_address(self):
         """get/set the node's :ref:`Logical Address <Logical Address>` for the
@@ -137,20 +98,33 @@ class RF24Network(RadioMixin):
 
     @node_address.setter
     def node_address(self, val):
-        if is_address_valid(val):
-            self._addr = val
-            self._addr_mask = 0
-            self._multicast_level = 0
-            mask = 0xFFFF
-            while self._addr & mask:
-                mask = (mask << 3) & 0xFFFF
-                self._multicast_level += 1
-            self._addr_mask_inverted = mask
-            while not mask & 7:
-                self._addr_mask = (self._addr_mask << 3) | 7
-                mask >>= 3
-            for i in range(6):
-                self._rf24.open_rx_pipe(i, self._pipe_address(val, i))
+        if not is_address_valid(val):
+            return
+        self._addr = val
+        self._addr_mask = 0
+        self._multicast_level = 0
+        for i in range(6):
+            self._rf24.open_rx_pipe(i, self._pipe_address(val, i))
+
+        # calc inverted address mask
+        mask = 0xFFFF
+        while self._addr & mask:
+            mask = (mask << 3) & 0xFFFF
+            self._multicast_level += 1
+        self._addr_mask_inverted = mask
+
+        # calc address mask
+        while not mask & 7:
+            self._addr_mask = (self._addr_mask << 3) | 7
+            mask >>= 3
+
+        # calc parent's address & pipe number
+        self._parent = self._addr & (self._addr_mask >> 3)
+        self._parent_pipe = self._addr
+        mask = self._addr_mask >> 3
+        while mask:
+            mask >>= 3
+            self._parent_pipe >>= 3
 
     @property
     def fragmentation(self):
@@ -161,16 +135,12 @@ class RF24Network(RadioMixin):
     def fragmentation(self, enabled):
         enabled = bool(enabled)
         if enabled != self._frag_enabled:
-            prev_q = self.queue
-            new_q = FrameQueueFrag() if enabled else FrameQueue()
-            new_q.max_queue_size = self.queue.max_queue_size
-            new_q.max_message_length = self.max_message_length
+            if enabled:
+                self.queue = FrameQueueFrag(self.queue)
+            else:
+                self.queue = FrameQueue(self.queue)
             self.max_message_length = 144 if enabled else MAX_FRAG_SIZE
-            while len(prev_q):
-                new_q.enqueue(prev_q.dequeue)
-            new_q.max_message_length = self.max_message_length
-            self.queue = new_q
-            del prev_q
+            self.queue.max_message_length = self.max_message_length
             self._frag_enabled = enabled
 
     @property
@@ -191,31 +161,19 @@ class RF24Network(RadioMixin):
 
     @multicast_level.setter
     def multicast_level(self, level):
-        level = min(6, max(level, 0))
+        level = min(3, max(level, 0))
         self._multicast_level = level
         self._rf24.listen = False
         self._rf24.open_rx_pipe(0, self._pipe_address(_level_to_address(level), 0))
         self._rf24.listen = True
 
     @property
-    def _parent_pipe(self):
-        """The pipe that the parent node uses to listen to child nodes."""
-        result = self._addr
-        mask = self._addr_mask >> 3
-        while mask:
-            result >>= 3
-            mask >>= 3
-        return result
-
-    @property
     def parent(self):
         """Get address for the parent node"""
-        if not self._addr:
-            return None
-        return self._addr & (self._addr_mask >> 3)
+        return self._parent
 
     def _pipe_address(self, node_addr, pipe_number):
-        """translate node address for use on all pipes"""
+        """translate node address for use on any pipe number"""
         result, count, dec = ([self.address_prefix] * 5, 1, node_addr)
         while dec:
             if not self.allow_multicast or (
@@ -246,8 +204,7 @@ class RF24Network(RadioMixin):
     def _net_update(self):
         """keep the network layer current; returns the received message type"""
         ret_val = 0  # sentinal indicating there is nothing to report
-        temp_buf = True  # python has no do while
-        while temp_buf:
+        while True:
             temp_buf = self._rf24.read()
             if temp_buf is None:
                 return ret_val
@@ -281,7 +238,6 @@ class RF24Network(RadioMixin):
 
             if not keep_updating:
                 return ret_val
-        return ret_val
 
     def _handle_frame_for_this_node(self, msg_t):
         """Returns False if the frame is not consumed or True if consumed"""
@@ -411,8 +367,7 @@ class RF24Network(RadioMixin):
             raise ValueError("message's length is too large!")
         if not header.is_valid():
             return False
-        if header.from_node is None:
-            header.from_node = self._addr
+        header.from_node = self._addr
         return self._pre_write(RF24NetworkFrame(header, message))
 
     def write(self, frame: RF24NetworkFrame, traffic_direct=AUTO_ROUTING):
@@ -421,8 +376,7 @@ class RF24Network(RadioMixin):
             raise TypeError("frame expected object of type RF24NetworkFrame.")
         if len(frame.message) > self.max_message_length:
             raise ValueError("message's length is too large!")
-        if frame.header.from_node is None:
-            frame.header.from_node = self._addr
+        frame.header.from_node = self._addr
         if not frame.header.is_valid():
             return False
         return self._pre_write(frame, traffic_direct)
@@ -536,7 +490,7 @@ class RF24Network(RadioMixin):
         #     )
         # )
         addr = self._pipe_address(to_node, to_pipe)
-        if not use_multicast or (use_multicast and addr != self.address()):
+        if addr != self.address():
             self._rf24.open_tx_pipe(addr)
         if len(self.frame_cache.message) <= MAX_FRAG_SIZE:
             result = self._rf24.send(self.frame_cache.to_bytes(), send_only=True)
@@ -570,8 +524,7 @@ class RF24Network(RadioMixin):
                     time.sleep(0.002)
                     result = self._tx_standby(self.tx_timeout)
                     retries -= 1
-                # self._log(
-                #     NETWORK_DEBUG_FRAG,
+                # print(
                 #     "Frag {} of {} {}".format(
                 #         count + 1,
                 #         total,
@@ -583,34 +536,22 @@ class RF24Network(RadioMixin):
             self.frame_cache.header.message_type = msg_t
         return result
 
-    def _logical_to_physical(self, to_node, to_pipe, use_multicast=False):
-        """translates logical routing to physical address and data pipe number with
-        a use_multicast flag"""
-        converted_to_node = self.parent
+    def _logical_to_physical(self, to_node, send_type, use_multicast=False):
+        """translates logical address routing to physical address and data pipe number
+        with a conditional use_multicast flag"""
+        converted_to_node = self._parent
         converted_to_pipe = self._parent_pipe
-        if to_pipe > TX_ROUTED:
+        if send_type > TX_ROUTED:
             use_multicast = True
             converted_to_pipe = 0
             converted_to_node = to_node
-        elif self._is_direct_child(to_node):
-            converted_to_node = to_node
+        elif to_node & self._addr_mask == self._addr:
+            # to_node is a descendant
             converted_to_pipe = 5
-        elif self._is_descendant(to_node):
-            converted_to_node = self._direct_child_route_to(to_node)
-            converted_to_pipe = 5
+            if not to_node & (self._addr_mask_inverted << 3):
+                # to_node is a direct child
+                converted_to_node = to_node
+            else:
+                # to_node is a descendant of a descendant
+                converted_to_node = to_node & ((self._addr_mask << 3) | 7)
         return (converted_to_node, converted_to_pipe, use_multicast)
-
-    def _is_descendant(self, address):
-        """Is the given ``node_address`` a descendant of `node_address`"""
-        return address & self._addr_mask == self._addr
-
-    def _is_direct_child(self, address):
-        """Is the given ``address`` a direct child of `node_address`"""
-        if self._is_descendant(address):
-            return not address & (self._addr_mask_inverted << 3)
-        return False
-
-    def _direct_child_route_to(self, address):
-        """return address for a direct child"""
-        # this pressumes that address is a direct child
-        return address & ((self._addr_mask << 3) | 0o7)

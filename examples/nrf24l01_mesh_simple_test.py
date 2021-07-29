@@ -9,7 +9,7 @@ from circuitpython_nrf24l01.network.constants import (
     MAX_FRAG_SIZE,
     NETWORK_DEFAULT_ADDR
 )
-from circuitpython_nrf24l01.network.rf24_mesh import RF24Mesh
+from circuitpython_nrf24l01.rf24_mesh import RF24Mesh
 
 # import wrappers to imitate circuitPython's DigitalInOut
 from circuitpython_nrf24l01.wrapper import RPiDIO, DigitalInOut
@@ -94,7 +94,6 @@ if nrf.logger is not None:
     # log debug msgs specific to RF24Network.
     # use NETWORK_DEBUG_MINIMAL for less verbosity
     nrf.logger.setLevel(NETWORK_DEBUG)
-    nrf.queue.logger.setLevel(NETWORK_DEBUG)
 
 # using the python keyword global is bad practice. Instead we'll use a 1 item
 # list to store our number of the payloads sent

@@ -37,7 +37,7 @@ extensibility via external applications or systems.
 address_prefix
 --------------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.address_prefix
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.address_prefix
     :annotation: = 0xCC
 
     .. seealso::
@@ -46,7 +46,7 @@ address_prefix
 address_suffix
 --------------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.address_suffix
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.address_suffix
     :annotation: = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
 
     .. seealso::
@@ -55,12 +55,12 @@ address_suffix
 frame_cache
 -----------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.frame_cache
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.frame_cache
 
 queue
 -----
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.queue
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.queue
 
     This attribute will be an instantiated `FrameQueue` or `FrameQueueFrag` object depending on the state
     of the `fragmentation` attribute.
@@ -68,14 +68,14 @@ queue
 ret_sys_msg
 -----------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.ret_sys_msg
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.ret_sys_msg
 
     This attribute is asserted on mesh network nodes.
 
 network_flags
 -------------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.network_flags
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.network_flags
 
 A 4-bit variable in which each bit corresponds to a specific behavioral modification.
 

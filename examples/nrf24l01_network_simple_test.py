@@ -5,8 +5,8 @@ This example was written to be used on 2 devices acting as 'nodes'.
 import time
 import struct
 from circuitpython_nrf24l01.network.constants import NETWORK_DEBUG, MAX_FRAG_SIZE
-from circuitpython_nrf24l01.network.packet_structs import RF24NetworkHeader
-from circuitpython_nrf24l01.network.rf24_network import RF24Network
+from circuitpython_nrf24l01.network.structs import RF24NetworkHeader
+from circuitpython_nrf24l01.rf24_network import RF24Network
 
 
 # import wrappers to imitate circuitPython's DigitalInOut
@@ -82,7 +82,6 @@ if nrf.logger is not None:
     # log debug msgs specific to RF24Network.
     # use NETWORK_DEBUG_MINIMAL for less verbosity
     nrf.logger.setLevel(NETWORK_DEBUG)
-    nrf.queue.logger.setLevel(NETWORK_DEBUG)
 
 # using the python keyword global is bad practice. Instead we'll use a 1 item
 # list to store our number of the payloads sent

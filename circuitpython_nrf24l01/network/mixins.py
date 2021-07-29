@@ -23,6 +23,7 @@
 # pylint: disable=missing-docstring
 import time
 from ..rf24 import RF24
+from .structs import RF24NetworkFrame, FrameQueueFrag
 
 logging = None  # pylint: disable=invalid-name
 try:
@@ -56,10 +57,52 @@ class LoggerMixin:
             self._logger.log(level, prompt)
 
 
-class RadioMixin(LoggerMixin):
+class NetworkMixin(LoggerMixin):
     def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
         self._rf24 = RF24(spi, csn, ce_pin, spi_frequency=spi_frequency)
         super().__init__()
+        # setup private members
+        self._multicast_level = 0
+        self._addr = 0
+        self._addr_mask = 0
+        self._addr_mask_inverted = 0
+        self._multicast_relay = True
+        self._frag_enabled = True
+
+        #: The timeout (in milliseconds) to wait for successful transmission.
+        self.tx_timeout = 25
+        #: The timeout (in milliseconds) to wait for transmission's `NETWORK_ACK`.
+        self.route_timeout = 3 * self.tx_timeout
+        #: enable/disable (`True`/`False`) multicasting
+        self.allow_multicast = True
+        self.ret_sys_msg = False  #: Force `update()` to return on system message types.
+        self.network_flags = 0  #: Flags that affect Network node behavior.
+        self.max_message_length = 144  #: The maximum length of a frame's message.
+        #: The queue (FIFO) of recieved frames for this node
+        self.queue = FrameQueueFrag()
+        self.queue.max_message_length = self.max_message_length
+        #: A buffer containing the last frame received by the network node
+        self.frame_cache = RF24NetworkFrame()
+        self.address_suffix = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
+        """Each byte in this list corresponds to the unique byte per pipe and child
+        node."""
+        self.address_prefix = 0xCC
+        """The byte used for all pipes' address' bytes before mutating with
+        `address_suffix`."""
+
+    def __enter__(self):
+        self.node_address = self._addr
+        self._rf24.__enter__()
+        self._rf24.listen = True
+        return self
+
+    def __exit__(self, *exc):
+        return self._rf24.__exit__()
+
+    def print_details(self, dump_pipes=True):
+        """.. seealso:: :py:meth:`~circuitpython_nrf24l01.rf24.RF24.print_details()`"""
+        self._rf24.print_details(dump_pipes)
+        print("Network node address__", oct(self._addr))
 
     def _tx_standby(self, delta_time):
         """``delta_time`` is in milliseconds"""

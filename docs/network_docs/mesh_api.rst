@@ -9,14 +9,14 @@ RF24Mesh API
     2. `Network Data Structures <structs.html>`_
     3. `Network Constants <constants.html>`_
     4. `RF24Network API <network_api.html>`_ (especially the `node_address`,
-       :meth:`~circuitpython_nrf24l01.network.rf24_network.RF24Network.write()`, and
-       :meth:`~circuitpython_nrf24l01.network.rf24_network.RF24Network.update()`)
+       :meth:`~circuitpython_nrf24l01.rf24_network.RF24Network.write()`, and
+       :meth:`~circuitpython_nrf24l01.rf24_network.RF24Network.update()`)
 
 
 RF24Mesh class
 **************
 
-.. autoclass:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh
+.. autoclass:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh
     :show-inheritance:
 
     .. seealso:: For all parameters' descriptions, see the
@@ -29,7 +29,7 @@ Basic API
 send()
 --------
 
-.. automethod:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.send
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.send
 
     This function will use `get_address()` to fetch the necessary
     :ref:`Logical Address <Logical Address>` to set the frame's header's `to_node`
@@ -37,7 +37,7 @@ send()
 
     .. hint::
         If you already know the destination node's :ref:`Logical Address <Logical Address>`,
-        then you can use :meth:`~circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.write()`
+        then you can use :meth:`~circuitpython_nrf24l01.rf24_mesh.RF24Mesh.write()`
         for quicker operation.
 
     :param int to_node_id: The unique mesh network `node_id` of the frame's destination.
@@ -46,13 +46,13 @@ send()
         .. note:: Be mindful of the message's size as this cannot exceed
             `MAX_FRAG_SIZE` (24 bytes) if `fragmentation` is disabled. If `fragmentation` is
             enabled (it is by default), then the message's size must be less than
-            :attr:`~circuitpython_nrf24l01.network.rf24_network.RF24Network.max_message_length`.
+            :attr:`~circuitpython_nrf24l01.rf24_network.RF24Network.max_message_length`.
     :param bytes,bytearray message: The frame's `message` to be transmitted.
 
 node_id
 -------------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.node_id
+.. autoattribute:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.node_id
 
     This is not to be confused with the network node's `node_address`. This attribute is meant to
     distinguish different mesh network nodes that may, at separate instances, use the same
@@ -62,7 +62,7 @@ node_id
 renew_address()
 ---------------
 
-.. automethod:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.renew_address
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.renew_address
 
     :param float,int timeout: The amount of time (in seconds) to continue trying to connect
         and get an assigned :ref:`Logical Address <Logical Address>`. Defaults to 7.5 seconds.
@@ -81,7 +81,7 @@ Advanced API
 get_node_id()
 -------------
 
-.. automethod:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.get_node_id
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.get_node_id
 
     :param int address: The :ref:`Logical Address <Logical Address>` for which
         a unique `node_id` is assigned from network master node.
@@ -100,7 +100,7 @@ get_node_id()
 get_address()
 -------------
 
-.. automethod:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.get_address
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.get_address
 
     :param int node_id: The unique `node_id` for which a
         :ref:`Logical Address <Logical Address>` is assigned from network master node.
@@ -119,7 +119,7 @@ get_address()
 write()
 -----------------
 
-.. automethod:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.write
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.write
 
     :param int to_node_address: The network node's :ref:`Logical Address <Logical Address>`.
         of the frame's destination. This must be the destination's network `node_address` which is
@@ -129,18 +129,18 @@ write()
         .. note:: Be mindful of the message's size as this cannot exceed
             `MAX_FRAG_SIZE` (24 bytes) if `fragmentation` is disabled. If `fragmentation` is
             enabled (it is by default), then the message's size must be less than
-            :attr:`~circuitpython_nrf24l01.network.rf24_network.RF24Network.max_message_length`.
+            :attr:`~circuitpython_nrf24l01.rf24_network.RF24Network.max_message_length`.
     :param bytes,bytearray message: The frame's `message` to be transmitted.
 
 check_connection()
 ------------------
 
-.. automethod:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.check_connection
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.check_connection
 
 release_address()
 -----------------
 
-.. automethod:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.release_address
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.release_address
 
     .. hint::
         This should be called from a mesh network node that is disconnecting from the network.
@@ -150,12 +150,12 @@ release_address()
 allow_children
 --------------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.allow_children
+.. autoattribute:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.allow_children
 
 less_blocking_callback
 -----------------------------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.less_blocking_callback
+.. autoattribute:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.less_blocking_callback
 
     .. note::
         Requesting a new address (via `renew_address()`) can take a while since it sequentially

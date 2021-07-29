@@ -13,31 +13,31 @@ These classes are used to structure the payload data for wireless network transa
 Header
 -----------------
 
-.. autoclass:: circuitpython_nrf24l01.network.packet_structs.RF24NetworkHeader
+.. autoclass:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader
     :members:
 
 Frame
 -----------------
 
-.. autoclass:: circuitpython_nrf24l01.network.packet_structs.RF24NetworkFrame
+.. autoclass:: circuitpython_nrf24l01.network.structs.RF24NetworkFrame
     :members:
 
 FrameQueue
 -----------------
 
-.. autoclass:: circuitpython_nrf24l01.network.queue.FrameQueue
+.. autoclass:: circuitpython_nrf24l01.network.structs.FrameQueue
     :members:
 
 FrameQueueFrag
 -----------------
 
-.. autoclass:: circuitpython_nrf24l01.network.queue.FrameQueueFrag
+.. autoclass:: circuitpython_nrf24l01.network.structs.FrameQueueFrag
     :show-inheritance:
 
 Logical Address Validation
 ==========================
 
-.. automethod:: circuitpython_nrf24l01.network.packet_structs.is_address_valid
+.. automethod:: circuitpython_nrf24l01.network.structs.is_address_valid
 
     :param int address: The :ref:`Logical Address <Logical Address>` to validate.
 

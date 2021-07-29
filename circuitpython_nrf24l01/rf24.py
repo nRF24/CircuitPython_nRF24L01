@@ -40,17 +40,12 @@ DYN_PL_LEN = const(0x1C)  # dynamic payloads status for all pipes
 TX_FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
 
 
-def hex_upper(number):
-    """Same as calling hex().upper() but without the prefix '0x'."""
-    return (("" if number > 0x0F else "0") + hex(number)[2:]).upper()
-
-
 def address_repr(buf, reverse=True, delimit=""):
     """Convert a buffer into a hexlified string."""
     ret_str = ""
     order = range(len(buf) - 1, -1, -1) if reverse else range(len(buf))
     for byte in order:
-        ret_str += delimit + hex_upper(buf[byte])
+        ret_str += delimit + "%02X" % buf[byte]
     return ret_str[len(delimit):]
 
 
@@ -171,7 +166,7 @@ class RF24:
                 # time.sleep(0.000005)
                 spi.write_readinto(bytes([reg, 0]), in_buf)
         self._status = in_buf[0]
-        # print("SPI read 1 byte from", hex_upper(reg), hex_upper(in_buf[1]))
+        # print("SPI read 1 byte from", ("%02X" % reg), ("%02X" % in_buf[1]))
         return in_buf[1]
 
     def _reg_read_bytes(self, reg, buf_len=5):
@@ -182,7 +177,7 @@ class RF24:
                 spi.write_readinto(bytes([reg] + [0] * buf_len), in_buf)
         self._status = in_buf[0]
         # print("SPI read {} bytes from {} {}".format(
-        #     buf_len, hex_upper(reg), address_repr(in_buf[1:])
+        #     buf_len, ("%02X" % reg), address_repr(in_buf[1:])
         # ))
         return in_buf[1:]
 
@@ -194,7 +189,7 @@ class RF24:
                 spi.write_readinto(bytes([0x20 | reg]) + out_buf, in_buf)
         self._status = in_buf[0]
         # print("SPI write {} bytes to {} {}".format(
-        #     len(out_buf), hex_upper(reg), address_repr(out_buf)
+        #     len(out_buf), ("%02X" % reg), address_repr(out_buf)
         # ))
 
     def _reg_write(self, reg, value=None):
@@ -211,8 +206,8 @@ class RF24:
         #     print(
         #         "SPI write",
         #         "command" if value is None else "1 byte to",
-        #         hex_upper(reg),
-        #         "" if value is None else hex_upper(value),
+        #         ("%02X" % reg),
+        #         "" if value is None else ("%02X" % value),
         #     )
 
     @property

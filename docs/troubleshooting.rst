@@ -118,7 +118,7 @@ developed to save space on microcontrollers with limited amount of RAM and/or st
 boards using the ATSAMD21). The following functionality has been removed from the lite
 version:
 
-* The `FakeBLE` and `RF24Network` classes are not compatible with the ``rf24_lite.py`` module.
+* The `FakeBLE`, `RF24Network`, and `RF24Mesh` classes are not compatible with the ``rf24_lite.py`` module.
 * `is_plus_variant` is removed, meaning the
   lite version is not compatibility with the older non-plus variants of the nRF24L01.
 * `address()` removed.

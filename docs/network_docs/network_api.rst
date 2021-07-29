@@ -15,7 +15,7 @@ RF24Network API
 RF24Network class
 *****************
 
-.. autoclass:: circuitpython_nrf24l01.network.rf24_network.RF24Network
+.. autoclass:: circuitpython_nrf24l01.rf24_network.RF24Network
 
     :param int node_address: The octal `int` for this node's address
 
@@ -28,7 +28,7 @@ Basic API
 update()
 --------
 
-.. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.update
+.. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.update
 
     .. important::
         It is imperitive that this function be called at least once during the application main
@@ -43,12 +43,12 @@ update()
 available()
 -----------
 
-.. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.available
+.. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.available
 
 peek()
 ------
 
-.. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.peek
+.. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.peek
 
     :Returns: A `RF24NetworkFrame` object. However, the data returned is not removed
         from the `queue`. |if_nothing_in_queue| `None`.
@@ -56,7 +56,7 @@ peek()
 peek_header()
 -------------
 
-.. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.peek_header
+.. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.peek_header
 
     :Returns: A `RF24NetworkHeader` object. However, the data returned is not removed
         from the `queue`. |if_nothing_in_queue| `None`.
@@ -64,7 +64,7 @@ peek_header()
 peek_message_length()
 ---------------------
 
-.. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.peek_message_length
+.. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.peek_message_length
 
     :Returns: An `int` describing the length of the next available message's length
         from the `queue`. |if_nothing_in_queue| ``0``.
@@ -72,7 +72,7 @@ peek_message_length()
 read()
 -----------
 
-.. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.read
+.. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.read
 
     This function differs from `peek()`, `peek_header()`, and `peek_message_length()` because
     this function also removes the header & message from the `queue`.
@@ -83,7 +83,7 @@ read()
 send()
 -----------
 
-.. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.send
+.. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.send
 
     :param RF24NetworkHeader header: The outgoing frame's `header`. It is important to
         have the header's `to_node` attribute set to the target network node's
@@ -111,7 +111,7 @@ Advanced API
 node_address
 ------------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.node_address
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.node_address
 
     Setting this attribute will alter the :ref:`physical addresses <Physical Address>`
     used on the radio's data pipes and the default `multicast_level` value.
@@ -123,7 +123,7 @@ node_address
 multicast()
 -----------
 
-.. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.multicast
+.. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.multicast
 
     :param RF24NetworkHeader header: The outgoing frame's `header`.
     :param bytes,bytearray message: The outgoing frame's `message`.
@@ -146,7 +146,7 @@ multicast()
 write()
 -----------
 
-.. automethod:: circuitpython_nrf24l01.network.rf24_network.RF24Network.write
+.. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.write
 
     :param RF24NetworkFrame frame: The complete frame to send. It is important to
         have the header's `to_node` attribute set to the target network node's address.
@@ -176,9 +176,9 @@ write()
 parent
 -----------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.parent
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.parent
 
-    Returns `None` if on the network's master node.
+    Returns ``0`` if called on the network's master node.
 
 Configuration API
 *****************
@@ -186,7 +186,7 @@ Configuration API
 max_message_length
 ------------------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.max_message_length
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.max_message_length
 
     By default this is set to ``144``. If a network node is driven by the TMRh20
     RF24Network library on a ATTiny-based board, set this to ``72`` (as per TMRh20's
@@ -195,7 +195,7 @@ max_message_length
 multicast_relay
 ---------------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.multicast_relay
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.multicast_relay
 
     Duplicate frames are filtered out, so multiple forwarding nodes at the
     same level should not interfere. Forwarded payloads will also be
@@ -204,7 +204,7 @@ multicast_relay
 multicast_level
 ---------------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.multicast_level
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.multicast_level
 
     Setting this attribute will also change the :ref:`physical address <Physical Address>`
     on the radio's RX data pipe 0.
@@ -216,21 +216,21 @@ multicast_level
 tx_timeout
 ---------------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.tx_timeout
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.tx_timeout
 
     Defaults to 25.
 
 route_timeout
 ---------------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.route_timeout
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.route_timeout
 
     Defaults to 75.
 
 fragmentation
 ---------------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.fragmentation
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.fragmentation
 
     Changing this attribute's state will also appropriately changes the type of `FrameQueue`
     (or `FrameQueueFrag`) object used for storing incoming network packets. Disabling
@@ -241,7 +241,7 @@ fragmentation
 allow_multicast
 ---------------
 
-.. autoattribute:: circuitpython_nrf24l01.network.rf24_network.RF24Network.allow_multicast
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.allow_multicast
 
     This attribute affects the :ref:`Physical Address <Physical Address>` translation done by setting the `node_address`,
     all incoming multicasted frames, and `multicast_relay` behavior.

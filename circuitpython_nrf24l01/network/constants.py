@@ -43,7 +43,7 @@ MESH_MAX_POLL = const(4)
 MESH_MAX_CHILDREN = const(4)
 MESH_WRITE_TIMEOUT = const(115)
 """The time (in milliseconds) to get the network address of a node's ID (for
-:py:meth:`~circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.send()` operations)."""
+:py:meth:`~circuitpython_nrf24l01.rf24_mesh.RF24Mesh.send()` operations)."""
 
 # sending behavior types
 #: Send a message with automatic network rounting
@@ -63,7 +63,7 @@ USER_TX_MULTICAST = const(4)
 """Manually broadcast a message to a level/group of nodes
 
 .. seealso::
-    :meth:`~circuitpython_nrf24l01.network.rf24_network.RF24Network.multicast_relay()`
+    :meth:`~circuitpython_nrf24l01.rf24_network.RF24Network.multicast_relay()`
 """
 
 
@@ -146,5 +146,3 @@ NETWORK_DEBUG = const(10)
 NETWORK_DEBUG_MINIMAL = const(11)
 #: shows debugging info about routing messages through the RF24Network object
 NETWORK_DEBUG_ROUTING = const(12)
-#: shows debugging info about fragmented messages
-NETWORK_DEBUG_FRAG = const(13)

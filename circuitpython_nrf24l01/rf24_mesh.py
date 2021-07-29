@@ -24,7 +24,7 @@ __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 import struct
-from .constants import (
+from .network.constants import (
     NETWORK_ADDR_REQUEST,
     NETWORK_ADDR_RESPONSE,
     NETWORK_DEBUG,
@@ -41,7 +41,11 @@ from .constants import (
     MESH_MAX_POLL,
     MESH_MAX_CHILDREN,
 )
-from .packet_structs import RF24NetworkFrame, RF24NetworkHeader, is_address_valid
+from .network.structs import (
+    RF24NetworkFrame,
+    RF24NetworkHeader,
+    is_address_valid
+)
 from .rf24_network import RF24Network, _level_to_address
 
 
@@ -147,8 +151,8 @@ class RF24Mesh(RF24Network):
         return -1
 
     def get_node_id(self, address=None) -> int:
-        """Convert a node's :ref:`Logical Address <Logical Address>` into its unique ID
-        number."""
+        """Convert a node's :ref:`Logical Address <Logical Address>` into its
+        corresponding unique ID number."""
         if not address:
             return self._node_id if address is None else 0
 
@@ -223,7 +227,7 @@ class RF24Mesh(RF24Network):
     def dhcp(self):
         """Updates the internal `dict` of assigned addresses (master node only). Be
         sure to call this after performing an
-        :meth:`~circuitpython_nrf24l01.network.rf24_mesh.RF24Mesh.update()`."""
+        :meth:`~circuitpython_nrf24l01.rf24_mesh.RF24Mesh.update()`."""
         if not self._do_dhcp:
             return
         self._do_dhcp = False
@@ -370,10 +374,10 @@ class RF24Mesh(RF24Network):
         super()._begin(new_addr)
 
         # do a double check as a manual retry in lack of using auto-ack
-        # if self.get_node_id(self._addr) != self._node_id:
-        #     if self.get_node_id(self._addr) != self._node_id:
-        #         super()._begin(NETWORK_DEFAULT_ADDR)
-        #         return False
+        if self.get_node_id(self._addr) != self._node_id:
+            if self.get_node_id(self._addr) != self._node_id:
+                super()._begin(NETWORK_DEFAULT_ADDR)
+                return False
         return True
 
     def _make_contacts(self, level):
