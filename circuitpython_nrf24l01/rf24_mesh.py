@@ -297,7 +297,7 @@ class RF24Mesh(RF24Network):
         # self.save_dhcp()
 
     # pylint: disable=arguments-renamed,arguments-differ
-    def send(self, to_node_id, message_type, message):
+    def send(self, message, message_type, to_node_id=0):
         """Send a message to a mesh `node_id`."""
         if not isinstance(message, (bytes, bytearray)):
             raise TypeError("message must be a `bytes` or `bytearray` object")

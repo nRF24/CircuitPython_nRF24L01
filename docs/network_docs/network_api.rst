@@ -8,9 +8,10 @@ RF24Network API
 
 .. seealso:: Documentation for:
 
-    1. `Shared Networking API <base_api.html#>`_
-    2. `Network Data Structures <structs.html>`_
-    3. `Network Constants <constants.html>`_
+    1. `Network Topology <topology.html>`_
+    2. `Shared Networking API <base_api.html#>`_
+    3. `Network Data Structures <structs.html>`_
+    4. `Network Constants <constants.html>`_
 
 RF24Network class
 *****************

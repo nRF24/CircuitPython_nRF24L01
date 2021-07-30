@@ -24,8 +24,8 @@ Constructor
     :param ~digitalio.DigitalInOut ce_pin: The digital output pin that is connected to the nRF24L01's
         CE (Chip Enable) pin. This is required.
     :param int spi_frequency: Specify which SPI frequency (in Hz) to use on the SPI bus. This
-        parameter only applies to the instantiated object and is made persistent via
-        :py:class:`~adafruit_bus_device.spi_device.SPIDevice`.
+        parameter only applies to the instantiated `RF24` object and is made persistent via
+        :py:class:`~adafruit_bus_device.SPIDevice`.
 
     .. versionchanged:: 1.2.0
 
@@ -46,7 +46,7 @@ open_tx_pipe()
 
     .. note:: There is no option to specify which data pipe to use because the nRF24L01 only
         uses data pipe 0 in TX mode. Additionally, the nRF24L01 uses the same data pipe (pipe
-        0) for receiving acknowledgement (ACK) packets in TX mode when the `auto_ack`
+        1) for receiving acknowledgement (ACK) packets in TX mode when the `auto_ack`
         attribute is enabled for data pipe 0. Thus, RX pipe 0 is appropriated with the TX
         address (specified here) when `auto_ack` is enabled for data pipe 0.
 

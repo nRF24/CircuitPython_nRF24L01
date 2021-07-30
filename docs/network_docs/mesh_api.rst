@@ -5,12 +5,9 @@ RF24Mesh API
 
 .. seealso:: Documentation for:
 
-    1. `Shared Networking API <base_api.html#>`_
-    2. `Network Data Structures <structs.html>`_
-    3. `Network Constants <constants.html>`_
-    4. `RF24Network API <network_api.html>`_ (especially the `node_address`,
-       :meth:`~circuitpython_nrf24l01.rf24_network.RF24Network.write()`, and
-       :meth:`~circuitpython_nrf24l01.rf24_network.RF24Network.update()`)
+    1. `Shared Networking API <base_api.html#>`_ (API common to `RF24Mesh` and `RF24Network`)
+    2. `RF24Network API <network_api.html>`_ (`RF24Mesh` inherits from `RF24Network` and
+       overrides members which have the exact same name)
 
 
 RF24Mesh class
@@ -40,14 +37,15 @@ send()
         then you can use :meth:`~circuitpython_nrf24l01.rf24_mesh.RF24Mesh.write()`
         for quicker operation.
 
-    :param int to_node_id: The unique mesh network `node_id` of the frame's destination.
+    :param bytes,bytearray message: The frame's `message` to be transmitted.
     :param int message_type: The `int` that describes the frame header's `message_type`.
 
         .. note:: Be mindful of the message's size as this cannot exceed
             `MAX_FRAG_SIZE` (24 bytes) if `fragmentation` is disabled. If `fragmentation` is
             enabled (it is by default), then the message's size must be less than
             :attr:`~circuitpython_nrf24l01.rf24_network.RF24Network.max_message_length`.
-    :param bytes,bytearray message: The frame's `message` to be transmitted.
+    :param int to_node_id: The unique mesh network `node_id` of the frame's destination.
+        Defaults to ``0`` (which is reserved for the master node.
 
 node_id
 -------------

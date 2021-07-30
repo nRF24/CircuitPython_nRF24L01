@@ -121,7 +121,7 @@ def master(count=5, frag=False, interval=2):
             if frag:
                 length = (packets_sent[0] + MAX_FRAG_SIZE) % nrf.max_message_length
                 message = bytes(range(length))
-            ok = nrf.send(other_node, "M", message)
+            ok = nrf.send(message, "M", other_node)
             failures += not ok
             print(
                 "Sending {} (len {})...".format(packets_sent[0], length),
