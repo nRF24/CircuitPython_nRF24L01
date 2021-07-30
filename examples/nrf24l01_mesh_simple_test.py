@@ -12,9 +12,8 @@ from circuitpython_nrf24l01.network.constants import (
 from circuitpython_nrf24l01.rf24_mesh import RF24Mesh
 
 # import wrappers to imitate circuitPython's DigitalInOut
-from circuitpython_nrf24l01.wrapper import RPiDIO, DigitalInOut
+from circuitpython_nrf24l01.wrapper import DigitalInOut
 
-# RPiDIO is wrapper for RPi.GPIO on Linux
 # DigitalInOut is a wrapper for machine.Pin() on MicroPython
 #   or simply digitalio.DigitalInOut on CircuitPython and Linux
 
@@ -25,23 +24,22 @@ ce_pin = None
 
 try:  # on CircuitPython & Linux
     import board
-    # change these (digital output) pins accordingly
-    ce_pin = DigitalInOut(board.D4)
-    csn_pin = DigitalInOut(board.D5)
 
     try:  # on Linux
         import spidev
 
         spi = spidev.SpiDev()  # for a faster interface on linux
         csn_pin = 0  # use CE0 on default bus (even faster than using any pin)
-        if RPiDIO is not None:  # RPi.GPIO lib is present
-            # RPi.GPIO is faster than CircuitPython on Linux
-            ce_pin = RPiDIO(22)  # using pin gpio22 (BCM numbering)
+        ce_pin = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
 
     except ImportError:  # on CircuitPython only
         # using board.SPI() automatically selects the MCU's
         # available SPI pins, board.SCK, board.MOSI, board.MISO
         spi = board.SPI()  # init spi bus object
+
+        # change these (digital output) pins accordingly
+        ce_pin = DigitalInOut(board.D4)
+        csn_pin = DigitalInOut(board.D5)
 
 except ImportError:  # on MicroPython
     from machine import SPI

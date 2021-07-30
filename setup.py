@@ -26,7 +26,11 @@ setup(
     long_description_content_type="text/x-rst",
     author="Brendan Doherty",
     author_email="2bndy5@gmail.com",
-    install_requires=["Adafruit-Blinka", "adafruit-circuitpython-busdevice", "SpiDev"],
+    install_requires=[
+        "Adafruit-Blinka",
+        "adafruit-circuitpython-busdevice",
+        # "SpiDev",
+    ],
     license="MIT",
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
