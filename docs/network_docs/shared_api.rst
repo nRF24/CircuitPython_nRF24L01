@@ -117,3 +117,12 @@ A 4-bit variable in which each bit corresponds to a specific behavioral modifica
     "
     2, ``FLAG_FAST_FRAG``, "Unused due to optmization. TMRh20's C++ RF24Network library uses this flag internally to minimize memory usage."
     3, ``FLAG_NO_POLL``, "Used to discard any `NETWORK_POLL` message types"
+
+..
+    original docs from RF24Network src comments
+    main usagee is as follows:
+    #. Ensure no data in radio buffers, else exit
+    #. Address is changed to multicast address for renewal
+    #. Holds Cleared (bypass flag is set)
+    #. Address renewal takes place and is set
+    #. Holds Enabled (bypass flag off)

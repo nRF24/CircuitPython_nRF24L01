@@ -26,116 +26,54 @@ from micropython import const
 
 
 # generic (internal) constants
-SYS_MSG_TYPES = const(127)
-"""Any message type above 127 (but cannot exceed 255) are reserved for internal
-network usage."""
-NETWORK_DEFAULT_ADDR = const(0o4444)  #: used as a sentinel during routing messages
-#: Maximum message size for a single frame's message (does not including header)
-MAX_FRAG_SIZE = const(24)
-#: A reserved node address for multicasting messages
-NETWORK_MULTICAST_ADDR = const(0o100)
-MESH_LOOKUP_TIMEOUT = const(135)
-"""The time (inmilliseconds) that a non-master mesh node will wait for a response when
-requesting am ID from the master node."""
-#: the max number of contacts made when mesh node is polling for a new address
-MESH_MAX_POLL = const(4)
-#: The max number of children for 1 mesh node
-MESH_MAX_CHILDREN = const(4)
-MESH_WRITE_TIMEOUT = const(115)
-"""The time (in milliseconds) to get the network address of a node's ID (for
-:py:meth:`~circuitpython_nrf24l01.rf24_mesh.RF24Mesh.send()` operations)."""
+MAX_USER_DEFINED_MSG_TYPE = const(127)  #: A convenient sentinel value.
+NETWORK_DEFAULT_ADDR = const(0o4444)  #: Primarily used by RF24Mesh.
+MAX_FRAG_SIZE = const(24)  #: Maximum message size for a single frame's message.
+NETWORK_MULTICAST_ADDR = const(0o100)  #: A reserved address for multicast messages.
+MESH_LOOKUP_TIMEOUT = const(135)  #: Used for `get_address()` & `get_node_id()`
+MESH_MAX_POLL = const(4)  #: The max number of contacts made during `renew_address()`.
+MESH_MAX_CHILDREN = const(4)  #: The max number of children for 1 mesh node.
+MESH_WRITE_TIMEOUT = const(115)  #: The time (in milliseconds) used to send messages.
 
 # sending behavior types
-#: Send a message with automatic network rounting
-AUTO_ROUTING = const(0o70)
-#: Send a routed message (used for most outgoing message types)
-TX_NORMAL = const(0)
-#: Send a routed message (internally used for network ACKs)
-TX_ROUTED = const(1)
-USER_TX_TO_PHYSICAL_ADDRESS = const(2)
-"""Send a message directly to network node
-these usually take 1 transmission, so they don't get a network ACK because the
-radio's `auto_ack` will serve the ACK."""
-USER_TX_TO_LOGICAL_ADDRESS = const(3)
-"""Similar to `TX_NORMAL`, but allows the user to define the routed transmission's
-first path (these still get a network ACK)."""
-USER_TX_MULTICAST = const(4)
-"""Manually broadcast a message to a level/group of nodes
-
-.. seealso::
-    :meth:`~circuitpython_nrf24l01.rf24_network.RF24Network.multicast_relay()`
-"""
-
+AUTO_ROUTING = const(0o70)  #: Send a message with automatic network rounting.
+TX_NORMAL = const(0)  #: Send a routed message.
+TX_ROUTED = const(1)  #: Send a routed message.
+USER_TX_TO_PHYSICAL_ADDRESS = const(2)  #: Send a message directly to network node.
+USER_TX_TO_LOGICAL_ADDRESS = const(3)  #: Similar to `TX_NORMAL`.
+USER_TX_MULTICAST = const(4)  #: Broadcast a message to a network level of nodes.
 
 # flags for managing external system's desired behavior
 FLAG_HOLD_INCOMING = const(1)
-FLAG_BYPASS_HOLDS = const(2)
-"""mainly for use with RF24Mesh as follows:
-
-#. Ensure no data in radio buffers, else exit
-#. Address is changed to multicast address for renewal
-#. Holds Cleared (bypass flag is set)
-#. Address renewal takes place and is set
-#. Holds Enabled (bypass flag off)
-"""
+FLAG_BYPASS_HOLDS = const(2)  #: Primarily for RF24Mesh
 FLAG_FAST_FRAG = const(4)  #: unused due to optimization
 FLAG_NO_POLL = const(8)
 
-
 # constants used to define `RF24NetworkHeader.message_type`
-NETWORK_ACK = const(193)
-"""The message type used when forwarding acknowledgements directed to the
-instigating message's origin. This is not be confused with the radio's `auto_ack`
-attribute. In fact, all messages (except multicasted ones) take advantage of the
-radio's `auto_ack` feature.
+NETWORK_ACK = const(193)  #: Used for network-wide acknowledgements.
+NETWORK_PING = const(130)  #: Used for network pings
+NETWORK_POLL = const(194)  #: Primarily for RF24Mesh
+NETWORK_ADDR_REQUEST = const(195)  #: Primarily for RF24Mesh
+NETWORK_ADDR_RESPONSE = const(128)  #: Primarily for RF24Mesh
 
-.. important:: NETWORK_ACK messages are only sent by the last node in the route to a
-    destination. For example: Node ``0o0`` sends an instigating message to node
-    ``0o11``. The NETWORK_ACK message is sent from node ``0o1`` when it confirms node
-    ``0o11`` received the instigating message.
-.. hint:: This feature is not flawless because it assumes a reliable connection
-    between all necessary network nodes."""
+#: Unsupported at this time as this operation requires a new implementation.
 NETWORK_EXTERNAL_DATA = const(131)
-"""Used for bridging different network protocols between an RF24Network
-and LAN/WLAN networks (unsupported at this time as this operation requires
-a RF24Gateway or RF24Ethernet implementation)."""
-NETWORK_PING = const(130)
-"""Used for network pings. This `message_type` is automatically discarded
-because the radio's `auto_ack` feature will serve up the response."""
-NETWORK_POLL = const(194)
-"""Primarily for RF24Mesh, this `message_type` is used with `NETWORK_MULTICAST_ADDR`
-to find active/available nodes. Any node receiving a NETWORK_POLL sent to a
-`NETWORK_MULTICAST_ADDR` will respond directly to the sender with a blank message,
-indicating the address of the available node via the header's `from_node` attribute.
-"""
-NETWORK_ADDR_REQUEST = const(195)
-"""Primarily for RF24Mesh, this `message_type` is used for requesting
-:ref:`Logical Address <Logical Address>` data from the mesh network's master node. Any
-non-master node receiving this `message_type` will manually forward it to the master
-node using normal network routing."""
-NETWORK_ADDR_RESPONSE = const(128)
-"""Primarily for RF24Mesh, this `message_type` is used to in the final step of
-`renew_address()` route a messages containing a newly allocated `node_address`. The
-header's `reserved` attribute for this `message_type` will store the requesting mesh
-node's `node_id` related to the newly assigned `node_address`. Any non-requesting
-network node receiving this `message_type` will forward it to the requesting node
-using normal network routing."""
 
 # No Network ACK message types
-#: the message type when manually expiring a leased address
+#: The message type when manually expiring a leased address
 MESH_ADDR_RELEASE = const(197)
-#: the message type to request a mesh node's network address from its unique ID
+#: The message type to request a mesh node's network address from its unique ID
 MESH_ADDR_LOOKUP = const(196)
-#: the message type to request a mesh node's unique ID number from its node address
+#: The message type to request a mesh node's unique ID number from its node address
 MESH_ID_LOOKUP = const(198)
 
 
 # fragmented message types (used in the `header.reserved` attribute)
-#: Used to indicate the first frame of fragmented messages
+#: Used to indicate the first frame of a fragmented message.
 NETWORK_FRAG_FIRST = const(148)
-#: Used to indicate a middle frame of fragmented messages
+#: Used to indicate a middle frame of a fragmented message.
 NETWORK_FRAG_MORE = const(149)
-#: Used to indicate the last frame of fragmented messages
+#: Used to indicate the last frame of a fragmented message.
 NETWORK_FRAG_LAST = const(150)
 
 

@@ -6,15 +6,14 @@ RF24Mesh API
 .. seealso:: Documentation for:
 
     1. `Shared Networking API <base_api.html#>`_ (API common to `RF24Mesh` and `RF24Network`)
-    2. `RF24Network API <network_api.html>`_ (`RF24Mesh` inherits from `RF24Network` and
-       overrides members which have the exact same name)
+    2. `RF24Network API <network_api.html>`_ (`RF24Mesh` inherits from the same mixin class
+       that `RF24Network` inherits from)
 
 
 RF24Mesh class
 **************
 
 .. autoclass:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh
-    :show-inheritance:
 
     .. seealso:: For all parameters' descriptions, see the
         :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' contructor documentation.
@@ -57,6 +56,14 @@ node_id
     `node_address`. It is up to the developer to make sure each mesh network node uses a different
     ID number.
 
+    .. tip::
+        - If already connected to a mesh network, a mesh node should call `release_address()`
+          before changing this attribute's value. Otherwise, the master node may have an unused
+          :ref:`Logical Address <Logical Address>` assigned to `node_id` that may not exist after
+          this attribute's value is changed.
+        - When a mesh node becomes disconnected from the mesh network, use `renew_address()`
+          to fetch an assigned logical address to be used as the mesh node's `node_address`.
+
 renew_address()
 ---------------
 
@@ -72,6 +79,7 @@ renew_address()
           :ref:`Logical Address <Logical Address>`.
         * If unsuccessful: `None`, and the `node_address` attribute will be set to
           `NETWORK_DEFAULT_ADDR` (``0o4444`` in octal or ``2340`` in decimal).
+
 
 Advanced API
 ************

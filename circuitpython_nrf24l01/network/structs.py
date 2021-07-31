@@ -45,63 +45,28 @@ def is_address_valid(address):
 
 
 class RF24NetworkHeader:
-    """The header information used for routing network messages.
-
-    :param int to_node: The :ref:`Logical Address <logical address>` designating the
-        message's destination.
-    :param int,str message_type: A 1-byte `int` representing the `message_type`. If a
-        `str` is passed, then the first character's numeric ASCII representation is
-        used.
-
-    .. note:: |can_be_blank|
-    """
+    """The header information used for routing network messages."""
 
     def __init__(self, to_node=None, message_type=None):
-        self.from_node = None
-        """Describes the message origin using a
-        :ref:`Logical Address <logical address>`. |uint16_t|"""
-
-        self.to_node = (to_node & 0xFFF) if to_node is not None else 0
-        """Describes the message destination using a
-        :ref:`Logical Address <logical address>`. |uint16_t|"""
-
-        self.message_type = 0
-        """The type of message. This `int` must be less than 256.
-
-        .. hint::
-            Users are encouraged to specify a number in range [0, 127] (basically less
-            than or equal to `SYS_MSG_TYPES`) as there are
-            `Reserved Message Types <constants.html#reserved-network-message-types>`_.
-        """
-        if message_type is not None:
-            # convert the first char in `message_type` to int if it is a string
-            self.message_type = (
-                ord(message_type[0]) if isinstance(message_type, str) else message_type
-            )
+        self.from_node = None  #: |uint16_t|
+        self.to_node = (to_node & 0xFFF) if to_node is not None else 0  #: |uint16_t|
+        #: The type of message.
+        self.message_type = 0 if message_type is None else message_type
+        if isinstance(message_type, str):
+            # convert the first char to int if `message_type` is a string
+            self.message_type = ord(message_type[0])
+        else:
             self.message_type &= 0xFF
-
-        self.frame_id = RF24NetworkHeader.__next_id
-        """The sequential identifying number for the frame (relative to the originating
-        network node). Each sequential frame's ID is incremented, but frames containing
-        fragmented messages have the same ID number. |uint16_t|"""
+        self.frame_id = RF24NetworkHeader.__next_id  #: |uint16_t|
         # pylint: disable=unused-private-member
         RF24NetworkHeader.__next_id = (RF24NetworkHeader.__next_id + 1) & 0xFFFF
         # pylint: enable=unused-private-member
-        self.reserved = 0
-        """A single byte reserved for network usage. This will be the sequential ID
-        number for fragmented messages, but on the last message fragment, this will be
-        the `message_type`. `RF24Mesh` will also use this attribute to hold a newly
-        assigned network :ref:`Logical Address <logical address>` for
-        `NETWORK_ADDR_RESPONSE` messages."""
+        self.reserved = 0  #: A single byte reserved for network usage.
 
     __next_id = 0
 
     def from_bytes(self, buffer):
-        """Decode frame's header from the first 8 bytes of a frame's buffer.
-        This function |internal_use|
-
-        :Returns: `True` if successful; otherwise `False`.
-        """
+        """Decode frame's header from the first 8 bytes of a frame's buffer."""
         if len(buffer) < self.__len__():
             return False
         (
@@ -114,9 +79,7 @@ class RF24NetworkHeader:
         return True
 
     def to_bytes(self):
-        """This attribute |internal_use|
-
-        :Returns: The entire header as a `bytes` object."""
+        """This function |internal_use|"""
         return struct.pack(
             "HHHBB",
             0o7777 if self.from_node is None else self.from_node & 0xFFF,
@@ -137,7 +100,7 @@ class RF24NetworkHeader:
         return False
 
     def to_string(self):
-        """Returns a `str` describing all of the header's attributes."""
+        """:Returns: A `str` describing all of the header's attributes."""
         return "from {} to {} type {} id {} reserved {}".format(
             oct(0o7777 if self.from_node is None else self.from_node),
             oct(self.to_node),
@@ -148,15 +111,7 @@ class RF24NetworkHeader:
 
 
 class RF24NetworkFrame:
-    """Structure of a single frame for either a fragmented message of payloads
-    or a single payload whose message is less than 25 bytes.
-
-    :param RF24NetworkHeader header: The header describing the frame's `message`.
-    :param bytes,bytearray message: The actual `message` containing the payload
-        or a fragment of a payload.
-
-    .. note:: |can_be_blank|
-    """
+    """Structure of a single frame."""
 
     def __init__(self, header: RF24NetworkHeader=None, message=None):
         if header is not None and not isinstance(header, RF24NetworkHeader):
@@ -166,49 +121,36 @@ class RF24NetworkFrame:
         self.header = header if header is not None else RF24NetworkHeader()
         """The `RF24NetworkHeader` about the frame's `message`."""
         self.message = bytearray(0) if message is None else bytearray(message)
-        """The entire message or a fragment of the message allocated to the
-        frame. This attribute is typically a `bytearray` or `bytes` object."""
+        """The entire message or a fragment of the message allocated to the frame."""
+
 
     def from_bytes(self, buffer):
-        """Decode `header` & `message` from a ``buffer``. This function |internal_use|
-
-        :Returns: `True` if successful; otherwise `False`.
-        """
+        """Decode the `header` & `message` from a ``buffer``."""
         if self.header.from_bytes(buffer):
             self.message = buffer[len(self.header) :]
             return True
         return False
 
     def to_bytes(self):
-        """This attribute |internal_use|
-
-        :Returns:  The entire object as a `bytes` object."""
+        """This attribute |internal_use|"""
         return self.header.to_bytes() + bytes(self.message)
 
     def __len__(self):
         return len(self.header) + len(self.message)
 
     def is_ack_type(self):
-        """Check if the frame is to expect a `NETWORK_ACK` message. This function
-        |internal_use|"""
+        """Check if the frame is to expect a `NETWORK_ACK` message."""
         return 64 < self.header.message_type < 192
 
 
 class FrameQueue:
-    """A class that wraps python's list implementation with RF24Network Queue behavior.
-
-    :param FrameQueue,FrameQueueFrag queue: To move (not copy) the contents of another
-        `FrameQueue` based object, you can pass the object to this parameter. Doing so
-        will also copy the object's `max_queue_size` & `max_message_length` attributes.
-    """
+    """A class that wraps a `list` with RF24Network Queue behavior."""
 
     def __init__(self, queue=None):
         #: The maximum number of frames that can be enqueued at once. Defaults to 6.
         self.max_queue_size = 6
         self.max_message_length = MAX_FRAG_SIZE
-        """The maximum message length (in bytes) allowed in each enqueued frame.
-        Any attempt to enqueue a frame that contains a message larger than this
-        attribute's value is discarded. Default value is `MAX_FRAG_SIZE` (24 bytes)."""
+        """The maximum message length (in bytes) allowed in each enqueued frame."""
         self._list = []
         if queue is not None:
             while queue:
@@ -218,10 +160,7 @@ class FrameQueue:
         super().__init__()
 
     def enqueue(self, frame: RF24NetworkFrame):
-        """Add a `RF24NetworkFrame` to the queue.
-
-        :Returns: `True` if the frame was added to the queue, or `False` if it was not.
-        """
+        """Add a `RF24NetworkFrame` to the queue."""
         if (
             self.max_queue_size == len(self._list)
             or len(frame.message) > self.max_message_length
@@ -253,14 +192,7 @@ class FrameQueue:
 
 
 class FrameQueueFrag(FrameQueue):
-    """A specialized queue implementation with an additional cache for fragmented frames
-
-    .. note:: This class will only cache 1 fragmented message at a time. If parts of
-        the fragmented message are missing (or duplicate fragments are received), then
-        the fragment is discarded. If a new fragmented message is received (before a
-        previous fragmented message is completed and reassembled), then the cache
-        is reused for the new fragmented message to avoid memory leaks.
-    """
+    """A specialized `FrameQueue` with an additional cache for fragmented frames."""
 
     def __init__(self, queue=None):
         super().__init__(queue)

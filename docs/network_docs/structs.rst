@@ -14,25 +14,124 @@ Header
 -----------------
 
 .. autoclass:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader
-    :members:
+
+    :param int to_node: The :ref:`Logical Address <logical address>` designating the
+        message's destination.
+    :param int,str message_type: A 1-byte `int` representing the `message_type`. If a
+        `str` is passed, then the first character's numeric ASCII representation is
+        used.
+
+    .. note:: |can_be_blank|
+
+.. autoattribute:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.to_node
+
+    Describes the message destination using a :ref:`Logical Address <logical address>`.
+
+.. autoattribute:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.from_node
+
+    Describes the message origin using a :ref:`Logical Address <logical address>`.
+
+.. autoattribute:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.message_type
+
+    This `int` must be less than 256.
+
+    .. hint::
+        Users are encouraged to specify a number in range [0, 127] (basically less
+        than or equal to `MAX_USER_DEFINED_MSG_TYPE`) as there are
+        `Reserved Message Types <constants.html#reserved-network-message-types>`_.
+
+.. autoattribute:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.frame_id
+
+    The sequential identifying number for the frame (relative to the originating
+    network node). Each sequential frame's ID is incremented, but frames containing
+    fragmented messages have the same ID number.
+
+.. autoattribute:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.reserved
+
+    This will be the sequential ID number for fragmented messages, but on the last message
+    fragment, this will be the `message_type`. `RF24Mesh` will also use this attribute to
+    hold a newly assigned network :ref:`Logical Address <logical address>` for
+    `NETWORK_ADDR_RESPONSE` messages.
+
+.. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.from_bytes
+
+    This function |internal_use|
+
+    :Returns: `True` if successful; otherwise `False`.
+
+.. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.to_bytes
+
+    :Returns: The entire header as a `bytes` object.
+
+.. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.to_string
+.. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.is_valid
 
 Frame
 -----------------
 
 .. autoclass:: circuitpython_nrf24l01.network.structs.RF24NetworkFrame
-    :members:
+
+    This is used for either a single fragment of an individually large message (greater than 24
+    bytes) or a single message that is less than 25 bytes.
+
+    :param RF24NetworkHeader header: The header describing the frame's `message`.
+    :param bytes,bytearray message: The actual `message` containing the payload
+        or a fragment of a payload.
+
+    .. note:: |can_be_blank|
+
+.. autoattribute:: circuitpython_nrf24l01.network.structs.RF24NetworkFrame.header
+.. autoattribute:: circuitpython_nrf24l01.network.structs.RF24NetworkFrame.message
+
+    This attribute is typically a `bytearray` or `bytes` object.
+
+.. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkFrame.from_bytes
+
+    This function |internal_use|
+
+    :Returns: `True` if successful; otherwise `False`.
+
+.. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkFrame.to_bytes
+
+    :Returns:  The entire object as a `bytes` object.
+
+.. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkFrame.is_ack_type
+
+    This function  |internal_use|
 
 FrameQueue
 -----------------
 
 .. autoclass:: circuitpython_nrf24l01.network.structs.FrameQueue
-    :members:
+
+    :param FrameQueue,FrameQueueFrag queue: To move (not copy) the contents of another
+        `FrameQueue` based object, you can pass the object to this parameter. Doing so
+        will also copy the object's `max_queue_size` & `max_message_length` attributes.
+
+.. autoattribute:: circuitpython_nrf24l01.network.structs.FrameQueue.max_message_length
+
+    Any attempt to enqueue a frame that contains a message larger than this
+    attribute's value is discarded. Default value is `MAX_FRAG_SIZE` (24 bytes).
+
+.. autoattribute:: circuitpython_nrf24l01.network.structs.FrameQueue.max_queue_size
+.. automethod:: circuitpython_nrf24l01.network.structs.FrameQueue.enqueue
+
+    :Returns: `True` if the frame was added to the queue, or `False` if it was not.
+
+.. automethod:: circuitpython_nrf24l01.network.structs.FrameQueue.dequeue
+.. automethod:: circuitpython_nrf24l01.network.structs.FrameQueue.peek
 
 FrameQueueFrag
 -----------------
 
 .. autoclass:: circuitpython_nrf24l01.network.structs.FrameQueueFrag
     :show-inheritance:
+
+    .. note:: This class will only cache 1 fragmented message at a time. If parts of
+        the fragmented message are missing (or duplicate fragments are received), then
+        the fragment is discarded. If a new fragmented message is received (before a
+        previous fragmented message is completed and reassembled), then the cache
+        is reused for the new fragmented message to avoid memory leaks.
 
 Logical Address Validation
 --------------------------

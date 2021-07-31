@@ -26,13 +26,35 @@ RF24Network class
 Basic API
 *********
 
+node_address
+------------
+
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.node_address
+
+    Setting this attribute will alter
+
+    1. The :ref:`Physical Addresses <Physical Address>` used on the radio's data pipes
+    2. The `parent` attribute
+    3. The `multicast_level` attribute's default value.
+
+    .. warning::
+
+        1. If this attribute is set to an invald network
+           :ref:`Logical Address <Logical Address>`, then nothing is done and the invalid address
+           is ignored.
+        2. A `RF24Mesh` object cannot set this attribute because the
+           :ref:`Logical Address <Logical Address>` is assigned by the mesh network's master node.
+           Therefore, this attribute is read-only for `RF24Mesh` objects.
+
+           .. seealso:: Please review the tip documented in `RF24Mesh.node_id` for more details.
+
 update()
 --------
 
 .. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.update
 
     .. important::
-        It is imperitive that this function be called at least once during the application main
+        It is imperitive that this function be called at least once during the application's main
         loop. For applications that perform long operations on each iteration of its main loop,
         it is encouraged to call this function more than once when possible.
 
@@ -109,25 +131,13 @@ send()
 Advanced API
 ************
 
-node_address
-------------
-
-.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.node_address
-
-    Setting this attribute will alter the :ref:`physical addresses <Physical Address>`
-    used on the radio's data pipes and the default `multicast_level` value.
-
-    .. warning::
-        If this attribute is set to an invald network
-        :ref:`Logical Address <Logical Address>`, then nothing is done and the invalid address is ignored.
-
 multicast()
 -----------
 
 .. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.multicast
 
-    :param RF24NetworkHeader header: The outgoing frame's `header`.
     :param bytes,bytearray message: The outgoing frame's `message`.
+    :param str,int message_type: The outgoing frame's `message_type`.
     :param int level: The `network level <topology.html#network-levels>`_ of nodes to broadcast to.
         If this optional parameter is not specified, then the node's `multicast_level` is used.
 

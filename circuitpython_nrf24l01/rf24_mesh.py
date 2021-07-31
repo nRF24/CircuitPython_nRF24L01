@@ -28,7 +28,6 @@ from .network.constants import (
     NETWORK_ADDR_REQUEST,
     NETWORK_ADDR_RESPONSE,
     NETWORK_DEBUG,
-    NETWORK_DEBUG_MINIMAL,
     NETWORK_DEFAULT_ADDR,
     NETWORK_MULTICAST_ADDR,
     NETWORK_POLL,
@@ -40,17 +39,16 @@ from .network.constants import (
     MESH_WRITE_TIMEOUT,
     MESH_MAX_POLL,
     MESH_MAX_CHILDREN,
+    TX_NORMAL,
+    USER_TX_TO_PHYSICAL_ADDRESS,
+    USER_TX_MULTICAST,
 )
-from .network.structs import (
-    RF24NetworkFrame,
-    RF24NetworkHeader,
-    is_address_valid
-)
-from .rf24_network import RF24Network, _level_to_address
+from .network.structs import RF24NetworkHeader, is_address_valid
+from .network.mixins import NetworkMixin, _level_to_address
 
 
 def _get_level(address: int) -> int:
-    """ return the number of digits in a given address """
+    """return the number of digits in a given address"""
     count = 0
     while address:
         address >>= 3
@@ -58,7 +56,7 @@ def _get_level(address: int) -> int:
     return count
 
 
-class RF24Mesh(RF24Network):
+class RF24Mesh(NetworkMixin):
     """A descendant of the base class `RF24Network` that adds easy Mesh networking
     capability."""
     def __init__(self, spi, csn_pin, ce_pin, spi_frequency=10000000):
@@ -66,7 +64,6 @@ class RF24Mesh(RF24Network):
             spi,
             csn_pin,
             ce_pin,
-            NETWORK_DEFAULT_ADDR,
             spi_frequency=spi_frequency
         )
 
@@ -83,6 +80,9 @@ class RF24Mesh(RF24Network):
         self._addr_dict = {}
         self._do_dhcp = False  # flag used to manage updating the _addr_dict
 
+        # setup radio
+        self._begin(NETWORK_DEFAULT_ADDR)
+
     @property
     def node_id(self):
         """The unique ID number (1 byte long) of the mesh network node."""
@@ -95,7 +95,7 @@ class RF24Mesh(RF24Network):
     def print_details(self, dump_pipes=False, network_only=False):
         """See RF24.print_details() and Shared Networking API docs"""
         super().print_details(False, network_only)
-        print("Network node id_______", self.node_id)
+        print("Network node id____________{}".format(self.node_id))
         if not self._addr:  # if this is a master node
             print("DHCP List:\n    ID\tAddress\n    ---\t-------")
             for n_id, addr in self._addr_dict.items():
@@ -106,12 +106,10 @@ class RF24Mesh(RF24Network):
     def release_address(self) -> bool:
         """Forces an address lease to expire from the master."""
         if self._addr != NETWORK_DEFAULT_ADDR:
-            frame =  RF24NetworkFrame(
-                RF24NetworkHeader(0, MESH_ADDR_RELEASE),
-                b""
-            )
-            frame.header.from_node = self._addr
-            if self._pre_write(frame):
+            self.frame_cache.header = RF24NetworkHeader(0, MESH_ADDR_RELEASE)
+            self.frame_cache.header.from_node = self._addr
+            self.frame_cache.message = b""
+            if self._write(0, TX_NORMAL):
                 super()._begin(NETWORK_DEFAULT_ADDR)
                 return True
         return False
@@ -147,11 +145,10 @@ class RF24Mesh(RF24Network):
                     if n_id == node_id:
                         return addr
             return -2
-        frame = RF24NetworkFrame(
-            RF24NetworkHeader(0, MESH_ADDR_LOOKUP), bytes([node_id])
-        )
-        frame.header.from_node = self._addr
-        if self._pre_write(frame):
+        self.frame_cache.header = RF24NetworkHeader(0, MESH_ADDR_LOOKUP)
+        self.frame_cache.header.from_node = self._addr
+        self.frame_cache.message = bytes([node_id])
+        if self._write(0, TX_NORMAL):
             if self._wait_for_lookup_response():
                 return struct.unpack("<H", self.frame_cache.message[:2])[0]
         return -1
@@ -171,12 +168,10 @@ class RF24Mesh(RF24Network):
             return -2
 
         # else this is not a master node; request address lookup from master
-        frame = RF24NetworkFrame(
-            RF24NetworkHeader(0, MESH_ID_LOOKUP),
-            struct.pack("<H", address)
-        )
-        frame.header.from_node = self._addr
-        if self._pre_write(frame):
+        self.frame_cache.header = RF24NetworkHeader(0, MESH_ID_LOOKUP)
+        self.frame_cache.header.from_node = self._addr
+        self.frame_cache.message = struct.pack("<H", address)
+        if self._write(0, TX_NORMAL):
             if self._wait_for_lookup_response():
                 return self.frame_cache.message[0]
         return -1
@@ -220,7 +215,7 @@ class RF24Mesh(RF24Network):
                         struct.unpack("<H", self.frame_cache.message[:2])[0]
                     )
                     self.frame_cache.message = bytes([ret_val])
-                self._pre_write(self.frame_cache)
+                self._write(self.frame_cache.header.to_node, TX_NORMAL)
             elif msg_t == MESH_ADDR_RELEASE:
                 for n_id, addr in self._addr_dict.items():
                     if addr == self.frame_cache.header.from_node:
@@ -263,10 +258,10 @@ class RF24Mesh(RF24Network):
             if new_addr == NETWORK_DEFAULT_ADDR:
                 continue
             for n_id, addr in self._addr_dict.items():
-                self._log(
-                    NETWORK_DEBUG_MINIMAL,
-                    "(in _addr_dict) ID: {}, ADDR: {}".format(n_id, oct(addr))
-                )
+                # self._log(
+                #     NETWORK_DEBUG_MINIMAL,
+                #     "(in _addr_dict) ID: {}, ADDR: {}".format(n_id, oct(addr))
+                # )
                 if addr == new_addr and n_id != self.frame_cache.header.reserved:
                     found_addr = True
                     break
@@ -277,13 +272,16 @@ class RF24Mesh(RF24Network):
                 self.frame_cache.header.to_node = self.frame_cache.header.from_node
                 self.frame_cache.message = struct.pack("<H", new_addr)
                 if self.frame_cache.header.from_node != NETWORK_DEFAULT_ADDR:
-                    if not self._pre_write(self.frame_cache):
-                        self._pre_write(self.frame_cache)
+                    if not self._write(self.frame_cache.header.to_node, TX_NORMAL):
+                        self._write(self.frame_cache.header.to_node, TX_NORMAL)
                 else:
-                    self._pre_write(self.frame_cache, self.frame_cache.header.to_node)
+                    self._write(
+                        self.frame_cache.header.to_node,
+                        USER_TX_TO_PHYSICAL_ADDRESS
+                    )
                 break
             # log an error saying that address couldn't be assigned on the net lvl
-            self._log(NETWORK_DEBUG, "address {} not allocated.".format(new_addr))
+            # self._log(NETWORK_DEBUG, "address {} not allocated.".format(new_addr))
 
     def _set_address(self, node_id, address, search_by_address=False):
         """Set or change a node_id and network address pair on the master node."""
@@ -302,45 +300,6 @@ class RF24Mesh(RF24Network):
         self._addr_dict[node_id] = address
         # self.save_dhcp()
 
-    # pylint: disable=arguments-renamed,arguments-differ
-    def send(self, message, message_type, to_node_id=0):
-        """Send a message to a mesh `node_id`."""
-        if not isinstance(message, (bytes, bytearray)):
-            raise TypeError("message must be a `bytes` or `bytearray` object")
-        if len(message) > self.max_message_length:
-            raise ValueError("message's length is too large!")
-        if self._addr == NETWORK_DEFAULT_ADDR:
-            return False
-        to_node = -2
-        timeout = MESH_WRITE_TIMEOUT * 1000000 + time.monotonic_ns()
-        retry_delay = 5
-        while to_node < 0:
-            to_node = self.get_address(to_node_id)
-            if time.monotonic_ns() >= timeout:
-                return False
-            retry_delay += 10
-            time.sleep(retry_delay / 1000)
-        frame = RF24NetworkFrame(
-            RF24NetworkHeader(to_node, message_type),
-            message,
-        )
-        frame.header.from_node = self._addr
-        return self._pre_write(frame)
-
-    def write(self, to_node_address, message_type, message):
-        """Send a message to a network `node_address`."""
-        if len(message) > self.max_message_length:
-            raise ValueError("message's length is too large!")
-        if self._addr == NETWORK_DEFAULT_ADDR or not is_address_valid(to_node_address):
-            return False
-        frame = RF24NetworkFrame(
-            RF24NetworkHeader(to_node_address, message_type),
-            message,
-        )
-        frame.header.from_node = self._addr
-        return self._pre_write(frame)
-
-    # pylint: enable=arguments-renamed,arguments-differ
     def _request_address(self, level: int):
         """Get a new address assigned from the master node"""
         contacts = self._make_contacts(level)
@@ -354,11 +313,12 @@ class RF24Mesh(RF24Network):
         new_addr = None
         for contact in contacts:
             self._log(NETWORK_DEBUG, "Requesting address from " + oct(contact))
-            head = RF24NetworkHeader(contact, NETWORK_ADDR_REQUEST)
-            head.from_node = NETWORK_DEFAULT_ADDR
-            head.reserved = self._node_id
+            self.frame_cache.header = RF24NetworkHeader(contact, NETWORK_ADDR_REQUEST)
+            self.frame_cache.header.from_node = NETWORK_DEFAULT_ADDR
+            self.frame_cache.header.reserved = self._node_id
+            self.frame_cache.message = b""
             # do a direct write (no auto-ack)
-            self._pre_write(RF24NetworkFrame(head, b""), contact)
+            self._write(contact, USER_TX_TO_PHYSICAL_ADDRESS)
             timeout = 225000000 + time.monotonic_ns()
             while time.monotonic_ns() < timeout:  # wait for network ack
                 if (
@@ -389,13 +349,12 @@ class RF24Mesh(RF24Network):
     def _make_contacts(self, level):
         """Make a list of connections after multicasting a `NETWORK_POLL` message."""
         responders = []
-        frame = RF24NetworkFrame(
-            RF24NetworkHeader(NETWORK_MULTICAST_ADDR, NETWORK_POLL),
-            b"",
-        )
-        frame.header.from_node = NETWORK_DEFAULT_ADDR
+        self.frame_cache.header.to_node = NETWORK_MULTICAST_ADDR
+        self.frame_cache.header.from_node = NETWORK_DEFAULT_ADDR
+        self.frame_cache.header.message_type = NETWORK_POLL
+        self.frame_cache.message = b""
         # self.multicast() does some extra logic to protect from user misuse.
-        self._pre_write(frame, _level_to_address(level))
+        self._write(_level_to_address(level), USER_TX_MULTICAST)
         timeout = 55000000 + time.monotonic_ns()
         while time.monotonic_ns() < timeout and len(responders) < MESH_MAX_POLL:
             if self._net_update() == NETWORK_POLL:
@@ -416,3 +375,34 @@ class RF24Mesh(RF24Network):
     @allow_children.setter
     def allow_children(self, allow):
         self.network_flags &= (~FLAG_NO_POLL if allow else FLAG_NO_POLL)
+
+    def send(self, message, message_type, to_node_id=0):
+        """Send a message to a mesh `node_id`."""
+        if not isinstance(message, (bytes, bytearray)):
+            raise TypeError("message must be a `bytes` or `bytearray` object")
+        self._validate_msg_len(len(message))
+        if self._addr == NETWORK_DEFAULT_ADDR:
+            return False
+        to_node = -2
+        timeout = MESH_WRITE_TIMEOUT * 1000000 + time.monotonic_ns()
+        retry_delay = 5
+        while to_node < 0:
+            to_node = self.get_address(to_node_id)
+            if time.monotonic_ns() >= timeout:
+                return False
+            retry_delay += 10
+            time.sleep(retry_delay / 1000)
+        self.frame_cache.header = RF24NetworkHeader(to_node, message_type)
+        self.frame_cache.header.from_node = self._addr
+        self.frame_cache.message = message
+        return self._write(to_node, TX_NORMAL)
+
+    def write(self, to_node_address, message_type, message):
+        """Send a message to a network `node_address`."""
+        self._validate_msg_len(len(message))
+        if self._addr == NETWORK_DEFAULT_ADDR or not is_address_valid(to_node_address):
+            return False
+        self.frame_cache.header = RF24NetworkHeader(to_node_address, message_type)
+        self.frame_cache.header.from_node = self._addr
+        self.frame_cache.message = message
+        return self._write(to_node_address, TX_NORMAL)
