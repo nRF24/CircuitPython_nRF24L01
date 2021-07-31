@@ -4,7 +4,7 @@ This example was written to be used on 2 devices acting as 'nodes'.
 """
 import time
 import struct
-from circuitpython_nrf24l01.network.constants import NETWORK_DEBUG, MAX_FRAG_SIZE
+from circuitpython_nrf24l01.network.constants import MAX_FRAG_SIZE
 from circuitpython_nrf24l01.network.structs import RF24NetworkHeader
 from circuitpython_nrf24l01.rf24_network import RF24Network
 
@@ -60,13 +60,15 @@ this_node = int(
     8,  # octal base
 )
 # allow specifying the examples' master*() behavior's target for transmiting messages
-other_node = int(
-    input(
-        "To which radio should we transmit to? Enter '0', '1', or octal int. "
-        "Defaults to '1' "
-    ) or "1",
-    8,  # octal base
-)
+other_node = [
+    int(
+        input(
+            "To which radio should we transmit to? Enter '0', '1', or octal int. "
+            "Defaults to '1' "
+        ) or "1",
+        8,  # octal base
+    )
+]
 
 # initialize the network node using `this_node` as `nrf.node_address`
 nrf = RF24Network(spi, csn_pin, ce_pin, this_node)
@@ -75,11 +77,6 @@ nrf.channel = 90
 # set the Power Amplifier level to -12 dBm since this test example is
 # usually run with nRF24L01 transceivers in close proximity
 nrf.pa_level = -12
-
-if nrf.logger is not None:
-    # log debug msgs specific to RF24Network.
-    # use NETWORK_DEBUG_MINIMAL for less verbosity
-    nrf.logger.setLevel(NETWORK_DEBUG)
 
 # using the python keyword global is bad practice. Instead we'll use a 1 item
 # list to store our number of the payloads sent
@@ -111,7 +108,7 @@ def master(count=5, frag=False, interval=2):
             if frag:
                 length = (packets_sent[0] + MAX_FRAG_SIZE) % nrf.max_message_length
                 message = bytes(range(length))
-            ok = nrf.send(RF24NetworkHeader(other_node), message)
+            ok = nrf.send(RF24NetworkHeader(other_node[0]), message)
             failures += not ok
             print(
                 "Sending {} (len {})...".format(packets_sent[0], length),

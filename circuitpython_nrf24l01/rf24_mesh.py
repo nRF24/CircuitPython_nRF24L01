@@ -27,7 +27,6 @@ import struct
 from .network.constants import (
     NETWORK_ADDR_REQUEST,
     NETWORK_ADDR_RESPONSE,
-    NETWORK_DEBUG,
     NETWORK_DEFAULT_ADDR,
     NETWORK_MULTICAST_ADDR,
     NETWORK_POLL,
@@ -42,12 +41,13 @@ from .network.constants import (
     TX_NORMAL,
     USER_TX_TO_PHYSICAL_ADDRESS,
     USER_TX_MULTICAST,
+    MAX_FRAG_SIZE,
 )
 from .network.structs import RF24NetworkHeader, is_address_valid
 from .network.mixins import NetworkMixin, _level_to_address
 
 
-def _get_level(address: int) -> int:
+def _get_level(address: int):
     """return the number of digits in a given address"""
     count = 0
     while address:
@@ -59,18 +59,13 @@ def _get_level(address: int) -> int:
 class RF24Mesh(NetworkMixin):
     """A descendant of the base class `RF24Network` that adds easy Mesh networking
     capability."""
-    def __init__(self, spi, csn_pin, ce_pin, spi_frequency=10000000):
-        super().__init__(
-            spi,
-            csn_pin,
-            ce_pin,
-            spi_frequency=spi_frequency
-        )
+    def __init__(self, spi, csn_pin, ce_pin, node_id, spi_frequency=10000000):
+        super().__init__(spi, csn_pin, ce_pin, spi_frequency)
 
         # 1-byte ID number unique to the network node (not the same as `node_address`)
-        self._node_id = 0
+        self._node_id = min(255, node_id)
         # allow child nodes to connect to this network node
-        self.allow_children = True
+        self.network_flags &= ~FLAG_NO_POLL
         #: This variable can be assigned a function to perform during long operations.
         self.less_blocking_callback = None
 
@@ -78,10 +73,9 @@ class RF24Mesh(NetworkMixin):
         self.ret_sys_msg = True
         # A `dict` of assigned addresses paired to the Mesh nod'es unique ID number
         self._addr_dict = {}
-        self._do_dhcp = False  # flag used to manage updating the _addr_dict
 
         # setup radio
-        self._begin(NETWORK_DEFAULT_ADDR)
+        self._begin(0 if not node_id else NETWORK_DEFAULT_ADDR)
 
     @property
     def node_id(self):
@@ -90,6 +84,8 @@ class RF24Mesh(NetworkMixin):
 
     @node_id.setter
     def node_id(self, _id):
+        if self._node_id:
+            self.release_address()
         self._node_id = _id & 0xFF
 
     def print_details(self, dump_pipes=False, network_only=False):
@@ -106,8 +102,9 @@ class RF24Mesh(NetworkMixin):
     def release_address(self) -> bool:
         """Forces an address lease to expire from the master."""
         if self._addr != NETWORK_DEFAULT_ADDR:
-            self.frame_cache.header = RF24NetworkHeader(0, MESH_ADDR_RELEASE)
+            self.frame_cache.header.to_node = 0
             self.frame_cache.header.from_node = self._addr
+            self.frame_cache.header.message_type = MESH_ADDR_RELEASE
             self.frame_cache.message = b""
             if self._write(0, TX_NORMAL):
                 super()._begin(NETWORK_DEFAULT_ADDR)
@@ -145,8 +142,9 @@ class RF24Mesh(NetworkMixin):
                     if n_id == node_id:
                         return addr
             return -2
-        self.frame_cache.header = RF24NetworkHeader(0, MESH_ADDR_LOOKUP)
+        self.frame_cache.header.to_node = 0
         self.frame_cache.header.from_node = self._addr
+        self.frame_cache.header.message_type = MESH_ADDR_LOOKUP
         self.frame_cache.message = bytes([node_id])
         if self._write(0, TX_NORMAL):
             if self._wait_for_lookup_response():
@@ -168,8 +166,9 @@ class RF24Mesh(NetworkMixin):
             return -2
 
         # else this is not a master node; request address lookup from master
-        self.frame_cache.header = RF24NetworkHeader(0, MESH_ID_LOOKUP)
+        self.frame_cache.header.to_node = 0
         self.frame_cache.header.from_node = self._addr
+        self.frame_cache.header.message_type = MESH_ID_LOOKUP
         self.frame_cache.message = struct.pack("<H", address)
         if self._write(0, TX_NORMAL):
             if self._wait_for_lookup_response():
@@ -199,10 +198,10 @@ class RF24Mesh(NetworkMixin):
         msg_t = self._net_update()
         if self._addr == NETWORK_DEFAULT_ADDR:
             return msg_t
-        if msg_t == NETWORK_ADDR_REQUEST:
-            self._do_dhcp = True
 
         if not self.get_node_id():  # if this is the master node
+            if msg_t == NETWORK_ADDR_REQUEST and self.frame_cache.header.reserved:
+                self.dhcp()
             if msg_t in (MESH_ADDR_LOOKUP, MESH_ID_LOOKUP):
                 self.frame_cache.header.to_node = self.frame_cache.header.from_node
 
@@ -226,24 +225,8 @@ class RF24Mesh(NetworkMixin):
         return msg_t
 
     def dhcp(self):
-        """Updates the internal `dict` of assigned addresses (master node only). Be
-        sure to call this after performing an
-        :meth:`~circuitpython_nrf24l01.rf24_mesh.RF24Mesh.update()`."""
-        if not self._do_dhcp:
-            return
-        self._do_dhcp = False
-        new_addr = 0
-        if (
-            not self.frame_cache.header.reserved
-            or self.frame_cache.header.message_type != NETWORK_ADDR_REQUEST
-        ):
-            self._log(
-                NETWORK_DEBUG,
-                "frame_cache: improper node ID or not a NETWORK_ADDR_REQUEST type."
-            )
-            return
-
-        via_node, shift_val = (0, 0)
+        """Updates the internal `dict` of assigned addresses (master node only)."""
+        new_addr, via_node, shift_val = (0, 0, 0)
         if self.frame_cache.header.from_node != NETWORK_DEFAULT_ADDR:
             via_node = self.frame_cache.header.from_node
             temp = via_node
@@ -258,10 +241,7 @@ class RF24Mesh(NetworkMixin):
             if new_addr == NETWORK_DEFAULT_ADDR:
                 continue
             for n_id, addr in self._addr_dict.items():
-                # self._log(
-                #     NETWORK_DEBUG_MINIMAL,
-                #     "(in _addr_dict) ID: {}, ADDR: {}".format(n_id, oct(addr))
-                # )
+                # print("(in _addr_dict) ID:", n_id, "ADDR:", oct(addr))
                 if addr == new_addr and n_id != self.frame_cache.header.reserved:
                     found_addr = True
                     break
@@ -281,7 +261,7 @@ class RF24Mesh(NetworkMixin):
                     )
                 break
             # log an error saying that address couldn't be assigned on the net lvl
-            # self._log(NETWORK_DEBUG, "address {} not allocated.".format(new_addr))
+            # print("address", new_addr, "not allocated.")
 
     def _set_address(self, node_id, address, search_by_address=False):
         """Set or change a node_id and network address pair on the master node."""
@@ -303,18 +283,16 @@ class RF24Mesh(NetworkMixin):
     def _request_address(self, level: int):
         """Get a new address assigned from the master node"""
         contacts = self._make_contacts(level)
-        # self._log(
-        #     NETWORK_DEBUG,
-        #     "Got {} responses on level {}".format(len(contacts), level)
-        # )
+        # print("Got", len(contacts), "responses on level",level)
         if not contacts:
             return False
 
         new_addr = None
         for contact in contacts:
-            self._log(NETWORK_DEBUG, "Requesting address from " + oct(contact))
-            self.frame_cache.header = RF24NetworkHeader(contact, NETWORK_ADDR_REQUEST)
+            # print("Requesting address from", oct(contact))
+            self.frame_cache.header.to_node = contact
             self.frame_cache.header.from_node = NETWORK_DEFAULT_ADDR
+            self.frame_cache.header.message_type = NETWORK_ADDR_REQUEST
             self.frame_cache.header.reserved = self._node_id
             self.frame_cache.message = b""
             # do a direct write (no auto-ack)
@@ -335,7 +313,7 @@ class RF24Mesh(NetworkMixin):
                 self.less_blocking_callback()  # pylint: disable=not-callable
         if new_addr is None:
             return False
-        self._log(NETWORK_DEBUG, "new address {} assigned".format(oct(new_addr)))
+        # print("new address assigned:", oct(new_addr))
 
         super()._begin(new_addr)
 
@@ -380,7 +358,8 @@ class RF24Mesh(NetworkMixin):
         """Send a message to a mesh `node_id`."""
         if not isinstance(message, (bytes, bytearray)):
             raise TypeError("message must be a `bytes` or `bytearray` object")
-        self._validate_msg_len(len(message))
+        if not self._validate_msg_len(len(message)):
+            message = message[:MAX_FRAG_SIZE]
         if self._addr == NETWORK_DEFAULT_ADDR:
             return False
         to_node = -2
@@ -399,7 +378,8 @@ class RF24Mesh(NetworkMixin):
 
     def write(self, to_node_address, message_type, message):
         """Send a message to a network `node_address`."""
-        self._validate_msg_len(len(message))
+        if not self._validate_msg_len(len(message)):
+            message = message[:MAX_FRAG_SIZE]
         if self._addr == NETWORK_DEFAULT_ADDR or not is_address_valid(to_node_address):
             return False
         self.frame_cache.header = RF24NetworkHeader(to_node_address, message_type)

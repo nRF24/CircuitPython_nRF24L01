@@ -4,11 +4,7 @@ This example was written to be used on 2 devices acting as 'nodes'.
 """
 import time
 import struct
-from circuitpython_nrf24l01.network.constants import (
-    NETWORK_DEBUG,
-    MAX_FRAG_SIZE,
-    NETWORK_DEFAULT_ADDR
-)
+from circuitpython_nrf24l01.network.constants import MAX_FRAG_SIZE
 from circuitpython_nrf24l01.rf24_mesh import RF24Mesh
 
 # import wrappers to imitate circuitPython's DigitalInOut
@@ -60,38 +56,34 @@ except NotImplementedError: # running on PC (no GPIO)
 this_node = int(
     input("Which radio is this? Enter a unique int. Defaults to '0' ") or "0"
 )
-# allow specifying the examples' master*() behavior's target for transmiting messages
-other_node = int(
-    input(
-        "To which radio should we transmit to? Enter a unique int. Defaults to '1' "
-    ) or "1",
-)
+# allow specifying this examples' master() behavior's target for transmiting messages
+other_node = [
+    int(
+        input(
+            "To which radio should we transmit to? "
+            "Enter a unique int. Defaults to '1' "
+        ) or "1",
+    )
+]
 
 # initialize the mesh node object
-nrf = RF24Mesh(spi, csn_pin, ce_pin)
+nrf = RF24Mesh(spi, csn_pin, ce_pin, this_node)
 nrf.channel = 97
 
 # set the Power Amplifier level to -12 dBm since this test example is
 # usually run with nRF24L01 transceivers in close proximity
 nrf.pa_level = -12
 
-nrf.node_id = this_node  # assign this node with the user-specified ID number
 if this_node:  # if this node is not the mesh network master node
     print("Connecting to network...", end=" ")
     # get this node's assigned address and connect to network
-    nrf.renew_address()
-    if nrf.node_address == NETWORK_DEFAULT_ADDR:
+
+    if nrf.renew_address() is None:
         print("failed. Please try again manually with `nrf.renew_address()`")
     else:
         print("assigned address:", oct(nrf.node_address))
 else:
     print("Acting as mesh network master node.")
-    nrf.node_address = nrf.get_node_id()
-
-if nrf.logger is not None:
-    # log debug msgs specific to RF24Network.
-    # use NETWORK_DEBUG_MINIMAL for less verbosity
-    nrf.logger.setLevel(NETWORK_DEBUG)
 
 # using the python keyword global is bad practice. Instead we'll use a 1 item
 # list to store our number of the payloads sent
@@ -119,7 +111,7 @@ def master(count=5, frag=False, interval=2):
             if frag:
                 length = (packets_sent[0] + MAX_FRAG_SIZE) % nrf.max_message_length
                 message = bytes(range(length))
-            ok = nrf.send(message, "M", other_node)
+            ok = nrf.send(message, "M", other_node[0])
             failures += not ok
             print(
                 "Sending {} (len {})...".format(packets_sent[0], length),
@@ -137,8 +129,6 @@ def slave(timeout=6, frag=False):
     start_timer = time.monotonic()
     while (time.monotonic() - start_timer) < timeout:
         nrf.update()
-        if not nrf.get_node_id():
-            nrf.dhcp()  # manage the DHCP list on the master node
         while nrf.available():
             start_timer = time.monotonic()  # reset timer
             payload = nrf.read()

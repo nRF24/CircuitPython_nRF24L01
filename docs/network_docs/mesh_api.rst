@@ -15,6 +15,8 @@ RF24Mesh class
 
 .. autoclass:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh
 
+    :param int node_id: The unique identifying `node_id` number for the instantiated mesh node.
+
     .. seealso:: For all parameters' descriptions, see the
         :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' contructor documentation.
 
@@ -57,12 +59,9 @@ node_id
     ID number.
 
     .. tip::
-        - If already connected to a mesh network, a mesh node should call `release_address()`
-          before changing this attribute's value. Otherwise, the master node may have an unused
-          :ref:`Logical Address <Logical Address>` assigned to `node_id` that may not exist after
-          this attribute's value is changed.
-        - When a mesh node becomes disconnected from the mesh network, use `renew_address()`
-          to fetch an assigned logical address to be used as the mesh node's `node_address`.
+        When a mesh node becomes disconnected from the mesh network, use `renew_address()`
+        to fetch (from the master node) an assigned logical address to be used as the mesh node's
+        `node_address`.
 
 renew_address()
 ---------------

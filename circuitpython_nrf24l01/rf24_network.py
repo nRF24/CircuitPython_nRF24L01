@@ -25,8 +25,7 @@ __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 from .network.mixins import NetworkMixin
 from .network.structs import (
     RF24NetworkFrame,
-    RF24NetworkHeader,
-    is_address_valid
+    is_address_valid,
 )
 from .network.constants import (
     NETWORK_MULTICAST_ADDR,
@@ -60,28 +59,28 @@ class RF24Network(NetworkMixin):
         """This function is used to keep the network layer current."""
         return self._net_update()
 
-    def send(self, header: RF24NetworkHeader, message):
+    def send(self, header, message):
         """Deliver a message according to the header information."""
-        self._validate_msg_len(len(message))
+        if not self._validate_msg_len(len(message)):
+            message = message[:MAX_FRAG_SIZE]
         header.from_node = self._addr
         if not header.is_valid():
             return False
         return self._pre_write(RF24NetworkFrame(header, message))
 
-    def write(self, frame: RF24NetworkFrame, traffic_direct=AUTO_ROUTING):
+    def write(self, frame, traffic_direct=AUTO_ROUTING):
         """Deliver a network frame."""
         if not isinstance(frame, RF24NetworkFrame):
             raise TypeError("frame expected object of type RF24NetworkFrame.")
-        self._validate_msg_len(len(frame.message))
+        if not self._validate_msg_len(len(frame.message)):
+            frame.message = frame.message[:MAX_FRAG_SIZE]
         frame.header.from_node = self._addr
         if not frame.header.is_valid():
             return False
         return self._pre_write(frame, traffic_direct)
 
-    def _pre_write(self, frame: RF24NetworkFrame, traffic_direct=AUTO_ROUTING):
+    def _pre_write(self, frame, traffic_direct=AUTO_ROUTING):
         """Helper to do prep work for _write_to_pipe(); like to TMRh20's _write()"""
-        if len(frame.message) > MAX_FRAG_SIZE and not self._frag_enabled:
-            frame.message = frame.message[:MAX_FRAG_SIZE]
         self.frame_cache = frame
         if traffic_direct != AUTO_ROUTING:
             # Payload is multicast to the first node, and routed normally to the next

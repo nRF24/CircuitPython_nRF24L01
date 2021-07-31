@@ -9,7 +9,6 @@ The follow is a list of `RF24` functions and attributes that are exposed in the
 
 * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.channel`
 * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.power`
-* :py:attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads`
 * :py:meth:`~circuitpython_nrf24l01.rf24.RF24.set_dynamic_payloads`
 * :py:meth:`~circuitpython_nrf24l01.rf24.RF24.get_dynamic_payloads`
 * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.listen`
@@ -17,8 +16,6 @@ The follow is a list of `RF24` functions and attributes that are exposed in the
 * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.is_lna_enabled`
 * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.data_rate`
 * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.crc`
-* :py:attr:`~circuitpython_nrf24l01.rf24.RF24.ard`
-* :py:attr:`~circuitpython_nrf24l01.rf24.RF24.arc`
 * :py:meth:`~circuitpython_nrf24l01.rf24.RF24.set_auto_retries`
 * :py:meth:`~circuitpython_nrf24l01.rf24.RF24.get_auto_retries`
 * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.last_tx_arc`

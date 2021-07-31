@@ -75,12 +75,3 @@ NETWORK_FRAG_FIRST = const(148)
 NETWORK_FRAG_MORE = const(149)
 #: Used to indicate the last frame of a fragmented message.
 NETWORK_FRAG_LAST = const(150)
-
-
-# debugging levels (to be used a binary mneumonics with RF24Network.debug attribute)
-#: general debugging (specific to the RF24Network object)
-NETWORK_DEBUG = const(10)
-#: minimal debugging
-NETWORK_DEBUG_MINIMAL = const(11)
-#: shows debugging info about routing messages through the RF24Network object
-NETWORK_DEBUG_ROUTING = const(12)
