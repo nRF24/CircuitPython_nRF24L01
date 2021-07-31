@@ -181,7 +181,7 @@ print_details()
           payloads`` where ``X`` is the `payload_length` (in bytes) the pipe is setup to
           receive when `dynamic_payloads` is disabled for that pipe.
 
-        Set this parameter to `False` to skips this extra information.
+        Set this parameter to `False` (it default value) to skips this extra information.
 
     .. versionchanged:: v2.1.0
         Changed the default value for the ``dump_pipes`` parameter to `True`

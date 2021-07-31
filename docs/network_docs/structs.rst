@@ -35,7 +35,7 @@ FrameQueueFrag
     :show-inheritance:
 
 Logical Address Validation
-==========================
+--------------------------
 
 .. automethod:: circuitpython_nrf24l01.network.structs.is_address_valid
 

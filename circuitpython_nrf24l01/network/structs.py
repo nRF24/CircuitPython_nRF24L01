@@ -78,7 +78,7 @@ class RF24NetworkHeader:
             self.message_type = (
                 ord(message_type[0]) if isinstance(message_type, str) else message_type
             )
-        self.message_type &= 0xFF
+            self.message_type &= 0xFF
 
         self.frame_id = RF24NetworkHeader.__next_id
         """The sequential identifying number for the frame (relative to the originating
@@ -139,7 +139,7 @@ class RF24NetworkHeader:
     def to_string(self):
         """Returns a `str` describing all of the header's attributes."""
         return "from {} to {} type {} id {} reserved {}".format(
-            oct(self.from_node),
+            oct(0o7777 if self.from_node is None else self.from_node),
             oct(self.to_node),
             self.message_type,
             self.frame_id,

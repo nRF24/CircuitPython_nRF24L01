@@ -22,7 +22,7 @@
 """A module to hold all usuall accesssible RF24 API via the RF24Network API"""
 # pylint: disable=missing-docstring
 import time
-from ..rf24 import RF24
+from ..rf24 import RF24, address_repr
 from .structs import RF24NetworkFrame, FrameQueueFrag
 
 logging = None  # pylint: disable=invalid-name
@@ -99,10 +99,42 @@ class NetworkMixin(LoggerMixin):
     def __exit__(self, *exc):
         return self._rf24.__exit__()
 
-    def print_details(self, dump_pipes=True):
-        """.. seealso:: :py:meth:`~circuitpython_nrf24l01.rf24.RF24.print_details()`"""
-        self._rf24.print_details(dump_pipes)
-        print("Network node address__", oct(self._addr))
+    def print_details(self, dump_pipes=False, network_only=False):
+        if not network_only:
+            self._rf24.print_details(False)
+        print(
+            "Network frame_cache contents:\n    Header is {}. Message contains:\n\t"
+            "{}".format(
+                self.frame_cache.header.to_string(),
+                "an empty buffer"
+                if not self.frame_cache.message
+                else address_repr(self.frame_cache.message, False, " "),
+            )
+        )
+        print(
+            "Network flags______________0b{}".format(
+                ("0" * (4 - (len(bin(self.network_flags)) - 2)))
+                + bin(self.network_flags)[2:]
+            )
+        )
+        print("Return on system messages__{}".format(bool(self.ret_sys_msg)))
+        print("Allow network multicasts___{}".format(bool(self.allow_multicast)))
+        print(
+            "Multicast relay____________{}".format(
+                "Enabled" if self._multicast_relay else "Disabled"
+            )
+        )
+        print(
+            "Network fragmentation______{}".format(
+                "Enabled" if self._frag_enabled else "Disabled"
+            )
+        )
+        print("Network max message length_{} bytes".format(self.max_message_length))
+        print("Network TX timeout_________{} milliseconds".format(self.tx_timeout))
+        print("Network Rounting timeout___{} milliseconds".format(self.route_timeout))
+        print("Network node address_______{}".format(oct(self._addr)))
+        if dump_pipes:
+            self._rf24.print_pipes()
 
     def _tx_standby(self, delta_time):
         """``delta_time`` is in milliseconds"""
