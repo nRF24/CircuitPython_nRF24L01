@@ -92,10 +92,16 @@ class RF24Mesh(RF24Network):
     def node_id(self, _id):
         self._node_id = _id & 0xFF
 
-    def print_details(self, dump_pipes=True):
-        """.. seealso:: :py:meth:`~circuitpython_nrf24l01.rf24.RF24.print_details()`"""
-        super().print_details(dump_pipes)
+    def print_details(self, dump_pipes=False, network_only=False):
+        """See RF24.print_details() and Shared Networking API docs"""
+        super().print_details(False, network_only)
         print("Network node id_______", self.node_id)
+        if not self._addr:  # if this is a master node
+            print("DHCP List:\n    ID\tAddress\n")
+            for n_id, addr in self._addr_dict.items():
+                print("    {}\t{}".format(n_id, oct(addr)))
+        if dump_pipes:
+            self._rf24.print_pipes()
 
     def release_address(self) -> bool:
         """Forces an address lease to expire from the master."""
