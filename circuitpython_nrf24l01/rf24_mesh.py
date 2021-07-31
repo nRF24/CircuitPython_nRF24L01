@@ -97,7 +97,7 @@ class RF24Mesh(RF24Network):
         super().print_details(False, network_only)
         print("Network node id_______", self.node_id)
         if not self._addr:  # if this is a master node
-            print("DHCP List:\n    ID\tAddress\n")
+            print("DHCP List:\n    ID\tAddress\n    ---\t-------")
             for n_id, addr in self._addr_dict.items():
                 print("    {}\t{}".format(n_id, oct(addr)))
         if dump_pipes:
