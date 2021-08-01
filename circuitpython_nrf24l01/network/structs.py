@@ -25,9 +25,9 @@ __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import struct
 from .constants import (
     NETWORK_MULTICAST_ADDR,
-    NETWORK_FRAG_FIRST,
-    NETWORK_FRAG_MORE,
-    NETWORK_FRAG_LAST,
+    MSG_FRAG_FIRST,
+    MSG_FRAG_MORE,
+    MSG_FRAG_LAST,
     MAX_FRAG_SIZE,
 )
 
@@ -203,15 +203,15 @@ class FrameQueueFrag(FrameQueue):
     def enqueue(self, frame: RF24NetworkFrame) -> bool:
         """Add a `RF24NetworkFrame` to the queue."""
         if frame.header.message_type in (
-            NETWORK_FRAG_FIRST,
-            NETWORK_FRAG_MORE,
-            NETWORK_FRAG_LAST,
+            MSG_FRAG_FIRST,
+            MSG_FRAG_MORE,
+            MSG_FRAG_LAST,
         ):
             return self._cache_frag_frame(frame)
         return super().enqueue(frame)
 
     def _cache_frag_frame(self, frame: RF24NetworkFrame) -> bool:
-        if frame.header.message_type == NETWORK_FRAG_FIRST:
+        if frame.header.message_type == MSG_FRAG_FIRST:
             self._frag_cache.from_bytes(frame.to_bytes())  # make copy not a reference
             return True
         if (
@@ -223,17 +223,17 @@ class FrameQueueFrag(FrameQueue):
                 len(self._frag_cache.message + frame.message) > self.max_message_length
                 or (
                     self._frag_cache.header.reserved - 1 != frame.header.reserved
-                    and frame.header.message_type != NETWORK_FRAG_LAST
+                    and frame.header.message_type != MSG_FRAG_LAST
                 )
             ):
                 # print(
                 #     "dropping fragment due to excessive size or not sequential"
                 # )
                 return False
-            if frame.header.message_type in (NETWORK_FRAG_MORE, NETWORK_FRAG_LAST):
+            if frame.header.message_type in (MSG_FRAG_MORE, MSG_FRAG_LAST):
                 self._frag_cache.header.from_bytes(frame.header.to_bytes())
                 self._frag_cache.message += frame.message
-                if frame.header.message_type == NETWORK_FRAG_LAST:
+                if frame.header.message_type == MSG_FRAG_LAST:
                     self._frag_cache.header.message_type = frame.header.reserved
                     super().enqueue(self._frag_cache)
                     self._frag_cache = RF24NetworkFrame()  # invalidate cache

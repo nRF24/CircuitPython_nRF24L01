@@ -25,8 +25,8 @@ __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 import struct
 from .network.constants import (
-    NETWORK_ADDR_REQUEST,
-    NETWORK_ADDR_RESPONSE,
+    MESH_ADDR_REQUEST,
+    MESH_ADDR_RESPONSE,
     NETWORK_DEFAULT_ADDR,
     NETWORK_MULTICAST_ADDR,
     NETWORK_POLL,
@@ -39,21 +39,12 @@ from .network.constants import (
     MESH_MAX_POLL,
     MESH_MAX_CHILDREN,
     TX_NORMAL,
-    USER_TX_TO_PHYSICAL_ADDRESS,
-    USER_TX_MULTICAST,
+    TX_PHYSICAL,
+    TX_MULTICAST,
     MAX_FRAG_SIZE,
 )
 from .network.structs import RF24NetworkHeader, is_address_valid
-from .network.mixins import NetworkMixin, _level_to_address
-
-
-def _get_level(address: int):
-    """return the number of digits in a given address"""
-    count = 0
-    while address:
-        address >>= 3
-        count += 1
-    return count
+from .network.mixins import NetworkMixin, _lvl_2_addr
 
 
 class RF24Mesh(NetworkMixin):
@@ -61,40 +52,32 @@ class RF24Mesh(NetworkMixin):
     capability."""
     def __init__(self, spi, csn_pin, ce_pin, node_id, spi_frequency=10000000):
         super().__init__(spi, csn_pin, ce_pin, spi_frequency)
-
-        # 1-byte ID number unique to the network node (not the same as `node_address`)
-        self._node_id = min(255, node_id)
+        self._id, self._do_dhcp, self._dhcp_dict = (min(255, node_id), False, {})
         # allow child nodes to connect to this network node
         self.network_flags &= ~FLAG_NO_POLL
         #: This variable can be assigned a function to perform during long operations.
-        self.less_blocking_callback = None
-        self._do_dhcp = False
-        # force self._net_update() to return system message types
-        self.ret_sys_msg = True
-        # A `dict` of assigned addresses paired to the Mesh nod'es unique ID number
-        self._addr_dict = {}
-
-        # setup radio
-        self._begin(0 if not node_id else NETWORK_DEFAULT_ADDR)
+        self.block_less_callback = None
+        self.ret_sys_msg = True  # force _net_update() to return system message types
+        self._begin(0 if not node_id else NETWORK_DEFAULT_ADDR)  # setup radio
 
     @property
     def node_id(self):
         """The unique ID number (1 byte long) of the mesh network node."""
-        return self._node_id
+        return self._id
 
     @node_id.setter
     def node_id(self, _id):
-        if self._node_id:
+        if self._id:
             self.release_address()
-        self._node_id = _id & 0xFF
+        self._id = _id & 0xFF
 
     def print_details(self, dump_pipes=False, network_only=False):
         """See RF24.print_details() and Shared Networking API docs"""
         super().print_details(False, network_only)
         print("Network node id____________{}".format(self.node_id))
-        if not self._addr and self._addr_dict:  # if this is a master node
+        if not self._addr and self._dhcp_dict:  # only on master node
             print("DHCP List:\n    ID\tAddress\n    ---\t-------")
-            for n_id, addr in self._addr_dict.items():
+            for n_id, addr in self._dhcp_dict.items():
                 print("    {}\t{}".format(n_id, oct(addr)))
         if dump_pipes:
             self._rf24.print_pipes()
@@ -102,10 +85,10 @@ class RF24Mesh(NetworkMixin):
     def release_address(self) -> bool:
         """Forces an address lease to expire from the master."""
         if self._addr != NETWORK_DEFAULT_ADDR:
-            self.frame_cache.header.to_node = 0
-            self.frame_cache.header.from_node = self._addr
-            self.frame_cache.header.message_type = MESH_ADDR_RELEASE
-            self.frame_cache.message = b""
+            self.frame_buf.header.to_node = 0
+            self.frame_buf.header.from_node = self._addr
+            self.frame_buf.header.message_type = MESH_ADDR_RELEASE
+            self.frame_buf.message = b""
             if self._write(0, TX_NORMAL):
                 super()._begin(NETWORK_DEFAULT_ADDR)
                 return True
@@ -118,15 +101,15 @@ class RF24Mesh(NetworkMixin):
 
         if self._addr != NETWORK_DEFAULT_ADDR:
             super()._begin(NETWORK_DEFAULT_ADDR)
-        total_requests, request_counter = (0, 0)
+        total_requests, request_count = (0, 0)
         end_timer = timeout + time.monotonic()
-        while not self._request_address(request_counter):
+        while not self._request_address(request_count):
             if time.monotonic() >= end_timer:
                 return None
             time.sleep(
-                (25 + ((total_requests + 1) * (request_counter + 1)) * 2) / 1000
+                (25 + ((total_requests + 1) * (request_count + 1)) * 2) / 1000
             )
-            request_counter = (request_counter + 1) % 4
+            request_count = (request_count + 1) % 4
             total_requests = (total_requests + 1) % 10
         return self._addr
 
@@ -135,52 +118,45 @@ class RF24Mesh(NetworkMixin):
         :ref:`Logical Address <Logical Address>`."""
         if not node_id:
             return 0
-
-        if not self.get_node_id() or self._addr == NETWORK_DEFAULT_ADDR:
+        if not self._id or self._addr == NETWORK_DEFAULT_ADDR:
             if self._addr != NETWORK_DEFAULT_ADDR:
-                for n_id, addr in self._addr_dict.items():
+                for n_id, addr in self._dhcp_dict.items():
                     if n_id == node_id:
                         return addr
             return -2
-        self.frame_cache.header.to_node = 0
-        self.frame_cache.header.from_node = self._addr
-        self.frame_cache.header.message_type = MESH_ADDR_LOOKUP
-        self.frame_cache.message = bytes([node_id])
-        if self._write(0, TX_NORMAL):
-            if self._wait_for_lookup_response():
-                return struct.unpack("<H", self.frame_cache.message[:2])[0]
+        self.frame_buf.header.message_type = MESH_ADDR_LOOKUP
+        self.frame_buf.message = bytes([node_id])
+        if self._wait_for_lookup_response():
+            return struct.unpack("<H", self.frame_buf.message[:2])[0]
         return -1
 
     def get_node_id(self, address=None) -> int:
         """Convert a node's :ref:`Logical Address <Logical Address>` into its
         corresponding unique ID number."""
         if not address:
-            return self._node_id if address is None else 0
-
-        # if this is a master node
+            return self._id if address is None else 0
         if not self._addr or self._addr == NETWORK_DEFAULT_ADDR:
             if self._addr != NETWORK_DEFAULT_ADDR:
-                for n_id, addr in self._addr_dict.items():
+                for n_id, addr in self._dhcp_dict.items():
                     if addr == address:
                         return n_id
             return -2
-
-        # else this is not a master node; request address lookup from master
-        self.frame_cache.header.to_node = 0
-        self.frame_cache.header.from_node = self._addr
-        self.frame_cache.header.message_type = MESH_ID_LOOKUP
-        self.frame_cache.message = struct.pack("<H", address)
-        if self._write(0, TX_NORMAL):
-            if self._wait_for_lookup_response():
-                return self.frame_cache.message[0]
+        self.frame_buf.header.message_type = MESH_ID_LOOKUP
+        self.frame_buf.message = struct.pack("<H", address)
+        if self._wait_for_lookup_response():
+            return self.frame_buf.message[0]
         return -1
 
     def _wait_for_lookup_response(self):
-        """returns False if timed out, otherwise True"""
+        """Returns False if timed out, otherwise True"""
+        self.frame_buf.header.to_node = 0
+        self.frame_buf.header.from_node = self._addr
+        if not self._write(0, TX_NORMAL):
+            return False
         timeout = MESH_LOOKUP_TIMEOUT * 1000000 + time.monotonic_ns()
         while self._net_update() not in (MESH_ID_LOOKUP, MESH_ADDR_LOOKUP):
-            if callable(self.less_blocking_callback):
-                self.less_blocking_callback()  # pylint: disable=not-callable
+            if callable(self.block_less_callback):
+                self.block_less_callback()  # pylint: disable=not-callable
             if time.monotonic_ns() > timeout:
                 return False
         return True
@@ -188,8 +164,8 @@ class RF24Mesh(NetworkMixin):
     def check_connection(self):
         """Check for network conectivity (not for use on master node)."""
         # do a double check as a manual retry in lack of using auto-ack
-        if self.get_address(self._node_id) < 1:
-            if self.get_address(self._node_id) < 1:
+        if self.get_address(self._id) < 1:
+            if self.get_address(self._id) < 1:
                 return False
         return True
 
@@ -198,28 +174,28 @@ class RF24Mesh(NetworkMixin):
         msg_t = self._net_update()
         if self._addr == NETWORK_DEFAULT_ADDR:
             return msg_t
-        if msg_t == NETWORK_ADDR_REQUEST and self.frame_cache.header.reserved:
+        if msg_t == MESH_ADDR_REQUEST and self.frame_buf.header.reserved:
             self._do_dhcp = True
 
         if not self.get_node_id():  # if this is the master node
             if msg_t in (MESH_ADDR_LOOKUP, MESH_ID_LOOKUP):
-                self.frame_cache.header.to_node = self.frame_cache.header.from_node
+                self.frame_buf.header.to_node = self.frame_buf.header.from_node
 
                 ret_val = 0
                 if msg_t == MESH_ADDR_LOOKUP:
-                    ret_val = self.get_address(self.frame_cache.message[0])
-                    self.frame_cache.message = struct.pack("<H", ret_val)
+                    ret_val = self.get_address(self.frame_buf.message[0])
+                    self.frame_buf.message = struct.pack("<H", ret_val)
                 else:
                     ret_val = self.get_node_id(
-                        struct.unpack("<H", self.frame_cache.message[:2])[0]
+                        struct.unpack("<H", self.frame_buf.message[:2])[0]
                     )
-                    self.frame_cache.message = bytes([ret_val])
-                self._write(self.frame_cache.header.to_node, TX_NORMAL)
+                    self.frame_buf.message = bytes([ret_val])
+                self._write(self.frame_buf.header.to_node, TX_NORMAL)
             elif msg_t == MESH_ADDR_RELEASE:
-                for n_id, addr in self._addr_dict.items():
-                    if addr == self.frame_cache.header.from_node:
+                for n_id, addr in self._dhcp_dict.items():
+                    if addr == self.frame_buf.header.from_node:
                         # pylint: disable=unnecessary-dict-index-lookup
-                        del self._addr_dict[n_id]
+                        del self._dhcp_dict[n_id]
                         # pylint: enable=unnecessary-dict-index-lookup
                         break
             self.dhcp()
@@ -232,61 +208,57 @@ class RF24Mesh(NetworkMixin):
         else:
             return
         new_addr, via_node, shift_val = (0, 0, 0)
-        if self.frame_cache.header.from_node != NETWORK_DEFAULT_ADDR:
-            via_node = self.frame_cache.header.from_node
+        if self.frame_buf.header.from_node != NETWORK_DEFAULT_ADDR:
+            via_node = self.frame_buf.header.from_node
             temp = via_node
             while temp:
                 temp >>= 3
                 shift_val += 3
-        extra_child = self.frame_cache.header.from_node == NETWORK_DEFAULT_ADDR
+        extra_child = self.frame_buf.header.from_node == NETWORK_DEFAULT_ADDR
 
         for i in range(MESH_MAX_CHILDREN + extra_child, 0, -1):
-            found_addr = False
-            new_addr = via_node | (i << shift_val)
+            found_addr, new_addr = (False, via_node | (i << shift_val))
             if new_addr == NETWORK_DEFAULT_ADDR:
                 continue
-            for n_id, addr in self._addr_dict.items():
+            for n_id, addr in self._dhcp_dict.items():
                 # print(i, "(in _addr_dict) ID:", n_id, "ADDR:", oct(addr))
-                if addr == new_addr and n_id != self.frame_cache.header.reserved:
+                if addr == new_addr and n_id != self.frame_buf.header.reserved:
                     found_addr = True
                     break
             if not found_addr:
-                self._set_address(self.frame_cache.header.reserved, new_addr)
+                self._set_address(self.frame_buf.header.reserved, new_addr)
 
-                self.frame_cache.header.message_type = NETWORK_ADDR_RESPONSE
-                self.frame_cache.header.to_node = self.frame_cache.header.from_node
-                self.frame_cache.message = struct.pack("<H", new_addr)
-                if self.frame_cache.header.from_node != NETWORK_DEFAULT_ADDR:
-                    if not self._write(self.frame_cache.header.to_node, TX_NORMAL):
-                        self._write(self.frame_cache.header.to_node, TX_NORMAL)
+                self.frame_buf.header.message_type = MESH_ADDR_RESPONSE
+                self.frame_buf.header.to_node = self.frame_buf.header.from_node
+                self.frame_buf.message = struct.pack("<H", new_addr)
+                if self.frame_buf.header.from_node != NETWORK_DEFAULT_ADDR:
+                    if not self._write(self.frame_buf.header.to_node, TX_NORMAL):
+                        self._write(self.frame_buf.header.to_node, TX_NORMAL)
                 else:
-                    self._write(
-                        self.frame_cache.header.to_node,
-                        USER_TX_TO_PHYSICAL_ADDRESS
-                    )
+                    self._write(self.frame_buf.header.to_node, TX_PHYSICAL)
                 break
             # print("address", new_addr, "not allocated.")
 
     def _set_address(self, node_id, address, search_by_address=False):
         """Set or change a node_id and network address pair on the master node."""
-        for n_id, addr in self._addr_dict.items():
+        for n_id, addr in self._dhcp_dict.items():
             if not search_by_address:
                 if n_id == node_id:
-                    self._addr_dict[n_id] = address
+                    self._dhcp_dict[n_id] = address
                     return
             else:
                 if addr == address:
                     # pylint: disable=unnecessary-dict-index-lookup
-                    del self._addr_dict[n_id]
+                    del self._dhcp_dict[n_id]
                     # pylint: enable=unnecessary-dict-index-lookup
-                    self._addr_dict[node_id] = address
+                    self._dhcp_dict[node_id] = address
                     return
-        self._addr_dict[node_id] = address
+        self._dhcp_dict[node_id] = address
         # self.save_dhcp()
 
     def _request_address(self, level: int):
         """Get a new address assigned from the master node"""
-        contacts = self._make_contacts(level)
+        contacts = self._make_contact(level)
         # print("Got", len(contacts), "responses on level",level)
         if not contacts:
             return False
@@ -294,53 +266,51 @@ class RF24Mesh(NetworkMixin):
         new_addr = None
         for contact in contacts:
             # print("Requesting address from", oct(contact))
-            self.frame_cache.header.to_node = contact
-            self.frame_cache.header.from_node = NETWORK_DEFAULT_ADDR
-            self.frame_cache.header.message_type = NETWORK_ADDR_REQUEST
-            self.frame_cache.header.reserved = self._node_id
-            self.frame_cache.message = b""
-            # do a direct write (no auto-ack)
-            self._write(contact, USER_TX_TO_PHYSICAL_ADDRESS)
+            self.frame_buf.header.to_node = contact
+            self.frame_buf.header.from_node = NETWORK_DEFAULT_ADDR
+            self.frame_buf.header.message_type = MESH_ADDR_REQUEST
+            self.frame_buf.header.reserved = self._id
+            self.frame_buf.message = b""
+            self._write(contact, TX_PHYSICAL)  # do a direct write (no auto-ack)
             timeout = 225000000 + time.monotonic_ns()
             while time.monotonic_ns() < timeout:  # wait for network ack
                 if (
-                    self._net_update() == NETWORK_ADDR_RESPONSE
-                    and self.frame_cache.header.reserved == self.node_id
+                    self._net_update() == MESH_ADDR_RESPONSE
+                    and self.frame_buf.header.reserved == self.node_id
                 ):
-                    new_addr = struct.unpack("<H", self.frame_cache.message[:2])[0]
-                    test_addr = new_addr & ~(0xFFFF << (_get_level(contact) * 3))
+                    new_addr = struct.unpack("<H", self.frame_buf.message[:2])[0]
+                    level = 0 if contact < 7 else len(oct(contact)[2:])
+                    test_addr = new_addr & ~(0xFFFF << (level * 3))
                     if test_addr != contact:
                         new_addr = None
                     else:
                         break
-            if callable(self.less_blocking_callback):
-                self.less_blocking_callback()  # pylint: disable=not-callable
+            if callable(self.block_less_callback):
+                self.block_less_callback()  # pylint: disable=not-callable
         if new_addr is None:
             return False
-        # print("new address assigned:", oct(new_addr))
-
         super()._begin(new_addr)
-
+        # print("new address assigned:", oct(new_addr))
         # do a double check as a manual retry in lack of using auto-ack
-        if self.get_node_id(self._addr) != self._node_id:
-            if self.get_node_id(self._addr) != self._node_id:
+        if self.get_node_id(self._addr) != self._id:
+            if self.get_node_id(self._addr) != self._id:
                 super()._begin(NETWORK_DEFAULT_ADDR)
                 return False
         return True
 
-    def _make_contacts(self, level):
+    def _make_contact(self, lvl):
         """Make a list of connections after multicasting a `NETWORK_POLL` message."""
         responders = []
-        self.frame_cache.header.to_node = NETWORK_MULTICAST_ADDR
-        self.frame_cache.header.from_node = NETWORK_DEFAULT_ADDR
-        self.frame_cache.header.message_type = NETWORK_POLL
-        self.frame_cache.message = b""
+        self.frame_buf.header.to_node = NETWORK_MULTICAST_ADDR
+        self.frame_buf.header.from_node = NETWORK_DEFAULT_ADDR
+        self.frame_buf.header.message_type = NETWORK_POLL
+        self.frame_buf.message = b""
         # self.multicast() does some extra logic to protect from user misuse.
-        self._write(_level_to_address(level), USER_TX_MULTICAST)
+        self._write(_lvl_2_addr(lvl), TX_MULTICAST)
         timeout = 55000000 + time.monotonic_ns()
         while time.monotonic_ns() < timeout and len(responders) < MESH_MAX_POLL:
             if self._net_update() == NETWORK_POLL:
-                contacted = self.frame_cache.header.from_node
+                contacted = self.frame_buf.header.from_node
                 is_duplicate = False
                 for contact in responders:
                     if contacted == contact:
@@ -356,7 +326,10 @@ class RF24Mesh(NetworkMixin):
 
     @allow_children.setter
     def allow_children(self, allow):
-        self.network_flags &= (~FLAG_NO_POLL if allow else FLAG_NO_POLL)
+        if allow:
+            self.network_flags &= ~FLAG_NO_POLL
+        else:
+            self.network_flags |= FLAG_NO_POLL
 
     def send(self, message, message_type, to_node_id=0):
         """Send a message to a mesh `node_id`."""
@@ -375,9 +348,9 @@ class RF24Mesh(NetworkMixin):
                 return False
             retry_delay += 10
             time.sleep(retry_delay / 1000)
-        self.frame_cache.header = RF24NetworkHeader(to_node, message_type)
-        self.frame_cache.header.from_node = self._addr
-        self.frame_cache.message = message
+        self.frame_buf.header = RF24NetworkHeader(to_node, message_type)
+        self.frame_buf.header.from_node = self._addr
+        self.frame_buf.message = message
         return self._write(to_node, TX_NORMAL)
 
     def write(self, to_node_address, message_type, message):
@@ -386,7 +359,7 @@ class RF24Mesh(NetworkMixin):
             message = message[:MAX_FRAG_SIZE]
         if self._addr == NETWORK_DEFAULT_ADDR or not is_address_valid(to_node_address):
             return False
-        self.frame_cache.header = RF24NetworkHeader(to_node_address, message_type)
-        self.frame_cache.header.from_node = self._addr
-        self.frame_cache.message = message
+        self.frame_buf.header = RF24NetworkHeader(to_node_address, message_type)
+        self.frame_buf.header.from_node = self._addr
+        self.frame_buf.message = message
         return self._write(to_node_address, TX_NORMAL)

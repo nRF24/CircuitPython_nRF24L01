@@ -32,7 +32,7 @@ The follow is a list of `RF24` functions and attributes that are exposed in the
 
       >>> # following command is the same as `nrf.print_details(0, 1)`
       >>> nrf.print_details(dump_pipes=False, network_only=True)
-      Network frame_cache contents:
+      Network frame_buf contents:
           Header is from 0o7777 to 0o0 type 0 id 2 reserved 0. Message contains:
               an empty buffer
       Network flags______________0b0000
@@ -73,10 +73,10 @@ address_suffix
     .. seealso::
         The usage of this attribute is more explained in the `Topology page <topology.html#physical-addresses-vs-logical-addresses>`_
 
-frame_cache
+frame_buf
 -----------
 
-.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.frame_cache
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.frame_buf
 
 queue
 -----

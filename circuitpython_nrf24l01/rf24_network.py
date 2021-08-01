@@ -31,9 +31,9 @@ from .network.constants import (
     NETWORK_MULTICAST_ADDR,
     AUTO_ROUTING,
     TX_NORMAL,
-    USER_TX_TO_PHYSICAL_ADDRESS,
-    USER_TX_TO_LOGICAL_ADDRESS,
-    USER_TX_MULTICAST,
+    TX_PHYSICAL,
+    TX_LOGICAL,
+    TX_MULTICAST,
     MAX_FRAG_SIZE,
 )
 
@@ -81,14 +81,14 @@ class RF24Network(NetworkMixin):
 
     def _pre_write(self, frame, traffic_direct=AUTO_ROUTING):
         """Helper to do prep work for _write_to_pipe(); like to TMRh20's _write()"""
-        self.frame_cache = frame
+        self.frame_buf = frame
         if traffic_direct != AUTO_ROUTING:
             # Payload is multicast to the first node, and routed normally to the next
-            send_type = USER_TX_TO_LOGICAL_ADDRESS
+            send_type = TX_LOGICAL
             if frame.header.to_node == NETWORK_MULTICAST_ADDR:
-                send_type = USER_TX_MULTICAST
+                send_type = TX_MULTICAST
             if frame.header.to_node == traffic_direct:
                 # Payload is multicast to the first node, which is the recipient
-                send_type = USER_TX_TO_PHYSICAL_ADDRESS
+                send_type = TX_PHYSICAL
             return self._write(traffic_direct, send_type)
         return self._write(frame.header.to_node, TX_NORMAL)

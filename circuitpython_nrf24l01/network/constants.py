@@ -26,7 +26,7 @@ from micropython import const
 
 
 # generic (internal) constants
-MAX_USER_DEFINED_MSG_TYPE = const(127)  #: A convenient sentinel value.
+MAX_USR_DEF_MSG_TYPE = const(127)  #: A convenient sentinel value.
 NETWORK_DEFAULT_ADDR = const(0o4444)  #: Primarily used by RF24Mesh.
 MAX_FRAG_SIZE = const(24)  #: Maximum message size for a single frame's message.
 NETWORK_MULTICAST_ADDR = const(0o100)  #: A reserved address for multicast messages.
@@ -39,25 +39,25 @@ MESH_WRITE_TIMEOUT = const(115)  #: The time (in milliseconds) used to send mess
 AUTO_ROUTING = const(0o70)  #: Send a message with automatic network rounting.
 TX_NORMAL = const(0)  #: Send a routed message.
 TX_ROUTED = const(1)  #: Send a routed message.
-USER_TX_TO_PHYSICAL_ADDRESS = const(2)  #: Send a message directly to network node.
-USER_TX_TO_LOGICAL_ADDRESS = const(3)  #: Similar to `TX_NORMAL`.
-USER_TX_MULTICAST = const(4)  #: Broadcast a message to a network level of nodes.
+TX_PHYSICAL = const(2)  #: Send a message directly to network node.
+TX_LOGICAL = const(3)  #: Similar to `TX_NORMAL`.
+TX_MULTICAST = const(4)  #: Broadcast a message to a network level of nodes.
 
 # flags for managing external system's desired behavior
 FLAG_HOLD_INCOMING = const(1)
 FLAG_BYPASS_HOLDS = const(2)  #: Primarily for RF24Mesh
-FLAG_FAST_FRAG = const(4)  #: unused due to optimization
+# FLAG_FAST_FRAG = const(4)  # unused due to optimization
 FLAG_NO_POLL = const(8)
 
 # constants used to define `RF24NetworkHeader.message_type`
 NETWORK_ACK = const(193)  #: Used for network-wide acknowledgements.
 NETWORK_PING = const(130)  #: Used for network pings
 NETWORK_POLL = const(194)  #: Primarily for RF24Mesh
-NETWORK_ADDR_REQUEST = const(195)  #: Primarily for RF24Mesh
-NETWORK_ADDR_RESPONSE = const(128)  #: Primarily for RF24Mesh
+MESH_ADDR_REQUEST = const(195)  #: Primarily for RF24Mesh
+MESH_ADDR_RESPONSE = const(128)  #: Primarily for RF24Mesh
 
 #: Unsupported at this time as this operation requires a new implementation.
-NETWORK_EXTERNAL_DATA = const(131)
+NETWORK_EXT_DATA = const(131)
 
 # No Network ACK message types
 #: The message type when manually expiring a leased address
@@ -70,8 +70,8 @@ MESH_ID_LOOKUP = const(198)
 
 # fragmented message types (used in the `header.reserved` attribute)
 #: Used to indicate the first frame of a fragmented message.
-NETWORK_FRAG_FIRST = const(148)
+MSG_FRAG_FIRST = const(148)
 #: Used to indicate a middle frame of a fragmented message.
-NETWORK_FRAG_MORE = const(149)
+MSG_FRAG_MORE = const(149)
 #: Used to indicate the last frame of a fragmented message.
-NETWORK_FRAG_LAST = const(150)
+MSG_FRAG_LAST = const(150)

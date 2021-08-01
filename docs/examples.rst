@@ -198,17 +198,17 @@ transmission.
     :linenos:
     :lineno-match:
 
-Network Simple Test
+Network Test
 -------------------
 
 .. versionadded:: 2.1.0
 
-The following network example is designed to be compatible with TMRh20's RF24Network
-examples, but this example allows the user to specify the examples' node addresses
-at runtime.
+The following network example is designed to be compatible with all of TMRh20's C++
+examples for the RF24Mesh and RF24Network libraries. However, due to some slight differences
+this example prompts for user input which can cover a broader spectrum of usage scenarios.
 
-.. literalinclude:: ../examples/nrf24l01_network_simple_test.py
-    :caption: examples/nrf24l01_network_simple_test.py
+.. literalinclude:: ../examples/nrf24l01_network_test.py
+    :caption: examples/nrf24l01_network_test.py
     :start-at: import time
     :end-before: def set_role():
     :linenos:

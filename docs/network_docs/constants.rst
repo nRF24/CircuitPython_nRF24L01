@@ -15,17 +15,17 @@ Sending Behavior Types
 
     This is internally used for `NETWORK_ACK` message routing.
 
-.. autodata:: circuitpython_nrf24l01.network.constants.USER_TX_TO_PHYSICAL_ADDRESS
+.. autodata:: circuitpython_nrf24l01.network.constants.TX_PHYSICAL
 
     These usually take 1 transmission, so they don't get a network ACK because the
     radio's `auto_ack` will serve the ACK.
 
-.. autodata:: circuitpython_nrf24l01.network.constants.USER_TX_TO_LOGICAL_ADDRESS
+.. autodata:: circuitpython_nrf24l01.network.constants.TX_LOGICAL
 
     This allows the user to define the routed transmission's first path (these can still get a
     `NETWORK_ACK`).
 
-.. autodata:: circuitpython_nrf24l01.network.constants.USER_TX_MULTICAST
+.. autodata:: circuitpython_nrf24l01.network.constants.TX_MULTICAST
 
     .. seealso::
 
@@ -38,7 +38,7 @@ Sending Behavior Types
 Reserved Network Message Types
 ------------------------------
 
-.. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_ADDR_RESPONSE
+.. autodata:: circuitpython_nrf24l01.network.constants.MESH_ADDR_RESPONSE
 
     This `message_type` is used to in the final step of `renew_address()` route a messages
     containing a newly allocated `node_address`. The header's `reserved` attribute for this
@@ -51,7 +51,7 @@ Reserved Network Message Types
     This `message_type` is automatically discarded because the radio's `auto_ack` feature will serve
     up the response.
 
-.. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_EXTERNAL_DATA
+.. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_EXT_DATA
 
     Used for bridging different network protocols between an RF24Network and LAN/WLAN networks.
 
@@ -76,7 +76,7 @@ Reserved Network Message Types
     `NETWORK_MULTICAST_ADDR` will respond directly to the sender with a blank message,
     indicating the address of the available node via the header's `from_node` attribute.
 
-.. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_ADDR_REQUEST
+.. autodata:: circuitpython_nrf24l01.network.constants.MESH_ADDR_REQUEST
 
     This `message_type` is used for requesting :ref:`Logical Address <Logical Address>` data from
     the mesh network's master node. Any non-master node receiving this `message_type` will manually
@@ -89,7 +89,7 @@ Reserved Network Message Types
 Generic Network constants
 ----------------------------
 
-.. autodata:: circuitpython_nrf24l01.network.constants.MAX_USER_DEFINED_MSG_TYPE
+.. autodata:: circuitpython_nrf24l01.network.constants.MAX_USR_DEF_MSG_TYPE
 
     Any message type above 127 (but cannot exceed 255) are reserved for internal
     network usage.
@@ -104,6 +104,11 @@ Generic Network constants
 
     This does not including header's byte length (which is always 8 bytes).
 
+    .. warning::
+        Do not increase this value in the source code. Adjust
+        :attr:`~circuitpython_nrf24l01.rf24_network.RF24Network.max_message_length`
+        instead.
+
 Message Fragment Types
 ----------------------
 
@@ -115,9 +120,9 @@ but the actual message type is transmitted in the
 :attr:`~circuitpython_nrf24l01.network.structs.RF24NetworkHeader.reserved` attribute
 of the last fragment.
 
-.. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_FRAG_FIRST
-.. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_FRAG_MORE
-.. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_FRAG_LAST
+.. autodata:: circuitpython_nrf24l01.network.constants.MSG_FRAG_FIRST
+.. autodata:: circuitpython_nrf24l01.network.constants.MSG_FRAG_MORE
+.. autodata:: circuitpython_nrf24l01.network.constants.MSG_FRAG_LAST
 
 RF24Mesh specific constants
 ---------------------------

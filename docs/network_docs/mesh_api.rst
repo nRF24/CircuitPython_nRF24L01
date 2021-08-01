@@ -58,6 +58,11 @@ node_id
     `node_address`. It is up to the developer to make sure each mesh network node uses a different
     ID number.
 
+    .. warning::
+        Changing this attributes value after instantiation will automatically call
+        `release_address()` which disconnects the node from the mesh network. Notice the
+        `node_address` is set to `NETWORK_DEFAULT_ADDR`  when consciously not connected to the
+        mesh network.
     .. tip::
         When a mesh node becomes disconnected from the mesh network, use `renew_address()`
         to fetch (from the master node) an assigned logical address to be used as the mesh node's
@@ -157,10 +162,10 @@ allow_children
 
 .. autoattribute:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.allow_children
 
-less_blocking_callback
+block_less_callback
 -----------------------------
 
-.. autoattribute:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.less_blocking_callback
+.. autoattribute:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.block_less_callback
 
     .. note::
         Requesting a new address (via `renew_address()`) can take a while since it sequentially

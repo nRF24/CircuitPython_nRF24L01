@@ -37,7 +37,7 @@ Header
 
     .. hint::
         Users are encouraged to specify a number in range [0, 127] (basically less
-        than or equal to `MAX_USER_DEFINED_MSG_TYPE`) as there are
+        than or equal to `MAX_USR_DEF_MSG_TYPE`) as there are
         `Reserved Message Types <constants.html#reserved-network-message-types>`_.
 
 .. autoattribute:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.frame_id
@@ -51,7 +51,7 @@ Header
     This will be the sequential ID number for fragmented messages, but on the last message
     fragment, this will be the `message_type`. `RF24Mesh` will also use this attribute to
     hold a newly assigned network :ref:`Logical Address <logical address>` for
-    `NETWORK_ADDR_RESPONSE` messages.
+    `MESH_ADDR_RESPONSE` messages.
 
 .. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.from_bytes
 

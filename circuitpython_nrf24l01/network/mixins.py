@@ -26,23 +26,23 @@ from ..rf24 import RF24, address_repr
 from .structs import RF24NetworkFrame, FrameQueue, FrameQueueFrag
 from .constants import (
     MAX_FRAG_SIZE,
-    NETWORK_FRAG_FIRST,
-    NETWORK_FRAG_MORE,
-    NETWORK_FRAG_LAST,
+    MSG_FRAG_FIRST,
+    MSG_FRAG_MORE,
+    MSG_FRAG_LAST,
     NETWORK_DEFAULT_ADDR,
-    NETWORK_ADDR_RESPONSE,
-    NETWORK_ADDR_REQUEST,
+    MESH_ADDR_RESPONSE,
+    MESH_ADDR_REQUEST,
     NETWORK_ACK,
-    NETWORK_EXTERNAL_DATA,
+    NETWORK_EXT_DATA,
     NETWORK_PING,
     NETWORK_POLL,
     TX_ROUTED,
     NETWORK_MULTICAST_ADDR,
     TX_NORMAL,
-    USER_TX_TO_PHYSICAL_ADDRESS,
-    USER_TX_TO_LOGICAL_ADDRESS,
-    USER_TX_MULTICAST,
-    MAX_USER_DEFINED_MSG_TYPE,
+    TX_PHYSICAL,
+    TX_LOGICAL,
+    TX_MULTICAST,
+    MAX_USR_DEF_MSG_TYPE,
     FLAG_NO_POLL,
 )
 
@@ -138,7 +138,7 @@ class RadoMixin:
         self._rf24.print_pipes()
 
 
-def _level_to_address(level):
+def _lvl_2_addr(level):
     """translate decimal tree ``level`` into an octal node address"""
     level_addr = 0
     if level:
@@ -150,12 +150,8 @@ class NetworkMixin(RadoMixin):
     def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
         super().__init__(spi, csn, ce_pin, spi_frequency=spi_frequency)
         # setup private members
-        self._multicast_level = 0
-        self._addr = 0
-        self._addr_mask = 0
-        self._addr_mask_inverted = 0
-        self._multicast_relay = False
-        self._frag_enabled = True
+        self._net_lvl, self._addr, self._mask, self._mask_inv = (0,) * 4
+        self._relay_enabled, self._frag_enabled = (False, True)
 
         #: The timeout (in milliseconds) to wait for successful transmission.
         self.tx_timeout = 25
@@ -170,7 +166,7 @@ class NetworkMixin(RadoMixin):
         self.queue = FrameQueueFrag()
         self.queue.max_message_length = self.max_message_length
         #: A buffer containing the last frame received by the network node
-        self.frame_cache = RF24NetworkFrame()
+        self.frame_buf = RF24NetworkFrame()
         self.address_suffix = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
         """Each byte in this list corresponds to the unique byte per pipe and child
         node."""
@@ -178,33 +174,33 @@ class NetworkMixin(RadoMixin):
         """The base case for all pipes' address' bytes before mutating with
         `address_suffix`."""
 
-    def _begin(self, node_addr):
+    def _begin(self, n_addr):
         # prep radio
         self._rf24.listen = False
         self._rf24.auto_ack = 0x3E
-        self._rf24.set_auto_retries(250 * (((node_addr % 6) + 1) * 2 + 3) + 250, 5)
+        self._rf24.set_auto_retries(250 * (((n_addr % 6) + 1) * 2 + 3) + 250, 5)
         for i in range(6):
-            self._rf24.open_rx_pipe(i, self._pipe_address(node_addr, i))
+            self._rf24.open_rx_pipe(i, self._pipe_address(n_addr, i))
         self._rf24.listen = True
 
         # setup address-related instance attibutes
-        self._addr = node_addr
-        self._addr_mask = 0
-        self._multicast_level = 0
+        self._addr = n_addr
+        self._mask = 0
+        self._net_lvl = 0
         # calc inverted address mask
         mask = 0xFFFF
         while self._addr & mask:
             mask = (mask << 3) & 0xFFFF
-            self._multicast_level += 1
-        self._addr_mask_inverted = mask
+            self._net_lvl += 1
+        self._mask_inv = mask
         # calc address mask
         while not mask & 7:
-            self._addr_mask = (self._addr_mask << 3) | 7
+            self._mask = (self._mask << 3) | 7
             mask >>= 3
         # calc parent's address & pipe number
-        self._parent = self._addr & (self._addr_mask >> 3)
+        self._parent = self._addr & (self._mask >> 3)
         self._parent_pipe = self._addr
-        mask = self._addr_mask >> 3
+        mask = self._mask >> 3
         while mask:
             mask >>= 3
             self._parent_pipe >>= 3
@@ -213,12 +209,12 @@ class NetworkMixin(RadoMixin):
         if not network_only:
             self._rf24.print_details(False)
         print(
-            "Network frame_cache contents:\n    Header is {}. Message contains:\n\t"
+            "Network frame_buf contents:\n    Header is {}. Message contains:\n\t"
             "{}".format(
-                self.frame_cache.header.to_string(),
+                self.frame_buf.header.to_string(),
                 "an empty buffer"
-                if not self.frame_cache.message
-                else address_repr(self.frame_cache.message, False, " "),
+                if not self.frame_buf.message
+                else address_repr(self.frame_buf.message, 0, " "),
             )
         )
         print(
@@ -231,7 +227,7 @@ class NetworkMixin(RadoMixin):
         print("Allow network multicasts___{}".format(bool(self.allow_multicast)))
         print(
             "Multicast relay____________{}".format(
-                "Enabled" if self._multicast_relay else "Disabled"
+                "Enabled" if self._relay_enabled else "Disabled"
             )
         )
         print(
@@ -273,24 +269,24 @@ class NetworkMixin(RadoMixin):
     def multicast_relay(self):
         """Enabling this attribute will allow this node to automatically forward
         received multicasted frames to the next highest multicast level."""
-        return self.allow_multicast and self._multicast_relay
+        return self.allow_multicast and self._relay_enabled
 
     @multicast_relay.setter
     def multicast_relay(self, enable):
-        self._multicast_relay = enable and self.allow_multicast
+        self._relay_enabled = enable and self.allow_multicast
 
     @property
     def multicast_level(self):
         """Override the default multicasting network level which is set by the
         `node_address` attribute."""
-        return self._multicast_level
+        return self._net_lvl
 
     @multicast_level.setter
-    def multicast_level(self, level):
-        level = min(4, max(level, 0))
-        self._multicast_level = level
+    def multicast_level(self, lvl):
+        lvl = min(4, max(lvl, 0))
+        self._net_lvl = lvl
         self._rf24.listen = False
-        self._rf24.open_rx_pipe(0, self._pipe_address(_level_to_address(level), 0))
+        self._rf24.open_rx_pipe(0, self._pipe_address(_lvl_2_addr(lvl), 0))
         self._rf24.listen = True
 
     @property
@@ -326,29 +322,23 @@ class NetworkMixin(RadoMixin):
             if temp_buf is None:
                 return ret_val
             if (
-                not self.frame_cache.from_bytes(temp_buf)
-                or not self.frame_cache.header.is_valid
+                not self.frame_buf.from_bytes(temp_buf)
+                or not self.frame_buf.header.is_valid
             ):
-                # print(
-                #     "discarding packet due to inadequate length"
-                #     " or invalid network addresses."
-                # )
+                # print("discarding frame due to invalid network addresses.")
                 continue
 
             # print(
-            #     "Received frame:",
-            #     self.frame_cache.header.to_string(),
-            #     "\n\t",
+            #     "Received frame: " + self.frame_buf.header.to_string(),
             #     "message buffer is empty"
-            #     if not self.frame_cache.message
+            #     if not self.frame_buf.message
             #     else
-            #     address_repr(
-            #         self.frame_cache.message, reverse=False, delimit=" "
-            #     )
+            #     "\n\t"
+            #     + address_repr(self.frame_buf.message, 0, " ")
             # )
-            ret_val = self.frame_cache.header.message_type
+            ret_val = self.frame_buf.header.message_type
             keep_updating = False
-            if self.frame_cache.header.to_node == self._addr:
+            if self.frame_buf.header.to_node == self._addr:
                 # frame was directed to this node
                 keep_updating, ret_val = self._handle_frame_for_this_node(ret_val)
             else:  # frame was not directed to this node
@@ -362,84 +352,74 @@ class NetworkMixin(RadoMixin):
         if msg_t == NETWORK_PING:
             return (True, msg_t)
 
-        if msg_t == NETWORK_ADDR_RESPONSE and NETWORK_DEFAULT_ADDR != self._addr:
-            self.frame_cache.header.to_node = NETWORK_DEFAULT_ADDR
-            self._write(NETWORK_DEFAULT_ADDR, USER_TX_TO_PHYSICAL_ADDRESS)
+        if msg_t == MESH_ADDR_RESPONSE and NETWORK_DEFAULT_ADDR != self._addr:
+            self.frame_buf.header.to_node = NETWORK_DEFAULT_ADDR
+            self._write(NETWORK_DEFAULT_ADDR, TX_PHYSICAL)
             return (True, msg_t)
-        if msg_t == NETWORK_ADDR_REQUEST and self._addr:
-            self.frame_cache.header.from_node = self._addr
-            self.frame_cache.header.to_node = 0
+        if msg_t == MESH_ADDR_REQUEST and self._addr:
+            self.frame_buf.header.from_node = self._addr
+            self.frame_buf.header.to_node = 0
             self._write(0, TX_NORMAL)
             return (True, msg_t)
-        if (
-            self.ret_sys_msg
-            and msg_t > MAX_USER_DEFINED_MSG_TYPE
-            or msg_t == NETWORK_ACK
-        ):
+        if self.ret_sys_msg and msg_t > MAX_USR_DEF_MSG_TYPE or msg_t == NETWORK_ACK:
             print("Received system payload type", msg_t)
             if msg_t not in (
-                NETWORK_FRAG_FIRST,
-                NETWORK_FRAG_MORE,
-                NETWORK_FRAG_LAST,
-                NETWORK_EXTERNAL_DATA
+                MSG_FRAG_FIRST,  MSG_FRAG_MORE,  MSG_FRAG_LAST,  NETWORK_EXT_DATA,
             ):
                 return (False, msg_t)
 
-        self.queue.enqueue(self.frame_cache)
+        self.queue.enqueue(self.frame_buf)
         if (
-            msg_t == NETWORK_EXTERNAL_DATA
-            or msg_t == NETWORK_FRAG_LAST
-            and self.frame_cache.header.reserved == NETWORK_EXTERNAL_DATA
+            msg_t == NETWORK_EXT_DATA
+            or msg_t == MSG_FRAG_LAST
+            and self.frame_buf.header.reserved == NETWORK_EXT_DATA
         ):
             print("Received external data type")
-            return (False, NETWORK_EXTERNAL_DATA)
+            return (False, NETWORK_EXT_DATA)
         return (True, msg_t)
 
     def _handle_frame_for_other_node(self, msg_t):
         """Returns False if the frame is not consumed or True if consumed"""
         if self.allow_multicast:
-            if self.frame_cache.header.to_node == NETWORK_MULTICAST_ADDR:
+            if self.frame_buf.header.to_node == NETWORK_MULTICAST_ADDR:
                 if msg_t == NETWORK_POLL:
                     if self._addr != NETWORK_DEFAULT_ADDR:
                         if not self.network_flags & FLAG_NO_POLL:
-                            self.frame_cache.header.to_node = (
-                                self.frame_cache.header.from_node
+                            self.frame_buf.header.to_node = (
+                                self.frame_buf.header.from_node
                             )
-                            self.frame_cache.header.from_node = self._addr
+                            self.frame_buf.header.from_node = self._addr
                             time.sleep(self._parent_pipe / 1000)
-                            self._write(
-                                self.frame_cache.header.to_node,
-                                USER_TX_TO_PHYSICAL_ADDRESS
-                            )
+                            self._write(self.frame_buf.header.to_node, TX_PHYSICAL)
                         return (True, 0)
-                self.queue.enqueue(self.frame_cache)
+                self.queue.enqueue(self.frame_buf)
                 if self.multicast_relay:
                     print(
                         "Forwarding multicast frame from {} to {}".format(
-                            oct(self.frame_cache.header.from_node),
-                            oct(self.frame_cache.header.to_node)
+                            oct(self.frame_buf.header.from_node),
+                            oct(self.frame_buf.header.to_node),
                         ),
                     )
                     if not self._addr >> 3:
                         time.sleep(0.0024)
                     time.sleep((self._addr % 4) * 0.0006)
                     self._write(
-                        (_level_to_address(self._multicast_level) << 3) & 0xffff,
-                        USER_TX_MULTICAST
+                        (_lvl_2_addr(self._net_lvl) << 3) & 0xFFFF,
+                        TX_MULTICAST,
                     )
                 if (
-                    msg_t == NETWORK_EXTERNAL_DATA
-                    or msg_t == NETWORK_FRAG_LAST
-                    and self.frame_cache.header.reserved == NETWORK_EXTERNAL_DATA
+                    msg_t == NETWORK_EXT_DATA
+                    or msg_t == MSG_FRAG_LAST
+                    and self.frame_buf.header.reserved == NETWORK_EXT_DATA
                 ):
-                    return (False, NETWORK_EXTERNAL_DATA)
+                    return (False, NETWORK_EXT_DATA)
             elif self._addr != NETWORK_DEFAULT_ADDR:
                 # pass it along
-                self._write(self.frame_cache.header.to_node, TX_ROUTED)
+                self._write(self.frame_buf.header.to_node, TX_ROUTED)
                 return (True, 0)
         elif self._addr != NETWORK_DEFAULT_ADDR:  # multicast not enabled
             # pass it along
-            self._write(self.frame_cache.header.to_node, TX_ROUTED)
+            self._write(self.frame_buf.header.to_node, TX_ROUTED)
             msg_t = 0
         return (True, msg_t)
 
@@ -459,15 +439,15 @@ class NetworkMixin(RadoMixin):
         """Broadcast a message to all nodes on a certain network level."""
         if not self._validate_msg_len(len(message)):
             message = message[:MAX_FRAG_SIZE]
-        level = self._multicast_level if level is None else min(3, max(level, 0))
-        self.frame_cache.header.to_node = NETWORK_MULTICAST_ADDR
-        self.frame_cache.header.from_node = self._addr
+        level = self._net_lvl if level is None else min(3, max(level, 0))
+        self.frame_buf.header.to_node = NETWORK_MULTICAST_ADDR
+        self.frame_buf.header.from_node = self._addr
         message_type = (
             message_type if not isinstance(message_type, str) else ord(message_type[0])
         )
-        self.frame_cache.header.message_type = message_type & 0xFF
-        self.frame_cache.message = message
-        return self._write(_level_to_address(level), USER_TX_MULTICAST)
+        self.frame_buf.header.message_type = message_type & 0xFF
+        self.frame_buf.message = message
+        return self._write(_lvl_2_addr(level), TX_MULTICAST)
 
     def _validate_msg_len(self, length):
         if length > self.max_message_length:
@@ -476,15 +456,13 @@ class NetworkMixin(RadoMixin):
             return False
         return True
 
-    def _write(self, traffic_direct, send_type):
-        """entry point for transmitting the current frame_cache"""
-        is_ack_type = self.frame_cache.is_ack_type()
+    def _write(self, write_direct, send_type):
+        """entry point for transmitting the current frame_buf"""
+        is_ack_t = self.frame_buf.is_ack_type()
 
-        to_node, to_pipe, is_multicast = self._logical_to_physical(
-            traffic_direct, send_type
-        )
+        to_node, to_pipe, is_multicast = self._logi_2_phys(write_direct, send_type)
 
-        if send_type == TX_ROUTED and traffic_direct == to_node and is_ack_type:
+        if send_type == TX_ROUTED and write_direct == to_node and is_ack_t:
             time.sleep(0.002)
 
         # send the frame
@@ -493,32 +471,26 @@ class NetworkMixin(RadoMixin):
 
         # conditionally send the NETWORK_ACK message
         if (
-            send_type == TX_ROUTED
-            and result
-            and to_node == traffic_direct
-            and is_ack_type
+            send_type == TX_ROUTED and result and to_node == write_direct and is_ack_t
         ):
             # respond with a network ACK
-            self.frame_cache.header.message_type = NETWORK_ACK
-            self.frame_cache.header.to_node = self.frame_cache.header.from_node
-            ack_to_node, ack_to_pipe, is_multicast = self._logical_to_physical(
-                self.frame_cache.header.from_node, TX_ROUTED
+            self.frame_buf.header.message_type = NETWORK_ACK
+            self.frame_buf.header.to_node = self.frame_buf.header.from_node
+            ack_to_node, ack_to_pipe, is_multicast = self._logi_2_phys(
+                self.frame_buf.header.from_node, TX_ROUTED
             )
             ack_ok = self._write_to_pipe(ack_to_node, ack_to_pipe, is_multicast)
             print(
                 "Network ACK {} origin {} on pipe {}".format(
                     "reached" if ack_ok else "failed to reach",
-                    oct(self.frame_cache.header.from_node),
+                    oct(self.frame_buf.header.from_node),
                     ack_to_pipe,
                 ),
             )
 
         # conditionally wait for NETWORK_ACK message
-        elif (
-            result
-            and to_node != traffic_direct
-            and is_ack_type
-            and send_type in (TX_NORMAL, USER_TX_TO_LOGICAL_ADDRESS)
+        elif result and to_node != write_direct and is_ack_t and send_type in (
+            TX_NORMAL, TX_LOGICAL
         ):
             self._rf24.listen = True
             self._rf24.auto_ack = 0x3E
@@ -545,35 +517,35 @@ class NetworkMixin(RadoMixin):
         result = False
         self._rf24.auto_ack = 0x3E + (not is_multicast)
         self.listen = False
-        # print("Sending", self.frame_cache.header.to_string(), "on pipe", to_pipe)
+        # print("Sending", self.frame_buf.header.to_string(), "to pipe", to_pipe)
         self._rf24.open_tx_pipe(self._pipe_address(to_node, to_pipe))
-        if len(self.frame_cache.message) <= MAX_FRAG_SIZE:
-            result = self._rf24.send(self.frame_cache.to_bytes(), send_only=True)
+        if len(self.frame_buf.message) <= MAX_FRAG_SIZE:
+            result = self._rf24.send(self.frame_buf.to_bytes(), send_only=True)
             if not result:
                 result = self._tx_standby(self.tx_timeout)
         else:
             # break message into fragments and send the multiple resulting frames
-            total = bool(len(self.frame_cache.message) % MAX_FRAG_SIZE) + int(
-                len(self.frame_cache.message) / MAX_FRAG_SIZE
+            total = bool(len(self.frame_buf.message) % MAX_FRAG_SIZE) + int(
+                len(self.frame_buf.message) / MAX_FRAG_SIZE
             )
-            msg_t = self.frame_cache.header.message_type
+            msg_t = self.frame_buf.header.message_type
             for count in range(total):
                 buf_start = count * MAX_FRAG_SIZE
                 buf_end = count * MAX_FRAG_SIZE + MAX_FRAG_SIZE
-                self.frame_cache.header.reserved = total - count
+                self.frame_buf.header.reserved = total - count
                 if count == total - 1:
-                    self.frame_cache.header.message_type = NETWORK_FRAG_LAST
-                    self.frame_cache.header.reserved = msg_t
-                    buf_end = len(self.frame_cache.message)
+                    self.frame_buf.header.message_type = MSG_FRAG_LAST
+                    self.frame_buf.header.reserved = msg_t
+                    buf_end = len(self.frame_buf.message)
                 elif not count:
-                    self.frame_cache.header.message_type = NETWORK_FRAG_FIRST
+                    self.frame_buf.header.message_type = MSG_FRAG_FIRST
                 else:
-                    self.frame_cache.header.message_type = NETWORK_FRAG_MORE
+                    self.frame_buf.header.message_type = MSG_FRAG_MORE
 
                 result = self._rf24.send(
-                    self.frame_cache.header.to_bytes()
-                    + self.frame_cache.message[buf_start : buf_end],
-                    send_only=True
+                    self.frame_buf.header.to_bytes()
+                    + self.frame_buf.message[buf_start:buf_end],
+                    send_only=True,
                 )
                 retries = 3
                 while not result and retries:
@@ -586,7 +558,7 @@ class NetworkMixin(RadoMixin):
                 # )
                 if not result:
                     break
-            self.frame_cache.header.message_type = msg_t
+            self.frame_buf.header.message_type = msg_t
         return result
 
     def _tx_standby(self, delta_time):
@@ -596,21 +568,15 @@ class NetworkMixin(RadoMixin):
             result = self._rf24.resend(send_only=True)
         return result
 
-    def _logical_to_physical(self, to_node, send_type, is_multicast=False):
+    def _logi_2_phys(self, to_node, send_type, is_multicast=False):
         """translate msg route into node address, pipe number, & multicast flag."""
-        converted_to_node = self._parent
-        converted_to_pipe = self._parent_pipe
+        conv_to_node, conv_to_pipe = (self._parent, self._parent_pipe)
         if send_type > TX_ROUTED:
-            is_multicast = True
-            converted_to_pipe = 0
-            converted_to_node = to_node
-        elif to_node & self._addr_mask == self._addr:
-            # to_node is a descendant
-            converted_to_pipe = 5
-            if not to_node & (self._addr_mask_inverted << 3):
-                # to_node is a direct child
-                converted_to_node = to_node
-            else:
-                # to_node is a descendant of a descendant
-                converted_to_node = to_node & ((self._addr_mask << 3) | 7)
-        return (converted_to_node, converted_to_pipe, is_multicast)
+            is_multicast, conv_to_pipe, conv_to_node = (True, 0, to_node)
+        elif to_node & self._mask == self._addr:  # to_node is a descendant
+            conv_to_pipe = 5
+            if not to_node & (self._mask_inv << 3):
+                conv_to_node = to_node  # to_node is a direct child
+            else:  # to_node is a descendant of a descendant
+                conv_to_node = to_node & ((self._mask << 3) | 7)
+        return (conv_to_node, conv_to_pipe, is_multicast)
