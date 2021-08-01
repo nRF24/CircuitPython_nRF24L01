@@ -68,7 +68,7 @@ class RF24Mesh(NetworkMixin):
         self.network_flags &= ~FLAG_NO_POLL
         #: This variable can be assigned a function to perform during long operations.
         self.less_blocking_callback = None
-
+        self._do_dhcp = False
         # force self._net_update() to return system message types
         self.ret_sys_msg = True
         # A `dict` of assigned addresses paired to the Mesh nod'es unique ID number
@@ -92,7 +92,7 @@ class RF24Mesh(NetworkMixin):
         """See RF24.print_details() and Shared Networking API docs"""
         super().print_details(False, network_only)
         print("Network node id____________{}".format(self.node_id))
-        if not self._addr:  # if this is a master node
+        if not self._addr and self._addr_dict:  # if this is a master node
             print("DHCP List:\n    ID\tAddress\n    ---\t-------")
             for n_id, addr in self._addr_dict.items():
                 print("    {}\t{}".format(n_id, oct(addr)))
@@ -111,7 +111,7 @@ class RF24Mesh(NetworkMixin):
                 return True
         return False
 
-    def renew_address(self, timeout=15):
+    def renew_address(self, timeout=7):
         """Connect to the mesh network and request a new `node_address`."""
         if self._rf24.available():
             self.update()
@@ -198,10 +198,10 @@ class RF24Mesh(NetworkMixin):
         msg_t = self._net_update()
         if self._addr == NETWORK_DEFAULT_ADDR:
             return msg_t
+        if msg_t == NETWORK_ADDR_REQUEST and self.frame_cache.header.reserved:
+            self._do_dhcp = True
 
         if not self.get_node_id():  # if this is the master node
-            if msg_t == NETWORK_ADDR_REQUEST and self.frame_cache.header.reserved:
-                self.dhcp()
             if msg_t in (MESH_ADDR_LOOKUP, MESH_ID_LOOKUP):
                 self.frame_cache.header.to_node = self.frame_cache.header.from_node
 
@@ -222,10 +222,15 @@ class RF24Mesh(NetworkMixin):
                         del self._addr_dict[n_id]
                         # pylint: enable=unnecessary-dict-index-lookup
                         break
+            self.dhcp()
         return msg_t
 
     def dhcp(self):
         """Updates the internal `dict` of assigned addresses (master node only)."""
+        if self._do_dhcp:
+            self._do_dhcp = False
+        else:
+            return
         new_addr, via_node, shift_val = (0, 0, 0)
         if self.frame_cache.header.from_node != NETWORK_DEFAULT_ADDR:
             via_node = self.frame_cache.header.from_node
@@ -241,7 +246,7 @@ class RF24Mesh(NetworkMixin):
             if new_addr == NETWORK_DEFAULT_ADDR:
                 continue
             for n_id, addr in self._addr_dict.items():
-                # print("(in _addr_dict) ID:", n_id, "ADDR:", oct(addr))
+                # print(i, "(in _addr_dict) ID:", n_id, "ADDR:", oct(addr))
                 if addr == new_addr and n_id != self.frame_cache.header.reserved:
                     found_addr = True
                     break
@@ -260,7 +265,6 @@ class RF24Mesh(NetworkMixin):
                         USER_TX_TO_PHYSICAL_ADDRESS
                     )
                 break
-            # log an error saying that address couldn't be assigned on the net lvl
             # print("address", new_addr, "not allocated.")
 
     def _set_address(self, node_id, address, search_by_address=False):

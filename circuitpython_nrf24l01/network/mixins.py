@@ -336,9 +336,14 @@ class NetworkMixin(RadoMixin):
                 continue
 
             # print(
-            #     "Received packet:", self.frame_cache.header.to_string(),
-            #     "\n\t", address_repr(
-            #             self.frame_cache.to_bytes(), reverse=False, delimit=" "
+            #     "Received frame:",
+            #     self.frame_cache.header.to_string(),
+            #     "\n\t",
+            #     "message buffer is empty"
+            #     if not self.frame_cache.message
+            #     else
+            #     address_repr(
+            #         self.frame_cache.message, reverse=False, delimit=" "
             #     )
             # )
             ret_val = self.frame_cache.header.message_type

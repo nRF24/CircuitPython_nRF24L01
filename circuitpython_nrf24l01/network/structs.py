@@ -33,6 +33,8 @@ from .constants import (
 
 def is_address_valid(address):
     """Test if a given address is a valid :ref:`Logical Address <Logical Address>`."""
+    if address is None:
+        return False
     if address == NETWORK_MULTICAST_ADDR:
         return True
     byte_count = 0
