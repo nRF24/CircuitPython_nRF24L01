@@ -53,8 +53,6 @@ class RF24Mesh(NetworkMixin):
     def __init__(self, spi, csn_pin, ce_pin, node_id, spi_frequency=10000000):
         super().__init__(spi, csn_pin, ce_pin, spi_frequency)
         self._id, self._do_dhcp, self._dhcp_dict = (min(255, node_id), False, {})
-        # allow child nodes to connect to this network node
-        self.network_flags &= ~FLAG_NO_POLL
         #: This variable can be assigned a function to perform during long operations.
         self.block_less_callback = None
         self.ret_sys_msg = True  # force _net_update() to return system message types
@@ -198,11 +196,11 @@ class RF24Mesh(NetworkMixin):
                         del self._dhcp_dict[n_id]
                         # pylint: enable=unnecessary-dict-index-lookup
                         break
-            self.dhcp()
+            self._dhcp()
         return msg_t
 
-    def dhcp(self):
-        """Updates the internal `dict` of assigned addresses (master node only)."""
+    def _dhcp(self):
+        """Updates `_dhcp_dict` of assigned addresses (master node only)."""
         if self._do_dhcp:
             self._do_dhcp = False
         else:
@@ -322,7 +320,7 @@ class RF24Mesh(NetworkMixin):
     @property
     def allow_children(self):
         """Allow/disallow child node to connect to this network node."""
-        return bool(self.network_flags & FLAG_NO_POLL)
+        return not self.network_flags & FLAG_NO_POLL
 
     @allow_children.setter
     def allow_children(self, allow):
