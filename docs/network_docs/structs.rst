@@ -53,13 +53,13 @@ Header
     hold a newly assigned network :ref:`Logical Address <logical address>` for
     `MESH_ADDR_RESPONSE` messages.
 
-.. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.from_bytes
+.. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.unpack
 
     This function |internal_use|
 
     :Returns: `True` if successful; otherwise `False`.
 
-.. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.to_bytes
+.. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.pack
 
     :Returns: The entire header as a `bytes` object.
 
@@ -85,13 +85,13 @@ Frame
 
     This attribute is typically a `bytearray` or `bytes` object.
 
-.. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkFrame.from_bytes
+.. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkFrame.unpack
 
     This function |internal_use|
 
     :Returns: `True` if successful; otherwise `False`.
 
-.. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkFrame.to_bytes
+.. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkFrame.pack
 
     :Returns:  The entire object as a `bytes` object.
 

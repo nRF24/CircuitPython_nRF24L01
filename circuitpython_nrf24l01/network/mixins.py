@@ -170,7 +170,6 @@ class NetworkMixin(RadoMixin):
         self.max_message_length = 144  #: The maximum length of a frame's message.
         #: The queue (FIFO) of recieved frames for this node
         self.queue = FrameQueueFrag()
-        self.queue.max_message_length = self.max_message_length
         #: A buffer containing the last frame received by the network node
         self.frame_buf = RF24NetworkFrame()
         self.address_suffix = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
@@ -265,7 +264,6 @@ class NetworkMixin(RadoMixin):
         if enabled != self._frag_enabled:
             self.max_message_length = 144 if enabled else MAX_FRAG_SIZE
             if enabled:
-                self.queue.max_message_length = self.max_message_length
                 self.queue = FrameQueueFrag(self.queue)
             else:
                 self.queue = FrameQueue(self.queue)
@@ -328,7 +326,7 @@ class NetworkMixin(RadoMixin):
             if temp_buf is None:
                 return ret_val
             if (
-                not self.frame_buf.from_bytes(temp_buf)
+                not self.frame_buf.unpack(temp_buf)
                 or not self.frame_buf.header.is_valid
             ):
                 # print("discarding frame due to invalid network addresses.")
@@ -338,9 +336,7 @@ class NetworkMixin(RadoMixin):
             #     "Received frame: " + self.frame_buf.header.to_string(),
             #     "message buffer is empty"
             #     if not self.frame_buf.message
-            #     else
-            #     "\n\t"
-            #     + address_repr(self.frame_buf.message, 0, " ")
+            #     else "\n\t" + address_repr(self.frame_buf.message, 0, " ")
             # )
             ret_val = self.frame_buf.header.message_type
             keep_updating = False
@@ -375,11 +371,8 @@ class NetworkMixin(RadoMixin):
                 return (False, msg_t)
 
         self.queue.enqueue(self.frame_buf)
-        if (
-            msg_t == NETWORK_EXT_DATA
-            or msg_t == MSG_FRAG_LAST
-            and self.frame_buf.header.reserved == NETWORK_EXT_DATA
-        ):
+        if self.frame_buf.header.message_type == NETWORK_EXT_DATA:
+            # enqueue() will adjust header's message_type for the last fragment
             print("Received external data type")
             return (False, NETWORK_EXT_DATA)
         return (True, msg_t)
@@ -413,11 +406,8 @@ class NetworkMixin(RadoMixin):
                         (_lvl_2_addr(self._net_lvl) << 3) & 0xFFFF,
                         TX_MULTICAST,
                     )
-                if (
-                    msg_t == NETWORK_EXT_DATA
-                    or msg_t == MSG_FRAG_LAST
-                    and self.frame_buf.header.reserved == NETWORK_EXT_DATA
-                ):
+                if self.frame_buf.header.message_type == NETWORK_EXT_DATA:
+                    # enqueue() will adjust this for the last fragment
                     return (False, NETWORK_EXT_DATA)
             elif self._addr != NETWORK_DEFAULT_ADDR:
                 # pass it along
@@ -526,7 +516,7 @@ class NetworkMixin(RadoMixin):
         # print("Sending", self.frame_buf.header.to_string(), "to pipe", to_pipe)
         self._rf24.open_tx_pipe(self._pipe_address(to_node, to_pipe))
         if len(self.frame_buf.message) <= MAX_FRAG_SIZE:
-            result = self._rf24.send(self.frame_buf.to_bytes(), send_only=True)
+            result = self._rf24.send(self.frame_buf.pack(), send_only=True)
             if not result:
                 result = self._tx_standby(self.tx_timeout)
         else:
@@ -549,7 +539,7 @@ class NetworkMixin(RadoMixin):
                     self.frame_buf.header.message_type = MSG_FRAG_MORE
 
                 result = self._rf24.send(
-                    self.frame_buf.header.to_bytes()
+                    self.frame_buf.header.pack()
                     + self.frame_buf.message[buf_start:buf_end],
                     send_only=True,
                 )

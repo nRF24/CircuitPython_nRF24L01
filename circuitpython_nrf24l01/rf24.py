@@ -42,11 +42,8 @@ TX_FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
 
 def address_repr(buf, reverse=True, delimit=""):
     """Convert a buffer into a hexlified string."""
-    ret_str = ""
     order = range(len(buf) - 1, -1, -1) if reverse else range(len(buf))
-    for byte in order:
-        ret_str += delimit + "%02X" % buf[byte]
-    return ret_str[len(delimit):]
+    return delimit.join(["%02X" % buf[byte] for byte in order])
 
 
 class RF24:
@@ -336,11 +333,7 @@ class RF24:
             while not self._status & 0x30:
                 up_cnt += self.update()
         result = bool(self._status & 0x20)
-        # print(
-        #     "send() waited {} updates DS: {} DR: {} DF: {}".format(
-        #         up_cnt + 1, self.irq_ds, self.irq_dr, self.irq_df
-        #     )
-        # )
+        print("send did {} updates. flags: {}".format(up_cnt, self._status >> 4))
         while force_retry and not result:
             result = self.resend(send_only)
             force_retry -= 1

@@ -134,12 +134,13 @@ def emit(node=not THIS_NODE, frag=False, count=5, interval=1):
     failures = 0
     start_timer = time.monotonic()
     while failures < 6 and count:
-        nrf.update()
+        nrf.update()  # keep the network layer current
         now = time.monotonic()
-        if now >= start_timer + interval:
+        if now >= start_timer + interval:  # its time to emmit
             start_timer = now
             count -= 1
             packets_sent[0] += 1
+            #TMRh20's RF24Mesh examples use 1 long int containing a timestamp (in ms)
             message = struct.pack("<L", int(now * 1000))
             if frag:
                 message = bytes(
@@ -171,7 +172,7 @@ def idle(timeout=30):
     """
     start_timer = time.monotonic()
     while (time.monotonic() - start_timer) < timeout:
-        nrf.update()
+        nrf.update()  # keep the network layer current
         while nrf.available():
             start_timer = time.monotonic()  # reset timer
             payload = nrf.read()
@@ -181,14 +182,7 @@ def idle(timeout=30):
             if payload_len < MAX_FRAG_SIZE:  # if not a large fragmented message
                 fmt = "<" + "L" * int(payload_len / 4)
                 print(struct.unpack(fmt, bytes(payload.message)), end=" ")
-            print(
-                "from",
-                oct(payload.header.from_node),
-                "to",
-                oct(payload.header.to_node),
-                "length",
-                payload_len,
-            )
+            print(payload.header.to_string(), "length", payload_len)
 
 
 def set_role():
