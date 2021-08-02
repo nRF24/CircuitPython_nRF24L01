@@ -30,7 +30,7 @@ MAX_USR_DEF_MSG_TYPE = const(127)  #: A convenient sentinel value.
 NETWORK_DEFAULT_ADDR = const(0o4444)  #: Primarily used by RF24Mesh.
 MAX_FRAG_SIZE = const(24)  #: Maximum message size for a single frame's message.
 NETWORK_MULTICAST_ADDR = const(0o100)  #: A reserved address for multicast messages.
-MESH_LOOKUP_TIMEOUT = const(135)  #: Used for `get_address()` & `get_node_id()`
+MESH_LOOKUP_TIMEOUT = const(135)  #: Used for `lookup_address()` & `lookup_node_id()`
 MESH_MAX_POLL = const(4)  #: The max number of contacts made during `renew_address()`.
 MESH_MAX_CHILDREN = const(4)  #: The max number of children for 1 mesh node.
 MESH_WRITE_TIMEOUT = const(115)  #: The time (in milliseconds) used to send messages.
@@ -60,11 +60,11 @@ MESH_ADDR_RESPONSE = const(128)  #: Primarily for RF24Mesh
 NETWORK_EXT_DATA = const(131)
 
 # No Network ACK message types
-#: The message type when manually expiring a leased address
+#: The `message_type` when manually expiring a leased address.
 MESH_ADDR_RELEASE = const(197)
-#: The message type to request a mesh node's network address from its unique ID
+#: The `message_type` to request a mesh node's network address from its unique ID.
 MESH_ADDR_LOOKUP = const(196)
-#: The message type to request a mesh node's unique ID number from its node address
+#: The `message_type` to request a mesh node's unique ID number from its node address.
 MESH_ID_LOOKUP = const(198)
 
 

@@ -116,7 +116,7 @@ class QueueElement:
 
     def _decode_data_struct(self, buf):
         """Decode a data structure in a received BLE payload."""
-        print("decoding", address_repr(buf, 0, " "))
+        # print("decoding", address_repr(buf, 0, " "))
         if buf[0] not in (0x16, 0x0A, 0x08, 0x09):
             return False  # unknown/unsupported "chunk" of data
         if buf[0] == 0x0A and len(buf) == 2:  # if data is the device's TX-ing PA Level

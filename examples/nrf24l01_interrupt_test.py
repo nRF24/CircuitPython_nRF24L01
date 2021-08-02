@@ -16,16 +16,16 @@ from circuitpython_nrf24l01.rf24 import RF24
 irq_pin = digitalio.DigitalInOut(board.D12)
 irq_pin.switch_to_input()  # make sure its an input object
 # change these (digital output) pins accordingly
-ce_pin = digitalio.DigitalInOut(board.D4)
-csn_pin = digitalio.DigitalInOut(board.D5)
+CE_PIN = digitalio.DigitalInOut(board.D4)
+CSN_PIN = digitalio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
 # available SPI pins, board.SCK, board.MOSI, board.MISO
-spi = board.SPI()  # init spi bus object
+SPI_BUS = board.SPI()  # init spi bus object
 
 # we'll be using the dynamic payload size feature (enabled by default)
 # initialize the nRF24L01 on the spi bus object
-nrf = RF24(spi, csn_pin, ce_pin)
+nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 
 # this example uses the ACK payload to trigger the IRQ pin active for
 # the "on data received" event
@@ -146,10 +146,6 @@ def slave(timeout=6):  # will listen for 6 seconds before timing out
 def set_role():
     """Set the role using stdin stream. Timeout arg for slave() can be
     specified using a space delimiter (e.g. 'R 10' calls `slave(10)`)
-
-    :return:
-        - True when role is complete & app should continue running.
-        - False when app should exit
     """
     user_input = (
         input(
@@ -161,10 +157,7 @@ def set_role():
     )
     user_input = user_input.split()
     if user_input[0].upper().startswith("R"):
-        if len(user_input) > 1:
-            slave(int(user_input[1]))
-        else:
-            slave()
+        slave(*[int(x) for x in user_input[1:2]])
         return True
     if user_input[0].upper().startswith("T"):
         master()

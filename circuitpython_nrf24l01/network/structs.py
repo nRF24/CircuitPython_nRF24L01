@@ -60,9 +60,7 @@ class RF24NetworkHeader:
         else:
             self.message_type &= 0xFF
         self.frame_id = RF24NetworkHeader.__next_id  #: |uint16_t|
-        # pylint: disable=unused-private-member
         RF24NetworkHeader.__next_id = (RF24NetworkHeader.__next_id + 1) & 0xFFFF
-        # pylint: enable=unused-private-member
         self.reserved = 0  #: A single byte reserved for network usage.
 
     __next_id = 0

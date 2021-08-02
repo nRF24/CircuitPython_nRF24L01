@@ -15,9 +15,9 @@ from circuitpython_nrf24l01.wrapper import DigitalInOut
 #   or simply digitalio.DigitalInOut on CircuitPython and Linux
 
 # default values that allow using no radio module (for testing only)
-spi = None
-csn_pin = None
-ce_pin = None
+SPI_BUS = None
+CSN_PIN = None
+CE_PIN = None
 
 try:  # on CircuitPython & Linux
     import board
@@ -25,36 +25,41 @@ try:  # on CircuitPython & Linux
     try:  # on Linux
         import spidev
 
-        spi = spidev.SpiDev()  # for a faster interface on linux
-        csn_pin = 0  # use CE0 on default bus (even faster than using any pin)
-        ce_pin = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
+        SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
+        CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
+        CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
 
     except ImportError:  # on CircuitPython only
         # using board.SPI() automatically selects the MCU's
         # available SPI pins, board.SCK, board.MOSI, board.MISO
-        spi = board.SPI()  # init spi bus object
+        SPI_BUS = board.SPI()  # init spi bus object
 
         # change these (digital output) pins accordingly
-        ce_pin = DigitalInOut(board.D4)
-        csn_pin = DigitalInOut(board.D5)
+        CE_PIN = DigitalInOut(board.D4)
+        CSN_PIN = DigitalInOut(board.D5)
 
 except ImportError:  # on MicroPython
-    from machine import SPI
+    import machine
 
     # the argument passed here changes according to the board used
-    spi = SPI(1)
+    SPI_BUS = machine.SPI(1)
 
     # instantiate the integers representing micropython pins as
     # DigitalInOut compatible objects
-    csn_pin = DigitalInOut(5)
-    ce_pin = DigitalInOut(4)
+    CSN_PIN = DigitalInOut(5)
+    CE_PIN = DigitalInOut(4)
 
 except NotImplementedError: # running on PC (no GPIO)
     pass  # using a shim
 
 # initialize the nRF24L01 objects on the spi bus object
 # the first object will have all the features enabled
-nrf = RF24(spi, csn_pin, ce_pin)
+nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
+# On Linux, csn value is a bit coded
+#                 0 = bus 0, CE0  # SPI bus 0 is enabled by default
+#                10 = bus 1, CE0  # enable SPI bus 2 prior to running this
+#                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
+
 # enable the option to use custom ACK payloads
 nrf.ack = True
 # set the static payload length to 8 bytes
@@ -63,7 +68,7 @@ nrf.payload_length = 8
 nrf.pa_level = -18
 
 # the second object has most features disabled/altered
-ble = FakeBLE(spi, csn_pin, ce_pin)
+ble = FakeBLE(SPI_BUS, CSN_PIN, CE_PIN)
 # the IRQ pin is configured to only go active on "data fail"
 # NOTE BLE operations prevent the IRQ pin going active on "data fail" events
 ble.interrupt_config(data_recv=False, data_sent=False)

@@ -24,7 +24,7 @@ class SPIDevice:
 
     .. code-block:: python
 
-        from machine import SPI
+        import machine
         from circuitpython_nrf24l01.upy_wrapper import SPIDevice, DigitalInOut
 
         spi_bus = machine.SPI(SCK, MOSI, MISO)

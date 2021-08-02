@@ -60,6 +60,12 @@ class RadoMixin:
     def __exit__(self, *exc):
         return self._rf24.__exit__()
 
+    def flush_rx(self):
+        self._rf24.flush_rx()
+
+    def flush_tx(self):
+        self._rf24.flush_tx()
+
     @property
     def power(self):
         return self._rf24.power

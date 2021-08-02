@@ -45,9 +45,7 @@ class RF24Network(NetworkMixin):
         if not is_address_valid(node_address):
             raise ValueError("node_address argument is invalid or malformed")
         super().__init__(spi, csn_pin, ce_pin, spi_frequency)
-
-        # setup radio
-        self._begin(node_address)
+        self._begin(node_address)  # setup radio
 
     @NetworkMixin.node_address.setter
     def node_address(self, val):
@@ -79,16 +77,16 @@ class RF24Network(NetworkMixin):
             return False
         return self._pre_write(frame, traffic_direct)
 
-    def _pre_write(self, frame, traffic_direct=AUTO_ROUTING):
+    def _pre_write(self, frame: RF24NetworkFrame, traffic_direct=AUTO_ROUTING):
         """Helper to do prep work for _write_to_pipe(); like to TMRh20's _write()"""
         self.frame_buf = frame
         if traffic_direct != AUTO_ROUTING:
             # Payload is multicast to the first node, and routed normally to the next
             send_type = TX_LOGICAL
-            if frame.header.to_node == NETWORK_MULTICAST_ADDR:
+            if self.frame_buf.header.to_node == NETWORK_MULTICAST_ADDR:
                 send_type = TX_MULTICAST
-            if frame.header.to_node == traffic_direct:
+            if self.frame_buf.header.to_node == traffic_direct:
                 # Payload is multicast to the first node, which is the recipient
                 send_type = TX_PHYSICAL
             return self._write(traffic_direct, send_type)
-        return self._write(frame.header.to_node, TX_NORMAL)
+        return self._write(self.frame_buf.header.to_node, TX_NORMAL)

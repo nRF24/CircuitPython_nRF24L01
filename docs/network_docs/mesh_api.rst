@@ -1,3 +1,7 @@
+.. |use_msg_t| replace:: To ensure a message has been delivered to its target destination, set the
+    ``message_type`` parameter to an `int` in range [65, 127]. This will invoke
+    a `NETWORK_ACK` response message.
+
 RF24Mesh API
 ============
 
@@ -8,6 +12,20 @@ RF24Mesh API
     1. `Shared Networking API <base_api.html#>`_ (API common to `RF24Mesh` and `RF24Network`)
     2. `RF24Network API <network_api.html>`_ (`RF24Mesh` inherits from the same mixin class
        that `RF24Network` inherits from)
+
+RF24MeshNoMaster class
+**********************
+
+.. autoclass:: circuitpython_nrf24l01.rf24_mesh.RF24MeshNoMaster
+
+    This class exists to save memory for nodes that don't behave like mesh network master nodes.
+    It is the python equivalent to TMRh20's ``MESH_NO_MASTER`` macro in the C++ RF24Mesh library.
+    All the API is the same as `RF24Mesh` class.
+
+    :param int node_id: The unique identifying `node_id` number for the instantiated mesh node.
+
+    .. seealso:: For all parameters' descriptions, see the
+        :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' contructor documentation.
 
 
 RF24Mesh class
@@ -29,7 +47,7 @@ send()
 
 .. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.send
 
-    This function will use `get_address()` to fetch the necessary
+    This function will use `lookup_address()` to fetch the necessary
     :ref:`Logical Address <Logical Address>` to set the frame's header's `to_node`
     attribute.
 
@@ -47,6 +65,14 @@ send()
             :attr:`~circuitpython_nrf24l01.rf24_network.RF24Network.max_message_length`.
     :param int to_node_id: The unique mesh network `node_id` of the frame's destination.
         Defaults to ``0`` (which is reserved for the master node.
+
+    :Returns:
+
+        * `True` if the ``frame`` has been transmitted. This does not necessarily
+          describe if the message has been received at its target destination.
+        * `False` if the ``frame``  has not been transmitted.
+
+        .. tip:: |use_msg_t|
 
 node_id
 -------------
@@ -88,10 +114,10 @@ renew_address()
 Advanced API
 ************
 
-get_node_id()
--------------
+lookup_node_id()
+----------------
 
-.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.get_node_id
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.lookup_node_id
 
     :param int address: The :ref:`Logical Address <Logical Address>` for which
         a unique `node_id` is assigned from network master node.
@@ -107,10 +133,10 @@ get_node_id()
             or the master node has not assigned a unique `node_id`
             for the specified ``address``.
 
-get_address()
--------------
+lookup_address()
+----------------
 
-.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.get_address
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.lookup_address
 
     :param int node_id: The unique `node_id` for which a
         :ref:`Logical Address <Logical Address>` is assigned from network master node.
@@ -142,6 +168,14 @@ write()
             :attr:`~circuitpython_nrf24l01.rf24_network.RF24Network.max_message_length`.
     :param bytes,bytearray message: The frame's `message` to be transmitted.
 
+    :Returns:
+
+        * `True` if the ``frame`` has been transmitted. This does not necessarily
+          describe if the message has been received at its target destination.
+        * `False` if the ``frame``  has not been transmitted.
+
+        .. tip:: |use_msg_t|
+
 check_connection()
 ------------------
 
@@ -172,5 +206,5 @@ block_less_callback
         attempts to get re-assigned to the first available :ref:`Logical Address <Logical Address>`
         on the highest possible `network level <topology.html#network-levels>`_.
 
-    The assigned function will be called during `renew_address()`, `get_address()` and
-    `get_node_id()`.
+    The assigned function will be called during `renew_address()`, `lookup_address()` and
+    `lookup_node_id()`.

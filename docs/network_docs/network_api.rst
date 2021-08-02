@@ -1,4 +1,7 @@
 .. |if_nothing_in_queue| replace:: If there is nothing in the `queue`, this method will return
+.. |use_msg_t| replace:: To ensure a message has been delivered to its target destination, set the
+    frame's header's `message_type` to an `int` in range [65, 127]. This will invoke
+    a `NETWORK_ACK` response message.
 
 
 RF24Network API
@@ -109,8 +112,7 @@ send()
             This function will always return `True` if a message is directed to a node's pipe
             that does not have `auto_ack` enabled (which will likely be pipe 0 in most network
             contexts).
-        .. tip:: To ensure a message has been delivered to its target destination, set the
-            header's `message_type` to an `int` in range [65, 127].
+        .. tip:: |use_msg_t|
 
 Advanced API
 ************
@@ -136,7 +138,8 @@ multicast()
             that does not have `auto_ack` enabled (which will likely be pipe 0 in most network
             contexts).
         .. tip:: To ensure a message has been delivered to its target destination, set the
-            header's `message_type` to an `int` in range [65, 127].
+            header's `message_type` to an `int` in range [65, 127]. This will invoke a
+            `NETWORK_ACK` response message.
 
 write()
 -----------
@@ -152,21 +155,19 @@ write()
         can be set to a network node's :ref:`Logical Address <logical address>` for direct
         transmission to the specified node - meaning the transmission's automatic routing
         will begin at the network node that is specified with this parameter instead of being
-        automatically routed from the transmission actual origin.
+        automatically routed from the actual origin of the transmission.
 
     :Returns:
 
         * `True` if the ``frame`` has been transmitted. This does not necessarily
           describe if the message has been received at its target destination.
-        * `False` if the ``frame``  has not been transmitted.
+        * `False` if the ``frame``  has failed to transmit.
 
         .. note::
-            This function will always return `True` if a message is directed to a node's pipe
-            that does not have `auto_ack` enabled (which will likely be pipe 0 in most network
-            contexts).
-        .. tip:: To ensure a message has been delivered to its target destination, set the
-            frame's header's `message_type` to an `int` in range [65, 127] (which should invoke
-            a returning `NETWORK_ACK` message type).
+            This function will always return `True` if a message is sent directly to a network node.
+            Meaning, if the ``traffic_direct`` parameter is set to anything other than its default
+            value, then this function will return `True`.
+        .. tip:: |use_msg_t|
 
 parent
 -----------
@@ -186,6 +187,21 @@ max_message_length
     By default this is set to ``144``. If a network node is driven by the TMRh20
     RF24Network library on a ATTiny-based board, set this to ``72`` (as per TMRh20's
     RF24Network library default behavior).
+
+    Configuring the `fragmentation` attribute will automatically change the value that
+    `max_message_length` attribute is set to.
+
+fragmentation
+---------------
+
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.fragmentation
+
+    Changing this attribute's state will also appropriately changes the type of `FrameQueue`
+    (or `FrameQueueFrag`) object used for storing incoming network packets. Disabling
+    fragmentation can save some memory (not as much as TMRh20's RF24Network library's
+    ``DISABLE_FRAGMENTATION`` macro), but `max_message_length` will be limited to ``24`` bytes
+    (`MAX_FRAG_SIZE`) maximum. Enabling this attribute will set `max_message_length` attribute
+    to ``144`` bytes.
 
 multicast_relay
 ---------------
@@ -208,6 +224,17 @@ multicast_level
         The `network levels <topology.html#network-levels>`_ are explained in more detail on
         the `topology <topology.html>`_ document.
 
+allow_multicast
+---------------
+
+.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.allow_multicast
+
+    This attribute affects
+
+    - the :ref:`Physical Address <Physical Address>` translation (for data pipe 0) when setting the
+      `node_address`
+    - all incoming multicasted frames (including `multicast_relay` behavior).
+
 tx_timeout
 ---------------
 
@@ -221,22 +248,3 @@ route_timeout
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.route_timeout
 
     Defaults to 75.
-
-fragmentation
----------------
-
-.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.fragmentation
-
-    Changing this attribute's state will also appropriately changes the type of `FrameQueue`
-    (or `FrameQueueFrag`) object used for storing incoming network packets. Disabling
-    fragmentation can save some memory (not as much as TMRh20's RF24Network library's
-    ``DISABLE_FRAGMENTATION`` macro), but messages will be limited to 24 bytes
-    (`MAX_FRAG_SIZE`) maximum.
-
-allow_multicast
----------------
-
-.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.allow_multicast
-
-    This attribute affects the :ref:`Physical Address <Physical Address>` translation done by setting the `node_address`,
-    all incoming multicasted frames, and `multicast_relay` behavior.

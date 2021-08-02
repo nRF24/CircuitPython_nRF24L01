@@ -16,9 +16,9 @@ from circuitpython_nrf24l01.wrapper import DigitalInOut
 #   or simply digitalio.DigitalInOut on CircuitPython and Linux
 
 # default values that allow using no radio module (for testing only)
-spi = None
-csn_pin = None
-ce_pin = None
+SPI_BUS = None
+CSN_PIN = None
+CE_PIN = None
 
 try:  # on CircuitPython & Linux
     import board
@@ -26,36 +26,36 @@ try:  # on CircuitPython & Linux
     try:  # on Linux
         import spidev
 
-        spi = spidev.SpiDev()  # for a faster interface on linux
-        csn_pin = 0  # use CE0 on default bus (even faster than using any pin)
-        ce_pin = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
+        SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
+        CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
+        CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
 
     except ImportError:  # on CircuitPython only
         # using board.SPI() automatically selects the MCU's
         # available SPI pins, board.SCK, board.MOSI, board.MISO
-        spi = board.SPI()  # init spi bus object
+        SPI_BUS = board.SPI()  # init spi bus object
 
         # change these (digital output) pins accordingly
-        ce_pin = DigitalInOut(board.D4)
-        csn_pin = DigitalInOut(board.D5)
+        CE_PIN = DigitalInOut(board.D4)
+        CSN_PIN = DigitalInOut(board.D5)
 
 except ImportError:  # on MicroPython
-    from machine import SPI
+    import machine
 
     # the argument passed here changes according to the board used
-    spi = SPI(1)
+    SPI_BUS = machine.SPI(1)
 
     # instantiate the integers representing micropython pins as
     # DigitalInOut compatible objects
-    csn_pin = DigitalInOut(5)
-    ce_pin = DigitalInOut(4)
+    CSN_PIN = DigitalInOut(5)
+    CE_PIN = DigitalInOut(4)
 
 except NotImplementedError: # running on PC (no GPIO)
     pass  # using a shim
 
 # initialize the nRF24L01 on the spi bus object
-nrf = RF24(spi, csn_pin, ce_pin)
-# On Linux, csn_pin value is a bit coded
+nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
+# On Linux, csn value is a bit coded
 #                 0 = bus 0, CE0  # SPI bus 0 is enabled by default
 #                10 = bus 1, CE0  # enable SPI bus 2 prior to running this
 #                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
@@ -110,10 +110,6 @@ def scan(timeout=30):
 def set_role():
     """Set the role using stdin stream. Timeout arg for scan() can be
     specified using a space delimiter (e.g. 'S 10' calls `scan(10)`)
-
-    :return:
-        - True when role is complete & app should continue running.
-        - False when app should exit
     """
     user_input = (
         input("*** Enter 'S' to perform scan.\n" "*** Enter 'Q' to quit example.\n")
@@ -121,10 +117,7 @@ def set_role():
     )
     user_input = user_input.split()
     if user_input[0].upper().startswith("S"):
-        if len(user_input) > 1:
-            scan(int(user_input[1]))
-        else:
-            scan()
+        scan(*[int(x) for x in user_input[1:2]])
         return True
     if user_input[0].upper().startswith("Q"):
         nrf.power = False
@@ -134,6 +127,10 @@ def set_role():
 
 
 print("    nRF24L01 scanner test")
+print(
+    "!!!Make sure the terminal is wide enough for 126 characters on 1 line."
+    " If this line is wrapped, then the output will look bad!"
+)
 
 if __name__ == "__main__":
     try:
