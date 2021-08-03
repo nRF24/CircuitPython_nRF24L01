@@ -836,9 +836,7 @@ class RF24:
                 up_cnt += self.update()
         # self.ce_pin = 0
         result = bool(self._status & 0x20)
-        # print("resend() waited {} updates DS: {} DR: {} DF: {}".format(
-        #     up_cnt, self.irq_ds, self.irq_dr, self.irq_df
-        # ))
+        print("resend() did {} updates. flags: {}".format(up_cnt, self._status >> 4))
         if result and self._status & 0x40 and not send_only:
             return self.read()
         return result

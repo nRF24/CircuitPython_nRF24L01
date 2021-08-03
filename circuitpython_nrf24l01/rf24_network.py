@@ -44,7 +44,7 @@ class RF24NetworkRoutingOnly(NetworkMixin):
 
     def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
         if not is_address_valid(node_address):
-            raise ValueError("node_address argument is invalid or malformed %d" % node_address)
+            raise ValueError("node_address argument is invalid or malformed")
         super().__init__(spi, csn_pin, ce_pin, spi_frequency)
         self._begin(node_address)  # setup radio
 
@@ -60,11 +60,6 @@ class RF24NetworkRoutingOnly(NetworkMixin):
 
 class RF24Network(RF24NetworkRoutingOnly):
     """The object used to instantiate the nRF24L01 as a network node."""
-
-    def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
-        if not is_address_valid(node_address):
-            raise ValueError("node_address argument is invalid or malformed")
-        super().__init__(spi, csn_pin, ce_pin, node_address, spi_frequency)
 
     def send(self, header, message):
         """Deliver a message according to the header information."""
