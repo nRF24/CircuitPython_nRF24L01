@@ -64,7 +64,6 @@ Header
     :Returns: The entire header as a `bytes` object.
 
 .. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.to_string
-.. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.is_valid
 
 Frame
 -----------------
@@ -106,12 +105,7 @@ FrameQueue
 
     :param FrameQueue,FrameQueueFrag queue: To move (not copy) the contents of another
         `FrameQueue` based object, you can pass the object to this parameter. Doing so
-        will also copy the object's `max_queue_size` & `max_message_length` attributes.
-
-.. autoattribute:: circuitpython_nrf24l01.network.structs.FrameQueue.max_message_length
-
-    Any attempt to enqueue a frame that contains a message larger than this
-    attribute's value is discarded. Default value is `MAX_FRAG_SIZE` (24 bytes).
+        will also copy the object's `max_queue_size` attribute.
 
 .. autoattribute:: circuitpython_nrf24l01.network.structs.FrameQueue.max_queue_size
 .. automethod:: circuitpython_nrf24l01.network.structs.FrameQueue.enqueue

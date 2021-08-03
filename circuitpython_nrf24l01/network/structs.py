@@ -29,7 +29,6 @@ from .constants import (
     MSG_FRAG_FIRST,
     MSG_FRAG_MORE,
     MSG_FRAG_LAST,
-    MAX_FRAG_SIZE,
 )
 
 def is_address_valid(address):
@@ -68,7 +67,7 @@ class RF24NetworkHeader:
 
     def unpack(self, buffer):
         """Decode frame's header from the first 8 bytes of a frame's buffer."""
-        if len(buffer) < self.__len__():
+        if len(buffer) < 8:
             return False
         (
             self.from_node,
@@ -76,7 +75,7 @@ class RF24NetworkHeader:
             self.frame_id,
             self.message_type,
             self.reserved,
-        ) = struct.unpack("HHHBB", buffer[: self.__len__()])
+        ) = struct.unpack("HHHBB", buffer[:8])
         return True
 
     def pack(self):
@@ -92,13 +91,6 @@ class RF24NetworkHeader:
 
     def __len__(self):
         return 8
-
-    def is_valid(self):
-        """Check if the `header`'s :ref:`Logical Addresses <logical address>` are valid
-        or not."""
-        if self.from_node is not None and is_address_valid(self.from_node):
-            return is_address_valid(self.to_node)
-        return False
 
     def to_string(self):
         """:Returns: A `str` describing all of the header's attributes."""
@@ -128,7 +120,7 @@ class RF24NetworkFrame:
     def unpack(self, buffer):
         """Decode the `header` & `message` from a ``buffer``."""
         if self.header.unpack(buffer):
-            self.message = buffer[len(self.header) :]
+            self.message = buffer[8:]
             return True
         return False
 
@@ -137,7 +129,7 @@ class RF24NetworkFrame:
         return self.header.pack() + bytes(self.message)
 
     def __len__(self):
-        return len(self.header) + len(self.message)
+        return 8 + len(self.message)
 
     def is_ack_type(self):
         """Check if the frame is to expect a `NETWORK_ACK` message."""
@@ -157,7 +149,6 @@ class FrameQueue:
             while queue:
                 self._queue.append(queue.dequeue())
             self.max_queue_size = queue.max_queue_size
-            self.ext_data_queue.extend(queue.ext_data_queue)
         super().__init__()
 
     def enqueue(self, frame: RF24NetworkFrame):
@@ -171,73 +162,57 @@ class FrameQueue:
                 and frm.header.message_type == frame.header.message_type
             ):
                 return False  # already enqueued this frame
-        new_frame = RF24NetworkFrame(frame.header)  # don't increment __next_id
+        new_frame = RF24NetworkFrame()
         new_frame.unpack(frame.pack())
-        if frame.header.message_type == NETWORK_EXT_DATA:
-            self.ext_data_queue.append(new_frame)
-        else:
-            self._queue.append(new_frame)
+        self._queue.append(new_frame)
         return True
 
-    def peek(self, external=False) -> RF24NetworkFrame:
+    def peek(self) -> RF24NetworkFrame:
         """:Returns: The First Out element without removing it from the queue."""
-        if external:
-            return None if not self.ext_data_queue else self.ext_data_queue[0]
         return None if not self._queue else self._queue[0]
 
-    def dequeue(self, external=False) -> RF24NetworkFrame:
+    def dequeue(self) -> RF24NetworkFrame:
         """:Returns: The First Out element and removes it from the queue."""
-        if external:
-            return None if not self.ext_data_queue else self.ext_data_queue.pop(0)
         return None if not self._queue else self._queue.pop(0)
 
     def __len__(self):
         """:Returns: the number of the enqueued items."""
         return len(self._queue)
 
-
 class FrameQueueFrag(FrameQueue):
     """A specialized `FrameQueue` with an additional cache for fragmented frames."""
 
     def __init__(self, queue=None):
         super().__init__(queue)
-        self._frag_cache = RF24NetworkFrame()  # invalid sentinel
+        self._frag_cache = RF24NetworkFrame()  # initialize cache
 
-    def enqueue(self, frame: RF24NetworkFrame) -> bool:
+    def enqueue(self, frame: RF24NetworkFrame):
         """Add a `RF24NetworkFrame` to the queue."""
-        if frame.header.message_type in (
-            MSG_FRAG_FIRST,
-            MSG_FRAG_MORE,
-            MSG_FRAG_LAST,
-        ):
-            return self._cache_frag_frame(frame)
-        return super().enqueue(frame)
-
-    def _cache_frag_frame(self, frame: RF24NetworkFrame) -> bool:
-        if frame.header.message_type == MSG_FRAG_FIRST:
-            self._frag_cache.unpack(frame.pack())  # make copy not a reference
-            return True
-        if (
-            self._frag_cache.header.from_node is not None  # if not just initialized
-            and frame.header.to_node == self._frag_cache.header.to_node
-            and frame.header.frame_id == self._frag_cache.header.frame_id
-        ):
+        if frame.header.message_type in (MSG_FRAG_FIRST, MSG_FRAG_MORE, MSG_FRAG_LAST):
+            if frame.header.message_type == MSG_FRAG_FIRST:
+                self._frag_cache = RF24NetworkFrame()  # reset cache
+                self._frag_cache.unpack(frame.pack())  # make copy not reference
+                return True
             if (
-                self._frag_cache.header.reserved - 1 != frame.header.reserved
-                and frame.header.message_type != MSG_FRAG_LAST
+                self._frag_cache.header.from_node is not None  # if not just initialized
+                and frame.header.to_node == self._frag_cache.header.to_node
+                and frame.header.frame_id == self._frag_cache.header.frame_id
             ):
-                # print("dropping non sequential fragment")
-                return False
-            if frame.header.message_type in (MSG_FRAG_MORE, MSG_FRAG_LAST):
+                if (
+                    self._frag_cache.header.reserved - 1 != frame.header.reserved
+                    and frame.header.message_type != MSG_FRAG_LAST
+                ):
+                    # print("dropping non sequential fragment")
+                    return False
                 self._frag_cache.header.unpack(frame.header.pack())
-                self._frag_cache.message += frame.message
+                self._frag_cache.message += frame.message[:]
                 if frame.header.message_type == MSG_FRAG_LAST:
-                    self._frag_cache.header.message_type = frame.header.reserved
                     if frame.header.reserved == NETWORK_EXT_DATA:
                         # External data needs to be propagated back to update()
-                        frame.header.message_type = NETWORK_EXT_DATA
-                    super().enqueue(self._frag_cache)
-                    self._frag_cache.unpack(b"\xFF\x0F" + b"\0" * 6)  # reset cache
+                        frame.header.message_type = NETWORK_EXT_DATA  # by reference
+                    self._frag_cache.header.message_type = frame.header.reserved
+                    return super().enqueue(self._frag_cache)
                 return True
-        # print("dropping fragment due to missing 1st fragment")
-        return False
+            # print("dropping fragment due to missing 1st fragment")
+            return False
+        return super().enqueue(frame)

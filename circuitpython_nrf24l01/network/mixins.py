@@ -23,7 +23,7 @@
 # pylint: disable=missing-docstring
 import time
 from ..rf24 import RF24, address_repr
-from .structs import RF24NetworkFrame, FrameQueue, FrameQueueFrag
+from .structs import RF24NetworkFrame, FrameQueue, FrameQueueFrag, is_address_valid
 from .constants import (
     MAX_FRAG_SIZE,
     MSG_FRAG_FIRST,
@@ -54,7 +54,6 @@ class RadoMixin:
 
     def __enter__(self):
         self._rf24.__enter__()
-        self._rf24.listen = True
         return self
 
     def __exit__(self, *exc):
@@ -327,7 +326,8 @@ class NetworkMixin(RadoMixin):
                 return ret_val
             if (
                 not self.frame_buf.unpack(temp_buf)
-                or not self.frame_buf.header.is_valid
+                or not is_address_valid(self.frame_buf.header.to_node)
+                or not is_address_valid(self.frame_buf.header.from_node)
             ):
                 # print("discarding frame due to invalid network addresses.")
                 continue

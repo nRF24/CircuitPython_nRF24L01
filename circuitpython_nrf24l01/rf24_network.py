@@ -38,12 +38,13 @@ from .network.constants import (
 )
 
 
-class RF24Network(NetworkMixin):
-    """The object used to instantiate the nRF24L01 as a network node."""
+class RF24NetworkRoutingOnly(NetworkMixin):
+    """A minimal Networking implementation for nodes that are meant for strictly
+    routing data amidst a network of nodes."""
 
     def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
         if not is_address_valid(node_address):
-            raise ValueError("node_address argument is invalid or malformed")
+            raise ValueError("node_address argument is invalid or malformed %d" % node_address)
         super().__init__(spi, csn_pin, ce_pin, spi_frequency)
         self._begin(node_address)  # setup radio
 
@@ -57,24 +58,32 @@ class RF24Network(NetworkMixin):
         """This function is used to keep the network layer current."""
         return self._net_update()
 
+class RF24Network(RF24NetworkRoutingOnly):
+    """The object used to instantiate the nRF24L01 as a network node."""
+
+    def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
+        if not is_address_valid(node_address):
+            raise ValueError("node_address argument is invalid or malformed")
+        super().__init__(spi, csn_pin, ce_pin, node_address, spi_frequency)
+
     def send(self, header, message):
         """Deliver a message according to the header information."""
         if not self._validate_msg_len(len(message)):
             message = message[:MAX_FRAG_SIZE]
+        if not is_address_valid(header.to_node):
+            raise AttributeError("header destined for an invalid address")
         header.from_node = self._addr
-        if not header.is_valid():
-            return False
         return self._pre_write(RF24NetworkFrame(header, message))
 
     def write(self, frame, traffic_direct=AUTO_ROUTING):
         """Deliver a network frame."""
         if not isinstance(frame, RF24NetworkFrame):
             raise TypeError("frame expected object of type RF24NetworkFrame.")
+        if not is_address_valid(frame.header.to_node):
+            raise AttributeError("frame destined for an invalid address")
         if not self._validate_msg_len(len(frame.message)):
             frame.message = frame.message[:MAX_FRAG_SIZE]
         frame.header.from_node = self._addr
-        if not frame.header.is_valid():
-            return False
         return self._pre_write(frame, traffic_direct)
 
     def _pre_write(self, frame: RF24NetworkFrame, traffic_direct=AUTO_ROUTING):

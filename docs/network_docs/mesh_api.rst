@@ -32,6 +32,7 @@ RF24Mesh class
 **************
 
 .. autoclass:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh
+    :show-inheritance:
 
     :param int node_id: The unique identifying `node_id` number for the instantiated mesh node.
 

@@ -329,9 +329,12 @@ class RF24:
             self.flush_rx()
         up_cnt = 0
         self.write(buf, ask_no_ack)
-        if self._spi is not None:
+        if self._spi is not None and self._aa & 1:
             while not self._status & 0x30:
                 up_cnt += self.update()
+        else:
+            time.sleep(0.000001)  # mandatory 10us delay on CE pin
+            up_cnt += self.update()
         result = bool(self._status & 0x20)
         print("send did {} updates. flags: {}".format(up_cnt, self._status >> 4))
         while force_retry and not result:

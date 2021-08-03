@@ -16,10 +16,26 @@ RF24Network API
     3. `Network Data Structures <structs.html>`_
     4. `Network Constants <constants.html>`_
 
+RF24NetworkRoutingOnly class
+****************************
+
+.. autoclass:: circuitpython_nrf24l01.rf24_network.RF24NetworkRoutingOnly
+
+    This class is a minimal variant of the `RF24Network` class. The API is almost identical to
+    `RF24Network` except the it has no `RF24Network.write()` or `RF24Network.send()` functions.
+    This is meant to be the python equivalent to TMRh20's ``DISABLE_USER_PAYLOADS`` macro in the
+    C++ RF24Network library.
+
+    :param int node_address: The octal `int` for this node's address
+
+    .. seealso:: For all other parameters' descriptions, see the
+        :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' contructor documentation.
+
 RF24Network class
 *****************
 
 .. autoclass:: circuitpython_nrf24l01.rf24_network.RF24Network
+    :show-inheritance:
 
     :param int node_address: The octal `int` for this node's address
 

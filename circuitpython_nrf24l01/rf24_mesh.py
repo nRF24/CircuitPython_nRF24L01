@@ -236,38 +236,33 @@ class RF24MeshNoMaster(NetworkMixin):
         else:
             self.network_flags |= FLAG_NO_POLL
 
-    def send(self, message, message_type, to_node_id=0):
+    def send(self, to_node, message_type, message):
         """Send a message to a mesh `node_id`."""
-        if not isinstance(message, (bytes, bytearray)):
-            raise TypeError("message must be a `bytes` or `bytearray` object")
-        if not self._validate_msg_len(len(message)):
-            message = message[:MAX_FRAG_SIZE]
         if self._addr == NETWORK_DEFAULT_ADDR:
             return False
         to_node = -2
         timeout = MESH_WRITE_TIMEOUT * 1000000 + time.monotonic_ns()
         retry_delay = 5
         while to_node < 0:
-            to_node = self.lookup_address(to_node_id)
+            to_node = self.lookup_address(to_node)
             if time.monotonic_ns() >= timeout:
                 return False
             retry_delay += 10
             time.sleep(retry_delay / 1000)
+        return self.write(to_node, message_type, message)
+
+    def write(self, to_node, message_type, message):
+        """Send a message to a network `node_address`."""
+        if not isinstance(message, (bytes, bytearray)):
+            raise TypeError("message must be a `bytes` or `bytearray` object")
+        if not self._validate_msg_len(len(message)):
+            message = message[:MAX_FRAG_SIZE]
+        if self._addr == NETWORK_DEFAULT_ADDR or not is_address_valid(to_node):
+            return False
         self.frame_buf.header = RF24NetworkHeader(to_node, message_type)
         self.frame_buf.header.from_node = self._addr
         self.frame_buf.message = message
         return self._write(to_node, TX_NORMAL)
-
-    def write(self, to_node_address, message_type, message):
-        """Send a message to a network `node_address`."""
-        if not self._validate_msg_len(len(message)):
-            message = message[:MAX_FRAG_SIZE]
-        if self._addr == NETWORK_DEFAULT_ADDR or not is_address_valid(to_node_address):
-            return False
-        self.frame_buf.header = RF24NetworkHeader(to_node_address, message_type)
-        self.frame_buf.header.from_node = self._addr
-        self.frame_buf.message = message
-        return self._write(to_node_address, TX_NORMAL)
 
 
 class RF24Mesh(RF24MeshNoMaster):
