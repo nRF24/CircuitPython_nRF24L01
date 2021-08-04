@@ -36,14 +36,14 @@ if IS_MESH:
     THIS_NODE = int(input("a unique int. Defaults to '0' ") or "0") & 0xFF
 else:
     # logical node_address is in octal
-    THIS_NODE = int(input("'0', '1', or octal int. Defaults to '0' ") or "0", 8)
+    THIS_NODE = int(input("an octal int. Defaults to '0' ") or "0", 8)
 
 if IS_MESH:
     if not THIS_NODE:  # if this is not a mesh network master node
         from circuitpython_nrf24l01.rf24_mesh import RF24MeshNoMaster as Network
     else:
         from circuitpython_nrf24l01.rf24_mesh import RF24Mesh as Network
-    print("Using RF24Mesh class")
+    print("Using RF24Mesh{} class".format("" if THIS_NODE else "NoMaster"))
 else:
     from circuitpython_nrf24l01.rf24_network import RF24Network as Network
 
@@ -170,6 +170,7 @@ def idle(timeout=30):
     :param int timeout: The number of seconds to wait (with no transmission)
         until exiting function.
     """
+    print("idling for", timeout, "seconds")
     start_timer = time.monotonic()
     while (time.monotonic() - start_timer) < timeout:
         nrf.update()  # keep the network layer current
