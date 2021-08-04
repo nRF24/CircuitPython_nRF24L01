@@ -111,7 +111,6 @@ class RF24:
         self._channel = 76  # 2.476 GHz
         self._addr_len = 5  # 5-byte long addresses
         self._pl_len = [32] * 6  # 32-byte static payloads for all pipes
-        self.tx_delay = 280 #: the delay in microseconds before changing to RX mode
 
         with self:  # dumps internal attributes to all registers
             self.flush_rx()
@@ -751,7 +750,6 @@ class RF24:
                 "250 kbps data rate is not available for the non-plus "
                 "variants of the nRF24L01 transceivers."
             )
-        self.tx_delay = 280 if speed == 1 else (505 if speed == 250 else 240)
         speed = 0 if speed == 1 else (0x20 if speed != 2 else 8)
         self._rf_setup = self._reg_read(RF_PA_RATE) & 0xD7 | speed
         self._reg_write(RF_PA_RATE, self._rf_setup)
