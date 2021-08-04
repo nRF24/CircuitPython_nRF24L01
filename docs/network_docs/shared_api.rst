@@ -10,6 +10,7 @@ The follow is a list of `RF24` functions and attributes that are exposed in the
 * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.channel`
 * :py:meth:`~circuitpython_nrf24l01.rf24.RF24.flush_rx`
 * :py:meth:`~circuitpython_nrf24l01.rf24.RF24.flush_tx`
+* :py:meth:`~circuitpython_nrf24l01.rf24.RF24.fifo`
 * :py:attr:`~circuitpython_nrf24l01.rf24.RF24.power`
 * :py:meth:`~circuitpython_nrf24l01.rf24.RF24.set_dynamic_payloads`
 * :py:meth:`~circuitpython_nrf24l01.rf24.RF24.get_dynamic_payloads`

@@ -65,6 +65,9 @@ class RadoMixin:
     def flush_tx(self):
         self._rf24.flush_tx()
 
+    def fifo(self, about_tx, check_empty=None):
+        return self._rf24.fifo(about_tx, check_empty)
+
     @property
     def power(self):
         return self._rf24.power
@@ -364,7 +367,7 @@ class NetworkMixin(RadoMixin):
             self._write(0, TX_NORMAL)
             return (True, msg_t)
         if self.ret_sys_msg and msg_t > MAX_USR_DEF_MSG_TYPE or msg_t == NETWORK_ACK:
-            print("Received system payload type", msg_t)
+            # print("Received system payload type", msg_t)
             if msg_t not in (
                 MSG_FRAG_FIRST,  MSG_FRAG_MORE,  MSG_FRAG_LAST,  NETWORK_EXT_DATA,
             ):
@@ -373,7 +376,7 @@ class NetworkMixin(RadoMixin):
         self.queue.enqueue(self.frame_buf)
         if self.frame_buf.header.message_type == NETWORK_EXT_DATA:
             # enqueue() will adjust header's message_type for the last fragment
-            print("Received external data type")
+            # print("Received external data type")
             return (False, NETWORK_EXT_DATA)
         return (True, msg_t)
 
@@ -466,23 +469,21 @@ class NetworkMixin(RadoMixin):
         # print("Failed to send" if not result else "Successfully sent")
 
         # conditionally send the NETWORK_ACK message
-        if (
-            send_type == TX_ROUTED and result and to_node == write_direct and is_ack_t
-        ):
-            # respond with a network ACK
+        if send_type == TX_ROUTED and result and to_node == write_direct and is_ack_t:
             self.frame_buf.header.message_type = NETWORK_ACK
             self.frame_buf.header.to_node = self.frame_buf.header.from_node
             ack_to_node, ack_to_pipe, is_multicast = self._logi_2_phys(
                 self.frame_buf.header.from_node, TX_ROUTED
             )
-            ack_ok = self._write_to_pipe(ack_to_node, ack_to_pipe, is_multicast)
-            print(
-                "Network ACK {} origin {} on pipe {}".format(
-                    "reached" if ack_ok else "failed to reach",
-                    oct(self.frame_buf.header.from_node),
-                    ack_to_pipe,
-                ),
-            )
+            # ack_ok =
+            self._write_to_pipe(ack_to_node, ack_to_pipe, is_multicast)
+            # print(
+            #     "Network ACK {} origin {} on pipe {}".format(
+            #         "reached" if ack_ok else "failed to reach",
+            #         oct(self.frame_buf.header.from_node),
+            #         ack_to_pipe,
+            #     ),
+            # )
 
         # conditionally wait for NETWORK_ACK message
         elif result and to_node != write_direct and is_ack_t and send_type in (
@@ -495,11 +496,11 @@ class NetworkMixin(RadoMixin):
                 if time.monotonic_ns() > rx_timeout:
                     result = False
                     break
-            print(
-                "Network ACK {}received from {} on pipe {}".format(
-                    "" if result else "not ", oct(to_node), to_pipe
-                ),
-            )
+            # print(
+            #     "Network ACK {}received from {}".format(
+            #         "" if result else "not ", oct(to_node)
+            #     ),
+            # )
             return result
 
         # ready radio to continue listening
