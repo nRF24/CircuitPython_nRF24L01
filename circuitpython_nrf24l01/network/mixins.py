@@ -488,8 +488,6 @@ class NetworkMixin(RadoMixin):
         elif result and to_node != write_direct and is_ack_t and send_type in (
             TX_NORMAL, TX_LOGICAL
         ):
-            if is_multicast:
-                time.sleep(0.00028) # let no-ack transmission complete
             self._rf24.listen = True
             self._rf24.auto_ack = 0x3E
             rx_timeout = self.route_timeout * 1000000 + time.monotonic_ns()
@@ -505,8 +503,6 @@ class NetworkMixin(RadoMixin):
             return result
 
         # ready radio to continue listening
-        if is_multicast:
-            time.sleep(0.00028) # let no-ack transmission complete
         self._rf24.listen = True
         if not is_multicast:
             self._rf24.auto_ack = 0x3E

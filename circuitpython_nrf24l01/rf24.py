@@ -111,6 +111,7 @@ class RF24:
         self._channel = 76  # 2.476 GHz
         self._addr_len = 5  # 5-byte long addresses
         self._pl_len = [32] * 6  # 32-byte static payloads for all pipes
+        self.tx_delay = 280 #: the delay in microseconds before changing to RX mode
 
         with self:  # dumps internal attributes to all registers
             self.flush_rx()
@@ -269,6 +270,8 @@ class RF24:
         self._reg_write(CONFIGURE, self._config)
         start_timer = time.monotonic_ns()
         if is_rx:
+            if not self._aa & 1:
+                time.sleep(self.tx_delay / 1000000)
             self.ce_pin = 1
             if (
                 self._pipe0_read_addr is not None
@@ -336,7 +339,7 @@ class RF24:
             time.sleep(0.000001)  # mandatory 10us delay on CE pin
             up_cnt += self.update()
         result = bool(self._status & 0x20)
-        print("send did {} updates. flags: {}".format(up_cnt, self._status >> 4))
+        # print("send did {} updates. flags: {}".format(up_cnt, self._status >> 4))
         while force_retry and not result:
             result = self.resend(send_only)
             force_retry -= 1
@@ -753,6 +756,7 @@ class RF24:
                 "250 kbps data rate is not available for the non-plus "
                 "variants of the nRF24L01 transceivers."
             )
+        self.tx_delay = 280 if speed == 1 else (505 if speed == 250 else 240)
         speed = 0 if speed == 1 else (0x20 if speed != 2 else 8)
         self._rf_setup = self._reg_read(RF_PA_RATE) & 0xD7 | speed
         self._reg_write(RF_PA_RATE, self._rf_setup)
@@ -836,7 +840,7 @@ class RF24:
                 up_cnt += self.update()
         # self.ce_pin = 0
         result = bool(self._status & 0x20)
-        print("resend() did {} updates. flags: {}".format(up_cnt, self._status >> 4))
+        # print("resend did {} updates. flags: {}".format(up_cnt, self._status >> 4))
         if result and self._status & 0x40 and not send_only:
             return self.read()
         return result
