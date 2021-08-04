@@ -24,6 +24,10 @@ __version__ = "0.0.0-auto.0"
 __repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 import struct
+try:
+    import json
+except ImportError:
+    json = None
 from .network.constants import (
     MESH_ADDR_REQUEST,
     MESH_ADDR_RESPONSE,
@@ -79,9 +83,8 @@ class RF24MeshNoMaster(NetworkMixin):
     def release_address(self) -> bool:
         """Forces an address lease to expire from the master."""
         if self._addr != NETWORK_DEFAULT_ADDR:
-            self.frame_buf.header.to_node = 0
+            self.frame_buf.header = RF24NetworkHeader(0, MESH_ADDR_RELEASE)
             self.frame_buf.header.from_node = self._addr
-            self.frame_buf.header.message_type = MESH_ADDR_RELEASE
             self.frame_buf.message = b""
             if self._write(0, TX_NORMAL):
                 super()._begin(NETWORK_DEFAULT_ADDR)
@@ -126,10 +129,9 @@ class RF24MeshNoMaster(NetworkMixin):
         return self._lookup_2_master(address, MESH_ID_LOOKUP)
 
     def _lookup_2_master(self, number, lookup_type):
-        """Returns False if timed out, otherwise True"""
-        self.frame_buf.header.to_node = 0
+        """Returns False if timed out, otherwise lookup result"""
+        self.frame_buf.header = RF24NetworkHeader(0, lookup_type)
         self.frame_buf.header.from_node = self._addr
-        self.frame_buf.header.message_type = lookup_type
         if lookup_type == MESH_ID_LOOKUP:
             self.frame_buf.message = struct.pack("<H", number)
         else:
@@ -171,12 +173,11 @@ class RF24MeshNoMaster(NetworkMixin):
         new_addr = None
         for contact in contacts:
             # print("Requesting address from", oct(contact))
-            self.frame_buf.header.to_node = contact
+            self.frame_buf.header = RF24NetworkHeader(contact, MESH_ADDR_REQUEST)
             self.frame_buf.header.from_node = NETWORK_DEFAULT_ADDR
-            self.frame_buf.header.message_type = MESH_ADDR_REQUEST
             self.frame_buf.header.reserved = self._id
             self.frame_buf.message = b""
-            self._write(contact, TX_PHYSICAL)  # do a direct write (no auto-ack)
+            self._write(contact, TX_PHYSICAL)  # do a no auto-ack write
             timeout = 225000000 + time.monotonic_ns()
             while time.monotonic_ns() < timeout:  # wait for network ack
                 if (
@@ -206,9 +207,8 @@ class RF24MeshNoMaster(NetworkMixin):
     def _make_contact(self, lvl):
         """Make a list of connections after multicasting a `NETWORK_POLL` message."""
         responders = []
-        self.frame_buf.header.to_node = NETWORK_MULTICAST_ADDR
+        self.frame_buf.header = RF24NetworkHeader(NETWORK_MULTICAST_ADDR, NETWORK_POLL)
         self.frame_buf.header.from_node = NETWORK_DEFAULT_ADDR
-        self.frame_buf.header.message_type = NETWORK_POLL
         self.frame_buf.message = b""
         # self.multicast() does some extra logic to protect from user misuse.
         self._write(_lvl_2_addr(lvl), TX_MULTICAST)
@@ -240,16 +240,16 @@ class RF24MeshNoMaster(NetworkMixin):
         """Send a message to a mesh `node_id`."""
         if self._addr == NETWORK_DEFAULT_ADDR:
             return False
-        to_node = -2
+        to_node_addr = -2
         timeout = MESH_WRITE_TIMEOUT * 1000000 + time.monotonic_ns()
         retry_delay = 5
-        while to_node < 0:
-            to_node = self.lookup_address(to_node)
+        while to_node_addr < 0:
+            to_node_addr = self.lookup_address(to_node)
             if time.monotonic_ns() >= timeout:
                 return False
             retry_delay += 10
             time.sleep(retry_delay / 1000)
-        return self.write(to_node, message_type, message)
+        return self.write(to_node_addr, message_type, message)
 
     def write(self, to_node, message_type, message):
         """Send a message to a network `node_address`."""
@@ -271,7 +271,8 @@ class RF24Mesh(RF24MeshNoMaster):
 
     def __init__(self, spi, csn_pin, ce_pin, node_id, spi_frequency=10000000):
         super().__init__(spi, csn_pin, ce_pin, node_id, spi_frequency)
-        self._do_dhcp, self._dhcp_dict = (False, {})
+        self._do_dhcp = False
+        self.dhcp_dict = {}  #: A `dict` that enables master nodes to act as a DNS.
 
     def update(self):
         """Checks for incoming network data and returns last message type (if any)"""
@@ -293,9 +294,9 @@ class RF24Mesh(RF24MeshNoMaster):
                     self.frame_buf.message = bytes([ret_val])
                 self._write(self.frame_buf.header.to_node, TX_NORMAL)
             elif msg_t == MESH_ADDR_RELEASE:
-                for n_id, addr in self._dhcp_dict.items():
+                for n_id, addr in self.dhcp_dict.items():
                     if addr == self.frame_buf.header.from_node:
-                        del self._dhcp_dict[n_id]
+                        del self.dhcp_dict[n_id]
                         break
             self._dhcp()
         return msg_t
@@ -319,7 +320,7 @@ class RF24Mesh(RF24MeshNoMaster):
             found_addr, new_addr = (False, via_node | (i << shift_val))
             if new_addr == NETWORK_DEFAULT_ADDR:
                 continue
-            for n_id, addr in self._dhcp_dict.items():
+            for n_id, addr in self.dhcp_dict.items():
                 # print(i, "(in _addr_dict) ID:", n_id, "ADDR:", oct(addr))
                 if addr == new_addr and n_id != self.frame_buf.header.reserved:
                     found_addr = True
@@ -340,27 +341,43 @@ class RF24Mesh(RF24MeshNoMaster):
 
     def _set_address(self, node_id, address, search_by_address=False):
         """Set or change a node_id and network address pair on the master node."""
-        for n_id, addr in self._dhcp_dict.items():
+        for n_id, addr in self.dhcp_dict.items():
             if not search_by_address:
                 if n_id == node_id:
-                    self._dhcp_dict[n_id] = address
+                    self.dhcp_dict[n_id] = address
                     return
             else:
                 if addr == address:
-                    # pylint: disable=unnecessary-dict-index-lookup
-                    del self._dhcp_dict[n_id]
-                    # pylint: enable=unnecessary-dict-index-lookup
-                    self._dhcp_dict[node_id] = address
+                    del self.dhcp_dict[n_id]
+                    self.dhcp_dict[node_id] = address
                     return
-        self._dhcp_dict[node_id] = address
-        # self.save_dhcp()
+        self.dhcp_dict[node_id] = address
+
+    def save_dhcp(self, filename="dhcp.json"):
+        """Save the `dhcp_dict` to a JSON file (meant for master nodes only)."""
+        if json is None:
+            return  # some CircuitPython boards don't have the json module
+        with open(filename, "w") as json_file:
+            # This throws an OSError if file system is read-only. ALL MCU boards
+            # running CircuitPython firmware (not RPi) have read-only file system.
+            json.dump(self.dhcp_dict, json_file)
+
+    def load_dhcp(self, filename="dhcp.json"):
+        """Load the `dhcp_dict` from a JSON file (meant for master nodes only)."""
+        if json is None:
+            return
+        with open(filename, "r") as json_file:
+            temp_dict = json.load(json_file)
+            # convert keys from `str` to `int`
+            for n_id, addr in temp_dict.items():
+                self._set_address(int(n_id), addr, True)
 
     def print_details(self, dump_pipes=False, network_only=False):
         """See RF24.print_details() and Shared Networking API docs"""
         super().print_details(False, network_only)
-        if not self._id and self._dhcp_dict:  # only on master node
+        if not self._id and self.dhcp_dict:  # only on master node
             print("DHCP List:\n    ID\tAddress\n    ---\t-------")
-            for n_id, addr in self._dhcp_dict.items():
+            for n_id, addr in self.dhcp_dict.items():
                 print("    {}\t{}".format(n_id, oct(addr)))
         if dump_pipes:
             self._rf24.print_pipes()
@@ -389,7 +406,7 @@ class RF24Mesh(RF24MeshNoMaster):
 
     def _get_address(self, number, lookup_type):
         """Helper for get_address() and lookup_node_id()"""
-        for n_id, addr in self._dhcp_dict.items():
+        for n_id, addr in self.dhcp_dict.items():
             if lookup_type == MESH_ID_LOOKUP and addr == number:
                 return n_id
             if lookup_type == MESH_ADDR_LOOKUP and n_id == number:

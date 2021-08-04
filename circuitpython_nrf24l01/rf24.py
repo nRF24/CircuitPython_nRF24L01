@@ -270,8 +270,6 @@ class RF24:
         self._reg_write(CONFIGURE, self._config)
         start_timer = time.monotonic_ns()
         if is_rx:
-            if not self._aa & 1:
-                time.sleep(self.tx_delay / 1000000)
             self.ce_pin = 1
             if (
                 self._pipe0_read_addr is not None
@@ -332,12 +330,9 @@ class RF24:
             self.flush_rx()
         up_cnt = 0
         self.write(buf, ask_no_ack)
-        if self._spi is not None and self._aa & 1:
+        if self._spi is not None:
             while not self._status & 0x30:
                 up_cnt += self.update()
-        else:
-            time.sleep(0.000001)  # mandatory 10us delay on CE pin
-            up_cnt += self.update()
         result = bool(self._status & 0x20)
         # print("send did {} updates. flags: {}".format(up_cnt, self._status >> 4))
         while force_retry and not result:
@@ -851,14 +846,14 @@ class RF24:
         if not buf or len(buf) > 32:
             raise ValueError("buffer must have a length in range [1, 32]")
         self.clear_status_flags()
-        if self._status & 1:
-            return False
         is_power_up = self._config & 2
         if self._config & 3 != 2:  # is radio powered up in TX mode?
             self._config = (self._config & 0x7C) | 2
             self._reg_write(CONFIGURE, self._config)
             if not is_power_up:
                 time.sleep(0.00015)
+        if self._status & 1:
+            return False
         if not bool((self._dyn_pl & 1) and (self._features & 4)):
             if len(buf) < self._pl_len[0]:
                 buf += b"\0" * (self._pl_len[0] - len(buf))
@@ -870,7 +865,7 @@ class RF24:
         self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
         if not write_only:
             self.ce_pin = 1
-        return self._status & 0x10 == 0
+        return True
 
     def flush_rx(self):
         """Flush all 3 levels of the RX FIFO."""

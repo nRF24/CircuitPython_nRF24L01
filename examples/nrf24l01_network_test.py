@@ -152,7 +152,7 @@ def emit(node=not THIS_NODE, frag=False, count=5, interval=1):
             result = False
             start = time.monotonic_ns()
             if IS_MESH:  # send() is a little different for RF24Mesh vs RF24Network
-                result = nrf.send(message, "M", node)
+                result = nrf.send(node, "M", message)
             else:
                 result = nrf.send(RF24NetworkHeader(node, "T"), message)
             end = time.monotonic_ns()
@@ -179,7 +179,8 @@ def idle(timeout=30):
             payload_len = len(payload.message)
             print("Received payload", end=" ")
             # TMRh20 examples only use 1 or 2 long ints as small messages
-            if payload_len < MAX_FRAG_SIZE:  # if not a large fragmented message
+            if payload_len < MAX_FRAG_SIZE and payload_len % 4 == 0:
+                # if not a large fragmented message and multiple of 4 bytes
                 fmt = "<" + "L" * int(payload_len / 4)
                 print(struct.unpack(fmt, bytes(payload.message)), end=" ")
             print(payload.header.to_string(), "length", payload_len)

@@ -209,3 +209,39 @@ block_less_callback
 
     The assigned function will be called during `renew_address()`, `lookup_address()` and
     `lookup_node_id()`.
+
+dhcp_dict
+----------
+
+.. autoattribute:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.dhcp_dict
+
+    This `dict` stores the assigned :ref:`Logical Addresses <Logical Address>` to the connected
+    mesh node's `node_id`.
+
+    - The keys in this `dict` are the unique `node_id` of a mesh network node.
+    - The values in this `dict` (corresponding to each key) are the `node_address` assigned to the `node_id`.
+
+save_dhcp()
+-----------
+
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.save_dhcp
+
+    .. warning::
+        This function will likely throw a `OSError` on boards running CircuitPython firmware
+        because the file system is by default read-only.
+
+    Calling this function on a Linux device (like the Raspberry Pi) will save the
+    `dhcp_dict` to a JSON file located in the program's working directory.
+
+    :param str filename: The name of the json file to be used. This value should end in a ".json"
+
+
+load_dhcp()
+-----------
+
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.load_dhcp
+
+    :param str filename: The name of the json file to be used. This value should end in a ".json"
+
+    .. warning::
+        This function will raise an `OSError` exception if no file exists.
