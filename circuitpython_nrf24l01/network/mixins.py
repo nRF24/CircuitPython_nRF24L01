@@ -174,10 +174,10 @@ class NetworkMixin(RadoMixin):
         self.queue = FrameQueueFrag()
         #: A buffer containing the last frame received by the network node
         self.frame_buf = RF24NetworkFrame()
-        self.address_suffix = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
-        """Each byte in this list corresponds to the unique byte per pipe and child
-        node."""
-        self.address_prefix = 0xCC
+        self.address_suffix = bytearray([0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3])
+        """Each byte in this `bytearray` corresponds to the unique byte per pipe and
+        child node."""
+        self.address_prefix = bytearray([0xCC])
         """The base case for all pipes' address' bytes before mutating with
         `address_suffix`."""
 
@@ -302,13 +302,13 @@ class NetworkMixin(RadoMixin):
 
     def _pipe_address(self, node_addr, pipe_number):
         """translate node address for use on any pipe number"""
-        result, count, dec = ([self.address_prefix] * 5, 1, node_addr)
+        result, count, dec = (bytearray(self.address_prefix[:] * 5), 1, node_addr)
         while dec:
             if not self.allow_multicast or (
                 self.allow_multicast and (pipe_number or not node_addr)
             ):
                 result[count] = self.address_suffix[dec % 8]
-            dec = int(dec / 8)
+            dec >>= 3
             count += 1
 
         if not self.allow_multicast or (
@@ -318,7 +318,7 @@ class NetworkMixin(RadoMixin):
         elif self.allow_multicast and (not pipe_number or node_addr):
             result[1] = self.address_suffix[count - 1]
         # print(oct(node_addr), "for pipe", pipe_number, "is", address_repr(result))
-        return bytearray(result)
+        return result
 
     def _net_update(self):
         """keep the network layer current; returns the received message type"""

@@ -62,7 +62,7 @@ address_prefix
 --------------
 
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.address_prefix
-    :annotation: = 0xCC
+    :annotation: = b"\xCC"
 
     .. seealso::
         The usage of this attribute is more explained in the `Topology page <topology.html#physical-addresses-vs-logical-addresses>`_
@@ -71,7 +71,7 @@ address_suffix
 --------------
 
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.address_suffix
-    :annotation: = [0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3]
+    :annotation: = b"\xC3\x3C\x33\xCE\x3E\xE3"
 
     .. seealso::
         The usage of this attribute is more explained in the `Topology page <topology.html#physical-addresses-vs-logical-addresses>`_

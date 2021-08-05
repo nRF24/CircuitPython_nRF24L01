@@ -244,9 +244,9 @@ class RF24MeshNoMaster(NetworkMixin):
         """Send a message to a mesh `node_id`."""
         if self._addr == NETWORK_DEFAULT_ADDR:
             return False
-        timeout = MESH_WRITE_TIMEOUT * 1000000 + time.monotonic_ns()
-        retry_delay = 5
         if to_node:
+            timeout = MESH_WRITE_TIMEOUT * 1000000 + time.monotonic_ns()
+            retry_delay = 5
             to_node_addr = -2
             while to_node_addr < 0:
                 to_node_addr = self.lookup_address(to_node)

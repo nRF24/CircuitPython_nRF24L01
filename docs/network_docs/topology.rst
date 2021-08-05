@@ -210,11 +210,14 @@ Translating Logical to Physical
 
 Before translating the Logical address, a single byte is used reptitively as the
 base case for all bytes of any Physical Address. This byte is the `address_prefix`
-attribute in the `RF24Network` class.
+attribute (stored as a mutable `bytearray`) in the `RF24Network` class. By default the
+`address_prefix` has a single byte value of ``b"0xCC"``.
 
 The `RF24Network` class also has a predefined list of bytes used for translating
 unique Logical addresses into unique Physical addresses. This list is called
-`address_suffix`.
+`address_suffix` (also stored as a mutable `bytearray`). By default the `address_suffix`
+has 6-byte value of ``b"\xC3\x3C\x33\xCE\x3E\xE3"`` where the order of bytes pertains to the
+data pipe number and child node's most significant byte in its Physical Address.
 
 For example:
     The Logical Address of the network's master node is ``0``. The radio's pipes
