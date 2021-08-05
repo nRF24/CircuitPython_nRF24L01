@@ -139,8 +139,8 @@ to the MCU via a digital input pin during the interrupt example.
 
     GND, GND, GND
     VCC, 3.3V, 3V
-    CE, D4, "- GPIO4 if using CircuitPython's :py:class:`~digitalio.DigitalInOut`
-    - GPIO22 if using the `RPi.GPIO <https://sourceforge.net/p/raspberry-gpio-python/wiki/Home/>`_ library"
+    CE, D4, "- GPIO4 if using CircuitPython's :py:class:`~adafruit_bus_device.SPIDevice`
+    - GPIO22 if using the `SpiDev <https://pypi.org/project/spidev/>`_ module"
     CSN, D5, "- GPIO5 if using CircuitPython's :py:class:`~adafruit_bus_device.SPIDevice`
     - GPIO8 (CE0) if using the `SpiDev <https://pypi.org/project/spidev/>`_ module"
     SCK, SCK, "GPIO11 (SCK)"
