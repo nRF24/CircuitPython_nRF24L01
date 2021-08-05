@@ -276,3 +276,86 @@ For example:
         3, ``CC 3C 33 CE CE``
         4, ``CC 3C 33 CE 3E``
         5, ``CC 3C 33 CE E3``
+
+Two networks coexisting on the same channel
+-------------------------------------------
+
+In theory, the `address_prefix` and `address_suffix` attributes could be changed to
+allow 2 separate networks to coexist on the same
+:attr:`~circuitpython_nrf24l01.rf24.RF24.channel`. The following are example code
+snippets to use as a template for such a scenario.
+
+.. code-block:: python
+    :caption: Master node for ``network_a``
+
+    from circuitpython_nrf24l01.rf24_network import RF24Network
+
+    # ... declare SPI_BUS, CE_PIN, and CSN_PIN objects
+    network_a_master = RF24Network(SPI_BUS, CSN_PIN, CE_PIN, 0)
+
+    # let network_a use the default values for address_prefix and address_suffix
+
+    while True:
+        network_a_master.update()
+        if network_a_master.available():
+            recv_frame = network_a_master.read()
+            print(
+                "received {}: {}".format(
+                    recv_frame.header.to_string(), recv_frame.message.decode()
+                )
+            )
+        # emit frames as needed
+
+.. code-block:: python
+    :caption: Master node for ``network_b``
+
+    from circuitpython_nrf24l01.rf24_network import RF24Network
+
+    # ... declare SPI_BUS, CE_PIN, and CSN_PIN objects
+    network_b_master = RF24Network(SPI_BUS, CSN_PIN, CE_PIN, 0)
+
+    # let network_b use different values for address_prefix and address_suffix
+    network_b_master.address_prefix = bytearray([0xDB])
+    network_b_master.address_suffix = bytearray([0xDD, 0x99, 0xB6, 0xD9, 0x9D, 0x66])
+
+    # re-assign the node_address for the different physical addresses to be used
+    network_b_master.node_address = 0
+
+    while True:
+        network_b_master.update()
+        if network_b_master.available():
+            recv_frame = network_b_master.read()
+            print(
+                "received {}: {}".format(
+                    recv_frame.header.to_string(), recv_frame.message.decode()
+                )
+            )
+        # emit frames as needed
+
+.. code-block:: python
+    :caption: A single network node for hoping between  ``network_a`` & ``network_b``
+
+    from circuitpython_nrf24l01.rf24_network import RF24Network
+
+    # ... declare SPI_BUS, CE_PIN, and CSN_PIN objects
+    network_b_node = RF24Network(SPI_BUS, CSN_PIN, CE_PIN, 5)
+    network_a_node = RF24Network(SPI_BUS, CSN_PIN, CE_PIN, 1)
+
+    # let network_b use different values for address_prefix and address_suffix
+    with network_b_node as net_b:
+        net_b.address_prefix = bytearray([0xDB])
+        net_b.address_suffix = bytearray([0xDD, 0x99, 0xB6, 0xD9, 0x9D, 0x66])
+
+        # re-assign the node_address for the different physical addresses to be used
+        net_b.node_address = 5
+
+    while True:
+        # do something with network_a
+        with network_a_node as net_a:
+            net_a.update()
+            net_a.send(RF24NetworkHeader(0, "T"), b"data for net A master")
+
+        # do something with network_b
+        with network_b_node as net_b:
+            net_b.update()
+            net_b.send(RF24NetworkHeader(0, "T"), b"data for net B master")
