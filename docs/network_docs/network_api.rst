@@ -162,10 +162,36 @@ write()
 
 .. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.write
 
+    .. hint:: This function can be used to transmit entire frames accumulated in
+        user-defined `FrameQueue` object.
+
+        .. code-block:: python
+
+            from circuitpython_nrf24l01.rf24_network import RF24Network
+            # let `nrf` be the instantiated RF24Network object
+
+            from circuitpython_nrf24l01.network.structs import (
+                FrameQueue, RF24NetworkFrame, RF24NetworkHeader
+            )
+
+            my_q = FrameQueue()
+            for i in range(my_q.max_queue_size):
+                my_q.enqueue(
+                    RF24NetworkFrame(
+                        # all frames will be addressed to master (node 0)
+                        RF24NetworkHeader(0, "1"),  # "1" is message_type 49
+                        bytes(range(i + 5))  # some example data
+                    )
+                )
+
+            # when it's time to send the queue
+            while my_q:
+                frame = my_q.dequeue()
+                if not nrf.write(frame):
+                    nrf.write(frame)  # retry if needed
+
     :param RF24NetworkFrame frame: The complete frame to send. It is important to
         have the header's `to_node` attribute set to the target network node's address.
-        If a `FrameQueue` object is passed, then all frames in the passed `FrameQueue`
-        will be processed in a FIFO (First In First Out) basis.
     :param int traffic_direct: The specified direction of the frame. By default, this
         will invoke the automatic routing mechanisms. However, this parameter
         can be set to a network node's :ref:`Logical Address <logical address>` for direct
@@ -180,9 +206,9 @@ write()
         * `False` if the ``frame``  has failed to transmit.
 
         .. note::
-            This function will always return `True` if a message is sent directly to a network node.
-            Meaning, if the ``traffic_direct`` parameter is set to anything other than its default
-            value, then this function will return `True`.
+            This function will always return `True` if the ``traffic_direct`` parameter is set to
+            anything other than its default value. Using the ``traffic_direct`` parameter assumes
+            there is a relaible/open connection to the `node_address` passed to ``traffic_direct``.
         .. tip:: |use_msg_t|
 
 parent
