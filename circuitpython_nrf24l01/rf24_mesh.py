@@ -34,7 +34,6 @@ from .network.constants import (
     NETWORK_DEFAULT_ADDR,
     NETWORK_MULTICAST_ADDR,
     NETWORK_POLL,
-    FLAG_NO_POLL,
     MESH_ADDR_RELEASE,
     MESH_ADDR_LOOKUP,
     MESH_ID_LOOKUP,
@@ -76,6 +75,7 @@ class RF24MeshNoMaster(NetworkMixin):
     def print_details(self, dump_pipes=False, network_only=False):
         """See RF24.print_details() and Shared Networking API docs"""
         super().print_details(False, network_only)
+        print("Allow children_____________{}".format(self._parenthood))
         print("Network node id____________{}".format(self.node_id))
         if dump_pipes:
             self._rf24.print_pipes()
@@ -231,14 +231,11 @@ class RF24MeshNoMaster(NetworkMixin):
     @property
     def allow_children(self):
         """Allow/disallow child node to connect to this network node."""
-        return not self.network_flags & FLAG_NO_POLL
+        return self._parenthood
 
     @allow_children.setter
     def allow_children(self, allow):
-        if allow:
-            self.network_flags &= ~FLAG_NO_POLL
-        else:
-            self.network_flags |= FLAG_NO_POLL
+        self._parenthood = allow
 
     def send(self, to_node, message_type, message):
         """Send a message to a mesh `node_id`."""

@@ -162,7 +162,7 @@ write()
 
 .. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.write
 
-    .. hint:: This function can be used to transmit entire frames accumulated in
+    .. hint:: This function can be used to transmit entire frames accumulated in a
         user-defined `FrameQueue` object.
 
         .. code-block:: python

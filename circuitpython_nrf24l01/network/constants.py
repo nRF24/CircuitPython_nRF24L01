@@ -43,12 +43,6 @@ TX_PHYSICAL = const(2)  #: Send a message directly to network node.
 TX_LOGICAL = const(3)  #: Similar to `TX_NORMAL`.
 TX_MULTICAST = const(4)  #: Broadcast a message to a network level of nodes.
 
-# flags for managing external system's desired behavior
-FLAG_HOLD_INCOMING = const(1)
-FLAG_BYPASS_HOLDS = const(2)  #: Primarily for RF24Mesh
-# FLAG_FAST_FRAG = const(4)  # unused due to optimization
-FLAG_NO_POLL = const(8)
-
 # constants used to define `RF24NetworkHeader.message_type`
 NETWORK_ACK = const(193)  #: Used for network-wide acknowledgements.
 NETWORK_PING = const(130)  #: Used for network pings

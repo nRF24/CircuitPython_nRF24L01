@@ -95,34 +95,3 @@ ret_sys_msg
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.ret_sys_msg
 
     This `bool` attribute is asserted on mesh network nodes.
-
-network_flags
--------------
-
-.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.network_flags
-
-A 4-bit variable in which each bit corresponds to a specific behavioral modification.
-
-.. csv-table::
-    :header: "bit position", "flag name", "behavior"
-    :widths: 2, 4, 10
-
-    0, ``FLAG_HOLD_INCOMING``, "Prevents reading additional data from the radio when buffers are full."
-    1, ``FLAG_BYPASS_HOLDS``, "
-    - Ensure no data in radio buffers, else exit
-    - Address is changed to multicast address for renewal
-    - Holds Cleared (bypass flag is set)
-    - Address renewal takes place and is set
-    - Holds Enabled (bypass flag off)
-    "
-    2, ``FLAG_FAST_FRAG``, "Unused due to optmization. TMRh20's C++ RF24Network library uses this flag internally to minimize memory usage."
-    3, ``FLAG_NO_POLL``, "Used to discard any `NETWORK_POLL` message types"
-
-..
-    original docs from RF24Network src comments
-    main usagee is as follows:
-    #. Ensure no data in radio buffers, else exit
-    #. Address is changed to multicast address for renewal
-    #. Holds Cleared (bypass flag is set)
-    #. Address renewal takes place and is set
-    #. Holds Enabled (bypass flag off)
