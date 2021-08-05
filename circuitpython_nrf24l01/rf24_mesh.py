@@ -83,8 +83,9 @@ class RF24MeshNoMaster(NetworkMixin):
     def release_address(self) -> bool:
         """Forces an address lease to expire from the master."""
         if self._addr != NETWORK_DEFAULT_ADDR:
-            self.frame_buf.header = RF24NetworkHeader(0, MESH_ADDR_RELEASE)
+            self.frame_buf.header.to_node = 0
             self.frame_buf.header.from_node = self._addr
+            self.frame_buf.header.message_type = MESH_ADDR_RELEASE
             self.frame_buf.message = b""
             if self._write(0, TX_NORMAL):
                 super()._begin(NETWORK_DEFAULT_ADDR)
@@ -130,8 +131,9 @@ class RF24MeshNoMaster(NetworkMixin):
 
     def _lookup_2_master(self, number, lookup_type):
         """Returns False if timed out, otherwise lookup result"""
-        self.frame_buf.header = RF24NetworkHeader(0, lookup_type)
+        self.frame_buf.header.to_node = 0
         self.frame_buf.header.from_node = self._addr
+        self.frame_buf.header.message_type = lookup_type
         if lookup_type == MESH_ID_LOOKUP:
             self.frame_buf.message = struct.pack("<H", number)
         else:
@@ -173,8 +175,9 @@ class RF24MeshNoMaster(NetworkMixin):
         new_addr = None
         for contact in contacts:
             # print("Requesting address from", oct(contact))
-            self.frame_buf.header = RF24NetworkHeader(contact, MESH_ADDR_REQUEST)
+            self.frame_buf.header.to_node = contact
             self.frame_buf.header.from_node = NETWORK_DEFAULT_ADDR
+            self.frame_buf.header.message_type = MESH_ADDR_REQUEST
             self.frame_buf.header.reserved = self._id
             self.frame_buf.message = b""
             self._write(contact, TX_PHYSICAL)  # do a no auto-ack write
@@ -207,8 +210,9 @@ class RF24MeshNoMaster(NetworkMixin):
     def _make_contact(self, lvl):
         """Make a list of connections after multicasting a `NETWORK_POLL` message."""
         responders = []
-        self.frame_buf.header = RF24NetworkHeader(NETWORK_MULTICAST_ADDR, NETWORK_POLL)
+        self.frame_buf.header.to_node = NETWORK_MULTICAST_ADDR
         self.frame_buf.header.from_node = NETWORK_DEFAULT_ADDR
+        self.frame_buf.header.message_type = NETWORK_POLL
         self.frame_buf.message = b""
         # self.multicast() does some extra logic to protect from user misuse.
         self._write(_lvl_2_addr(lvl), TX_MULTICAST)
@@ -240,16 +244,19 @@ class RF24MeshNoMaster(NetworkMixin):
         """Send a message to a mesh `node_id`."""
         if self._addr == NETWORK_DEFAULT_ADDR:
             return False
-        to_node_addr = -2
         timeout = MESH_WRITE_TIMEOUT * 1000000 + time.monotonic_ns()
         retry_delay = 5
-        while to_node_addr < 0:
-            to_node_addr = self.lookup_address(to_node)
-            if time.monotonic_ns() >= timeout:
-                return False
-            retry_delay += 10
-            time.sleep(retry_delay / 1000)
-        return self.write(to_node_addr, message_type, message)
+        if to_node:
+            to_node_addr = -2
+            while to_node_addr < 0:
+                to_node_addr = self.lookup_address(to_node)
+                if time.monotonic_ns() >= timeout:
+                    return False
+                if to_node_addr < 0:
+                    time.sleep(retry_delay / 1000)
+                    retry_delay += 10
+            to_node = to_node_addr
+        return self.write(to_node, message_type, message)
 
     def write(self, to_node, message_type, message):
         """Send a message to a network `node_address`."""

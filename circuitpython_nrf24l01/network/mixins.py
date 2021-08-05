@@ -273,8 +273,8 @@ class NetworkMixin(RadoMixin):
 
     @property
     def multicast_relay(self):
-        """Enabling this attribute will allow this node to automatically forward
-        received multicasted frames to the next highest multicast level."""
+        """Enabling this attribute will automatically forward received multicasted
+        frames to the next highest `network level <topology.html#network-levels>`_."""
         return self.allow_multicast and self._relay_enabled
 
     @multicast_relay.setter

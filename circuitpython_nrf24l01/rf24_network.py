@@ -63,12 +63,7 @@ class RF24Network(RF24NetworkRoutingOnly):
 
     def send(self, header, message):
         """Deliver a message according to the header information."""
-        if not self._validate_msg_len(len(message)):
-            message = message[:MAX_FRAG_SIZE]
-        if not is_address_valid(header.to_node):
-            raise AttributeError("header destined for an invalid address")
-        header.from_node = self._addr
-        return self._pre_write(RF24NetworkFrame(header, message))
+        return self.write(RF24NetworkFrame(header, message))
 
     def write(self, frame, traffic_direct=AUTO_ROUTING):
         """Deliver a network frame."""

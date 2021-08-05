@@ -39,11 +39,11 @@ else:
     THIS_NODE = int(input("an octal int. Defaults to '0' ") or "0", 8)
 
 if IS_MESH:
-    if not THIS_NODE:  # if this is not a mesh network master node
+    if THIS_NODE:  # if this is not a mesh network master node
         from circuitpython_nrf24l01.rf24_mesh import RF24MeshNoMaster as Network
     else:
         from circuitpython_nrf24l01.rf24_mesh import RF24Mesh as Network
-    print("Using RF24Mesh{} class".format("" if THIS_NODE else "NoMaster"))
+    print("Using RF24Mesh{} class".format("" if not THIS_NODE else "NoMaster"))
 else:
     from circuitpython_nrf24l01.rf24_network import RF24Network as Network
 

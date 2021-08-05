@@ -224,9 +224,7 @@ multicast_relay
 
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.multicast_relay
 
-    Duplicate frames are filtered out, so multiple forwarding nodes at the
-    same level should not interfere. Forwarded payloads will also be
-    received.
+    Forwarded frames will also be enqueued on the forwarding node as a received frame.
 
 multicast_level
 ---------------
