@@ -15,14 +15,6 @@
     :target: https://pepy.tech/project/circuitpython-nrf24l01
     :alt: Total PyPI downloads
 
-.. image:: https://open.vscode.dev/badges/open-in-vscode.svg
-    :target: https://open.vscode.dev/2bndy5/CircuitPython_nRF24L01
-    :alt: Open in Visual Studio Code
-
-.. image:: https://img.shields.io/badge/Gitpod-Use%20Online%20IDE-B16C04?logo=gitpod
-    :target: https://gitpod.io/#https://github.com/2bndy5/CircuitPython_nRF24L01
-    :alt: Open in Gitpod
-
 Read The Docs
 =============
 

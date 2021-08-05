@@ -1,4 +1,12 @@
 
+.. image:: https://open.vscode.dev/badges/open-in-vscode.svg
+    :target: https://open.vscode.dev/2bndy5/CircuitPython_nRF24L01
+    :alt: Open in Visual Studio Code
+
+.. image:: https://img.shields.io/badge/Gitpod-Use%20Online%20IDE-B16C04?logo=gitpod
+    :target: https://gitpod.io/#https://github.com/2bndy5/CircuitPython_nRF24L01
+    :alt: Open in Gitpod
+
 Getting Started
 ==================
 
@@ -41,12 +49,16 @@ Features currently supported
 * Adjust the nRF24L01's frequency channel (2.4-2.525 GHz)
 * Adjust the nRF24L01's power amplifier level (0, -6, -12, or -18 dBm)
 * Adjust the nRF24L01's RF data rate (250kbps, 1Mbps, or 2Mbps)
-* An nRF24L01 driven by this library can communicate with a nRF24L01 on an Arduino driven by the `TMRh20 RF24 library <http://tmrh20.github.io/RF24/>`_. See the `nrf24l01_2arduino_handling_data.py <examples.html#TMRh20-s-arduino-library>`_ example.
-* fake BLE module for sending BLE beacon advertisments from the nRF24L01 as outlined by `Dmitry Grinberg in his write-up (including C source code) <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_.
-* Multiceiver\ :sup:`TM` mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously). See the `Multiceiver Example <examples.html#multiceiver-example>`_
-* Networking capability that allows thousands of tranceivers to interact with each other.
+* An nRF24L01 driven by this library can communicate with a nRF24L01 on an Arduino driven by the
+  `TMRh20 RF24 library <http://tmrh20.github.io/RF24/>`_.
+* fake BLE module for sending BLE beacon advertisments from the nRF24L01 as outlined by
+  `Dmitry Grinberg in his write-up (including C source code) <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_.
+* Multiceiver\ :sup:`TM` mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously).
+  See the `Multiceiver Example <examples.html#multiceiver-example>`_
+* Networking capability that allows up to 781 tranceivers to interact with each other.
 
-  * This does not mean the radio can connect to WiFi. The networking implementation is a custom protocol ported from TMRh20's RF24Network library.
+  * This does not mean the radio can connect to WiFi. The networking implementation is a
+    custom protocol ported from TMRh20's RF24Network & RF24Mesh libraries.
 
 
 Dependencies
@@ -303,7 +315,9 @@ The following are only ideas; they are not currently supported by this circuitpy
 * TCI/IP OSI layer, maybe something like `TMRh20's RF24Ethernet
   <http://nRF24.github.io/RF24Ethernet/>`_
 * implement the Gazelle-based protocol used by the BBC micro-bit (`makecode.com's radio
-  blocks <https://makecode.microbit.org/reference/radio>`_).
+  blocks <https://makecode.microbit.org/reference/radio>`_) Additional resources can be found at
+  `the MicroPython firmware source code <https://github.com/bbcmicrobit/micropython/blob/master/source/microbit/modradio.cpp>`_
+  and `its related documentation <https://microbit-micropython.readthedocs.io/en/latest/radio.html>`_.
 
 
 Sphinx documentation
