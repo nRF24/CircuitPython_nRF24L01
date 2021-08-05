@@ -203,7 +203,8 @@ Physical addresses vs Logical addresses
 .. note::
     Remember that the nRF24L01 only has 6 data pipes for which to receive or transmit.
     Since only data pipe 0 can be used to transmit, the other other data pipes 1-5 are
-    devoted to receiving transmissions from children.
+    devoted to receiving transmissions from other network nodes; data pipe 0 also receives
+    multicasted messages about the node's network level).
 
 Translating Logical to Physical
 -------------------------------
