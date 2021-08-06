@@ -280,6 +280,14 @@ For example:
 Two networks coexisting on the same channel
 -------------------------------------------
 
+.. warning::
+    The following section is an advanced tutorial. The default values for `address_prefix`
+    and `address_suffix` were carefully chosen by TMRh20 to demonstrate best practices in
+    terms of choosing a data pipe's address for transmissions. Bad practices can be avoided
+    by heading ManiacBug's advice in his
+    `detailed blog post <http://maniacalbits.blogspot.com/2013/04/rf24-addressing-nrf24l01-radios-require.html>`_
+    about the topic.
+
 In theory, the `address_prefix` and `address_suffix` attributes could be changed to
 allow 2 separate networks to coexist on the same
 :attr:`~circuitpython_nrf24l01.rf24.RF24.channel`. The following are example code

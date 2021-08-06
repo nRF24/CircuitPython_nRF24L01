@@ -22,7 +22,7 @@ RF24NetworkRoutingOnly class
 .. autoclass:: circuitpython_nrf24l01.rf24_network.RF24NetworkRoutingOnly
 
     This class is a minimal variant of the `RF24Network` class. The API is almost identical to
-    `RF24Network` except the it has no `RF24Network.write()` or `RF24Network.send()` functions.
+    `RF24Network` except that it has no `RF24Network.write()` or `RF24Network.send()` functions.
     This is meant to be the python equivalent to TMRh20's ``DISABLE_USER_PAYLOADS`` macro in the
     C++ RF24Network library.
 
@@ -162,13 +162,11 @@ write()
 
 .. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.write
 
-    .. hint:: This function can be used to transmit entire frames accumulated in a
+    .. hint::
+        This function can be used to transmit entire frames accumulated in a
         user-defined `FrameQueue` object.
 
         .. code-block:: python
-
-            from circuitpython_nrf24l01.rf24_network import RF24Network
-            # let `nrf` be the instantiated RF24Network object
 
             from circuitpython_nrf24l01.network.structs import (
                 FrameQueue, RF24NetworkFrame, RF24NetworkHeader
@@ -178,17 +176,14 @@ write()
             for i in range(my_q.max_queue_size):
                 my_q.enqueue(
                     RF24NetworkFrame(
-                        # all frames will be addressed to master (node 0)
-                        RF24NetworkHeader(0, "1"),  # "1" is message_type 49
-                        bytes(range(i + 5))  # some example data
+                        RF24NetworkHeader(0, "1"), bytes(range(i + 5))
                     )
                 )
 
             # when it's time to send the queue
-            while my_q:
-                frame = my_q.dequeue()
-                if not nrf.write(frame):
-                    nrf.write(frame)  # retry if needed
+            while len(my_q):
+                # let `nrf` be the instantiated RF24Network object
+                nrf.write(my_q.dequeue())
 
     :param RF24NetworkFrame frame: The complete frame to send. It is important to
         have the header's `to_node` attribute set to the target network node's address.
