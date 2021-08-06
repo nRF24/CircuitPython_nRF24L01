@@ -410,20 +410,20 @@ class RF24:
         d_rate = self._rf_setup & 0x28
         d_rate = (2 if d_rate == 8 else 250) if d_rate else 1
         _pa_level = (3 - ((self._rf_setup & 6) >> 1)) * -6
-        dyn_p = bin(self._dyn_pl)
-        if self._dyn_pl == 0x3F or not self._dyn_pl:
-            dyn_p = "_Enabled" if self._dyn_pl else "Disabled"
-        else:
-            dyn_p = "0b" + "0" * (8 - len(dyn_p)) + dyn_p[2:]
-        auto_a = bin(self._aa)
-        if self._aa == 0x3F or not self._aa:
-            auto_a = "Enabled" if self._aa else "Disabled"
-        else:
-            auto_a = "0b" + "0" * (8 - len(auto_a)) + auto_a[2:]
-        pwr = "Off"
-        if self._config & 2:
-            pwr = "Standby-II" if self.ce_pin else "Standby-I"
-
+        dyn_p = (
+            ("_Enabled" if self._dyn_pl else "Disabled")
+            if self._dyn_pl == 0x3F or not self._dyn_pl
+            else "0b" + "0" * (8 - len(bin(self._dyn_pl))) + bin(self._dyn_pl)[2:]
+        )
+        auto_a = (
+            ("Enabled" if self._aa else "Disabled")
+            if self._aa == 0x3F or not self._aa
+            else  "0b" + "0" * (8 - len(bin(self._aa))) + bin(self._aa)[2:]
+        )
+        pwr = (
+            ("Standby-II" if self.ce_pin else "Standby-I")
+            if self._config & 2 else "Off"
+        )
         print(f"Is a plus variant_________{self.is_plus_variant}")
         print(
             f"Channel___________________{self._channel}",
