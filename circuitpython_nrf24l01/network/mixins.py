@@ -167,7 +167,7 @@ class NetworkMixin(RadoMixin):
         #: enable/disable (`True`/`False`) multicasting
         self.allow_multicast = True
         self.ret_sys_msg = False  #: Force `update()` to return on system message types.
-        self._parenthood = True  # can mesh nodes to respond to NETWORK_POLL messages?
+        self._parenthood = True  # can mesh nodes respond to NETWORK_POLL messages?
         self.max_message_length = 144  #: The maximum length of a frame's message.
         #: The queue (FIFO) of recieved frames for this node
         self.queue = FrameQueueFrag()

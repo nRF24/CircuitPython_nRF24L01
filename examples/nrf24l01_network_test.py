@@ -28,7 +28,7 @@ IS_MESH = (
 THIS_NODE = 0
 print(
     "Remember, the master node always uses `0` as the node_address and node_id."
-    "Which node is this? Enter",
+    "\nWhich node is this? Enter",
     end=" ",
 )
 if IS_MESH:

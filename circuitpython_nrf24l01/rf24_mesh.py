@@ -241,7 +241,7 @@ class RF24MeshNoMaster(NetworkMixin):
         """Send a message to a mesh `node_id`."""
         if self._addr == NETWORK_DEFAULT_ADDR:
             return False
-        if to_node:
+        if to_node and to_node != self._id:
             timeout = MESH_WRITE_TIMEOUT * 1000000 + time.monotonic_ns()
             retry_delay = 5
             to_node_addr = -2
@@ -253,6 +253,8 @@ class RF24MeshNoMaster(NetworkMixin):
                     time.sleep(retry_delay / 1000)
                     retry_delay += 10
             to_node = to_node_addr
+        if to_node == self._id:
+            to_node = self._addr
         return self.write(to_node, message_type, message)
 
     def write(self, to_node, message_type, message):
