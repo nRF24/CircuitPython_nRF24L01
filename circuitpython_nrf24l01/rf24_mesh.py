@@ -332,7 +332,7 @@ class RF24Mesh(RF24MeshNoMaster):
                     found_addr = True
                     break
             if not found_addr:
-                self._set_address(self.frame_buf.header.reserved, new_addr)
+                self.set_address(self.frame_buf.header.reserved, new_addr)
 
                 self.frame_buf.header.message_type = MESH_ADDR_RESPONSE
                 self.frame_buf.header.to_node = self.frame_buf.header.from_node
@@ -345,19 +345,19 @@ class RF24Mesh(RF24MeshNoMaster):
                 break
             # print("address", new_addr, "not allocated.")
 
-    def _set_address(self, node_id, address, search_by_address=False):
-        """Set or change a node_id and network address pair on the master node."""
+    def set_address(self, node_id, node_address, search_by_address=False):
+        """Set/change a `node_id` and `node_address` pair in the `dhcp_dict`."""
         for n_id, addr in self.dhcp_dict.items():
             if not search_by_address:
                 if n_id == node_id:
-                    self.dhcp_dict[n_id] = address
+                    self.dhcp_dict[n_id] = node_address
                     return
             else:
-                if addr == address:
+                if addr == node_address:
                     del self.dhcp_dict[n_id]
-                    self.dhcp_dict[node_id] = address
+                    self.dhcp_dict[node_id] = node_address
                     return
-        self.dhcp_dict[node_id] = address
+        self.dhcp_dict[node_id] = node_address
 
     def save_dhcp(self, filename="dhcp.json"):
         """Save the `dhcp_dict` to a JSON file (meant for master nodes only)."""
@@ -376,7 +376,7 @@ class RF24Mesh(RF24MeshNoMaster):
             temp_dict = json.load(json_file)
             # convert keys from `str` to `int`
             for n_id, addr in temp_dict.items():
-                self._set_address(int(n_id), addr, True)
+                self.set_address(int(n_id), addr, True)
 
     def print_details(self, dump_pipes=False, network_only=False):
         """See RF24.print_details() and Shared Networking API docs"""

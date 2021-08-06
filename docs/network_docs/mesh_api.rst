@@ -245,3 +245,15 @@ load_dhcp()
 
     .. warning::
         This function will raise an `OSError` exception if no file exists.
+
+set_address()
+-------------
+
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.set_address
+
+    This function is only meant to be called on the mesh network's master node.
+    Use this function to manually assign a `node_id` to a `RF24Network.node_address`.
+
+    :param int node_id: A unique identifying number ranging [1, 255].
+    :param int node_address: A :ref:`Logical Address <Logical Address>`
+    :param bool search_by_address: A flag to traverse the `dhcp_dict` by value instead of by key.

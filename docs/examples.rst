@@ -203,7 +203,7 @@ Network Test
 
 .. versionadded:: 2.1.0
 
-The following network example is designed to be compatible with all of TMRh20's C++
+The following network example is designed to be compatible with most of TMRh20's C++
 examples for the RF24Mesh and RF24Network libraries. However, due to some slight differences
 this example prompts for user input which can cover a broader spectrum of usage scenarios.
 
@@ -233,12 +233,12 @@ This is a test to show how to use the nRF24L01 as a BLE advertising beacon using
     :linenos:
     :lineno-match:
 
-TMRh20's Arduino library
+TMRh20's C++ libraries
 ------------------------
 
-All examples are designed to work with TMRh20's RF24 library examples.
+All examples are designed to work with TMRh20's RF24, RF24Network, and RF24Mesh libraries' examples.
 This Circuitpython library uses dynamic payloads enabled by default.
-TMRh20's library uses static payload lengths by default.
+TMRh20's RF24 library uses static payload lengths by default.
 
 To make this circuitpython library compatible with
 `TMRh20's RF24 library <https://github.com/nRF24/RF24/>`_:
@@ -260,16 +260,20 @@ For completness, TMRh20's RF24 library uses a default value of 15 for the `ard` 
 but this Circuitpython library uses a default value of 3.
 
 .. csv-table:: Corresponding examples
-    :header: circuitpython_nrf24l01, TMRh20 RF24
+    :header: circuitpython_nrf24l01, "TMRh20's C++ examples"
+    :widths: 10, 20
 
-    "nrf24l01_simple_test\ [1]_ ", gettingStarted
-    nrf24l01_ack_payload_test, acknowledgementPayloads
-    "nrf24l01_manual_ack_test\ [1]_ ", manualAcknowledgements
-    "nrf24l01_multiceiver_test\ [1]_ ", multiceiverDemo
-    "nrf24l01_stream_test\ [1]_ ", streamingData
-    nrf24l01_interrupt_test, interruptConfigure
-    nrf24l01_context_test, feature is not available
-    nrf24l01_fake_ble_test, feature is available via `floe's BTLE library <https://github.com/floe/BTLE>`_
+    "nrf24l01_simple_test (\ [1]_)", "RF24 gettingStarted"
+    nrf24l01_ack_payload_test, "RF24 acknowledgementPayloads"
+    "nrf24l01_manual_ack_test (\ [1]_)", "RF24 manualAcknowledgements"
+    "nrf24l01_multiceiver_test (\ [1]_)", "RF24 multiceiverDemo"
+    "nrf24l01_stream_test (\ [1]_)", "RF24 streamingData"
+    nrf24l01_interrupt_test, "RF24 interruptConfigure"
+    nrf24l01_context_test, "feature is not available in C++"
+    nrf24l01_fake_ble_test, "feature is available via `floe's BTLE library <https://github.com/floe/BTLE>`_"
+    "nrf24l01_network_test (\ [2]_)", "- all RF24Network examples except Network_Ping & Network_Ping_Sleep
+    - all RF24Mesh examples except RF24Mesh_Example_Node2NodeExtra
+      (which may still work but the data is not interpretted as a string)"
 
 .. [1] Some of the Circuitpython examples (that are compatible with TMRh20's examples)
        contain 2 or 3 lines of code that are commented out for easy modification. These lines
@@ -281,3 +285,6 @@ but this Circuitpython library uses a default value of 3.
            # nrf.allow_ask_no_ack = False
            # nrf.dynamic_payloads = False
            # nrf.payload_length = 4
+.. [2] When running the network examples, it is important to understand the typical
+       `network topology <network_docs/topology.html>`_. Otherwise, entering incorrect answers to the
+       example's user prompts may result in seemingly bad connections.
