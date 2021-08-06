@@ -3,54 +3,34 @@ Simple example of using the library to transmit
 and retrieve custom automatic acknowledgment payloads.
 """
 import time
+import board
+from digitalio import DigitalInOut
 
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
-
-# import wrappers to imitate circuitPython's DigitalInOut
-from circuitpython_nrf24l01.wrapper import DigitalInOut
-
-# DigitalInOut is a wrapper for machine.Pin() on MicroPython
-#   or simply digitalio.DigitalInOut on CircuitPython and Linux
 
 # default values that allow using no radio module (for testing only)
 SPI_BUS = None
 CSN_PIN = None
 CE_PIN = None
 
-try:  # on CircuitPython & Linux
-    import board
+try:  # on Linux
+    import spidev
 
-    try:  # on Linux
-        import spidev
+    SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
+    CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
+    CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
 
-        SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
-        CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
-        CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
+except ImportError:  # on CircuitPython only
+    # using board.SPI() automatically selects the MCU's
+    # available SPI pins, board.SCK, board.MOSI, board.MISO
+    spi = board.SPI()  # init spi bus object
 
-    except ImportError:  # on CircuitPython only
-        # using board.SPI() automatically selects the MCU's
-        # available SPI pins, board.SCK, board.MOSI, board.MISO
-        spi = board.SPI()  # init spi bus object
+    # change these (digital output) pins accordingly
+    CE_PIN = DigitalInOut(board.D4)
+    CSN_PIN = DigitalInOut(board.D5)
 
-        # change these (digital output) pins accordingly
-        CE_PIN = DigitalInOut(board.D4)
-        CSN_PIN = DigitalInOut(board.D5)
-
-except ImportError:  # on MicroPython
-    import machine
-
-    # the argument passed here changes according to the board used
-    SPI_BUS = machine.SPI(1)
-
-    # instantiate the integers representing micropython pins as
-    # DigitalInOut compatible objects
-    CSN_PIN = DigitalInOut(5)
-    CE_PIN = DigitalInOut(4)
-
-except NotImplementedError: # running on PC (no GPIO)
-    pass  # using a shim
 
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
@@ -110,12 +90,9 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             # fetched and saved to "result" via send()
             # print timer results upon transmission success
             print(
-                "Transmission successful! Time to transmit: "
-                "{} us. Sent: {}{}".format(
-                    int((end_timer - start_timer) / 1000),
-                    buffer[:6].decode("utf-8"),
-                    counter[0],
-                ),
+                "Transmission successful! Time to transmit:",
+                f"{int((end_timer - start_timer) / 1000)} us.",
+                f'Sent: {buffer[:6].decode("utf-8")}{counter[0]}',
                 end=" ",
             )
             if isinstance(result, bool):
@@ -123,11 +100,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             else:
                 # result[:6] truncates c-string NULL termiating char
                 # received counter is a unsigned byte, thus result[7:8][0]
-                print(
-                    "Received: {}{}".format(
-                        bytes(result[:6]).decode("utf-8"), result[7:8][0]
-                    )
-                )
+                print(f'Received: {result[:6].decode("utf-8")}{result[7:8][0]}')
             counter[0] += 1  # increment payload counter
         elif not result:
             print("send() failed or timed out")
@@ -158,14 +131,9 @@ def slave(timeout=6):
             counter[0] = received[7:8][0] + 1
             # the [:6] truncates the c-string NULL termiating char
             print(
-                "Received {} bytes on pipe {}: {}{} Sent: {}{}".format(
-                    length,
-                    pipe_number,
-                    bytes(received[:6]).decode("utf-8"),
-                    received[7:8][0],
-                    bytes(buffer[:6]).decode("utf-8"),
-                    buffer[7:8][0],
-                )
+                f"Received {length} bytes on pipe {pipe_number}:",
+                f'{received[:6].decode("utf-8")}{received[7:8][0]}',
+                f'Sent: {buffer[:6].decode("utf-8")}{buffer[7:8][0]}'
             )
             start = time.monotonic()  # reset timer
             buffer = b"World \0" + bytes([counter[0]])  # build new ACK

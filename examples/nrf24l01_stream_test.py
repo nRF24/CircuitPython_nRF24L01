@@ -2,55 +2,34 @@
 Example of library usage for streaming multiple payloads.
 """
 import time
+import board
+from digitalio import DigitalInOut
 
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
-
-# import wrappers to imitate circuitPython's DigitalInOut
-from circuitpython_nrf24l01.wrapper import DigitalInOut
-
-# RPiDIO is wrapper for RPi.GPIO on Linux
-# DigitalInOut is a wrapper for machine.Pin() on MicroPython
-#   or simply digitalio.DigitalInOut on CircuitPython and Linux
 
 # default values that allow using no radio module (for testing only)
 SPI_BUS = None
 CSN_PIN = None
 CE_PIN = None
 
-try:  # on CircuitPython & Linux
-    import board
+try:  # on Linux
+    import spidev
 
-    try:  # on Linux
-        import spidev
+    SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
+    CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
+    CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
 
-        SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
-        CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
-        CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
+except ImportError:  # on CircuitPython only
+    # using board.SPI() automatically selects the MCU's
+    # available SPI pins, board.SCK, board.MOSI, board.MISO
+    SPI_BUS = board.SPI()  # init spi bus object
 
-    except ImportError:  # on CircuitPython only
-        # using board.SPI() automatically selects the MCU's
-        # available SPI pins, board.SCK, board.MOSI, board.MISO
-        SPI_BUS = board.SPI()  # init spi bus object
+    # change these (digital output) pins accordingly
+    CE_PIN = DigitalInOut(board.D4)
+    CSN_PIN = DigitalInOut(board.D5)
 
-        # change these (digital output) pins accordingly
-        CE_PIN = DigitalInOut(board.D4)
-        CSN_PIN = DigitalInOut(board.D5)
-
-except ImportError:  # on MicroPython
-    import machine
-
-    # the argument passed here changes according to the board used
-    SPI_BUS = machine.SPI(1)
-
-    # instantiate the integers representing micropython pins as
-    # DigitalInOut compatible objects
-    CSN_PIN = DigitalInOut(5)
-    CE_PIN = DigitalInOut(4)
-
-except NotImplementedError: # running on PC (no GPIO)
-    pass  # using a shim
 
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
@@ -117,9 +96,8 @@ def master(count=1, size=32):  # count = 5 will transmit the list 5 times
         for r in result:  # tally the resulting success rate
             successful += 1 if r else 0
     print(
-        "successfully sent {}% ({}/{})".format(
-            successful / (size * count) * 100, successful, size * count
-        )
+        f"successfully sent {successful / (size * count) * 100}%,"
+        f"({successful}/{size * count})"
     )
 
 
@@ -159,9 +137,8 @@ def master_fifo(count=1, size=32):
         nrf.ce_pin = False
         end_timer = time.monotonic_ns()  # end timer
         print(
-            "Transmission took {} us with {} failures detected.".format(
-                (end_timer - start_timer) / 1000, failures
-            )
+            f"Transmission took {(end_timer - start_timer) / 1000} us",
+            "with {failures} failures detected."
         )
 
 
@@ -175,7 +152,7 @@ def slave(timeout=5):
             count += 1
             # retreive the received packet's payload
             buffer = nrf.read()  # clears flags & empties RX FIFO
-            print("Received: {} - {}".format(buffer, count))
+            print(f"Received: {buffer} - {count}")
             start_timer = time.monotonic()  # reset timer on every RX payload
 
     # recommended behavior is to keep in TX mode while idle
@@ -189,10 +166,8 @@ def set_role():
     user_input = (
         input(
             "*** Enter 'R' for receiver role.\n"
-            "*** Enter 'T' for transmitter role (using 1 level"
-            " of the TX FIFO).\n"
-            "*** Enter 'F' for transmitter role (using all 3 levels"
-            " of the TX FIFO).\n"
+            "*** Enter 'T' for transmitter role (using 1 level  of the TX FIFO).\n"
+            "*** Enter 'F' for transmitter role (using all 3 levels of the TX FIFO).\n"
             "*** Enter 'Q' to quit example.\n"
         )
         or "?"
@@ -224,8 +199,6 @@ if __name__ == "__main__":
         print(" Keyboard Interrupt detected. Powering down radio...")
         nrf.power = False
 else:
-    print(
-        "    Run slave() on receiver\n    Run master() on transmitter to use"
-        " 1 level of the TX FIFO\n    Run master_fifo() on transmitter to use"
-        " all 3 levels of the TX FIFO"
-    )
+    print("    Run slave() on receiver")
+    print("    Run master() on transmitter to use 1 level of the TX FIFO")
+    print("    Run master_fifo() on transmitter to use all 3 levels of the TX FIFO")

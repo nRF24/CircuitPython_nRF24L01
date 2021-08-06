@@ -215,30 +215,28 @@ class NetworkMixin(RadoMixin):
         if not network_only:
             self._rf24.print_details(False)
         print(
-            "Network frame_buf contents:\n    Header is {}. Message contains:\n\t"
+            f"Network frame_buf contents:\n    "
+            f"Header is {self.frame_buf.header.to_string()}. Message contains:\n\t",
             "{}".format(
-                self.frame_buf.header.to_string(),
                 "an empty buffer"
                 if not self.frame_buf.message
-                else address_repr(self.frame_buf.message, 0, " "),
+                else address_repr(self.frame_buf.message, 0, " ")
             )
         )
-        print("Return on system messages__{}".format(bool(self.ret_sys_msg)))
-        print("Allow network multicasts___{}".format(bool(self.allow_multicast)))
+        print(f"Return on system messages__{bool(self.ret_sys_msg)}")
+        print(f"Allow network multicasts___{bool(self.allow_multicast)}")
         print(
-            "Multicast relay____________{}".format(
-                "Enabled" if self._relay_enabled else "Disabled"
-            )
+            f"Multicast relay____________"
+            f'{"Enabled" if self._relay_enabled else "Disabled"}'
         )
         print(
-            "Network fragmentation______{}".format(
-                "Enabled" if self._frag_enabled else "Disabled"
-            )
+            f"Network fragmentation______"
+            f'{("Enabled" if self._frag_enabled else "Disabled")}'
         )
-        print("Network max message length_{} bytes".format(self.max_message_length))
-        print("Network TX timeout_________{} milliseconds".format(self.tx_timeout))
-        print("Network Rounting timeout___{} milliseconds".format(self.route_timeout))
-        print("Network node address_______{}".format(oct(self._addr)))
+        print(f"Network max message length_{self.max_message_length} bytes")
+        print(f"Network TX timeout_________{self.tx_timeout} milliseconds")
+        print(f"Network Rounting timeout___{self.route_timeout} milliseconds")
+        print(f"Network node address_______{oct(self._addr)}")
         if dump_pipes:
             self._rf24.print_pipes()
 

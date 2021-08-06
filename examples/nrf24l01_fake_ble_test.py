@@ -5,6 +5,8 @@ This example uses the nRF24L01 as a 'fake' BLE Beacon
         error when loading 'fake_ble.mpy'
 """
 import time
+import board
+from digitalio import DigitalInOut
 from circuitpython_nrf24l01.fake_ble import (
     chunk,
     FakeBLE,
@@ -14,49 +16,27 @@ from circuitpython_nrf24l01.fake_ble import (
 )
 from circuitpython_nrf24l01.rf24 import address_repr
 
-# import wrappers to imitate circuitPython's DigitalInOut
-from circuitpython_nrf24l01.wrapper import DigitalInOut
-
-# DigitalInOut is a wrapper for machine.Pin() on MicroPython
-#   or simply digitalio.DigitalInOut on CircuitPython and Linux
-
 # default values that allow using no radio module (for testing only)
 SPI_BUS = None
 CSN_PIN = None
 CE_PIN = None
 
-try:  # on CircuitPython & Linux
-    import board
+try:  # on Linux
+    import spidev
 
-    try:  # on Linux
-        import spidev
+    SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
+    CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
+    CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
 
-        SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
-        CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
-        CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
+except ImportError:  # on CircuitPython only
+    # using board.SPI() automatically selects the MCU's
+    # available SPI pins, board.SCK, board.MOSI, board.MISO
+    SPI_BUS = board.SPI()  # init spi bus object
 
-    except ImportError:  # on CircuitPython only
-        # using board.SPI() automatically selects the MCU's
-        # available SPI pins, board.SCK, board.MOSI, board.MISO
-        SPI_BUS = board.SPI()  # init spi bus object
+    # change these (digital output) pins accordingly
+    CE_PIN = DigitalInOut(board.D4)
+    CSN_PIN = DigitalInOut(board.D5)
 
-        # change these (digital output) pins accordingly
-        CE_PIN = DigitalInOut(board.D4)
-        CSN_PIN = DigitalInOut(board.D5)
-
-except ImportError:  # on MicroPython
-    import machine
-
-    # the argument passed here changes according to the board used
-    SPI_BUS = machine.SPI(1)
-
-    # instantiate the integers representing micropython pins as
-    # DigitalInOut compatible objects
-    CSN_PIN = DigitalInOut(5)
-    CE_PIN = DigitalInOut(4)
-
-except NotImplementedError: # running on PC (no GPIO)
-    pass  # using a shim
 
 # initialize the nRF24L01 on the spi bus object as a BLE compliant radio
 nrf = FakeBLE(SPI_BUS, CSN_PIN, CE_PIN)
@@ -178,9 +158,8 @@ def slave(timeout=6):
         if nrf.available():
             result = nrf.read()
             print(
-                "recevied payload from MAC address {}".format(
-                    address_repr(result.mac, delimit=":")
-                )
+                "recevied payload from MAC address",
+                address_repr(result.mac, delimit=":")
             )
             if result.name is not None:
                 print("\tdevice name:", result.name)
@@ -238,9 +217,7 @@ if __name__ == "__main__":
         print(" Keyboard Interrupt detected. Powering down radio...")
         nrf.power = False
 else:
-    print(
-        "    Run master() to broadcast the device name, pa_level, & battery "
-        "charge\n    Run send_temp() to broadcast the device name & a "
-        "temperature\n    Run send_url() to broadcast a custom URL link\n"
-        "    Run slave() to receive BLE payloads."
-    )
+    print("    Run master() to broadcast the device name, pa_level, & battery charge")
+    print("    Run send_temp() to broadcast the device name & a temperature")
+    print("    Run send_url() to broadcast a custom URL link")
+    print("    Run slave() to receive BLE payloads.")

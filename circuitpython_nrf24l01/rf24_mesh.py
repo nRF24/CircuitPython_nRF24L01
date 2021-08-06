@@ -75,8 +75,8 @@ class RF24MeshNoMaster(NetworkMixin):
     def print_details(self, dump_pipes=False, network_only=False):
         """See RF24.print_details() and Shared Networking API docs"""
         super().print_details(False, network_only)
-        print("Allow children_____________{}".format(self._parenthood))
-        print("Network node id____________{}".format(self.node_id))
+        print(f"Network node id____________{self.node_id}")
+        print(f"Mesh node allows children__{self._parenthood}")
         if dump_pipes:
             self._rf24.print_pipes()
 
@@ -384,7 +384,7 @@ class RF24Mesh(RF24MeshNoMaster):
         if not self._id and self.dhcp_dict:  # only on master node
             print("DHCP List:\n    ID\tAddress\n    ---\t-------")
             for n_id, addr in self.dhcp_dict.items():
-                print("    {}\t{}".format(n_id, oct(addr)))
+                print(f"    {n_id}\t{oct(addr)}")
         if dump_pipes:
             self._rf24.print_pipes()
 

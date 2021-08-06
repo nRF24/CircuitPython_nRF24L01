@@ -3,54 +3,33 @@ Example of using the library manually send Acknowledgement (ACK)
 messages without using the nRF24L01's ACK payloads feature.
 """
 import time
+import board
+from digitalio import DigitalInOut
 
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
-
-# import wrappers to imitate circuitPython's DigitalInOut
-from circuitpython_nrf24l01.wrapper import DigitalInOut
-
-# DigitalInOut is a wrapper for machine.Pin() on MicroPython
-#   or simply digitalio.DigitalInOut on CircuitPython and Linux
 
 # default values that allow using no radio module (for testing only)
 SPI_BUS = None
 CSN_PIN = None
 CE_PIN = None
 
-try:  # on CircuitPython & Linux
-    import board
+try:  # on Linux
+    import spidev
 
-    try:  # on Linux
-        import spidev
+    SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
+    CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
+    CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
 
-        SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
-        CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
-        CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
+except ImportError:  # on CircuitPython only
+    # using board.SPI() automatically selects the MCU's
+    # available SPI pins, board.SCK, board.MOSI, board.MISO
+    SPI_BUS = board.SPI()  # init spi bus object
 
-    except ImportError:  # on CircuitPython only
-        # using board.SPI() automatically selects the MCU's
-        # available SPI pins, board.SCK, board.MOSI, board.MISO
-        SPI_BUS = board.SPI()  # init spi bus object
-
-        # change these (digital output) pins accordingly
-        CE_PIN = DigitalInOut(board.D4)
-        CSN_PIN = DigitalInOut(board.D5)
-
-except ImportError:  # on MicroPython
-    import machine
-
-    # the argument passed here changes according to the board used
-    SPI_BUS = machine.SPI(1)
-
-    # instantiate the integers representing micropython pins as
-    # DigitalInOut compatible objects
-    CSN_PIN = DigitalInOut(5)
-    CE_PIN = DigitalInOut(4)
-
-except NotImplementedError: # running on PC (no GPIO)
-    pass  # using a shim
+    # change these (digital output) pins accordingly
+    CE_PIN = DigitalInOut(board.D4)
+    CSN_PIN = DigitalInOut(board.D5)
 
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
@@ -110,12 +89,9 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             nrf.listen = False  # put the radio back in TX mode
             end_timer = time.monotonic_ns()  # stop timer
             print(
-                "Transmission successful! Time to transmit: "
-                "{} us. Sent: {}{}".format(
-                    int((end_timer - start_timer) / 1000),
-                    buffer[:6].decode("utf-8"),
-                    counter[0],
-                ),
+                "Transmission successful! Time to transmit:",
+                f"{int((end_timer - start_timer) / 1000)} us. Sent:",
+                f'{buffer[:6].decode("utf-8")}{counter[0]}',
                 end=" ",
             )
             if nrf.pipe is None:  # is there a payload?
@@ -128,12 +104,8 @@ def master(count=5):  # count = 5 will only transmit 5 packets
                 # save new counter from response
                 counter[0] = received[7:8][0]
                 print(
-                    "Receieved {} bytes with pipe {}: {}{}".format(
-                        length,
-                        pipe_number,
-                        bytes(received[:6]).decode("utf-8"),  # convert to str
-                        counter[0],
-                    )
+                    f"Receieved {length} bytes with pipe {pipe_number}:",
+                    f'{bytes(received[:6]).decode("utf-8")}{counter[0]}'
                 )
         count -= 1
         # make example readable in REPL by slowing down transmissions
@@ -160,12 +132,8 @@ def slave(timeout=6):
                 result = nrf.send(b"World \0" + bytes([counter[0]]))
             nrf.listen = True  # put the radio back in RX mode
             print(
-                "Received {} on pipe {}: {}{} Sent:".format(
-                    length,
-                    pipe,
-                    bytes(received[:6]).decode("utf-8"),  # convert to str
-                    received[7:8][0],
-                ),
+                f"Received {length} on pipe {pipe}:",
+                f'{bytes(received[:6]).decode("utf-8")}{received[7:8][0]} Sent:',
                 end=" ",
             )
             if not result:

@@ -4,54 +4,34 @@ Received Power Detection (RPD) to scan for possible interference.
 This example does not require a counterpart node.
 """
 import time
+import board
+from digitalio import DigitalInOut
 
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
-
-# import wrappers to imitate circuitPython's DigitalInOut
-from circuitpython_nrf24l01.wrapper import DigitalInOut
-
-# DigitalInOut is a wrapper for machine.Pin() on MicroPython
-#   or simply digitalio.DigitalInOut on CircuitPython and Linux
 
 # default values that allow using no radio module (for testing only)
 SPI_BUS = None
 CSN_PIN = None
 CE_PIN = None
 
-try:  # on CircuitPython & Linux
-    import board
+try:  # on Linux
+    import spidev
 
-    try:  # on Linux
-        import spidev
+    SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
+    CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
+    CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
 
-        SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
-        CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
-        CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
+except ImportError:  # on CircuitPython only
+    # using board.SPI() automatically selects the MCU's
+    # available SPI pins, board.SCK, board.MOSI, board.MISO
+    SPI_BUS = board.SPI()  # init spi bus object
 
-    except ImportError:  # on CircuitPython only
-        # using board.SPI() automatically selects the MCU's
-        # available SPI pins, board.SCK, board.MOSI, board.MISO
-        SPI_BUS = board.SPI()  # init spi bus object
+    # change these (digital output) pins accordingly
+    CE_PIN = DigitalInOut(board.D4)
+    CSN_PIN = DigitalInOut(board.D5)
 
-        # change these (digital output) pins accordingly
-        CE_PIN = DigitalInOut(board.D4)
-        CSN_PIN = DigitalInOut(board.D5)
-
-except ImportError:  # on MicroPython
-    import machine
-
-    # the argument passed here changes according to the board used
-    SPI_BUS = machine.SPI(1)
-
-    # instantiate the integers representing micropython pins as
-    # DigitalInOut compatible objects
-    CSN_PIN = DigitalInOut(5)
-    CE_PIN = DigitalInOut(4)
-
-except NotImplementedError: # running on PC (no GPIO)
-    pass  # using a shim
 
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
@@ -95,7 +75,7 @@ def scan(timeout=30):
         # ouptut the signal counts per channel
         sig_cnt = signals[curr_channel]
         print(
-            hex(min(0x0F, sig_cnt))[2:] if sig_cnt else "-",
+            ("%X" % min(15, sig_cnt)) if sig_cnt else "-",
             sep="",
             end="" if curr_channel < 125 else "\r",
         )
@@ -103,7 +83,7 @@ def scan(timeout=30):
     while curr_channel < len(signals) - 1:
         curr_channel += 1
         sig_cnt = signals[curr_channel]
-        print(hex(min(0x0F, sig_cnt))[2:] if sig_cnt else "-", sep="", end="")
+        print(("%X" % min(15, sig_cnt)) if sig_cnt else "-", sep="", end="")
     print("")
 
 
@@ -112,7 +92,7 @@ def set_role():
     specified using a space delimiter (e.g. 'S 10' calls `scan(10)`)
     """
     user_input = (
-        input("*** Enter 'S' to perform scan.\n" "*** Enter 'Q' to quit example.\n")
+        input("*** Enter 'S' to perform scan.\n*** Enter 'Q' to quit example.\n")
         or "?"
     )
     user_input = user_input.split()

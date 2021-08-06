@@ -3,25 +3,16 @@ An all-purpose example of using the nRF24L01 transceiver in a network of nodes.
 """
 import time
 import struct
+import board
+from digitalio import DigitalInOut
 from circuitpython_nrf24l01.network.constants import MAX_FRAG_SIZE, NETWORK_DEFAULT_ADDR
 
-# import wrappers to imitate circuitPython's DigitalInOut
-from circuitpython_nrf24l01.wrapper import DigitalInOut
-
-# DigitalInOut is a wrapper for machine.Pin() on MicroPython
-#   or simply digitalio.DigitalInOut on CircuitPython and Linux
-
 IS_MESH = (
-    (
-        input(
-            "    nrf24l01_network_test example\n"
-            "Would you like to run as a mesh network node (y/n)? Defaults to 'Y' "
-        )
-        or "Y"
-    )
-    .upper()
-    .startswith("Y")
-)
+    input(
+        "    nrf24l01_network_test example\n"
+        "Would you like to run as a mesh network node (y/n)? Defaults to 'Y' "
+    ) or "Y"
+).upper().startswith("Y")
 
 # to use different addresses on a set of radios, we need a variable to
 # uniquely identify which address this radio will use
@@ -59,38 +50,21 @@ SPI_BUS = None
 CSN_PIN = None
 CE_PIN = None
 
-try:  # on CircuitPython & Linux
-    import board
+try:  # on Linux
+    import spidev
 
-    try:  # on Linux
-        import spidev
+    SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
+    CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
+    CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
 
-        SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
-        CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
-        CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
+except ImportError:  # on CircuitPython only
+    # using board.SPI() automatically selects the MCU's
+    # available SPI pins, board.SCK, board.MOSI, board.MISO
+    SPI_BUS = board.SPI()  # init spi bus object
 
-    except ImportError:  # on CircuitPython only
-        # using board.SPI() automatically selects the MCU's
-        # available SPI pins, board.SCK, board.MOSI, board.MISO
-        SPI_BUS = board.SPI()  # init spi bus object
-
-        # change these (digital output) pins accordingly
-        CE_PIN = DigitalInOut(board.D4)
-        CSN_PIN = DigitalInOut(board.D5)
-
-except ImportError:  # on MicroPython
-    import machine
-
-    # the argument passed here changes according to the board used
-    SPI_BUS = machine.SPI(1)
-
-    # instantiate the integers representing micropython pins as
-    # DigitalInOut compatible objects
-    CSN_PIN = DigitalInOut(5)
-    CE_PIN = DigitalInOut(4)
-
-except NotImplementedError:  # running on PC (no GPIO)
-    pass  # using a shim
+    # change these (digital output) pins accordingly
+    CE_PIN = DigitalInOut(board.D4)
+    CSN_PIN = DigitalInOut(board.D5)
 
 
 # initialize this node as the network
@@ -158,9 +132,9 @@ def emit(node=not THIS_NODE, frag=False, count=5, interval=1):
             end = time.monotonic_ns()
             failures += not result
             print(
-                "Sending {} (len {})...".format(packets_sent[0], len(message)),
+                f"Sending {packets_sent[0]} (len {len(message)})...",
                 "ok." if result else "failed.",
-                "Transmission took %d ms" % int((end - start) / 1000000),
+                f"Transmission took {int((end - start) / 1000000)} ms",
             )
 
 
@@ -196,17 +170,15 @@ def set_role():
         "*** Enter 'E <node number>' for emitter role.\n"
         "*** Enter 'E <node number> 1' to emit fragmented messages.\n"
     )
-    if IS_MESH and nrf.node_address == NETWORK_DEFAULT_ADDR:
-        prompt = (
-            "*** Mesh node not connected.\n"
-            "*** Enter 'C' to connect to to master node.\n"
-            "*** Enter 'C <timeout seconds>' to change the timeout value.\n"
-        )
+    if IS_MESH :
+        if nrf.node_address == NETWORK_DEFAULT_ADDR:
+            prompt += "!!! Mesh node not connected.\n"
+        prompt += "*** Enter 'C' to connect to to mesh master node.\n"
     user_input = input(prompt + "*** Enter 'Q' to quit example.\n") or "?"
     user_input = user_input.split()
     if user_input[0].upper().startswith("C"):
         print("Connecting to mesh network...", end=" ")
-        result = nrf.renew_address(int(user_input[1])) is not None
+        result = nrf.renew_address(*[int(x) for x in user_input[1:2]]) is not None
         print(("assigned address " + oct(nrf.node_address)) if result else "failed.")
         return True
     if user_input[0].upper().startswith("I"):

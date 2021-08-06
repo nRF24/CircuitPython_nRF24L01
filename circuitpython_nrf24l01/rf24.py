@@ -410,103 +410,76 @@ class RF24:
         d_rate = self._rf_setup & 0x28
         d_rate = (2 if d_rate == 8 else 250) if d_rate else 1
         _pa_level = (3 - ((self._rf_setup & 6) >> 1)) * -6
+        dyn_p = bin(self._dyn_pl)
+        if self._dyn_pl == 0x3F or not self._dyn_pl:
+            dyn_p = "_Enabled" if self._dyn_pl else "Disabled"
+        else:
+            dyn_p = "0b" + "0" * (8 - len(dyn_p)) + dyn_p[2:]
+        auto_a = bin(self._aa)
+        if self._aa == 0x3F or not self._aa:
+            auto_a = "Enabled" if self._aa else "Disabled"
+        else:
+            auto_a = "0b" + "0" * (8 - len(auto_a)) + auto_a[2:]
+        pwr = "Off"
+        if self._config & 2:
+            pwr = "Standby-II" if self.ce_pin else "Standby-I"
 
-        print("Is a plus variant_________{}".format(self.is_plus_variant))
+        print(f"Is a plus variant_________{self.is_plus_variant}")
         print(
-            "Channel___________________{} ~ {} GHz".format(
-                self._channel, (self._channel + 2400) / 1000
-            )
+            f"Channel___________________{self._channel}",
+            f"~ {(self._channel + 2400) / 1000} GHz"
         )
         print(
-            "RF Data Rate______________{}".format(d_rate),
-            "Mbps" if d_rate != 250 else "Kbps",
+            f"RF Data Rate______________{d_rate}", "Mbps" if d_rate != 250 else "Kbps"
         )
-        print("RF Power Amplifier________{} dbm".format(_pa_level))
+        print(f"RF Power Amplifier________{_pa_level} dbm")
         print(
-            "RF Low Noise Amplifier____{}".format(
-                "Enabled" if bool(self._rf_setup & 1) else "Disabled"
-            )
+            "RF Low Noise Amplifier____"
+            + "Enabled" if bool(self._rf_setup & 1) else "Disabled"
         )
-        print("CRC bytes_________________{}".format(_crc))
-        print("Address length____________{} bytes".format(self._addr_len))
-        print("TX Payload lengths________{} bytes".format(self._pl_len[0]))
+        print(f"CRC bytes_________________{_crc}")
+        print(f"Address length____________{self._addr_len} bytes")
+        print(f"TX Payload lengths________{self._pl_len[0]} bytes")
         print(
-            "Auto retry delay__________{} microseconds".format(
-                ((self._rf_setup & 0xF0) >> 4) * 250 + 250
-            )
+            f"Auto retry delay__________{((self._rf_setup & 0xF0) >> 4) * 250 + 250}",
+            "microseconds"
         )
-        print("Auto retry attempts_______{} maximum".format(self._rf_setup & 0x0F))
-        print("Re-use TX FIFO____________{}".format(bool(_fifo & 64)))
+        print(f"Auto retry attempts_______{self._rf_setup & 0x0F} maximum")
+        print(f"Re-use TX FIFO____________{bool(_fifo & 64)}")
         print(
-            "Packets lost on current channel_____________________{}".format(
-                observer >> 4
-            )
+            f"Packets lost on current channel_____________________{observer >> 4}"
         )
         print(
-            "Retry attempts made for last transmission___________{}".format(
-                observer & 0xF
-            )
+            f"Retry attempts made for last transmission___________{observer & 0xF}"
         )
         print(
-            "IRQ on Data Ready__{}    Data Ready___________{}".format(
-                "_Enabled" if not self._config & 0x40 else "Disabled", self.irq_dr
-            )
+            f'IRQ on Data Ready__{"Disabled" if self._config & 64 else "_Enabled"}',
+            f"   Data Ready___________{self.irq_dr}"
         )
         print(
-            "IRQ on Data Fail___{}    Data Failed__________{}".format(
-                "_Enabled" if not self._config & 0x10 else "Disabled", self.irq_df
-            )
+            f'IRQ on Data Fail___{"Disabled" if self._config & 16 else "_Enabled"}',
+            f"   Data Failed__________{self.irq_df}"
         )
         print(
-            "IRQ on Data Sent___{}    Data Sent____________{}".format(
-                "_Enabled" if not self._config & 0x20 else "Disabled", self.irq_ds
-            )
+            f'IRQ on Data Sent___{"Disabled" if self._config & 32 else "_Enabled"}',
+            f"   Data Sent____________{self.irq_ds}"
         )
         print(
-            "TX FIFO full__________{}    TX FIFO empty________{}".format(
-                "_True" if _fifo & 0x20 else "False",
-                "True" if _fifo & 0x10 else "False",
-            )
+            f'TX FIFO full__________{"_True" if _fifo & 0x20 else "False"}',
+            f"   TX FIFO empty________{bool(_fifo & 0x10)}"
         )
         print(
-            "RX FIFO full__________{}    RX FIFO empty________{}".format(
-                "_True" if _fifo & 2 else "False",
-                "True" if _fifo & 1 else "False",
-            )
+            f'RX FIFO full__________{"_True" if _fifo & 2 else "False"}',
+            f"   RX FIFO empty________{bool(_fifo & 1)}"
         )
         print(
-            "Ask no ACK_________{}    Custom ACK Payload___{}".format(
-                "_Allowed" if self._features & 1 else "Disabled",
-                "Enabled" if self._features & 2 else "Disabled",
-            )
+            f'Ask no ACK_________{"_Allowed" if self._features & 1 else "Disabled"}',
+            f'   Custom ACK Payload___{"Enabled" if self._features & 2 else "Disabled"}'
         )
+        print(f"Dynamic Payloads___{dyn_p}    Auto Acknowledgment__{auto_a}")
         print(
-            "Dynamic Payloads___{}    Auto Acknowledgment__{}".format(
-                "_Enabled"
-                if self._dyn_pl == 0x3F
-                else (
-                    bin(self._dyn_pl).replace(
-                        "b", "b" + "0" * (8 - len(bin(self._dyn_pl)))
-                    )
-                    if self._dyn_pl
-                    else "Disabled"
-                ),
-                "Enabled"
-                if self._aa == 0x3F
-                else (
-                    bin(self._aa).replace("b", "b" + "0" * (8 - len(bin(self._aa))))
-                    if self._aa
-                    else "Disabled"
-                ),
-            )
-        )
-        print(
-            "Primary Mode_____________{}X    Power Mode___________{}".format(
-                "R" if self._config & 1 else "T",
-                ("Standby-II" if self.ce_pin else "Standby-I")
-                if self._config & 2
-                else "Off",
-            )
+            f'Primary Mode_____________{"R" if self._config & 1 else "T"}X',
+            f"   Power Mode___________{pwr}"
         )
         if dump_pipes:
             self.print_pipes()
@@ -523,18 +496,15 @@ class RF24:
                 else:
                     self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
                 self._pl_len[i] = self._reg_read(RX_PL_LENG + i)
-        print("TX address____________ 0x" + address_repr(self.address()))
+        print(f"TX address____________ 0x{address_repr(self.address())}")
         for i in range(6):
             is_open = self._open_pipes & (1 << i)
             print(
-                "Pipe {} ({}) bound: {}".format(
-                    i,
-                    " open " if is_open else "closed",
-                    "0x" + address_repr(self.address(i)),
-                )
+                f'Pipe {i} ({" open " if is_open else "closed"}) bound:',
+                f"0x{address_repr(self.address(i))}"
             )
             if is_open and not self._dyn_pl & (1 << i):
-                print("\t\texpecting {} byte static payloads".format(self._pl_len[i]))
+                print(f"\t\texpecting {self._pl_len[i]} byte static payloads")
 
     @property
     def is_plus_variant(self):
