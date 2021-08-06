@@ -1,3 +1,3 @@
 Adafruit-Blinka
 adafruit-circuitpython-busdevice
-SpiDev
+spidev; sys_platform == 'posix'

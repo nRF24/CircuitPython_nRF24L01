@@ -66,23 +66,20 @@ class RF24:
         # pre-configure the CONFIGURE register:
         #   0x0E = all IRQs enabled, CRC is 2 bytes, and power up in TX mode
         self._status, self._config, self._spi = (0, 0x0E, None)
-        if spi is not None:  # setup SPI
-            if type(spi).__name__.endswith("SpiDev"):
-                self._spi = SPIDevCtx(spi, csn, spi_frequency=spi_frequency)
+        # setup SPI
+        if type(spi).__name__.endswith("SpiDev"):
+            self._spi = SPIDevCtx(spi, csn, spi_frequency=spi_frequency)
+        else:
+            self._spi = SPIDevice(spi, chip_select=csn, baudrate=spi_frequency)
+        self._reg_write(CONFIGURE, self._config)
+        hw_check = self._reg_read(CONFIGURE)
+        if hw_check != self._config:
+            raise RuntimeError("radio hardware not responding")
+        for i in range(6):  # capture RX addresses from registers
+            if i < 2:
+                self._pipes[i] = self._reg_read_bytes(RX_ADDR_P0 + i)
             else:
-                self._spi = SPIDevice(spi, chip_select=csn, baudrate=spi_frequency)
-            self._reg_write(CONFIGURE, self._config)
-            hw_check = self._reg_read(CONFIGURE)
-            if hw_check != self._config:
-                raise RuntimeError(
-                    "nRF24L01 Hardware not responding; expected {}, got "
-                    "{}".format(hex(self._config), hex(hw_check))
-                )
-            for i in range(6):  # capture RX addresses from registers
-                if i < 2:
-                    self._pipes[i] = self._reg_read_bytes(RX_ADDR_P0 + i)
-                else:
-                    self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
+                self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
         # test is nRF24L01 is a plus variant using a command specific to
         # non-plus variants
         self._open_pipes, self._is_plus_variant = (0, False)  # close all RX pipes
@@ -118,7 +115,7 @@ class RF24:
             self.clear_status_flags()
 
     def __enter__(self):
-        self.ce_pin = False
+        self._ce_pin.value = False
         self._config |= 2
         self._reg_write(CONFIGURE, self._config)
         # time.sleep(0.00015)  # let the rest of this function be the delay
@@ -140,7 +137,7 @@ class RF24:
         return self
 
     def __exit__(self, *exc):
-        self.ce_pin = False
+        self._ce_pin.value = False
         self._config &= 0x7D  # power off radio
         self._reg_write(CONFIGURE, self._config)
         time.sleep(0.00016)
@@ -149,29 +146,26 @@ class RF24:
     @property
     def ce_pin(self):
         """Control the radio's CE pin (for advanced usage)"""
-        return self._ce_pin.value if self._ce_pin is not None else False
+        return self._ce_pin.value
 
     @ce_pin.setter
     def ce_pin(self, val):
-        if self._ce_pin is not None:
-            self._ce_pin.value = val
+        self._ce_pin.value = val
 
     def _reg_read(self, reg):
         in_buf = bytearray([0, 0])
-        if self._spi is not None:
-            with self._spi as spi:
-                # time.sleep(0.000005)
-                spi.write_readinto(bytes([reg, 0]), in_buf)
+        with self._spi as spi:
+            # time.sleep(0.000005)
+            spi.write_readinto(bytes([reg, 0]), in_buf)
         self._status = in_buf[0]
         # print("SPI read 1 byte from", ("%02X" % reg), ("%02X" % in_buf[1]))
         return in_buf[1]
 
     def _reg_read_bytes(self, reg, buf_len=5):
         in_buf = bytearray(buf_len + 1)
-        if self._spi is not None:
-            with self._spi as spi:
-                # time.sleep(0.000005)
-                spi.write_readinto(bytes([reg] + [0] * buf_len), in_buf)
+        with self._spi as spi:
+            # time.sleep(0.000005)
+            spi.write_readinto(bytes([reg] + [0] * buf_len), in_buf)
         self._status = in_buf[0]
         # print("SPI read {} bytes from {} {}".format(
         #     buf_len, ("%02X" % reg), address_repr(in_buf[1:])
@@ -180,10 +174,9 @@ class RF24:
 
     def _reg_write_bytes(self, reg, out_buf):
         in_buf = bytearray(len(out_buf) + 1)
-        if self._spi is not None:
-            with self._spi as spi:
-                # time.sleep(0.000005)
-                spi.write_readinto(bytes([0x20 | reg]) + out_buf, in_buf)
+        with self._spi as spi:
+            # time.sleep(0.000005)
+            spi.write_readinto(bytes([0x20 | reg]) + out_buf, in_buf)
         self._status = in_buf[0]
         # print("SPI write {} bytes to {} {}".format(
         #     len(out_buf), ("%02X" % reg), address_repr(out_buf)
@@ -194,10 +187,9 @@ class RF24:
         if value is not None:
             out_buf = bytes([(0x20 if reg != 0x50 else 0) | reg, value])
         in_buf = bytearray(len(out_buf))
-        if self._spi is not None:
-            with self._spi as spi:
-                # time.sleep(0.000005)
-                spi.write_readinto(out_buf, in_buf)
+        with self._spi as spi:
+            # time.sleep(0.000005)
+            spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         # if reg != 0xFF:
         #     print(
@@ -264,12 +256,12 @@ class RF24:
 
     @listen.setter
     def listen(self, is_rx):
-        self.ce_pin = 0
+        self._ce_pin.value = False
         self._config = self._config & 0xFC | (2 + bool(is_rx))
         self._reg_write(CONFIGURE, self._config)
         start_timer = time.monotonic_ns()
         if is_rx:
-            self.ce_pin = 1
+            self._ce_pin.value = True
             if (
                 self._pipe0_read_addr is not None
                 and self._pipe0_read_addr != self.address(0)
@@ -317,7 +309,7 @@ class RF24:
 
     def send(self, buf, ask_no_ack=False, force_retry=0, send_only=False):
         """This blocking function is used to transmit payload(s)."""
-        self.ce_pin = 0
+        self._ce_pin.value = False
         if isinstance(buf, (list, tuple)):
             result = []
             for b in buf:
@@ -329,9 +321,8 @@ class RF24:
             self.flush_rx()
         up_cnt = 0
         self.write(buf, ask_no_ack)
-        if self._spi is not None:
-            while not self._status & 0x30:
-                up_cnt += self.update()
+        while not self._status & 0x30:
+            up_cnt += self.update()
         result = bool(self._status & 0x20)
         # print("send did {} updates. flags: {}".format(up_cnt, self._status >> 4))
         while force_retry and not result:
@@ -339,7 +330,7 @@ class RF24:
             force_retry -= 1
         if self._status & 0x60 == 0x60 and not send_only:
             result = self.read()
-        # self.ce_pin = 0
+        # self._ce_pin.value = False
         return result
 
     @property
@@ -389,19 +380,16 @@ class RF24:
 
     def print_details(self, dump_pipes=False):
         """This debuggung function outputs all details about the nRF24L01."""
-        observer = 0
-        _fifo = 17
-        if self._spi is not None:  # skip this if running on a Shim
-            observer = self._reg_read(8)
-            _fifo = self._reg_read(0x17)
-            self._config = self._reg_read(CONFIGURE)
-            self._rf_setup = self._reg_read(RF_PA_RATE)
-            self._retry_setup = self._reg_read(SETUP_RETR)
-            self._channel = self.channel
-            self._addr_len = self._reg_read(0x03) + 2
-            self._features = self._reg_read(TX_FEATURE)
-            self._aa = self._reg_read(AUTO_ACK)
-            self._dyn_pl = self._reg_read(DYN_PL_LEN)
+        observer = self._reg_read(8)
+        _fifo = self._reg_read(0x17)
+        self._config = self._reg_read(CONFIGURE)
+        self._rf_setup = self._reg_read(RF_PA_RATE)
+        self._retry_setup = self._reg_read(SETUP_RETR)
+        self._channel = self.channel
+        self._addr_len = self._reg_read(0x03) + 2
+        self._features = self._reg_read(TX_FEATURE)
+        self._aa = self._reg_read(AUTO_ACK)
+        self._dyn_pl = self._reg_read(DYN_PL_LEN)
         _crc = (
             (2 if self._config & 4 else 1)
             if self._aa
@@ -487,15 +475,14 @@ class RF24:
     def print_pipes(self):
         """Prints all information specific to pipe's addresses, RX state, & expected
         static payload sizes (if configured to use static payloads)."""
-        if self._spi is not None:
-            self._open_pipes = self._reg_read(OPEN_PIPES)
-            self._tx_address = self._reg_read_bytes(TX_ADDRESS)
-            for i in range(6):
-                if i < 2:
-                    self._pipes[i] = self._reg_read_bytes(RX_ADDR_P0 + i)
-                else:
-                    self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
-                self._pl_len[i] = self._reg_read(RX_PL_LENG + i)
+        self._open_pipes = self._reg_read(OPEN_PIPES)
+        self._tx_address = self._reg_read_bytes(TX_ADDRESS)
+        for i in range(6):
+            if i < 2:
+                self._pipes[i] = self._reg_read_bytes(RX_ADDR_P0 + i)
+            else:
+                self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
+            self._pl_len[i] = self._reg_read(RX_PL_LENG + i)
         print(f"TX address____________ 0x{address_repr(self.address())}")
         for i in range(6):
             is_open = self._open_pipes & (1 << i)
@@ -791,17 +778,16 @@ class RF24:
         """Manually re-send the first-out payload from TX FIFO buffers."""
         if self.fifo(True, True):
             return False
-        self.ce_pin = 0
+        self._ce_pin.value = False
         if not send_only and (self._status >> 1) < 6:
             self.flush_rx()
         self.clear_status_flags()
         # self._reg_write(0xE3)
         up_cnt = 0
-        self.ce_pin = 1
-        if self._spi is not None:
-            while not self._status & 0x30:
-                up_cnt += self.update()
-        # self.ce_pin = 0
+        self._ce_pin.value = True
+        while not self._status & 0x30:
+            up_cnt += self.update()
+        # self._ce_pin.value = False
         result = bool(self._status & 0x20)
         # print("resend did {} updates. flags: {}".format(up_cnt, self._status >> 4))
         if result and self._status & 0x40 and not send_only:
@@ -832,7 +818,7 @@ class RF24:
             self._reg_write(TX_FEATURE, self._features)
         self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
         if not write_only:
-            self.ce_pin = 1
+            self._ce_pin.value = True
         return True
 
     def flush_rx(self):
@@ -881,16 +867,16 @@ class RF24:
             self._reg_write_bytes(TX_ADDRESS, self._tx_address)
             self._reg_write_bytes(0xA0, b"\xFF" * 32)
             self.crc = 0
-            self.ce_pin = 1
+            self._ce_pin.value = 1
             time.sleep(0.001)
-            self.ce_pin = 0
+            self._ce_pin.value = 0
             self.clear_status_flags()
             self._reg_write(0x17, 0x40)
-        self.ce_pin = 1
+        self._ce_pin.value = 1
 
     def stop_carrier_wave(self):
         """Stops a continuous carrier wave test."""
-        self.ce_pin = 0
+        self._ce_pin.value = 0
         self.power = 0
         self._rf_setup &= ~0x90
         self._reg_write(RF_PA_RATE, self._rf_setup)

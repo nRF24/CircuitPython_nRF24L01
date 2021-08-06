@@ -4,16 +4,19 @@ See:
 https://packaging.python.org/en/latest/distributing.html
 https://github.com/pypa/sampleproject
 """
-from os import path
+import os
 from codecs import open as open_codec  # To use a consistent encoding
 from setuptools import setup, find_packages
 
 
-ROOT_DIR = path.abspath(path.dirname(__file__))
+ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 REPO = "https://github.com/2bndy5/CircuitPython_nRF24L01"
+DEPS = ["adafruit-blinka", "adafruit-circuitpython-busdevice"]
+if os.name == "posix":
+    DEPS.append("spidev")
 
 # Get the long description from the README file
-with open_codec(path.join(ROOT_DIR, "README.rst"), encoding="utf-8") as f:
+with open_codec(os.path.join(ROOT_DIR, "README.rst"), encoding="utf-8") as f:
     long_description = f.read()
 
 setup(
@@ -26,11 +29,7 @@ setup(
     long_description_content_type="text/x-rst",
     author="Brendan Doherty",
     author_email="2bndy5@gmail.com",
-    install_requires=[
-        "Adafruit-Blinka",
-        "adafruit-circuitpython-busdevice",
-        # "SpiDev",
-    ],
+    install_requires=DEPS,
     license="MIT",
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[

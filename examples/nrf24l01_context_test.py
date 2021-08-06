@@ -10,10 +10,8 @@ from digitalio import DigitalInOut
 from circuitpython_nrf24l01.rf24 import RF24
 from circuitpython_nrf24l01.fake_ble import FakeBLE
 
-# default values that allow using no radio module (for testing only)
-SPI_BUS = None
-CSN_PIN = None
-CE_PIN = None
+# invalid default values for scoping
+SPI_BUS, CSN_PIN, CE_PIN = (None, None, None)
 
 try:  # on Linux
     import spidev

@@ -74,18 +74,15 @@ This driver depends on:
   .. tip:: Use CircuitPython v6.3.0 or newer because faster SPI execution yields
       faster transmissions.
 * The `SpiDev <https://pypi.org/project/spidev/>`_ module is a C-extention that executes
-  SPI transactions faster than Adafruit's PureIO library (a dependency of the adafruit_blinka library).
-
-  * You can optionally use the `RPi.GPIO <https://sourceforge.net/p/raspberry-gpio-python/wiki/Home/>`_
-    library (see examples) for faster execution of digital GPIO pin manipulation.
+  SPI transactions faster than Adafruit's PureIO library (a dependency of the
+  `Adafruit_Blinka library <https://github.com/adafruit/Adafruit_Blinka>`_).
 
 The `adafruit_bus_device`, `Adafruit_Blinka library <https://github.com/adafruit/Adafruit_Blinka>`_,
 and `SpiDev <https://pypi.org/project/spidev/>`_ libraries
 are installed automatically on Linux when installing this library.
 
 .. versionadded:: v2.1.0 Added support for the
-    `SpiDev <https://pypi.org/project/spidev/>`_ module and optional
-    `RPi.GPIO <https://sourceforge.net/p/raspberry-gpio-python/wiki/Home/>`_ library
+    `SpiDev <https://pypi.org/project/spidev/>`_ module
 
 .. important:: This library supports Python 3.7 or newer because it use
     the function `time.monotonic_ns() <https://docs.python.org/3.7/library/
