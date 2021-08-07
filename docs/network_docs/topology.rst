@@ -215,7 +215,7 @@ Translating Logical to Physical
 Before translating the Logical address, a single byte is used reptitively as the
 base case for all bytes of any Physical Address. This byte is the `address_prefix`
 attribute (stored as a mutable `bytearray`) in the `RF24Network` class. By default the
-`address_prefix` has a single byte value of ``b"0xCC"``.
+`address_prefix` has a single byte value of ``b"\xCC"``.
 
 The `RF24Network` class also has a predefined list of bytes used for translating
 unique Logical addresses into unique Physical addresses. This list is called
