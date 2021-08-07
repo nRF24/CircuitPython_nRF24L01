@@ -287,7 +287,7 @@ Two networks coexisting on the same channel
     The following section is an advanced tutorial. The default values for `address_prefix`
     and `address_suffix` were carefully chosen by TMRh20 to demonstrate best practices in
     terms of choosing a data pipe's address for transmissions. Bad practices can be avoided
-    by heading ManiacBug's advice in his
+    by heeding ManiacBug's advice in his
     `detailed blog post <http://maniacalbits.blogspot.com/2013/04/rf24-addressing-nrf24l01-radios-require.html>`_
     about the topic.
 
