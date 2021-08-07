@@ -99,12 +99,6 @@ PyPI <https://pypi.org/project/circuitpython-nrf24l01/>`_. To install for curren
 
     pip3 install circuitpython-nrf24l01
 
-To install system-wide (this may be required in some cases):
-
-.. code-block:: shell
-
-    sudo pip3 install circuitpython-nrf24l01
-
 To install in a virtual environment in your current project:
 
 .. code-block:: shell
