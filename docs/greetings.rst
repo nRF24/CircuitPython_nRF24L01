@@ -85,10 +85,8 @@ are installed automatically on Linux when installing this library.
     `SpiDev <https://pypi.org/project/spidev/>`_ module
 
 .. important:: This library supports Python 3.7 or newer because it use
-    the function `time.monotonic_ns() <https://docs.python.org/3.7/library/
-    time.html#time.monotonic_ns>`_ which returns an arbitrary time "counter"
-    as an `int` of nanoseconds. CircuitPython firmware also supports
-    :py:func:`time.monotonic_ns()`.
+    the function :py:func:`time.monotonic_ns()` which returns an arbitrary time "counter"
+    as an `int` of nanoseconds. CircuitPython firmware also supports :py:func:`time.monotonic_ns()`.
 
 
 Installing from PyPI

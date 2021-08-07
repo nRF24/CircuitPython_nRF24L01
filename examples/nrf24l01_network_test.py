@@ -45,10 +45,8 @@ else:
     # from circuitpython_nrf24l01.network.structs import RF24NetworkFrame
     print("Using RF24Network class")
 
-# default values that allow using no radio module (for testing only)
-SPI_BUS = None
-CSN_PIN = None
-CE_PIN = None
+# invalid default values for scoping
+SPI_BUS, CSN_PIN, CE_PIN = (None, None, None)
 
 try:  # on Linux
     import spidev
@@ -125,10 +123,12 @@ def emit(node=not THIS_NODE, frag=False, count=5, interval=1):
                 message += struct.pack("<L", packets_sent[0])
             result = False
             start = time.monotonic_ns()
+            # pylint: disable=no-value-for-parameter
             if IS_MESH:  # send() is a little different for RF24Mesh vs RF24Network
                 result = nrf.send(node, "M", message)
             else:
                 result = nrf.send(RF24NetworkHeader(node, "T"), message)
+            # pylint: enable=no-value-for-parameter
             end = time.monotonic_ns()
             failures += not result
             print(

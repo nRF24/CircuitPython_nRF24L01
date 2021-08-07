@@ -111,6 +111,9 @@ integers and use an octal counting scheme.
 Hopefully, you should see the pattern. There can be up to a maximum of 5 network levels (that's
 0-4 ordered from lowest to highest).
 
+For a message to travel from node ``0o124`` to node ``0o3``, it must be passed through any applicable
+network levels. So, the message flows ``0o124`` -> ``0o24`` -> ``0o4`` -> ``0o0`` -> ``0o3``.
+
 A single network can potentially have a maximum of 781 nodes (all operating on the same
 :attr:`~circuitpython_nrf24l01.rf24.RF24.channel`), but for readability reasons, the following
 graph only demonstrates

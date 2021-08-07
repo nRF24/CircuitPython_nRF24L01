@@ -222,6 +222,8 @@ Fake BLE Example
 ----------------
 
 .. versionadded:: 1.2.0
+.. versionchanged:: 2.1.0
+    A new ``slave()`` function was added to demonstrate receiving BLE data.
 
 This is a test to show how to use the nRF24L01 as a BLE advertising beacon using the
 `FakeBLE` class.

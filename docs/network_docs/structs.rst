@@ -114,6 +114,9 @@ FrameQueue
 
 .. automethod:: circuitpython_nrf24l01.network.structs.FrameQueue.dequeue
 .. automethod:: circuitpython_nrf24l01.network.structs.FrameQueue.peek
+.. automethod:: circuitpython_nrf24l01.network.structs.FrameQueue.__len__
+
+    For use with Python's builtin :func:`len()`.
 
 FrameQueueFrag
 -----------------

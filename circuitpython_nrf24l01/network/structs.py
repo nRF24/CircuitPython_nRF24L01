@@ -66,7 +66,7 @@ class RF24NetworkHeader:
     __next_id = 0
 
     def unpack(self, buffer):
-        """Decode frame's header from the first 8 bytes of a frame's buffer."""
+        """Decode header data from the first 8 bytes of a frame's buffer."""
         if len(buffer) < 8:
             return False
         (
@@ -174,7 +174,7 @@ class FrameQueue:
         return None if not self._queue else self._queue.pop(0)
 
     def __len__(self):
-        """:Returns: the number of the enqueued items."""
+        """:Returns: The number of the enqueued frames."""
         return len(self._queue)
 
 class FrameQueueFrag(FrameQueue):
@@ -188,7 +188,6 @@ class FrameQueueFrag(FrameQueue):
         """Add a `RF24NetworkFrame` to the queue."""
         if frame.header.message_type in (MSG_FRAG_FIRST, MSG_FRAG_MORE, MSG_FRAG_LAST):
             if frame.header.message_type == MSG_FRAG_FIRST:
-                self._frags = RF24NetworkFrame()  # reset cache
                 self._frags.unpack(frame.pack())  # make copy not reference
                 return True
             if (
