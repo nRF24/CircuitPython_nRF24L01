@@ -167,7 +167,7 @@ def slave(timeout=6):
                 if isinstance(service_data, (bytearray, bytes)):
                     print("\traw buffer:", address_repr(service_data, False, " "))
                 else:
-                    print(repr(service_data))
+                    print("\t" + repr(service_data))
 
 
 def set_role():

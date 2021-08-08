@@ -54,6 +54,20 @@ def chunk(buf, data_type=0x16):
     return bytearray([len(buf) + 1, data_type & 0xFF]) + buf
 
 
+def whitener(buf, coef):
+    """Whiten and dewhiten data according to the given coefficient."""
+    data = bytearray(buf)
+    for i, byte in enumerate(data):
+        res, mask = (0, 1)
+        for _ in range(8):
+            if coef & 1:
+                coef ^= 0x88
+                byte ^= mask
+            mask <<= 1
+            coef >>= 1
+        data[i] = byte ^ res
+    return data
+
 def crc24_ble(data, deg_poly=0x65B, init_val=0x555555):
     """This function calculates a checksum of various sized buffers."""
     crc = init_val
@@ -227,21 +241,11 @@ class FakeBLE(RF24):
     def whiten(self, data):
         """Whitening the BLE packet data ensures there's no long repetition
         of bits."""
-        data, coef = (bytearray(data), (self._curr_freq + 37) | 0x40)
-        # print("buffer: 0x{}".format(address_repr(data)))
-        # print("Whiten Coef: {} on channel {}".format(
-        #     hex(coef), BLE_FREQ[self._curr_freq]
-        # ))
-        for i, byte in enumerate(data):
-            res, mask = (0, 1)
-            for _ in range(8):
-                if coef & 1:
-                    coef ^= 0x88
-                    byte ^= mask
-                mask <<= 1
-                coef >>= 1
-            data[i] = byte ^ res
-        # print("whitened: 0x{}".format(address_repr(data)))
+        coef = (self._curr_freq + 37) | 0x40
+        # print("buffer: 0x" + address_repr(data, 0))
+        # print(f"Whiten Coef: {hex(coef)} on channel {BLE_FREQ[self._curr_freq]}")
+        data = whitener(data, coef)
+        # print("whitened: 0x" + address_repr(data, 0))
         return data
 
     def _make_payload(self, payload):
@@ -262,9 +266,7 @@ class FakeBLE(RF24):
         if name_length:
             buf += chunk(self.name, 0x08)
         buf += payload
-        # print("payload: 0x{} +CRC24: 0x{}".format(
-        #     address_repr(buf), address_repr(crc24_ble(buf))
-        # ))
+        # print(f"PL: {address_repr(buf, 0)} CRC: {address_repr(crc24_ble(buf), 0)}")
         buf += crc24_ble(buf)
         return buf
 
@@ -421,7 +423,7 @@ class TemperatureServiceData(ServiceData):
             self._data = value
 
     def __repr__(self) -> str:
-        return "Temperature: {} C".format(self.data)
+        return f"Temperature: {self.data} C"
 
 class BatteryServiceData(ServiceData):
     """This derivitive of the `ServiceData` class can be used to represent
@@ -443,7 +445,7 @@ class BatteryServiceData(ServiceData):
             self._data = value
 
     def __repr__(self) -> str:
-        return "Battery capacity remaining: %d %%" % self.data
+        return f"Battery capacity remaining: {self.data}%"
 
 
 class UrlServiceData(ServiceData):
@@ -454,26 +456,11 @@ class UrlServiceData(ServiceData):
         super().__init__(EDDYSTONE_UUID)
         self._type += bytes([0x10]) + struct.pack(">b", -25)
 
-    byte_codes = {
-        "http://www.": "\x00",
-        "https://www.": "\x01",
-        "http://": "\x02",
-        "https://": "\x03",
-        ".com/": "\x00",
-        ".org/": "\x01",
-        ".edu/": "\x02",
-        ".net/": "\x03",
-        ".info/": "\x04",
-        ".biz/": "\x05",
-        ".gov/": "\x06",
-        ".com": "\x07",
-        ".org": "\x08",
-        ".edu": "\x09",
-        ".net": "\x0A",
-        ".info": "\x0B",
-        ".biz": "\x0C",
-        ".gov": "\x0D"
-    }
+    codex_prefix = ["http://www.", "https://www.", "http://", "https://"]
+    codex_suffix = [
+        ".com/", ".org/", ".edu/", ".net/", ".info/", ".biz/", ".gov/",
+        ".com", ".org", ".edu", ".net", ".info", ".biz", ".gov",
+    ]
 
     @property
     def pa_level_at_1_meter(self):
@@ -497,18 +484,22 @@ class UrlServiceData(ServiceData):
     def data(self):
         """This attribute is a `str` of URL data."""
         value = self._data.decode()
-        for section, b_code in UrlServiceData.byte_codes.items():
-            value = value.replace(b_code, section)
+        for i, b_code in enumerate(UrlServiceData.codex_prefix):
+            value = value.replace(chr(i), b_code, 1)
+        for i, b_code in enumerate(UrlServiceData.codex_suffix):
+            value = value.replace(chr(i), b_code)
         return value
 
     @data.setter
     def data(self, value: str):
         if isinstance(value, str):
-            for section, b_code in UrlServiceData.byte_codes.items():
-                value = value.replace(section, b_code)
+            for i, b_code in enumerate(UrlServiceData.codex_prefix):
+                value = value.replace(b_code, chr(i), 1)
+            for i, b_code in enumerate(UrlServiceData.codex_suffix):
+                value = value.replace(b_code, chr(i))
             self._data = value.encode("utf-8")
         elif isinstance(value, (bytes, bytearray)):
             self._data = value
 
-    def __repr__(self) -> str:
-        return "Advertised URL: %s" % self.data
+    def __repr__(self):
+        return "Advertised URL: " + self.data

@@ -102,7 +102,7 @@ class RF24MeshNoMaster(NetworkMixin):
         total_requests, request_count = (0, 0)
         end_timer = timeout + time.monotonic()
         while not self._request_address(request_count):
-            if time.monotonic() >= end_timer:
+            if time.monotonic() > end_timer:
                 return None
             time.sleep(
                 (25 + ((total_requests + 1) * (request_count + 1)) * 2) / 1000

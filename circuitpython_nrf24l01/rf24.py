@@ -55,12 +55,7 @@ class RF24:
             self._ce_pin.switch_to_output(value=False)
         # init shadow copy of RX addresses for all pipes for context manager
         self._pipes = [
-            bytearray([0xE7] * 5),
-            bytearray([0xC2] * 5),
-            0xC3,
-            0xC4,
-            0xC5,
-            0xC6,
+            bytearray([0xE7] * 5), bytearray([0xC2] * 5), 0xC3, 0xC4, 0xC5, 0xC6,
         ]
         # self._status = status byte returned on all SPI transactions
         # pre-configure the CONFIGURE register:

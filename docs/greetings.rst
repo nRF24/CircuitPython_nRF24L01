@@ -29,7 +29,7 @@ Features currently supported
 * Change the address's length (can be 3 to 5 bytes long)
 * Dynamically sized payloads (max 32 bytes each) or statically sized payloads
 * Automatic responding acknowledgment (ACK) packets for verifying transmission success
-* Append custom payloadsto the acknowledgment (ACK) packets for instant bi-directional communication
+* Append custom payloads to the acknowledgment (ACK) packets for instant bi-directional communication
 * Mark a single payload for no acknowledgment (ACK) from the receiving nRF24L01 (see ``ask_no_ack``
   parameter for :meth:`~circuitpython_nrf24l01.rf24.RF24.send()` and :meth:`~circuitpython_nrf24l01.rf24.RF24.write()` functions)
 * Invoke the "re-use the same payload" feature (for manually re-transmitting failed transmissions that
