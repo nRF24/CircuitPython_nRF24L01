@@ -54,9 +54,7 @@ class RF24:
         if ce_pin is not None:
             self._ce_pin.switch_to_output(value=False)
         # init shadow copy of RX addresses for all pipes for context manager
-        self._pipes = [
-            bytearray([0xE7] * 5), bytearray([0xC2] * 5), 0xC3, 0xC4, 0xC5, 0xC6,
-        ]
+        self._pipes = []  # will be 2 bytearrays and 4 ints
         # self._status = status byte returned on all SPI transactions
         # pre-configure the CONFIGURE register:
         #   0x0E = all IRQs enabled, CRC is 2 bytes, and power up in TX mode
@@ -72,9 +70,9 @@ class RF24:
             raise RuntimeError("radio hardware not responding")
         for i in range(6):  # capture RX addresses from registers
             if i < 2:
-                self._pipes[i] = self._reg_read_bytes(RX_ADDR_P0 + i)
+                self._pipes.append(self._reg_read_bytes(RX_ADDR_P0 + i))
             else:
-                self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
+                self._pipes.append(self._reg_read(RX_ADDR_P0 + i))
         # test is nRF24L01 is a plus variant using a command specific to
         # non-plus variants
         self._open_pipes, self._is_plus_variant = (0, False)  # close all RX pipes
@@ -135,7 +133,7 @@ class RF24:
         self._ce_pin.value = False
         self._config &= 0x7D  # power off radio
         self._reg_write(CONFIGURE, self._config)
-        time.sleep(0.00016)
+        time.sleep(0.00015)
         return False
 
     @property
@@ -163,7 +161,7 @@ class RF24:
             spi.write_readinto(bytes([reg] + [0] * buf_len), in_buf)
         self._status = in_buf[0]
         # print("SPI read {} bytes from {} {}".format(
-        #     buf_len, ("%02X" % reg), address_repr(in_buf[1:])
+        #     buf_len, ("%02X" % reg), address_repr(in_buf[1:], 0)
         # ))
         return in_buf[1:]
 
@@ -174,7 +172,7 @@ class RF24:
             spi.write_readinto(bytes([0x20 | reg]) + out_buf, in_buf)
         self._status = in_buf[0]
         # print("SPI write {} bytes to {} {}".format(
-        #     len(out_buf), ("%02X" % reg), address_repr(out_buf)
+        #     len(out_buf), ("%02X" % reg), address_repr(out_buf, 0)
         # ))
 
     def _reg_write(self, reg, value=None):
@@ -188,10 +186,8 @@ class RF24:
         self._status = in_buf[0]
         # if reg != 0xFF:
         #     print(
-        #         "SPI write",
-        #         "command" if value is None else "1 byte to",
-        #         ("%02X" % reg),
-        #         "" if value is None else ("%02X" % value),
+        #         "SPI write", "command" if value is None else "1 byte to",
+        #         ("%02X" % reg), "" if value is None else ("%02X" % value)
         #     )
 
     @property
