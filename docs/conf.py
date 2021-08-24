@@ -226,7 +226,7 @@ html_theme_options = {
     "color_primary": "blue",
     "color_accent": "light-blue",
     # Set the repo location to get a badge with stats
-    "repo_url": "https://github.com/2bndy5/CircuitPython_nRF24L01/",
+    "repo_url": "https://github.com/nRF24/CircuitPython_nRF24L01/",
     "repo_name": "CircuitPython_nRF24L01",
     # Visible levels of the global TOC; -1 means unlimited
     "globaltoc_depth": 1,

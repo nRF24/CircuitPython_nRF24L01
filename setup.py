@@ -10,7 +10,7 @@ from setuptools import setup, find_packages
 
 
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
-REPO = "https://github.com/2bndy5/CircuitPython_nRF24L01"
+REPO = "https://github.com/nRF24/CircuitPython_nRF24L01"
 DEPS = ["adafruit-blinka", "adafruit-circuitpython-busdevice"]
 if os.name == "posix":
     DEPS.append("spidev")
