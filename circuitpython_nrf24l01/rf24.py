@@ -509,7 +509,7 @@ class RF24:
                 if i < 6 and val >= 0:  # skip pipe if val is negative
                     self._dyn_pl = (self._dyn_pl & ~(1 << i)) | (bool(val) << i)
         else:
-            raise ValueError("dynamic_payloads: {} is an invalid input" % enable)
+            raise ValueError(f"dynamic_payloads: {enable} is an invalid input")
         self._features = (self._features & 3) | (bool(self._dyn_pl) << 2)
         self._reg_write(TX_FEATURE, self._features)
         self._reg_write(DYN_PL_LEN, self._dyn_pl)
@@ -620,7 +620,7 @@ class RF24:
                 if i < 6 and val >= 0:  # skip pipe if val is negative
                     self._aa = (self._aa & ~(1 << i)) | (bool(val) << i)
         else:
-            raise ValueError("auto_ack: {} is not a valid input" % enable)
+            raise ValueError(f"auto_ack: {enable} is not a valid input")
         self._reg_write(AUTO_ACK, self._aa)
 
     def set_auto_ack(self, enable, pipe_number):

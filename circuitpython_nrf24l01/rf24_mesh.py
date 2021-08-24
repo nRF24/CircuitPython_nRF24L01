@@ -363,7 +363,7 @@ class RF24Mesh(RF24MeshNoMaster):
         """Save the `dhcp_dict` to a JSON file (meant for master nodes only)."""
         if json is None:
             return  # some CircuitPython boards don't have the json module
-        with open(filename, "w") as json_file:
+        with open(filename, "w", encoding="utf8") as json_file:
             # This throws an OSError if file system is read-only. ALL MCU boards
             # running CircuitPython firmware (not RPi) have read-only file system.
             json.dump(self.dhcp_dict, json_file)
@@ -372,7 +372,7 @@ class RF24Mesh(RF24MeshNoMaster):
         """Load the `dhcp_dict` from a JSON file (meant for master nodes only)."""
         if json is None:
             return
-        with open(filename, "r") as json_file:
+        with open(filename, "r", encoding="utf8") as json_file:
             temp_dict = json.load(json_file)
             # convert keys from `str` to `int`
             for n_id, addr in temp_dict.items():
