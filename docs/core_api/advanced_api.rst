@@ -488,8 +488,13 @@ address_length
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.address_length
 
-    A valid input value must be an `int` in range [3, 5]. Otherwise a `ValueError` exception is
-    thrown. Default is set to the nRF24L01's maximum of 5.
+    A valid input value must be an `int` in range [3, 5]. Default is set to the nRF24L01's maximum of 5.
+    Any invalid input value results in a address length of 2 bytes.
+
+    .. versionchanged:: 2.1.0
+        A `ValueError` exception was thrown when an invalid input value was encountered.
+        This changed to setting the address length to 2 bytes (for possible reverse engineering protocol
+        purposes).
 
 address()
 ******************************

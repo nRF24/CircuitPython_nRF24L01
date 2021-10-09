@@ -81,9 +81,7 @@ class RF24:
 
     @address_length.setter
     def address_length(self, length):
-        if not 3 <= length <= 5:
-            raise ValueError("address_length must be in range [3, 5]")
-        self._reg_write(0x03, length - 2)
+        self._reg_write(0x03, (length - 2) if 3 <= length <= 5 else 0)
 
     def open_tx_pipe(self, addr):
         self._reg_write_bytes(0x0A, addr)

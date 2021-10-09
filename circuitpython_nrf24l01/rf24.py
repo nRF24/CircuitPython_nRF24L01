@@ -198,10 +198,8 @@ class RF24:
 
     @address_length.setter
     def address_length(self, length):
-        if not 3 <= length <= 5:
-            raise ValueError("address_length can only be set in range [3, 5] bytes")
-        self._addr_len = int(length)
-        self._reg_write(0x03, length - 2)
+        self._addr_len = int(length) if 3 <= length <= 5 else 2
+        self._reg_write(0x03, self._addr_len - 2)
 
     def open_tx_pipe(self, address):
         """Open a data pipe for TX transmissions."""
