@@ -57,9 +57,10 @@ jobs:
           source actions-ci/install.sh
 
       - name: Pip install pylint & Sphinx stuff (and graphviz)
+        working-directory: docs
         run: |
           pip install --upgrade setuptools twine wheel pylint
-          pip install -r docs/requirements.txt
+          pip install -r requirements.txt
           sudo apt install graphviz
 
 
