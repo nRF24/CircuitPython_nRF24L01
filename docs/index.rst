@@ -47,8 +47,7 @@
     Adafruit Blog <https://blog.adafruit.com>
     Adafruit Store <https://www.adafruit.com>
 
-Indices and tables
-==================
+Site Index
+==========
 
-* :ref:`genindex`
-* :ref:`search`
+:ref:`genindex`
