@@ -13,9 +13,6 @@
 Advanced RF24 API
 -----------------
 
-resend()
-******************************
-
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.resend
 
     This function is meant to be used for payloads that failed to transmit using the
@@ -39,9 +36,6 @@ resend()
         remove them. Alternatively, using this function also allows the failed payload to be
         over-written by using `send()` or `write()` to load a new payload into the TX FIFO
         buffer.
-
-write()
-******************************
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.write
 
@@ -119,7 +113,89 @@ write()
     .. versionadded:: 1.2.0
         ``write_only`` parameter
 
-print_details()
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.load_ack
+
+    This payload will then be appended to the automatic acknowledgment
+    (ACK) packet that is sent when *new* data is received on the specified pipe. See
+    `read()` on how to fetch a received custom ACK payloads.
+
+    :param bytearray,bytes buf: This will be the data attached to an automatic ACK packet on the
+        incoming transmission about the specified ``pipe_number`` parameter. This must have a
+        length in range [1, 32] bytes, otherwise a `ValueError` exception is thrown. Any ACK
+        payloads will remain in the TX FIFO buffer until transmitted successfully or
+        `flush_tx()` is called.
+    :param int pipe_number: This will be the pipe number to use for deciding which
+        transmissions get a response with the specified ``buf`` parameter's data. This number
+        must be in range [0, 5], otherwise a `IndexError` exception is thrown.
+
+    :returns: `True` if payload was successfully loaded onto the TX FIFO buffer. `False` if it
+        wasn't because TX FIFO buffer is full.
+
+    .. note:: this function takes advantage of a special feature on the nRF24L01 and needs to
+        be called for every time a customized ACK payload is to be used (not for every
+        automatic ACK packet -- this just appends a payload to the ACK packet). The `ack`,
+        `auto_ack`, and `dynamic_payloads` attributes are also automatically enabled (with
+        respect to data pipe 0) by this function when necessary.
+
+    .. tip:: The ACK payload must be set prior to receiving a transmission. It is also worth
+        noting that the nRF24L01 can hold up to 3 ACK payloads pending transmission. Using this
+        function does not over-write existing ACK payloads pending; it only adds to the queue
+        (TX FIFO buffer) if it can. Use `flush_tx()` to discard unused ACK payloads when done
+        listening.
+
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.power
+
+    This is exposed for convenience.
+
+    - `False` basically puts the nRF24L01 to sleep (AKA power down mode) with ultra-low
+      current consumption. No transmissions are executed when sleeping, but the nRF24L01 can
+      still be accessed through SPI. Upon instantiation, this driver class puts the nRF24L01
+      to sleep until the MCU invokes RX/TX modes. This driver class will only power down
+      the nRF24L01 after exiting a `with` block.
+    - `True` powers up the nRF24L01. This is the first step towards entering RX/TX modes (see
+      also `listen` attribute). Powering up is automatically handled by the `listen` attribute
+      as well as the `send()` and `write()` functions.
+
+    .. note:: This attribute needs to be `True` if you want to put radio on Standby-II (highest
+        current consumption) or Standby-I (moderate current consumption) modes. The state of
+        the CE pin determines which Standby mode is acheived. See `Chapter 6.1.2-7 of the
+        nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
+        nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132980>`_ for more details.
+
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.address_length
+
+    A valid input value must be an `int` in range [3, 5]. Default is set to the nRF24L01's maximum of 5.
+    Any invalid input value results in a address length of 2 bytes.
+
+    .. versionchanged:: 2.1.0
+        A `ValueError` exception was thrown when an invalid input value was encountered.
+        This changed to setting the address length to 2 bytes (for possible reverse engineering protocol
+        purposes).
+
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.address
+
+    This function returns the full content of the nRF24L01's registers about RX/TX addresses
+    despite what `address_length` is set to.
+
+    :param int index: the number of the data pipe whose address is to be returned. A valid
+        index ranges [0,5] for RX addresses or any negative number for the TX address.
+        Otherwise an `IndexError` is thown. This parameter defaults to ``-1``.
+
+    .. versionadded:: 1.2.0
+
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.last_tx_arc
+
+    This attribute resets to 0 at the beginning of every transmission in TX mode.
+    Remember that the number of automatic retry attempts made for each transmission is
+    configured with the `arc` attribute or the `set_auto_retries()` function.
+
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.is_plus_variant
+
+    This information is detirmined upon instantiation.
+
+    .. versionadded:: 1.2.0
+
+Debugging Output
 ******************************
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.print_details
@@ -186,9 +262,6 @@ print_details()
     .. versionchanged:: v2.1.0
         Changed the default value for the ``dump_pipes`` parameter to `True`
 
-print_pipes()
-******************************
-
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.print_pipes
 
     This method is called from :meth:`~RF24.print_details()` if the ``dump_pipes`` parameter is
@@ -197,9 +270,6 @@ print_pipes()
     .. versionchanged:: v2.1.0
         Changed this method's name from the private method ``_dump_pipes()`` to a public method
         ``print_pipes()``.
-
-address_repr()
-******************************
 
 .. automethod:: circuitpython_nrf24l01.rf24.address_repr
 
@@ -225,53 +295,8 @@ address_repr()
         A string of hexidecimal characters in big endian form of the
         specified ``buf`` parameter.
 
-is_plus_variant
-******************************
-
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.is_plus_variant
-
-    This information is detirmined upon instantiation.
-
-    .. versionadded:: 1.2.0
-
-load_ack()
-******************************
-
-.. automethod:: circuitpython_nrf24l01.rf24.RF24.load_ack
-
-    This payload will then be appended to the automatic acknowledgment
-    (ACK) packet that is sent when *new* data is received on the specified pipe. See
-    `read()` on how to fetch a received custom ACK payloads.
-
-    :param bytearray,bytes buf: This will be the data attached to an automatic ACK packet on the
-        incoming transmission about the specified ``pipe_number`` parameter. This must have a
-        length in range [1, 32] bytes, otherwise a `ValueError` exception is thrown. Any ACK
-        payloads will remain in the TX FIFO buffer until transmitted successfully or
-        `flush_tx()` is called.
-    :param int pipe_number: This will be the pipe number to use for deciding which
-        transmissions get a response with the specified ``buf`` parameter's data. This number
-        must be in range [0, 5], otherwise a `IndexError` exception is thrown.
-
-    :returns: `True` if payload was successfully loaded onto the TX FIFO buffer. `False` if it
-        wasn't because TX FIFO buffer is full.
-
-    .. note:: this function takes advantage of a special feature on the nRF24L01 and needs to
-        be called for every time a customized ACK payload is to be used (not for every
-        automatic ACK packet -- this just appends a payload to the ACK packet). The `ack`,
-        `auto_ack`, and `dynamic_payloads` attributes are also automatically enabled (with
-        respect to data pipe 0) by this function when necessary.
-
-    .. tip:: The ACK payload must be set prior to receiving a transmission. It is also worth
-        noting that the nRF24L01 can hold up to 3 ACK payloads pending transmission. Using this
-        function does not over-write existing ACK payloads pending; it only adds to the queue
-        (TX FIFO buffer) if it can. Use `flush_tx()` to discard unused ACK payloads when done
-        listening.
-
 Status Byte
 ******************************
-
-tx_full
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.tx_full
 
@@ -285,9 +310,6 @@ tx_full
         - `True` for TX FIFO buffer is full
         - `False` for TX FIFO buffer is not full. This doesn't mean the TX FIFO buffer is
           empty.
-
-irq_dr
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.irq_dr
 
@@ -308,9 +330,6 @@ irq_dr
     |update manually| (especially after calling
     :py:func:`~circuitpython_nrf24l01.rf24.RF24.clear_status_flags()`).
 
-irq_df
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.irq_df
 
     .
@@ -329,9 +348,6 @@ irq_df
     |update manually| (especially after calling
     :py:func:`~circuitpython_nrf24l01.rf24.RF24.clear_status_flags()`).
 
-irq_ds
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.irq_ds
 
     .
@@ -347,9 +363,6 @@ irq_ds
     |update manually| (especially after calling
     :py:func:`~circuitpython_nrf24l01.rf24.RF24.clear_status_flags()`).
 
-update()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.update
 
     Refreshing the status byte is vital to checking status of the interrupt flags, RX pipe
@@ -364,9 +377,6 @@ update()
 
     .. versionchanged:: 1.2.3
         arbitrarily returns `True`
-
-pipe
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.pipe
 
@@ -384,9 +394,6 @@ pipe
         - `None` if there is no payload in RX FIFO.
         - The `int` identifying pipe number [0,5] that received the next
           available payload in the RX FIFO buffer.
-
-clear_status_flags()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.clear_status_flags
 
@@ -410,33 +417,9 @@ clear_status_flags()
         nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1047965>`_ for an outline of
         proper behavior.
 
-power
-******************************
-
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.power
-
-    This is exposed for convenience.
-
-    - `False` basically puts the nRF24L01 to sleep (AKA power down mode) with ultra-low
-      current consumption. No transmissions are executed when sleeping, but the nRF24L01 can
-      still be accessed through SPI. Upon instantiation, this driver class puts the nRF24L01
-      to sleep until the MCU invokes RX/TX modes. This driver class will only power down
-      the nRF24L01 after exiting a `with` block.
-    - `True` powers up the nRF24L01. This is the first step towards entering RX/TX modes (see
-      also `listen` attribute). Powering up is automatically handled by the `listen` attribute
-      as well as the `send()` and `write()` functions.
-
-    .. note:: This attribute needs to be `True` if you want to put radio on Standby-II (highest
-        current consumption) or Standby-I (moderate current consumption) modes. The state of
-        the CE pin determines which Standby mode is acheived. See `Chapter 6.1.2-7 of the
-        nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
-        nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132980>`_ for more details.
 
 FIFO management
 ******************************
-
-flush_rx()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.flush_rx
 
@@ -444,9 +427,6 @@ flush_rx()
         there can be up to 3 received payloads (each of a maximum length equal to 32 bytes)
         waiting to be read (and removed from the stack) by `read()`. This
         function clears all 3 levels.
-
-flush_tx()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.flush_tx
 
@@ -456,9 +436,6 @@ flush_tx()
         is worth noting that the payload data is only removed from the TX FIFO stack upon
         successful transmission (see also `resend()` as the handling of failed transmissions
         can be altered).
-
-fifo()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.fifo
 
@@ -482,48 +459,8 @@ fifo()
           - ``2`` means the specified FIFO buffer is full
           - ``0`` means the specified FIFO buffer is neither full nor empty
 
-
-address_length
-******************
-
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.address_length
-
-    A valid input value must be an `int` in range [3, 5]. Default is set to the nRF24L01's maximum of 5.
-    Any invalid input value results in a address length of 2 bytes.
-
-    .. versionchanged:: 2.1.0
-        A `ValueError` exception was thrown when an invalid input value was encountered.
-        This changed to setting the address length to 2 bytes (for possible reverse engineering protocol
-        purposes).
-
-address()
-******************************
-
-.. automethod:: circuitpython_nrf24l01.rf24.RF24.address
-
-    This function returns the full content of the nRF24L01's registers about RX/TX addresses
-    despite what `address_length` is set to.
-
-    :param int index: the number of the data pipe whose address is to be returned. A valid
-        index ranges [0,5] for RX addresses or any negative number for the TX address.
-        Otherwise an `IndexError` is thown. This parameter defaults to ``-1``.
-
-    .. versionadded:: 1.2.0
-
-last_tx_arc
-******************************
-
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.last_tx_arc
-
-    This attribute resets to 0 at the beginning of every transmission in TX mode.
-    Remember that the number of automatic retry attempts made for each transmission is
-    configured with the `arc` attribute or the `set_auto_retries()` function.
-
 Ambiguous Signal Detection
 ******************************
-
-rpd
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.rpd
 
@@ -542,9 +479,6 @@ rpd
         differently under certain conditions.
 
     .. versionadded:: 1.2.0
-
-start_carrier_wave()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.start_carrier_wave
 
@@ -584,9 +518,6 @@ start_carrier_wave()
         changes are needed nor applied.
 
     .. versionadded:: 1.2.0
-
-stop_carrier_wave()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.stop_carrier_wave
 

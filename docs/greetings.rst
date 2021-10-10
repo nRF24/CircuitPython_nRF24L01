@@ -8,7 +8,10 @@
     :alt: Open in Gitpod
 
 Getting Started
-==================
+~~~~~~~~~~~~~~~
+
+Introduction
+===============
 
 This is a Circuitpython driver library for the nRF24L01(+) transceiver.
 
@@ -81,7 +84,7 @@ The `adafruit_bus_device`, `Adafruit_Blinka library <https://github.com/adafruit
 and `SpiDev <https://pypi.org/project/spidev/>`_ libraries
 are installed automatically on Linux when installing this library.
 
-.. versionadded:: v2.1.0 Added support for the
+.. versionadded:: 2.1.0 Added support for the
     `SpiDev <https://pypi.org/project/spidev/>`_ module
 
 .. important:: This library supports Python 3.7 or newer because it use
@@ -122,7 +125,7 @@ to the MCU via a digital input pin during the interrupt example.
 
 
 .. csv-table:: The pins used in `this library's examples <examples.html>`_.
-    :header: nRF2401, "ItsyBitsy M4", "Raspberry Pi"
+    :header: nRF24L01, "ItsyBitsy M4", "Raspberry Pi"
     :widths: 2, 6, 22
 
 
@@ -137,11 +140,13 @@ to the MCU via a digital input pin during the interrupt example.
     MISO, MISO, "GPIO9 (MISO)"
     IRQ, D12, GPIO12
 
-.. tip:: User reports and personal experiences have improved results if there is a capacitor of
+.. tip::
+    User reports and personal experiences have improved results if there is a capacitor of
     100 mirofarads (+ another optional 0.1 microfarads capacitor for added stability) connected
     in parrallel to the VCC and GND pins.
-.. important:: The nRF24L01's VCC pin is not 5V compliant.
-    All other nRF24L01 pins *should* be 5V compliant, but it is safer to assume they are not.
+.. important::
+    The nRF24L01's VCC pin is not 5V compliant. All other nRF24L01 pins *should* be 5V compliant,
+    but it is safer to assume they are not.
 
 Using The Examples
 ==================
@@ -199,7 +204,13 @@ For CPython in Linux
 What to purchase
 =================
 
-See the store links on the navigation sidebar or just google "nRF24L01+". It is worth noting that you
+See the following links to Sparkfun or just google "nRF24L01+".
+
+    * `2.4GHz Transceiver IC - nRF24L01+ <https://www.sparkfun.com/products/690>`_
+    * `SparkFun Transceiver Breakout - nRF24L01+ <https://www.sparkfun.com/products/691>`_
+    * `SparkFun Transceiver Breakout - nRF24L01+ (RP-SMA) <https://www.sparkfun.com/products/705>`_
+
+It is worth noting that you
 generally want to buy more than 1 as you need 2 for testing -- 1 to send & 1 to receive and
 vise versa. This library has been tested on a cheaply bought 6 pack from Amazon.com, but don't
 take Amazon or eBay for granted! There are other wireless transceivers that are NOT compatible

@@ -28,7 +28,8 @@ RF24NetworkRoutingOnly class
 
     :param int node_address: The octal `int` for this node's address
 
-    .. seealso:: For all other parameters' descriptions, see the
+    .. seealso::
+        For all other parameters' descriptions, see the
         :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' contructor documentation.
 
 RF24Network class
@@ -39,14 +40,12 @@ RF24Network class
 
     :param int node_address: The octal `int` for this node's address
 
-    .. seealso:: For all other parameters' descriptions, see the
+    .. seealso::
+        For all other parameters' descriptions, see the
         :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' contructor documentation.
 
 Basic API
 *********
-
-node_address
-------------
 
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.node_address
 
@@ -67,9 +66,6 @@ node_address
 
            .. seealso:: Please review the tip documented in `RF24Mesh.node_id` for more details.
 
-update()
---------
-
 .. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.update
 
     .. important::
@@ -82,21 +78,12 @@ update()
         from frame's in the `queue`, but rather it is only gotten from the messages handled
         during the function's operation.
 
-available()
------------
-
 .. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.available
-
-peek()
-------
 
 .. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.peek
 
     :Returns: A `RF24NetworkFrame` object. However, the data returned is not removed
         from the `queue`. |if_nothing_in_queue| `None`.
-
-read()
------------
 
 .. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.read
 
@@ -105,9 +92,6 @@ read()
 
     :Returns:
         A `RF24NetworkFrame` object. |if_nothing_in_queue| `None`.
-
-send()
------------
 
 .. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.send
 
@@ -133,9 +117,6 @@ send()
 Advanced API
 ************
 
-multicast()
------------
-
 .. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.multicast
 
     :param bytes,bytearray message: The outgoing frame's `message`.
@@ -156,9 +137,6 @@ multicast()
         .. tip:: To ensure a message has been delivered to its target destination, set the
             header's `message_type` to an `int` in range [65, 127]. This will invoke a
             `NETWORK_ACK` response message.
-
-write()
------------
 
 .. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.write
 
@@ -206,18 +184,12 @@ write()
             there is a relaible/open connection to the `node_address` passed to ``traffic_direct``.
         .. tip:: |use_msg_t|
 
-parent
------------
-
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.parent
 
     Returns ``0`` if called on the network's master node.
 
 Configuration API
 *****************
-
-max_message_length
-------------------
 
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.max_message_length
 
@@ -228,9 +200,6 @@ max_message_length
     Configuring the `fragmentation` attribute will automatically change the value that
     `max_message_length` attribute is set to.
 
-fragmentation
----------------
-
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.fragmentation
 
     Changing this attribute's state will also appropriately changes the type of `FrameQueue`
@@ -240,15 +209,9 @@ fragmentation
     (`MAX_FRAG_SIZE`) maximum. Enabling this attribute will set `max_message_length` attribute
     to ``144`` bytes.
 
-multicast_relay
----------------
-
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.multicast_relay
 
     Forwarded frames will also be enqueued on the forwarding node as a received frame.
-
-multicast_level
----------------
 
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.multicast_level
 
@@ -259,9 +222,6 @@ multicast_level
         The `network levels <topology.html#network-levels>`_ are explained in more detail on
         the `topology <topology.html>`_ document.
 
-allow_multicast
----------------
-
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.allow_multicast
 
     This attribute affects
@@ -270,15 +230,9 @@ allow_multicast
       `node_address`
     - all incoming multicasted frames (including `multicast_relay` behavior).
 
-tx_timeout
----------------
-
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.tx_timeout
 
     Defaults to 25.
-
-route_timeout
----------------
 
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.route_timeout
 

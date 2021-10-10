@@ -2,9 +2,6 @@
 Basic RF24 API
 --------------
 
-Constructor
-******************
-
 .. autoclass:: circuitpython_nrf24l01.rf24.RF24
     :no-members:
 
@@ -33,9 +30,6 @@ Constructor
         - removed all keyword arguments in favor of using the provided corresponding
           attributes.
 
-open_tx_pipe()
-******************
-
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.open_tx_pipe
 
     :param bytearray,bytes address: The virtual address of the receiving nRF24L01. The address
@@ -50,9 +44,6 @@ open_tx_pipe()
         attribute is enabled for data pipe 0. Thus, RX pipe 0 is appropriated with the TX
         address (specified here) when `auto_ack` is enabled for data pipe 0.
 
-close_rx_pipe()
-******************
-
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.close_rx_pipe
 
     :param int pipe_number: The data pipe to use for RX transactions. This must be in range
@@ -61,9 +52,6 @@ close_rx_pipe()
     .. versionchanged:: 1.2.0
         removed the ``reset`` parameter. Addresses assigned to pipes will persist until
         changed or power to the nRF24L01 is discontinued.
-
-open_rx_pipe()
-******************
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.open_rx_pipe
 
@@ -78,9 +66,6 @@ open_rx_pipe()
 
     .. note:: The nRF24L01 shares the addresses' last 4 LSBytes on data pipes 2 through
         5. These shared LSBytes are determined by the address set to data pipe 1.
-
-listen
-******************
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.listen
 
@@ -106,17 +91,11 @@ listen
         when entering RX mode. This is done to better manage the ACK payloads loaded into
         the TX FIFO.
 
-any()
-******************
-
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.any
 
     :returns:
         - `int` of the size (in bytes) of an available RX payload (if any).
         - ``0`` if there is no payload in the RX FIFO buffer.
-
-available()
-******************
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.available
 
@@ -128,9 +107,6 @@ available()
         nrf.update() and nrf.pipe is not None
 
     .. versionadded:: 2.0.0
-
-read()
-******************
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.read
 
@@ -176,9 +152,6 @@ read()
         renamed this method from ``recv()`` to ``read()`` because it isn't doing
         any actual receiving. Rather, it is only reading data from the RX FIFO that
         was already received/validated by the radio.
-
-send()
-******************
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.send
 

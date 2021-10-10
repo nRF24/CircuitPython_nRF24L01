@@ -64,11 +64,8 @@ here has been adapted to work with CircuitPython.
        triggered because
        :py:attr:`~circuitpython_nrf24l01.rf24.RF24.auto_ack` attribute is disabled.
 
-helpers
-----------------
-
-swap_bits()
-*****************
+``fake_ble`` module helpers
+---------------------------
 
 .. autofunction:: circuitpython_nrf24l01.fake_ble.swap_bits
 
@@ -78,9 +75,6 @@ swap_bits()
     :param int original: This is truncated to a single unsigned byte,
         meaning this parameter's value can only range from 0 to 255.
 
-reverse_bits()
-*****************
-
 .. autofunction:: circuitpython_nrf24l01.fake_ble.reverse_bits
 
     :returns:
@@ -88,9 +82,6 @@ reverse_bits()
        byte's bit order is reversed.
     :param bytearray,bytes original: The original buffer whose bits are to be
        reversed.
-
-chunk()
-*****************
 
 .. autofunction:: circuitpython_nrf24l01.fake_ble.chunk
 
@@ -116,9 +107,6 @@ chunk()
         set to `False` for reasons about the payload size with
         `BLE Limitations`_.
 
-crc24_ble()
-*****************
-
 .. autofunction:: circuitpython_nrf24l01.fake_ble.crc24_ble
 
     This is exposed for convenience and should not be used for other buffer
@@ -134,8 +122,6 @@ crc24_ble()
     :returns: A 24-bit `bytearray` representing the checksum of the data (in
         proper little endian).
 
-BLE_FREQ
-*****************
 
 .. autodata:: circuitpython_nrf24l01.fake_ble.BLE_FREQ
 
@@ -149,7 +135,10 @@ BLE_FREQ
         80, 39
 
 QueueElement class
-********************
+------------------
+
+.. versionadded:: 2.1.0
+    This class was added when implementing BLE signal sniffing.
 
 .. autoclass:: circuitpython_nrf24l01.fake_ble.QueueElement
     :members:
@@ -158,37 +147,21 @@ FakeBLE class
 -------------
 
 .. autoclass:: circuitpython_nrf24l01.fake_ble.FakeBLE
+    :show-inheritance:
 
     Per the limitations of this technique, only some of underlying
     :py:class:`~circuitpython_nrf24l01.rf24.RF24` functionality is
     available for configuration when implementing BLE transmissions.
     See the `Unavailable RF24 functionality`_ for more details.
 
-
-    :param ~busio.SPI spi: The object for the SPI bus that the nRF24L01 is connected to.
-
-        .. tip:: This object is meant to be shared amongst other driver classes (like
-            adafruit_mcp3xxx.mcp3008 for example) that use the same SPI bus. Otherwise, multiple
-            devices on the same SPI bus with different spi objects may produce errors or
-            undesirable behavior.
-    :param ~digitalio.DigitalInOut csn: The digital output pin that is connected to the nRF24L01's
-        CSN (Chip Select Not) pin. This is required.
-    :param ~digitalio.DigitalInOut ce_pin: The digital output pin that is connected to the nRF24L01's
-        CE (Chip Enable) pin. This is required.
-    :param int spi_frequency: Specify which SPI frequency (in Hz) to use on the SPI bus. This
-        parameter only applies to the instantiated object and is made persistent via
-        :py:class:`~adafruit_bus_device.spi_device.SPIDevice`.
-
-mac
-************
+    .. seealso::
+        For all parameters' descriptions, see the
+        :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' contructor documentation.
 
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.mac
 
    You can set this attribute using a 6-byte `int` or `bytearray`. If this is
    set to `None`, then a random 6-byte address is generated.
-
-name
-************
 
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.name
 
@@ -199,9 +172,6 @@ name
     .. note:: This information occupies (in the TX FIFO) an extra 2 bytes plus
         the length of the name set by this attribute.
 
-show_pa_level
-*************
-
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.show_pa_level
 
     The default value of `False` will exclude this optional information.
@@ -210,20 +180,11 @@ show_pa_level
         really only useful for some applications to calculate proximity to the
         nRF24L01 transceiver.
 
-channel
-******************
-
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.channel
 
     The only allowed channels are those contained in the `BLE_FREQ` tuple.
 
-hop_channel()
-*************
-
 .. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.hop_channel
-
-whiten()
-*************
 
 .. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.whiten
 
@@ -244,9 +205,6 @@ whiten()
         because this function needs to know the correct BLE channel to
         properly de-whiten received payloads.
 
-len_available()
-******************
-
 .. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.len_available
 
     This is detirmined from the current state of `name` and `show_pa_level`
@@ -259,14 +217,11 @@ len_available()
         a single payload.
 
     .. versionchanged:: 2.0.0
-        name changed from "available" to "len_available" to avoid confusion with
+        The name of this function changed from "available" to "len_available" to avoid confusion with
         :py:func:`circuitpython_nrf24l01.rf24.RF24.available()`. This change also
         allows providing the underlying `RF24` class'
         :py:func:`~circuitpython_nrf24l01.rf24.RF24.available()` method in the
         `FakeBLE` API.
-
-advertise()
-*************
 
 .. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.advertise
 
@@ -318,10 +273,6 @@ advertise()
         ble.advertise(buffers)
         ble.hop_channel()
 
-available()
-**************
-
-.. versionchanged:: overriden in v2.1.0 to validate & decipher received BLE data
 
 .. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.available
 
@@ -339,37 +290,29 @@ available()
         - `False` if no payload was received or the received payload could not be
           deciphered.
 
-rx_queue
-****************
-
-.. versionadded:: v2.1.0
+    .. versionchanged:: 2.1.0
+        This was an added override to validate & decipher received BLE data.
 
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.rx_queue
 
-Each Element in this queue is a `QueueElement` object whose members are set according to the
-its internal decoding algorithm. The :meth:`~circuitpython_nrf24l01.fake_ble.FakeBLE.read()`
-function will remove & return the first element in this queue.
+    Each Element in this queue is a `QueueElement` object whose members are set according to the
+    its internal decoding algorithm. The :meth:`~circuitpython_nrf24l01.fake_ble.FakeBLE.read()`
+    function will remove & return the first element in this queue.
 
-.. hint::
-    This attribute is exposed for debugging purposes, but it can also be used by applications.
+    .. hint::
+        This attribute is exposed for debugging purposes, but it can also be used by applications.
 
-rx_cache
-****************
-
-.. versionadded:: v2.1.0
+    .. versionadded:: 2.1.0
 
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.rx_cache
 
-This attribute is only used by :meth:`~circuitpython_nrf24l01.fake_ble.FakeBLE.available()`
-to cache the data from the top level of the radio's RX FIFO then validate & decode it.
+    This attribute is only used by :meth:`~circuitpython_nrf24l01.fake_ble.FakeBLE.available()`
+    to cache the data from the top level of the radio's RX FIFO then validate & decode it.
 
-.. hint::
-    This attribute is exposed for debugging purposes.
+    .. hint::
+        This attribute is exposed for debugging purposes.
 
-read()
-****************
-
-.. versionchanged:: overriden in v2.1.0 to fetch deciphered BLE data from the `rx_queue`
+    .. versionadded:: 2.1.0
 
 .. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.read
 
@@ -377,15 +320,16 @@ read()
         - `None` if nothing is the internal `rx_queue`
         - A `QueueElement` object from the front of the `rx_queue` (like a FIFO buffer)
 
-interrupt_config()
-******************
+    .. versionchanged:: 2.1.0
+        This was an added override to fetch deciphered BLE data from the `rx_queue`.
 
 .. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.interrupt_config
 
     .. warning:: The :py:attr:`circuitpython_nrf24l01.rf24.RF24.irq_df`
         attribute is not implemented for BLE operations.
 
-    .. seealso:: :py:meth:`~circuitpython_nrf24l01.rf24.RF24.interrupt_config()`
+    .. seealso::
+        :py:meth:`~circuitpython_nrf24l01.rf24.RF24.interrupt_config()`
 
 Unavailable RF24 functionality
 ******************************
@@ -407,7 +351,7 @@ The following `RF24` functionality is not available in `FakeBLE` objects:
 Service related classes
 -----------------------
 
-abstract parent
+Abstract Parent
 ***************
 
 .. autoclass:: circuitpython_nrf24l01.fake_ble.ServiceData
@@ -419,7 +363,7 @@ abstract parent
         Bluetooth SIG to describe the service data. This parameter is
         required.
 
-derivitive children
+Derivitive Children
 *******************
 
 .. autoclass:: circuitpython_nrf24l01.fake_ble.TemperatureServiceData

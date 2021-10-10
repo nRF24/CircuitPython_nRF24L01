@@ -9,6 +9,126 @@
 Configurable RF24 API
 -----------------------
 
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.ack
+
+    Use this attribute to set/check if the custom ACK payloads feature is
+    enabled (`True`) or disabled (`False`). Default
+    setting is `False`.
+
+    .. note:: This attribute differs from the `auto_ack` attribute because the
+        `auto_ack` attribute enables or disables the use of automatic ACK *packets*. By default,
+        ACK *packets* have no *payload*. This attribute enables or disables attaching
+        payloads to the ACK packets.
+    .. seealso::
+        Use `load_ack()` attach ACK payloads.
+
+        Use `read()`, `send()`, `resend()` to retrieve ACK payloads.
+    .. important::
+        As `dynamic_payloads` and `auto_ack` attributes are required for this feature to work,
+        they are automatically enabled (on data pipe 0) as needed. However, it is required to
+        enable the `auto_ack` and `dynamic_payloads` features on all applicable pipes.
+        Disabling this feature does not disable the `auto_ack` and `dynamic_payloads`
+        attributes for any data pipe; they work just fine without this feature.
+
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.allow_ask_no_ack
+
+    This attribute is enabled by default, and it only exists to provide support for the
+    Si24R1. The designers of the Si24R1 (a cheap chinese clone of the nRF24L01) happened to
+    clone a typo from the first version of the nRF24L01 specification sheet. Disable this attribute for the Si24R1.
+
+.. automethod:: circuitpython_nrf24l01.rf24.RF24.interrupt_config
+
+    The digital signal from the nRF24L01's IRQ (Interrupt ReQuest) pin is active LOW.
+
+    :param bool data_recv: If this is `True`, then IRQ pin goes active when new data is put
+        into the RX FIFO buffer. Default setting is `True`
+    :param bool data_sent: If this is `True`, then IRQ pin goes active when a payload from TX
+        buffer is successfully transmit. Default setting is `True`
+    :param bool data_fail: If this is `True`, then IRQ pin goes active when the maximum
+        number of attempts to re-transmit the packet have been reached. If `auto_ack`
+        attribute is disabled for pipe 0, then this IRQ event is not used. Default setting
+        is `True`
+
+    .. note:: To fetch the status (not configuration) of these IRQ flags, use the `irq_df`,
+        `irq_ds`, `irq_dr` attributes respectively.
+
+    .. tip:: Paraphrased from nRF24L01+ Specification Sheet:
+
+        The procedure for handling :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr` IRQ
+        should be:
+
+        1. retreive the payload from RX FIFO using `read()`
+        2. clear :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr` status flag (taken care
+           of by using `read()` in previous step)
+        3. read FIFO_STATUS register to check if there are more payloads available in RX FIFO
+           buffer. A call to `pipe` (may require `update()` to be called beforehand), `any()`
+           or even ``(False, True)`` as parameters to `fifo()` will get this result.
+        4. if there is more data in RX FIFO, repeat from step 1
+
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.data_rate
+
+    A valid input value is:
+
+    - ``1`` sets the frequency data rate to 1 Mbps
+    - ``2`` sets the frequency data rate to 2 Mbps
+    - ``250`` sets the frequency data rate to 250 Kbps (see warning below)
+
+    Any invalid input throws a `ValueError` exception. Default is 1 Mbps.
+
+    .. warning:: 250 Kbps is not available for the non-plus variants of the
+        nRF24L01 transceivers. Trying to set the data rate to 250 kpbs when
+        `is_plus_variant` is `True` will throw a `NotImplementedError`.
+
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.channel
+
+    A valid input value must be in range [0, 125] (that means [2.4, 2.525] GHz). Otherwise a
+    `ValueError` exception is thrown. Default is ``76`` (2.476 GHz).
+
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.crc
+
+    CRC (cyclic redundancy checking) is a way of making sure that the transmission didn't get
+    corrupted over the air.
+
+    A valid input value must be:
+
+    - ``0`` disables CRC (no anti-corruption of data)
+    - ``1`` enables CRC encoding scheme using 1 byte (weak anti-corruption of data)
+    - ``2`` enables CRC encoding scheme using 2 bytes (better anti-corruption of data)
+
+    Any invalid input will be clamped to range [0, 2]. Default is enabled using 2 bytes.
+
+    .. note:: The nRF24L01 automatically enables CRC if automatic acknowledgment feature is
+        enabled (see `auto_ack` attribute) for any data pipe.
+    .. versionchanged:: 2.0.0
+        Invalid input values are clamped to proper range instead of throwing a `ValueError`
+        exception.
+
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.pa_level
+
+    Higher levels mean the transmission will cover a longer distance. Use this attribute to
+    tweak the nRF24L01 current consumption on projects that don't span large areas.
+
+    A valid input value is:
+
+    - ``-18`` sets the nRF24L01's power amplifier to -18 dBm (lowest)
+    - ``-12`` sets the nRF24L01's power amplifier to -12 dBm
+    - ``-6`` sets the nRF24L01's power amplifier to -6 dBm
+    - ``0`` sets the nRF24L01's power amplifier to 0 dBm (highest)
+
+    If this attribute is set to a `list` or `tuple`, then the list/tuple must contain the
+    desired power amplifier level (from list above) at index 0 and a `bool` to control
+    the Low Noise Amplifier (LNA) feature at index 1. All other indices will be discarded.
+
+    .. note:: The LNA feature setting only applies to the nRF24L01 (non-plus variant).
+
+    Any invalid input will invoke the default of 0 dBm with LNA enabled.
+
+.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.is_lna_enabled
+
+    LNA stands for Low Noise Amplifier. See `pa_level` attribute about how to set this. Default
+    is always enabled, but this feature is specific to non-plus variants of nRF24L01 transceivers.
+    If `is_plus_variant` attribute is `True`, then setting feature in any way has no affect.
+
 dynamic_payloads
 ******************************
 
@@ -38,15 +158,12 @@ dynamic_payloads
         payload length feature per pipe.
 
     .. versionchanged:: 1.2.0
-        accepts a list or tuple for control of the dynamic payload length feature per pipe.
+        Accepts a list or tuple for control of the dynamic payload length feature per pipe.
     .. versionchanged:: 2.0.0
 
-        - returns a integer instead of a boolean
-        - accepts an integer for binary control of the dynamic payload length
+        - Returns a integer instead of a boolean
+        - Accepts an integer for binary control of the dynamic payload length
           feature per pipe
-
-set_dynamic_payloads()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.set_dynamic_payloads
 
@@ -58,9 +175,6 @@ set_dynamic_payloads()
         `IndexError` exception is thrown.
 
     .. versionadded:: 2.0.0
-
-get_dynamic_payloads()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.get_dynamic_payloads
 
@@ -94,7 +208,7 @@ payload_length
         The current setting of the expected static payload length feature for pipe 0 only.
 
     .. versionchanged:: 1.2.0
-        return a list of all payload length settings for all pipes. This implementation
+        Return a list of all payload length settings for all pipes. This implementation
         introduced a couple bugs:
 
         1. The settings could be changed improperly in a way that was not written to the
@@ -104,12 +218,9 @@ payload_length
            the length of payloads.
 
     .. versionchanged:: 2.0.0
-        this attribute returns the configuration about static payload length for data pipe 0
+        This attribute returns the configuration about static payload length for data pipe 0
         only. Use `get_payload_length()` to fetch the configuration of the static payload
         length feature for any data pipe.
-
-set_payload_length()
-^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.set_payload_length
 
@@ -125,9 +236,6 @@ set_payload_length()
         `IndexError` exception is thrown.
 
     .. versionadded:: 2.0.0
-
-get_payload_length()
-^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.get_payload_length
 
@@ -179,15 +287,12 @@ auto_ack
         acknowledgement feature per pipe.
 
     .. versionchanged:: 1.2.0
-        accepts a list or tuple for control of the automatic acknowledgement feature per pipe.
+        Accepts a list or tuple for control of the automatic acknowledgement feature per pipe.
     .. versionchanged:: 2.0.0
 
-        - returns an integer instead of a boolean
-        - accepts an integer for binary control of the automatic acknowledgement feature
+        - Returns an integer instead of a boolean
+        - Accepts an integer for binary control of the automatic acknowledgement feature
           per pipe
-
-set_auto_ack()
-^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.set_auto_ack
 
@@ -200,9 +305,6 @@ set_auto_ack()
 
     .. versionadded:: 2.0.0
 
-get_auto_ack()
-^^^^^^^^^^^^^^^^^^^^^^^
-
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.get_auto_ack
 
     :param int pipe_number: The specific data pipe number in range [0, 5] concerning the
@@ -214,9 +316,6 @@ get_auto_ack()
 
 Auto-Retry feature
 ******************************
-
-arc
-^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.arc
 
@@ -231,11 +330,8 @@ arc
     response (assuming `auto_ack` is enabled).
 
     .. versionchanged:: 2.0.0
-        invalid input values are clamped to proper range instead of throwing a `ValueError`
+        Invalid input values are clamped to proper range instead of throwing a `ValueError`
         exception.
-
-ard
-^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.ard
 
@@ -256,166 +352,16 @@ ard
 
         See `data_rate` attribute on how to set the data rate of the nRF24L01's transmissions.
     .. versionchanged:: 2.0.0
-        invalid input values are clamped to proper range instead of throwing a `ValueError`
+        Invalid input values are clamped to proper range instead of throwing a `ValueError`
         exception.
-
-set_auto_retries()
-^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.set_auto_retries
 
     :param int delay: accepts the same input as the `ard` attribute.
     :param int count: accepts the same input as the `arc` attribute.
 
-get_auto_retries()
-^^^^^^^^^^^^^^^^^^^^^^^
-
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.get_auto_retries
 
     :Return:
         A tuple containing 2 items; index 0 will be the `ard` attribute,
         and index 1 will be the `arc` attribute.
-
-ack
-******************************
-
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.ack
-
-    Use this attribute to set/check if the custom ACK payloads feature is
-    enabled (`True`) or disabled (`False`). Default
-    setting is `False`.
-
-    .. note:: This attribute differs from the `auto_ack` attribute because the
-        `auto_ack` attribute enables or disables the use of automatic ACK *packets*. By default,
-        ACK *packets* have no *payload*. This attribute enables or disables attaching
-        payloads to the ACK packets.
-    .. seealso::
-        Use `load_ack()` attach ACK payloads.
-
-        Use `read()`, `send()`, `resend()` to retrieve ACK payloads.
-    .. important::
-        As `dynamic_payloads` and `auto_ack` attributes are required for this feature to work,
-        they are automatically enabled (on data pipe 0) as needed. However, it is required to
-        enable the `auto_ack` and `dynamic_payloads` features on all applicable pipes.
-        Disabling this feature does not disable the `auto_ack` and `dynamic_payloads`
-        attributes for any data pipe; they work just fine without this feature.
-
-allow_ask_no_ack
-******************************
-
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.allow_ask_no_ack
-
-    This attribute is enabled by default, and it only exists to provide support for the
-    Si24R1. The designers of the Si24R1 (a cheap chinese clone of the nRF24L01) happened to
-    clone a typo from the first version of the nRF24L01 specification sheet. Disable this attribute for the Si24R1.
-
-interrupt_config()
-******************************
-
-.. automethod:: circuitpython_nrf24l01.rf24.RF24.interrupt_config
-
-    The digital signal from the nRF24L01's IRQ (Interrupt ReQuest) pin is active LOW.
-
-    :param bool data_recv: If this is `True`, then IRQ pin goes active when new data is put
-        into the RX FIFO buffer. Default setting is `True`
-    :param bool data_sent: If this is `True`, then IRQ pin goes active when a payload from TX
-        buffer is successfully transmit. Default setting is `True`
-    :param bool data_fail: If this is `True`, then IRQ pin goes active when the maximum
-        number of attempts to re-transmit the packet have been reached. If `auto_ack`
-        attribute is disabled for pipe 0, then this IRQ event is not used. Default setting
-        is `True`
-
-    .. note:: To fetch the status (not configuration) of these IRQ flags, use the `irq_df`,
-        `irq_ds`, `irq_dr` attributes respectively.
-
-    .. tip:: Paraphrased from nRF24L01+ Specification Sheet:
-
-        The procedure for handling :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr` IRQ
-        should be:
-
-        1. retreive the payload from RX FIFO using `read()`
-        2. clear :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr` status flag (taken care
-           of by using `read()` in previous step)
-        3. read FIFO_STATUS register to check if there are more payloads available in RX FIFO
-           buffer. A call to `pipe` (may require `update()` to be called beforehand), `any()`
-           or even ``(False, True)`` as parameters to `fifo()` will get this result.
-        4. if there is more data in RX FIFO, repeat from step 1
-
-data_rate
-******************************
-
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.data_rate
-
-    A valid input value is:
-
-    - ``1`` sets the frequency data rate to 1 Mbps
-    - ``2`` sets the frequency data rate to 2 Mbps
-    - ``250`` sets the frequency data rate to 250 Kbps (see warning below)
-
-    Any invalid input throws a `ValueError` exception. Default is 1 Mbps.
-
-    .. warning:: 250 Kbps is not available for the non-plus variants of the
-        nRF24L01 transceivers. Trying to set the data rate to 250 kpbs when
-        `is_plus_variant` is `True` will throw a `NotImplementedError`.
-
-channel
-******************************
-
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.channel
-
-    A valid input value must be in range [0, 125] (that means [2.4, 2.525] GHz). Otherwise a
-    `ValueError` exception is thrown. Default is ``76`` (2.476 GHz).
-
-crc
-******************************
-
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.crc
-
-    CRC (cyclic redundancy checking) is a way of making sure that the transmission didn't get
-    corrupted over the air.
-
-    A valid input value must be:
-
-    - ``0`` disables CRC (no anti-corruption of data)
-    - ``1`` enables CRC encoding scheme using 1 byte (weak anti-corruption of data)
-    - ``2`` enables CRC encoding scheme using 2 bytes (better anti-corruption of data)
-
-    Any invalid input will be clamped to range [0, 2]. Default is enabled using 2 bytes.
-
-    .. note:: The nRF24L01 automatically enables CRC if automatic acknowledgment feature is
-        enabled (see `auto_ack` attribute) for any data pipe.
-    .. versionchanged:: 2.0.0
-        invalid input values are clamped to proper range instead of throwing a `ValueError`
-        exception.
-
-pa_level
-******************************
-
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.pa_level
-
-    Higher levels mean the transmission will cover a longer distance. Use this attribute to
-    tweak the nRF24L01 current consumption on projects that don't span large areas.
-
-    A valid input value is:
-
-    - ``-18`` sets the nRF24L01's power amplifier to -18 dBm (lowest)
-    - ``-12`` sets the nRF24L01's power amplifier to -12 dBm
-    - ``-6`` sets the nRF24L01's power amplifier to -6 dBm
-    - ``0`` sets the nRF24L01's power amplifier to 0 dBm (highest)
-
-    If this attribute is set to a `list` or `tuple`, then the list/tuple must contain the
-    desired power amplifier level (from list above) at index 0 and a `bool` to control
-    the Low Noise Amplifier (LNA) feature at index 1. All other indices will be discarded.
-
-    .. note:: The LNA feature setting only applies to the nRF24L01 (non-plus variant).
-
-    Any invalid input will invoke the default of 0 dBm with LNA enabled.
-
-is_lna_enabled
-******************************
-
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.is_lna_enabled
-
-    LNA stands for Low Noise Amplifier. See `pa_level` attribute about how to set this. Default
-    is always enabled, but this feature is specific to non-plus variants of nRF24L01 transceivers.
-    If `is_plus_variant` attribute is `True`, then setting feature in any way has no affect.

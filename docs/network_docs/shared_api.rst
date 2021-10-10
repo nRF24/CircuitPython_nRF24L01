@@ -58,17 +58,11 @@ External Systems API
 The following attributes are exposed in the `RF24Network` and `RF24Mesh` API for
 extensibility via external applications or systems.
 
-address_prefix
---------------
-
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.address_prefix
     :annotation: = b"\xCC"
 
     .. seealso::
         The usage of this attribute is more explained in the `Topology page <topology.html#physical-addresses-vs-logical-addresses>`_
-
-address_suffix
---------------
 
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.address_suffix
     :annotation: = b"\xC3\x3C\x33\xCE\x3E\xE3"
@@ -76,21 +70,12 @@ address_suffix
     .. seealso::
         The usage of this attribute is more explained in the `Topology page <topology.html#physical-addresses-vs-logical-addresses>`_
 
-frame_buf
------------
-
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.frame_buf
-
-queue
------
 
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.queue
 
     This attribute will be an instantiated `FrameQueue` or `FrameQueueFrag` object depending on the state
     of the `fragmentation` attribute.
-
-ret_sys_msg
------------
 
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.ret_sys_msg
 

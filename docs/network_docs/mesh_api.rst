@@ -43,10 +43,7 @@ Basic API
 *********
 
 
-send()
---------
-
-.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.send
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.send()
 
     This function will use `lookup_address()` to fetch the necessary
     :ref:`Logical Address <Logical Address>` to set the frame's header's `to_node`
@@ -75,8 +72,6 @@ send()
 
         .. tip:: |use_msg_t|
 
-node_id
--------------
 
 .. autoattribute:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.node_id
 
@@ -95,10 +90,7 @@ node_id
         to fetch (from the master node) an assigned logical address to be used as the mesh node's
         `node_address`.
 
-renew_address()
----------------
-
-.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.renew_address
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.renew_address()
 
     :param float,int timeout: The amount of time (in seconds) to continue trying to connect
         and get an assigned :ref:`Logical Address <Logical Address>`. Defaults to 7.5 seconds.
@@ -115,10 +107,7 @@ renew_address()
 Advanced API
 ************
 
-lookup_node_id()
-----------------
-
-.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.lookup_node_id
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.lookup_node_id()
 
     :param int address: The :ref:`Logical Address <Logical Address>` for which
         a unique `node_id` is assigned from network master node.
@@ -134,10 +123,7 @@ lookup_node_id()
             or the master node has not assigned a unique `node_id`
             for the specified ``address``.
 
-lookup_address()
-----------------
-
-.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.lookup_address
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.lookup_address()
 
     :param int node_id: The unique `node_id` for which a
         :ref:`Logical Address <Logical Address>` is assigned from network master node.
@@ -153,10 +139,8 @@ lookup_address()
             or the master node has not assigned a :ref:`Logical Address <Logical Address>`
             for the specified ``node_id``.
 
-write()
------------------
 
-.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.write
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.write()
 
     :param int to_node_address: The network node's :ref:`Logical Address <Logical Address>`.
         of the frame's destination. This must be the destination's network `node_address` which is
@@ -177,28 +161,16 @@ write()
 
         .. tip:: |use_msg_t|
 
-check_connection()
-------------------
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.check_connection()
 
-.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.check_connection
-
-release_address()
------------------
-
-.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.release_address
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.release_address()
 
     .. hint::
         This should be called from a mesh network node that is disconnecting from the network.
         This is also recommended for mesh network nodes that are entering a powered down (or
         sleep) mode.
 
-allow_children
---------------
-
 .. autoattribute:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.allow_children
-
-block_less_callback
------------------------------
 
 .. autoattribute:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.block_less_callback
 
@@ -210,9 +182,6 @@ block_less_callback
     The assigned function will be called during `renew_address()`, `lookup_address()` and
     `lookup_node_id()`.
 
-dhcp_dict
-----------
-
 .. autoattribute:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.dhcp_dict
 
     This `dict` stores the assigned :ref:`Logical Addresses <Logical Address>` to the connected
@@ -221,10 +190,7 @@ dhcp_dict
     - The keys in this `dict` are the unique `node_id` of a mesh network node.
     - The values in this `dict` (corresponding to each key) are the `node_address` assigned to the `node_id`.
 
-save_dhcp()
------------
-
-.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.save_dhcp
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.save_dhcp()
 
     .. warning::
         This function will likely throw a `OSError` on boards running CircuitPython firmware
@@ -235,21 +201,14 @@ save_dhcp()
 
     :param str filename: The name of the json file to be used. This value should end in a ".json"
 
-
-load_dhcp()
------------
-
-.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.load_dhcp
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.load_dhcp()
 
     :param str filename: The name of the json file to be used. This value should end in a ".json"
 
     .. warning::
         This function will raise an `OSError` exception if no file exists.
 
-set_address()
--------------
-
-.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.set_address
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.set_address()
 
     This function is only meant to be called on the mesh network's master node.
     Use this function to manually assign a `node_id` to a `RF24Network.node_address`.

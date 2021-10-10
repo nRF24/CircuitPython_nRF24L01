@@ -1,13 +1,11 @@
 .. include:: greetings.rst
 
 .. toctree::
-    :caption: Introduction
     :hidden:
 
     greetings
 
 .. toctree::
-    :caption: Examples
     :hidden:
 
     examples
@@ -33,18 +31,9 @@
     network_docs/constants
 
 .. toctree::
-    :caption: Troubleshooting
     :hidden:
 
     troubleshooting
-
-.. toctree::
-    :caption: Store Links
-    :hidden:
-
-    2.4GHz Transceiver IC - nRF24L01+ <https://www.sparkfun.com/products/690>
-    SparkFun Transceiver Breakout - nRF24L01+ <https://www.sparkfun.com/products/691>
-    SparkFun Transceiver Breakout - nRF24L01+ (RP-SMA) <https://www.sparkfun.com/products/705>
 
 .. toctree::
     :caption: Other Links

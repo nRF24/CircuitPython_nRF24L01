@@ -1,6 +1,9 @@
 
 Troubleshooting info
-====================
+~~~~~~~~~~~~~~~~~~~~
+
+Common Problems
+===============
 
 Attribute dependency
 ********************

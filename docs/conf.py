@@ -34,6 +34,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.graphviz",
     "sphinx_copybutton",
+    "sphinx_immaterial"
     # "rst2pdf.pdfbuilder",  # for local pdf builder support
 ]
 
@@ -46,7 +47,10 @@ autodoc_member_order = "bysource"
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "CircuitPython": ("https://circuitpython.readthedocs.io/en/latest/", None),
-    "Adafruit_logging": ("https://circuitpython.readthedocs.io/projects/logging/en/latest/", None),
+    "Adafruit_logging": (
+        "https://circuitpython.readthedocs.io/projects/logging/en/latest/",
+        None,
+    ),
 }
 
 html_baseurl = "https://circuitpython-nrf24l01.readthedocs.io/"
@@ -108,137 +112,60 @@ todo_emit_warnings = False
 
 napoleon_numpy_docstring = False
 
-# pygment custom style
-# --------------------------------------------------
-
-class DarkPlus(Style):
-    """A custom pygment highlighting scheme based on
-    VSCode's builtin `Dark Plus` theme"""
-
-    background_color = "#1E1E1E"
-    highlight_color = "#ff0000"
-    line_number_color = "#FCFCFC"
-    line_number_background_color = "#282828"
-
-    default_style = ""
-    styles = {
-        Text: "#FEFEFE",
-        Comment.Single: "#5E9955",
-        Comment.Multiline: "#5E9955",
-        Comment.Preproc: "#B369BF",
-        Other: "#FEFEFE",
-        Keyword: "#499CD6",
-        Keyword.Declaration: "#C586C0",
-        Keyword.Namespace: "#B369BF",
-        # Keyword.Pseudo: "#499CD6",
-        # Keyword.Reserved: "#499CD6",
-        Keyword.Type: "#48C999",
-        Name: "#FEFEFE",
-        Name.Builtin: "#EAEB82",
-        Name.Builtin.Pseudo: "#499DC7",
-        Name.Class: "#48C999",
-        Name.Decorator: "#EAEB82",
-        Name.Exception: "#48C999",
-        Name.Attribute: "#569CD6",
-        Name.Variable:" #9CDCFE",
-        Name.Variable.Magic: "#EAEB82",
-        Name.Function: "#EAEB82",
-        Name.Function.Magic: "#EAEB82",
-        Literal: "#AC4C1E",
-        String: "#B88451",
-        String.Escape: "#DEA868",
-        String.Affix: "#499DC7",
-        Number: "#B3D495",
-        Operator: "#FEFEFE",
-        Operator.Word: "#499DC7",
-        Generic.Output: "#F4DA8B",
-        Generic.Prompt: "#99FFA2",
-        Generic.Traceback: "#FF0909",
-        Generic.Error: "#FF0909",
-        Punctuation: "#FEFEFE",
-    }
-
-
-def pygments_monkeypatch_style(mod_name, cls):
-    """ function to inject a custom pygment style """
-    cls_name = cls.__name__
-    mod = type(__import__("os"))(mod_name)
-    setattr(mod, cls_name, cls)
-    setattr(pygments.styles, mod_name, mod)
-    sys.modules["pygments.styles." + mod_name] = mod
-    pygments.styles.STYLE_MAP[mod_name] = mod_name + "::" + cls_name
-
-
-pygments_monkeypatch_style("dark_plus", DarkPlus)
-# The name of the Pygments (syntax highlighting) style to use.
-pygments_style = "dark_plus"
-
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = "sphinx_material"
+html_theme = "sphinx_immaterial"
 # Material theme options
-html_sidebars = {
-    "**": ["logo-text.html", "globaltoc.html", "localtoc.html", "searchbox.html"]
-}
 
 html_theme_options = {
-    # Set the name of the project to appear in the navigation.
-    "nav_title": "CircuitPython-nRF24L01",
-    # A list of dictionaries where each has three keys:
-    #   href: The URL or pagename (str)
-    #   title: The title to appear (str)
-    #   internal: Flag indicating to use pathto (bool)
-    "nav_links": [
+    "features": [
+        # "navigation.expand",
+        # "navigation.tabs",
+        # "toc.integrate",
+        "navigation.sections",
+        # "navigation.instant",
+        # "header.autohide",
+        "navigation.top",
+        "search.highlight",
+        "search.share",
+    ],
+    "palette": [
         {
-            "href": "examples",
-            "title": "Examples",
-            "internal": True
+            "media": "(prefers-color-scheme: dark)",
+            "scheme": "slate",
+            "primary": "green",
+            "accent": "light blue",
+            "toggle": {
+                "icon": "material/lightbulb",
+                "name": "Switch to light mode",
+            },
         },
         {
-            "href": "basic_api",
-            "title": "Basic RF24 API",
-            "internal": True
-        },
-        {
-            "href": "advanced_api",
-            "title": "Advanced RF24 API",
-            "internal": True
-        },
-        {
-            "href": "configure_api",
-            "title": "Configurable RF24 API",
-            "internal": True
-        },
-        {
-            "href": "ble_api",
-            "title": "BLE API Reference",
-            "internal": True
-        },
-        {
-            "href": "troubleshooting",
-            "title": "Troubleshooting",
-            "internal": True
+            "media": "(prefers-color-scheme: light)",
+            "scheme": "default",
+            "primary": "green",
+            "accent": "light blue",
+            "toggle": {
+                "icon": "material/lightbulb-outline",
+                "name": "Switch to dark mode",
+            },
         },
     ],
-    # Set the color and the accent color
-    "color_primary": "blue",
-    "color_accent": "light-blue",
     # Set the repo location to get a badge with stats
     "repo_url": "https://github.com/nRF24/CircuitPython_nRF24L01/",
     "repo_name": "CircuitPython_nRF24L01",
+    "repo_type": "github",
     # Visible levels of the global TOC; -1 means unlimited
-    "globaltoc_depth": 1,
+    "globaltoc_depth": -1,
     # If False, expand all TOC entries
     "globaltoc_collapse": False,
     # If True, show hidden TOC entries
     "globaltoc_includehidden": True,
 }
-
-
 # Set link name generated in the top bar.
-html_title = "Introduction"
+html_title = "CircuitPython_nRF24L01"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
