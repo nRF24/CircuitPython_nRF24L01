@@ -2,21 +2,6 @@
 """This file is for `sphinx-build` configuration"""
 import os
 import sys
-import pygments.styles
-from pygments.style import Style
-from pygments.token import (
-    Text,
-    Other,
-    Comment,
-    Keyword,
-    Name,
-    Literal,
-    String,
-    Number,
-    Operator,
-    Generic,
-    Punctuation,
-)
 
 
 sys.path.insert(0, os.path.abspath(".."))
@@ -33,7 +18,6 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinx.ext.graphviz",
-    # "sphinx_copybutton",
     "sphinx_immaterial"
     # "rst2pdf.pdfbuilder",  # for local pdf builder support
 ]
