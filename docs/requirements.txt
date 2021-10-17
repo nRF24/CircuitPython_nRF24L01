@@ -1,2 +1,1 @@
-# git+https://github.com/2bndy5/sphinx-immaterial
-docs/sphinx_immaterial-0.0.post1.dev4-py3-none-any.whl
+sphinx-immaterial
