@@ -91,6 +91,11 @@ Basic RF24 API
         when entering RX mode. This is done to better manage the ACK payloads loaded into
         the TX FIFO.
 
+    .. changedversion:: 2.1.0
+        Prior to v2.1.0 this attribute would clear the status flags when entering RX mode. This
+        was removed to expedite applications that use manually transmitted acknowledgement
+        payloads.
+
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.any
 
     :returns:

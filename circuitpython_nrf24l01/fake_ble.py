@@ -19,9 +19,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-"""Original research was done by `Dmitry Grinberg and his write-up can be
-found here
-<http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_"""
+"""Original research was done by Dmitry Grinberg and his write-up can be found at
+http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery"""
 from os import urandom
 import struct
 from micropython import const
@@ -40,8 +39,7 @@ def swap_bits(original):
 
 
 def reverse_bits(original):
-    """This function reverses the bit order for an entire
-    buffer protocol object."""
+    """This function reverses the bit order for an entire buffer protocol object."""
     ret = bytearray(len(original))
     for i, byte in enumerate(original):
         ret[i] = swap_bits(byte)

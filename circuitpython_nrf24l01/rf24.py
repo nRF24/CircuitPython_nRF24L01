@@ -21,8 +21,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """rf24 module containing the base class RF24"""
-__version__ = "0.0.0-auto.0"
-__repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
 from micropython import const
 from .wrapper import SPIDevCtx, SPIDevice
@@ -261,8 +259,6 @@ class RF24:
             elif self._pipe0_read_addr is None and self._open_pipes & 1:
                 self._open_pipes &= 0x3E  # close_rx_pipe(0) is slower
                 self._reg_write(OPEN_PIPES, self._open_pipes)
-            # if self._status & 0x70:
-            #     self.clear_status_flags()
         else:
             if self._features & 6 == 6 and ((self._aa & self._dyn_pl) & 1):
                 self.flush_tx()

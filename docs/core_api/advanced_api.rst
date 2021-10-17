@@ -392,8 +392,7 @@ Status Byte
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.clear_status_flags
 
-    Internally, this is automatically called by `send()`, `write()`, `read()`, and when
-    `listen` changes from `False` to `True`.
+    Internally, this is automatically called by `send()`, `write()`, `read()`.
 
     :param bool data_recv: specifies wheather to clear the "RX Data Ready"
         (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr`) flag.
