@@ -3,7 +3,6 @@
     frame's header's `message_type` to an `int` in range [65, 127]. This will invoke
     a `NETWORK_ACK` response message.
 
-
 RF24Network API
 ===============
 
@@ -12,7 +11,7 @@ RF24Network API
 .. seealso:: Documentation for:
 
     1. `Network Topology <topology.html>`_
-    2. `Shared Networking API <base_api.html#>`_
+    2. `Shared Networking API <shared_api.html#>`_
     3. `Network Data Structures <structs.html>`_
     4. `Network Constants <constants.html>`_
 

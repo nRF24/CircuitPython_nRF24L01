@@ -300,7 +300,6 @@ Status Byte
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.tx_full
 
-    .
 
     |update manually| (especially after calling
     :py:func:`~circuitpython_nrf24l01.rf24.RF24.flush_tx()`).
@@ -313,7 +312,6 @@ Status Byte
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.irq_dr
 
-    .
 
     :Returns:
 
@@ -332,7 +330,6 @@ Status Byte
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.irq_df
 
-    .
 
     :Returns:
 
@@ -350,7 +347,6 @@ Status Byte
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.irq_ds
 
-    .
 
     :Returns:
 
@@ -380,7 +376,6 @@ Status Byte
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.pipe
 
-    .
 
     .. versionchanged:: 1.2.0
         In previous versions of this library, this attribute was a read-only function

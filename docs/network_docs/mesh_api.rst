@@ -9,7 +9,7 @@ RF24Mesh API
 
 .. seealso:: Documentation for:
 
-    1. `Shared Networking API <base_api.html#>`_ (API common to `RF24Mesh` and `RF24Network`)
+    1. `Shared Networking API <shared_api.html#>`_ (API common to `RF24Mesh` and `RF24Network`)
     2. `RF24Network API <network_api.html>`_ (`RF24Mesh` inherits from the same mixin class
        that `RF24Network` inherits from)
 

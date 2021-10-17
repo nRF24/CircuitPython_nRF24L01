@@ -106,13 +106,13 @@ html_theme = "sphinx_immaterial"
 html_theme_options = {
     "features": [
         # "navigation.expand",
-        # "navigation.tabs",
+        "navigation.tabs",
         # "toc.integrate",
         "navigation.sections",
-        # "navigation.instant",
+        "navigation.instant",
         # "header.autohide",
         "navigation.top",
-        "search.highlight",
+        # "search.highlight",
         "search.share",
     ],
     "palette": [

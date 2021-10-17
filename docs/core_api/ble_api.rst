@@ -32,7 +32,7 @@ here has been adapted to work with CircuitPython.
        flags) - **3** (CRC checksum) = **18**
 
        Use the helper function
-       :py:func:`~circuitpython_nrf24l01.fake_ble.FakeBLE.available()` to
+       :py:func:`~circuitpython_nrf24l01.fake_ble.FakeBLE.len_available()` to
        detirmine if your payload can be transmit.
     2. the channels that BLE use are limited to the following three: 2.402
        GHz, 2.426 GHz, and 2.480 GHz. We have provided a tuple of these
