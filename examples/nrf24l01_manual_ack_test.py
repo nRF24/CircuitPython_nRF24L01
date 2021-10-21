@@ -89,7 +89,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             print(
                 "Transmission successful! Time to transmit:",
                 f"{int((end_timer - start_timer) / 1000)} us. Sent:",
-                f'{buffer[:6].decode("utf-8")}{counter[0]}',
+                "{}{}".format(buffer[:6].decode("utf-8"), counter[0]),
                 end=" ",
             )
             if nrf.pipe is None:  # is there a payload?
@@ -103,7 +103,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
                 counter[0] = received[7:8][0]
                 print(
                     f"Receieved {length} bytes with pipe {pipe_number}:",
-                    f'{bytes(received[:6]).decode("utf-8")}{counter[0]}'
+                    "{}{}".format(bytes(received[:6]).decode("utf-8"), counter[0]),
                 )
         count -= 1
         # make example readable in REPL by slowing down transmissions
@@ -131,7 +131,9 @@ def slave(timeout=6):
             nrf.listen = True  # put the radio back in RX mode
             print(
                 f"Received {length} on pipe {pipe}:",
-                f'{bytes(received[:6]).decode("utf-8")}{received[7:8][0]} Sent:',
+                "{}{} Sent:".format(
+                    bytes(received[:6]).decode("utf-8"), received[7:8][0]
+                ),
                 end=" ",
             )
             if not result:

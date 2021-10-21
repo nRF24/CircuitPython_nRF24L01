@@ -394,7 +394,7 @@ class RF24:
             else  "0b" + "0" * (8 - len(bin(self._aa))) + bin(self._aa)[2:]
         )
         pwr = (
-            ("Standby-II" if self.ce_pin else "Standby-I")
+            ("Standby-II" if self._ce_pin.value else "Standby-I")
             if self._config & 2 else "Off"
         )
         print(f"Is a plus variant_________{self.is_plus_variant}")
@@ -839,7 +839,7 @@ class RF24:
     def start_carrier_wave(self):
         """Starts a continuous carrier wave test."""
         self.power = 0
-        self.ce_pin.value = 0
+        self._ce_pin.value = 0
         self.power = 1
         self.listen = 0
         self._rf_setup |= 0x90

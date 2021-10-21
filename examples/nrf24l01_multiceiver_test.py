@@ -101,7 +101,7 @@ def node(node_number=0, count=6):
         if report:
             print(
                 f"Transmission of payloadID {counter} as node {node_number} success"
-                f"full! Transmission time: {(end_timer - start_timer) / 1000} us"
+                f"full! Transmission time: {int((end_timer - start_timer) / 1000)} us"
             )
         else:
             print("Transmission failed or timed out")

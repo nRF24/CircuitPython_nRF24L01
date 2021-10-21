@@ -23,7 +23,7 @@ try:  # on Linux
 except ImportError:  # on CircuitPython only
     # using board.SPI() automatically selects the MCU's
     # available SPI pins, board.SCK, board.MOSI, board.MISO
-    spi = board.SPI()  # init spi bus object
+    SPI_BUS = board.SPI()  # init spi bus object
 
     # change these (digital output) pins accordingly
     CE_PIN = DigitalInOut(board.D4)
@@ -98,7 +98,9 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             else:
                 # result[:6] truncates c-string NULL termiating char
                 # received counter is a unsigned byte, thus result[7:8][0]
-                print(f'Received: {result[:6].decode("utf-8")}{result[7:8][0]}')
+                print(
+                    "Received: {}{}".format(result[:6].decode("utf-8"), result[7:8][0])
+                )
             counter[0] += 1  # increment payload counter
         elif not result:
             print("send() failed or timed out")
@@ -130,8 +132,8 @@ def slave(timeout=6):
             # the [:6] truncates the c-string NULL termiating char
             print(
                 f"Received {length} bytes on pipe {pipe_number}:",
-                f'{received[:6].decode("utf-8")}{received[7:8][0]}',
-                f'Sent: {buffer[:6].decode("utf-8")}{buffer[7:8][0]}'
+                "{}{}".format(received[:6].decode("utf-8"), received[7:8][0]),
+                "Sent: {}{}".format(buffer[:6].decode("utf-8"), buffer[7:8][0]),
             )
             start = time.monotonic()  # reset timer
             buffer = b"World \0" + bytes([counter[0]])  # build new ACK
