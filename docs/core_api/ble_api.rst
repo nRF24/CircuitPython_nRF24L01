@@ -131,11 +131,21 @@ here has been adapted to work with CircuitPython.
     :param bytes,bytearray data: The BLE payloads data. This data should include the
         CRC24 checksum.
     :param int coef: The whitening coefficient used to avoid repeating binary patterns.
-        Usually, this is the nRF24L01 channel that the payload transits plus 37.
+        This is the index of `BLE_FREQ` tuple for nRF24L01 channel that the payload transits
+        (plus 37).
+
+        .. code-block:: python
+
+            coef = None  # placeholder for the coefficient
+            rx_channel = nrf.channel
+            for index, chl in enumerate(BLE_FREQ):
+                if chl == rx_channel:
+                    coef = index + 37
+                    break
 
         .. note::
             If currently used nRF24L01 channel is different from the channel in which the
-            payload was received, then use this parameter set to the ``rx-channel + 37``.
+            payload was received, then set this parameter accordingly.
 
 .. autodata:: circuitpython_nrf24l01.fake_ble.BLE_FREQ
 
