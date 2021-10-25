@@ -122,6 +122,20 @@ here has been adapted to work with CircuitPython.
     :returns: A 24-bit `bytearray` representing the checksum of the data (in
         proper little endian).
 
+.. autofunction:: circuitpython_nrf24l01.fake_ble.whitener
+
+    This is a helper function to `FakeBLE.whiten()`. It has been broken out of the
+    `FakeBLE` class to allow whitening and dewhitening a BLE payload without the
+    hardcoded coefficient.
+
+    :param bytes,bytearray data: The BLE payloads data. This data should include the
+        CRC24 checksum.
+    :param int coef: The whitening coefficient used to avoid repeating binary patterns.
+        Usually, this is the nRF24L01 channel that the payload transits plus 37.
+
+        .. note::
+            If currently used nRF24L01 channel is different from the channel in which the
+            payload was received, then use this parameter set to the ``rx-channel + 37``.
 
 .. autodata:: circuitpython_nrf24l01.fake_ble.BLE_FREQ
 
@@ -183,6 +197,11 @@ FakeBLE class
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.channel
 
     The only allowed channels are those contained in the `BLE_FREQ` tuple.
+
+    .. versionchanged:: 2.1.0
+        Any invalid input value (that is not found in `BLE_FREQ`) had raised a
+        `ValueError` exception. This behavior changed to ignoring invalid input values,
+        and the exception is no longer raised.
 
 .. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.hop_channel
 
@@ -356,12 +375,25 @@ Abstract Parent
 
 .. autoclass:: circuitpython_nrf24l01.fake_ble.ServiceData
     :members:
-    :special-members: __len__
+    :special-members: __len__,__repr__
 
     :param int uuid: The 16-bit UUID `"GATT Service assigned number"
         <https://specificationrefs.bluetooth.com/assigned-values/16-bit%20UUID%20Numbers%20Document.pdf#page=19>`_ defined by the
         Bluetooth SIG to describe the service data. This parameter is
         required.
+
+Service data UUID numbers
+*************************
+
+These are the 16-bit UUID numbers used by the
+`Derivitive Children of the ServiceData class <ble_api.html#derivitive-children>`_
+
+.. autodata:: circuitpython_nrf24l01.fake_ble.TEMPERATURE_UUID
+    :annotation: = 0x1809
+.. autodata:: circuitpython_nrf24l01.fake_ble.BATTERY_UUID
+    :annotation: = 0x180F
+.. autodata:: circuitpython_nrf24l01.fake_ble.EDDYSTONE_UUID
+    :annotation: = 0xFEAA
 
 Derivitive Children
 *******************

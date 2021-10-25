@@ -290,9 +290,11 @@ class FakeBLE(RF24):
         self.send(reverse_bits(payload))
 
     def print_details(self, dump_pipes=False):
-        super().print_details(dump_pipes)
+        super().print_details(False)
         print("BLE device name___________{}".format(str(self.name)))
         print("Broadcasting PA Level_____{}".format(self.show_pa_level))
+        if dump_pipes:
+            super().print_pipes()
 
     @RF24.channel.setter
     def channel(self, value):
@@ -369,13 +371,13 @@ class ServiceData:
         self._data = b""
 
     @property
-    def uuid(self):
+    def uuid(self) -> bytes:
         """This returns the 16-bit Service UUID as a `bytearray` in little
         endian. (read-only)"""
         return self._type
 
     @property
-    def data(self):
+    def data(self) -> bytes:
         """This attribute is a `bytearray` or `bytes` object."""
         return self._data
 
@@ -384,12 +386,12 @@ class ServiceData:
         self._data = value
 
     @property
-    def buffer(self):
+    def buffer(self) -> bytes:
         """Get the representation of the instantiated object as an
         immutable `bytes` object (read-only)."""
         return bytes(self._type + self._data)
 
-    def __len__(self):
+    def __len__(self) -> int:
         """For convenience, this class is compatible with python's builtin
         :py:func:`len()` method. In this context, this will return the length
         of the object (in bytes) as it would appear in the advertisement
@@ -397,6 +399,9 @@ class ServiceData:
         return len(self._type) + len(self._data)
 
     def __repr__(self) -> str:
+        """For convenience, this class is compatible with python's builtin
+        :py:func:`repr()` method. In this context, it will return a string of
+        data with applicable suffixed units."""
         return address_repr(self.buffer, False)
 
 
@@ -408,7 +413,7 @@ class TemperatureServiceData(ServiceData):
         super().__init__(TEMPERATURE_UUID)
 
     @property
-    def data(self):
+    def data(self) -> float:
         """This attribute is a `float` value."""
         return struct.unpack("<i", self._data[:3] + b"\0")[0] * 10 ** -2
 
@@ -431,7 +436,7 @@ class BatteryServiceData(ServiceData):
         super().__init__(BATTERY_UUID)
 
     @property
-    def data(self):
+    def data(self) -> int:
         """The attribute is a 1-byte unsigned `int` value."""
         return int(self._data[0])
 
@@ -461,7 +466,7 @@ class UrlServiceData(ServiceData):
     ]
 
     @property
-    def pa_level_at_1_meter(self):
+    def pa_level_at_1_meter(self) -> int:
         """The TX power level (in dBm) at 1 meter from the nRF24L01. This
         defaults to -25 (due to testing when broadcasting with 0 dBm) and must
         be a 1-byte signed `int`."""
@@ -475,11 +480,11 @@ class UrlServiceData(ServiceData):
             self._type = self._type[:-1] + value[:1]
 
     @property
-    def uuid(self):
+    def uuid(self) -> bytes:
         return self._type[:2]
 
     @property
-    def data(self):
+    def data(self) -> str:
         """This attribute is a `str` of URL data."""
         value = self._data.decode()
         for i, b_code in enumerate(UrlServiceData.codex_prefix):
@@ -499,5 +504,5 @@ class UrlServiceData(ServiceData):
         elif isinstance(value, (bytes, bytearray)):
             self._data = value
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Advertised URL: " + self.data
