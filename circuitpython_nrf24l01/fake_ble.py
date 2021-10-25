@@ -66,6 +66,7 @@ def whitener(buf, coef):
         data[i] = byte ^ res
     return data
 
+
 def crc24_ble(data, deg_poly=0x65B, init_val=0x555555):
     """This function calculates a checksum of various sized buffers."""
     crc = init_val
@@ -101,7 +102,7 @@ class QueueElement:
 
     def __init__(self, buffer):
         #: The transmitting BLE device's MAC address as a `bytes` object.
-        self.mac = bytes(buffer[2 : 8])
+        self.mac = bytes(buffer[2:8])
         self.name = None
         """The transmitting BLE device's name. This will be a `str`, `bytes` object (if
         a `UnicodeError` was caught), or `None` (if not included in the received
@@ -124,7 +125,7 @@ class QueueElement:
             size = buffer[i]
             if size + i + 1 > end or i + 1 > end or not size:
                 # data seems malformed. just append the buffer & move on
-                self.data.append(buffer[i: end])
+                self.data.append(buffer[i:end])
                 break
             result = self._decode_data_struct(buffer[i + 1 : i + 1 + size])
             if not result:  # decoding failed
@@ -145,7 +146,7 @@ class QueueElement:
                 self.name = bytes(buf[1:])
         if buf[0] == 0xFF:  # if it is a custom/user-defined data format
             self.data.append(buf)  # return the raw buffer as a value
-        if buf[0] == 0x16: # if it is service data
+        if buf[0] == 0x16:  # if it is service data
             service_data_uuid = struct.unpack("<H", buf[1:3])[0]
             if service_data_uuid == TEMPERATURE_UUID:
                 service = TemperatureServiceData()
@@ -316,9 +317,8 @@ class FakeBLE(RF24):
             self.rx_cache = self.whiten(reverse_bits(self.rx_cache))
             end = self.rx_cache[1] + 2
             self.rx_cache = self.rx_cache[: end + 3]
-            if (
-                end < 30
-                and self.rx_cache[end:end + 3] == crc24_ble(self.rx_cache[:end])
+            if end < 30 and self.rx_cache[end : end + 3] == crc24_ble(
+                self.rx_cache[:end]
             ):
                 # print("recv'd:", self.rx_cache)
                 # print("crc:", self.rx_cache[end: end + 3])
@@ -435,6 +435,7 @@ class TemperatureServiceData(ServiceData):
     def __repr__(self) -> str:
         return f"Temperature: {self.data} C"
 
+
 class BatteryServiceData(ServiceData):
     """This derivitive of the `ServiceData` class can be used to represent
     battery charge percentage as a 1-byte value."""
@@ -467,10 +468,8 @@ class UrlServiceData(ServiceData):
         self._type += bytes([0x10]) + struct.pack(">b", -25)
 
     codex_prefix = ["http://www.", "https://www.", "http://", "https://"]
-    codex_suffix = [
-        ".com/", ".org/", ".edu/", ".net/", ".info/", ".biz/", ".gov/",
-        ".com", ".org", ".edu", ".net", ".info", ".biz", ".gov",
-    ]
+    codex_suffix = [".com", ".org", ".edu", ".net", ".info", ".biz", ".gov"]
+    codex_suffix = [suffix + "/" for suffix in codex_suffix] + codex_suffix
 
     @property
     def pa_level_at_1_meter(self) -> int:
