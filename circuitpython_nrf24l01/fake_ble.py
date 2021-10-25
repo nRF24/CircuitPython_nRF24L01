@@ -100,11 +100,15 @@ class QueueElement:
     """
 
     def __init__(self, buffer):
-        #: The transmitting BLE device's MAC address
+        #: The transmitting BLE device's MAC address as a `bytes` object.
         self.mac = bytes(buffer[2 : 8])
-        self.name = None  #: The transmitting BLE device's name (if any)
+        self.name = None
+        """The transmitting BLE device's name. This will be a `str`, `bytes` object (if
+        a `UnicodeError` was caught), or `None` (if not included in the received
+        payload)."""
         self.pa_level = None
-        """The transmitting device's PA Level (if included in the received payload).
+        """The transmitting device's PA Level (if included in the received payload)
+        as an `int`.
 
         .. note:: This value does not represent the received signal strength.
             The nRF24L01 will receive anything over a -64 dbm threshold."""
@@ -112,7 +116,8 @@ class QueueElement:
         """A `list` of the transmitting device's data structures (if any).
         If an element in this `list` is not an instance (or descendant) of the
         `ServiceData` class, then it is likely a custom, user-defined, or unsupported
-        speification - in which case it will be a `bytearray` object."""
+        specification - in which case it will be a `bytearray` object."""
+
         end = buffer[1] + 2
         i = 8
         while i < end:
@@ -137,7 +142,7 @@ class QueueElement:
             try:
                 self.name = buf[1:].decode()
             except UnicodeError:
-                return False
+                self.name = bytes(buf[1:])
         if buf[0] == 0xFF:  # if it is a custom/user-defined data format
             self.data.append(buf)  # return the raw buffer as a value
         if buf[0] == 0x16: # if it is service data
@@ -212,6 +217,8 @@ class FakeBLE(RF24):
     @name.setter
     def name(self, _name):
         if _name is not None:
+            if isinstance(_name, str):
+                _name = _name.encode("utf-8")
             if not isinstance(_name, (bytes, bytearray)):
                 raise ValueError("name must be a bytearray or bytes object.")
             if len(_name) > (18 - self._show_dbm * 3):
@@ -219,14 +226,14 @@ class FakeBLE(RF24):
         self._ble_name = _name
 
     @property
-    def show_pa_level(self):
+    def show_pa_level(self) -> bool:
         """If this attribute is `True`, the payload will automatically include
         the nRF24L01's :attr:`~circuitpython_nrf24l01.rf24.RF24.pa_level` in the
         advertisement."""
         return bool(self._show_dbm)
 
     @show_pa_level.setter
-    def show_pa_level(self, enable):
+    def show_pa_level(self, enable: bool):
         if enable and len(self.name) > 16:
             raise ValueError("there is not enough room to show the pa_level.")
         self._show_dbm = bool(enable)
@@ -236,7 +243,7 @@ class FakeBLE(RF24):
         self._curr_freq += 1 if self._curr_freq < 2 else -2
         self.channel = BLE_FREQ[self._curr_freq]
 
-    def whiten(self, data):
+    def whiten(self, data) -> bytearray:
         """Whitening the BLE packet data ensures there's no long repetition
         of bits."""
         coef = (self._curr_freq + 37) | 0x40
@@ -246,7 +253,7 @@ class FakeBLE(RF24):
         # print("whitened: 0x" + address_repr(data, 0))
         return data
 
-    def _make_payload(self, payload):
+    def _make_payload(self, payload) -> bytes:
         """Assemble the entire packet to be transmitted as a payload."""
         if self.len_available(payload) < 0:
             raise ValueError(
@@ -268,13 +275,13 @@ class FakeBLE(RF24):
         buf += crc24_ble(buf)
         return buf
 
-    def len_available(self, hypothetical=b""):
+    def len_available(self, hypothetical=b"") -> int:
         """This function will calculates how much length (in bytes) is
         available in the next payload."""
         name_length = (len(self._ble_name) + 2) if self._ble_name is not None else 0
         return 18 - name_length - self._show_dbm * 3 - len(hypothetical)
 
-    def advertise(self, buf=b"", data_type=0xFF):
+    def advertise(self, buf=b"", data_type: int = 0xFF):
         """This blocking function is used to broadcast a payload."""
         if not isinstance(buf, (bytearray, bytes, list, tuple)):
             raise ValueError("buffer is an invalid format")
@@ -289,7 +296,7 @@ class FakeBLE(RF24):
         # print("reversed: 0x{}".format(address_repr(reverse_bits(payload))))
         self.send(reverse_bits(payload))
 
-    def print_details(self, dump_pipes=False):
+    def print_details(self, dump_pipes: bool = False):
         super().print_details(False)
         print("BLE device name___________{}".format(str(self.name)))
         print("Broadcasting PA Level_____{}".format(self.show_pa_level))
@@ -297,12 +304,12 @@ class FakeBLE(RF24):
             super().print_pipes()
 
     @RF24.channel.setter
-    def channel(self, value):
+    def channel(self, value: int):
         if value in BLE_FREQ:
             self._channel = value
             self._reg_write(0x05, value)
 
-    def available(self):
+    def available(self) -> bool:
         """A `bool` describing if there is a payload in the `rx_queue`."""
         if super().available():
             self.rx_cache = super().read(self.payload_length)
@@ -319,7 +326,7 @@ class FakeBLE(RF24):
         return bool(self.rx_queue)
 
     # pylint: disable=arguments-differ
-    def read(self):
+    def read(self) -> QueueElement:
         """Get the First Out element from the queue."""
         if self.rx_queue:
             ret_val = self.rx_queue[0]

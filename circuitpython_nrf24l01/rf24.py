@@ -417,9 +417,9 @@ class RF24:
         )
         print(f"RF Power Amplifier________{_pa_level} dbm")
         print(
-            "RF Low Noise Amplifier____" + "Enabled"
-            if bool(self._rf_setup & 1)
-            else "Disabled"
+            "RF Low Noise Amplifier____{}abled".format(
+                "En" if bool(self._rf_setup & 1) else "Dis"
+            )
         )
         print(f"CRC bytes_________________{_crc}")
         print(f"Address length____________{self._addr_len} bytes")
@@ -433,35 +433,29 @@ class RF24:
         print(f"Packets lost on current channel_____________________{observer >> 4}")
         print(f"Retry attempts made for last transmission___________{observer & 0xF}")
         print(
-            "IRQ on Data Ready__{}".format(
-                "Disabled" if self._config & 64 else "_Enabled"
-            ),
+            "IRQ on Data Ready__{}abled".format("Dis" if self._config & 64 else "_En"),
             f"   Data Ready___________{self.irq_dr}",
         )
         print(
-            "IRQ on Data Fail___{}".format(
-                "Disabled" if self._config & 16 else "_Enabled"
-            ),
+            "IRQ on Data Fail___{}abled".format("Dis" if self._config & 16 else "_En"),
             f"   Data Failed__________{self.irq_df}",
         )
         print(
-            "IRQ on Data Sent___{}".format(
-                "Disabled" if self._config & 32 else "_Enabled"
-            ),
+            "IRQ on Data Sent___{}abled".format("Dis" if self._config & 32 else "_En"),
             f"   Data Sent____________{self.irq_ds}",
         )
         print(
-            f'TX FIFO full__________{"_True" if _fifo & 0x20 else "False"}',
+            "TX FIFO full__________{}e".format("_Tru" if _fifo & 0x20 else "Fals"),
             f"   TX FIFO empty________{bool(_fifo & 0x10)}",
         )
         print(
-            f'RX FIFO full__________{"_True" if _fifo & 2 else "False"}',
+            "RX FIFO full__________{}e".format("_Tru" if _fifo & 2 else "Fals"),
             f"   RX FIFO empty________{bool(_fifo & 1)}",
         )
         print(
-            f'Ask no ACK_________{"_Allowed" if self._features & 1 else "Disabled"}',
-            "   Custom ACK Payload___{}".format(
-                "Enabled" if self._features & 2 else "Disabled"
+            "Ask no ACK_________{}ed    Custom ACK Payload___{}abled".format(
+                "_Allow" if self._features & 1 else "Disabl",
+                "En" if self._features & 2 else "Dis"
             ),
         )
         print(f"Dynamic Payloads___{dyn_p}    Auto Acknowledgment__{auto_a}")
@@ -487,8 +481,9 @@ class RF24:
         for i in range(6):
             is_open = self._open_pipes & (1 << i)
             print(
-                f'Pipe {i} ({" open " if is_open else "closed"}) bound:',
-                f"0x{address_repr(self.address(i))}",
+                "Pipe {} ({}) bound: 0x{}".format(
+                    i, " open " if is_open else "closed", address_repr(self.address(i))
+                ),
             )
             if is_open and not self._dyn_pl & (1 << i):
                 print(f"\t\texpecting {self._pl_len[i]} byte static payloads")

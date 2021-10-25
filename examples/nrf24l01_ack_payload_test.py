@@ -90,7 +90,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             print(
                 "Transmission successful! Time to transmit:",
                 f"{int((end_timer - start_timer) / 1000)} us.",
-                f'Sent: {buffer[:6].decode("utf-8")}{counter[0]}',
+                "Sent: {}{}".format(buffer[:6].decode("utf-8"), counter[0]),
                 end=" ",
             )
             if isinstance(result, bool):

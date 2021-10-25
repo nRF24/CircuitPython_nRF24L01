@@ -94,7 +94,7 @@ def master(count=1, size=32):  # count = 5 will transmit the list 5 times
         for r in result:  # tally the resulting success rate
             successful += 1 if r else 0
     print(
-        f"successfully sent {successful / (size * count) * 100}%,"
+        f"successfully sent {successful / (size * count) * 100}%",
         f"({successful}/{size * count})"
     )
 
@@ -136,7 +136,7 @@ def master_fifo(count=1, size=32):
         end_timer = time.monotonic_ns()  # end timer
         print(
             f"Transmission took {(end_timer - start_timer) / 1000} us",
-            "with {failures} failures detected."
+            f"with {failures} failures detected."
         )
 
 

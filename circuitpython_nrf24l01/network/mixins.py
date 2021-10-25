@@ -228,13 +228,13 @@ class NetworkMixin(RadoMixin):
         print(f"Return on system messages__{bool(self.ret_sys_msg)}")
         print(f"Allow network multicasts___{bool(self.allow_multicast)}")
         print(
-            "Multicast relay____________{}".format(
-                "Enabled" if self._relay_enabled else "Disabled"
+            "Multicast relay____________{}abled".format(
+                "En" if self._relay_enabled else "Dis"
             )
         )
         print(
-            "Network fragmentation______{}".format(
-                "Enabled" if self._frag_enabled else "Disabled"
+            "Network fragmentation______{}abled".format(
+                "En" if self._frag_enabled else "Dis"
             )
         )
         print(f"Network max message length_{self.max_message_length} bytes")

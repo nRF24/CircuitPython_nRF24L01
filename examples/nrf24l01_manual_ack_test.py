@@ -131,10 +131,8 @@ def slave(timeout=6):
             nrf.listen = True  # put the radio back in RX mode
             print(
                 f"Received {length} on pipe {pipe}:",
-                "{}{} Sent:".format(
-                    bytes(received[:6]).decode("utf-8"), received[7:8][0]
-                ),
-                end=" ",
+                "{}{}".format(bytes(received[:6]).decode("utf-8"), received[7:8][0]),
+                end=" Sent: ",
             )
             if not result:
                 print("Response failed or timed out")

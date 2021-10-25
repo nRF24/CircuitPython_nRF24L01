@@ -324,7 +324,7 @@ Auto-Retry feature
     attribute. If `auto_ack` is disabled on the transmitting nRF24L01's pipe 0, then this
     attribute is ignored when calling `send()`.
 
-    A valid input value will be clamped to range [0, 15]. Default is set to 3. A value of
+    A valid input value will be clamped to range [0, 15]. Default is set to 15. A value of
     ``0`` disables the automatic re-transmit feature, but the sending nRF24L01 will still
     wait the number of microseconds specified by `ard` for an Acknowledgement (ACK) packet
     response (assuming `auto_ack` is enabled).
@@ -332,6 +332,9 @@ Auto-Retry feature
     .. versionchanged:: 2.0.0
         Invalid input values are clamped to proper range instead of throwing a `ValueError`
         exception.
+    .. versionchanged:: 2.2.0
+        Default value changed from 3 to the maximum 15. This only affects performance in
+        scenarios that experience unreliable reception.
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.ard
 

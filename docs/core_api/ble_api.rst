@@ -179,12 +179,19 @@ FakeBLE class
 
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.name
 
-    This is not required. In fact setting this attribute will subtract from
+    This is not required. In fact, setting this attribute will subtract from
     the available payload length (in bytes). Set this attribute to `None` to
     disable advertising the device name.
 
-    .. note:: This information occupies (in the TX FIFO) an extra 2 bytes plus
+    Valid inputs are `str`, `bytes`, `bytearray`, or `None`. A `str` will be converted to
+    a `bytes` object automatically.
+
+    .. note::
+        This information occupies (in the TX FIFO) an extra 2 bytes plus
         the length of the name set by this attribute.
+
+    .. versionchanged:: 2.2.0
+        This attribute can also be set with a `str`, but it must be UTF-8 compatible.
 
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.show_pa_level
 
