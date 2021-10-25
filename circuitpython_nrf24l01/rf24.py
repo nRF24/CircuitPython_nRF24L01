@@ -49,8 +49,7 @@ class RF24:
 
     def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
         self._ce_pin = ce_pin
-        if ce_pin is not None:
-            self._ce_pin.switch_to_output(value=False)
+        self._ce_pin.switch_to_output(value=False)
         # init shadow copy of RX addresses for all pipes for context manager
         self._pipes = []  # will be 2 bytearrays and 4 ints
         # self._status = status byte returned on all SPI transactions
