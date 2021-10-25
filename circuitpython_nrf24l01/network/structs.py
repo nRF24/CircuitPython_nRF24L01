@@ -29,7 +29,7 @@ from .constants import (
     MSG_FRAG_LAST,
 )
 
-def is_address_valid(address):
+def is_address_valid(address) -> bool:
     """Test if a given address is a valid :ref:`Logical Address <Logical Address>`."""
     if address is None:
         return False
@@ -47,7 +47,7 @@ def is_address_valid(address):
 class RF24NetworkHeader:
     """The header information used for routing network messages."""
 
-    def __init__(self, to_node=None, message_type=None):
+    def __init__(self, to_node: int=None, message_type=None):
         self.from_node = None  #: |uint16_t|
         self.to_node = (to_node & 0xFFF) if to_node is not None else 0  #: |uint16_t|
         #: The type of message.
@@ -63,7 +63,7 @@ class RF24NetworkHeader:
 
     __next_id = 0
 
-    def unpack(self, buffer):
+    def unpack(self, buffer) -> bool:
         """Decode header data from the first 8 bytes of a frame's buffer."""
         if len(buffer) < 8:
             return False
@@ -76,7 +76,7 @@ class RF24NetworkHeader:
         ) = struct.unpack("HHHBB", buffer[:8])
         return True
 
-    def pack(self):
+    def pack(self) -> bytes:
         """This function |internal_use|"""
         return struct.pack(
             "HHHBB",
@@ -87,10 +87,10 @@ class RF24NetworkHeader:
             self.reserved & 0xFF,
         )
 
-    def __len__(self):
+    def __len__(self) -> int:
         return 8
 
-    def to_string(self):
+    def to_string(self) -> str:
         """:Returns: A `str` describing all of the header's attributes."""
         return "from {} to {} type {} id {} reserved {}".format(
             oct(0o7777 if self.from_node is None else self.from_node),
@@ -115,21 +115,21 @@ class RF24NetworkFrame:
         """The entire message or a fragment of a message allocated to the frame."""
 
 
-    def unpack(self, buffer):
+    def unpack(self, buffer) -> bool:
         """Decode the `header` & `message` from a ``buffer``."""
         if self.header.unpack(buffer):
             self.message = buffer[8:]
             return True
         return False
 
-    def pack(self):
+    def pack(self) -> bytes:
         """This attribute |internal_use|"""
         return self.header.pack() + bytes(self.message)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return 8 + len(self.message)
 
-    def is_ack_type(self):
+    def is_ack_type(self) -> bool:
         """Check if the frame is to expect a `NETWORK_ACK` message."""
         return 64 < self.header.message_type < 192
 
@@ -147,7 +147,7 @@ class FrameQueue:
             self.max_queue_size = queue.max_queue_size
         super().__init__()
 
-    def enqueue(self, frame: RF24NetworkFrame):
+    def enqueue(self, frame: RF24NetworkFrame) -> bool:
         """Add a `RF24NetworkFrame` to the queue."""
         if self.max_queue_size == len(self._queue):
             return False
@@ -171,7 +171,7 @@ class FrameQueue:
         """:Returns: The First Out element and removes it from the queue."""
         return None if not self._queue else self._queue.pop(0)
 
-    def __len__(self):
+    def __len__(self) -> int:
         """:Returns: The number of the enqueued frames."""
         return len(self._queue)
 
@@ -182,7 +182,7 @@ class FrameQueueFrag(FrameQueue):
         super().__init__(queue)
         self._frags = RF24NetworkFrame()  # initialize cache
 
-    def enqueue(self, frame: RF24NetworkFrame):
+    def enqueue(self, frame: RF24NetworkFrame) -> bool:
         """Add a `RF24NetworkFrame` to the queue."""
         if frame.header.message_type in (MSG_FRAG_FIRST, MSG_FRAG_MORE, MSG_FRAG_LAST):
             if frame.header.message_type == MSG_FRAG_FIRST:

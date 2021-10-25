@@ -130,7 +130,7 @@ Advanced API
         describe if the message has been received at its target destination.
 
         .. note::
-            This function will always return `True` if a message is directed to a node's pipe
+            This function will always return  if a message is directed to a node's pipe
             that does not have `auto_ack` enabled (which will likely be pipe 0 in most network
             contexts).
         .. tip:: To ensure a message has been delivered to its target destination, set the

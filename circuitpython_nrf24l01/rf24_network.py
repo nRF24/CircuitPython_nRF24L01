@@ -21,10 +21,7 @@
 # THE SOFTWARE.
 """rf24_network module containing the base class RF24Network"""
 from .network.mixins import NetworkMixin
-from .network.structs import (
-    RF24NetworkFrame,
-    is_address_valid,
-)
+from .network.structs import RF24NetworkHeader, RF24NetworkFrame, is_address_valid
 from .network.constants import (
     NETWORK_MULTICAST_ADDR,
     AUTO_ROUTING,
@@ -47,23 +44,26 @@ class RF24NetworkRoutingOnly(NetworkMixin):
         self._begin(node_address)  # setup radio
 
     @NetworkMixin.node_address.setter
-    def node_address(self, val):
+    def node_address(self, val: int):
         if not is_address_valid(val):
             return
         self._begin(val)
 
-    def update(self):
+    def update(self) -> int:
         """This function is used to keep the network layer current."""
         return self._net_update()
+
 
 class RF24Network(RF24NetworkRoutingOnly):
     """The object used to instantiate the nRF24L01 as a network node."""
 
-    def send(self, header, message):
+    def send(self, header: RF24NetworkHeader, message) -> bool:
         """Deliver a message according to the header information."""
         return self.write(RF24NetworkFrame(header, message))
 
-    def write(self, frame, traffic_direct=AUTO_ROUTING):
+    def write(
+        self, frame: RF24NetworkFrame, traffic_direct: int = AUTO_ROUTING
+    ) -> bool:
         """Deliver a network frame."""
         if not isinstance(frame, RF24NetworkFrame):
             raise TypeError("frame expected object of type RF24NetworkFrame.")
@@ -74,7 +74,9 @@ class RF24Network(RF24NetworkRoutingOnly):
         frame.header.from_node = self._addr
         return self._pre_write(frame, traffic_direct)
 
-    def _pre_write(self, frame: RF24NetworkFrame, traffic_direct=AUTO_ROUTING):
+    def _pre_write(
+        self, frame: RF24NetworkFrame, traffic_direct: int = AUTO_ROUTING
+    ) -> bool:
         """Helper to do prep work for _write_to_pipe(); like to TMRh20's _write()"""
         self.frame_buf = frame
         if traffic_direct != AUTO_ROUTING:

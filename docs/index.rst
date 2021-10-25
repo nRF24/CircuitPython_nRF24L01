@@ -94,7 +94,7 @@ Features currently supported
 * cyclic redundancy checking (CRC) up to 2 bytes long
 * Adjust the nRF24L01's builtin automatic re-transmit feature's parameters (`arc`: number
   of attempts, `ard`: delay between attempts)
-* Adjust the nRF24L01's frequency channel (2.4-2.525 GHz)
+* Adjust the nRF24L01's frequency channel (2.4 - 2.525 GHz)
 * Adjust the nRF24L01's power amplifier level (0, -6, -12, or -18 dBm)
 * Adjust the nRF24L01's RF data rate (250kbps, 1Mbps, or 2Mbps)
 * An nRF24L01 driven by this library can communicate with a nRF24L01 on an Arduino driven by the

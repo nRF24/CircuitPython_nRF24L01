@@ -68,9 +68,8 @@ jobs:
 
       - name: PyLint
         run: |
-          pylint --disable=too-many-instance-attributes,too-many-public-methods,too-few-public-methods,too-many-arguments,duplicate-code,unnecessary-dict-index-lookup circuitpython_nrf24l01/*.py
-          pylint --disable=too-many-instance-attributes,too-many-public-methods,too-few-public-methods,too-many-arguments,duplicate-code,unused-private-member circuitpython_nrf24l01/*/*.py
-          ([[ ! -d "examples" ]] || pylint --disable=c-extension-no-member,duplicate-code $( find . -path "./examples/*.py" ))
+          pylint circuitpython_nrf24l01/*.py  circuitpython_nrf24l01/*/*.py
+          pylint --disable=c-extension-no-member examples/*.py
 
       - name: Build assets
         run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --library_location . --package_folder_prefix ${{ steps.pkg-name.outputs.pkg-name }}

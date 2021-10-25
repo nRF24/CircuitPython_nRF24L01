@@ -2,6 +2,8 @@
 .. |uint16_t| replace:: This value is truncated to a 2-byte unsigned `int`.
 .. |can_be_blank| replace:: These parameters can be left unspecified to create a blank
     object that can be augmented after instantiation.
+.. |unpacked_buf| replace:: The buffer to unpack. All resulting data is stored in the
+    objects attributes accordingly.
 
 Network Data Structures
 =======================
@@ -57,6 +59,7 @@ Header
 
     This function |internal_use|
 
+    :param bytes,bytearray buffer: |unpacked_buf|
     :Returns: `True` if successful; otherwise `False`.
 
 .. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.pack
@@ -88,6 +91,7 @@ Frame
 
     This function |internal_use|
 
+    :param bytes,bytearray buffer: |unpacked_buf|
     :Returns: `True` if successful; otherwise `False`.
 
 .. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkFrame.pack

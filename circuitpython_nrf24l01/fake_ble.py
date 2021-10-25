@@ -271,7 +271,7 @@ class FakeBLE(RF24):
     def len_available(self, hypothetical=b""):
         """This function will calculates how much length (in bytes) is
         available in the next payload."""
-        name_length = (len(self.name) + 2) if self.name is not None else 0
+        name_length = (len(self._ble_name) + 2) if self._ble_name is not None else 0
         return 18 - name_length - self._show_dbm * 3 - len(hypothetical)
 
     def advertise(self, buf=b"", data_type=0xFF):
