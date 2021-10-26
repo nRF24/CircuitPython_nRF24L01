@@ -83,7 +83,11 @@ class RF24NetworkHeader:
             0o7777 if self.from_node is None else self.from_node & 0xFFF,
             self.to_node & 0xFFF,
             self.frame_id & 0xFFFF,
-            self.message_type & 0xFF,
+            (
+                self.message_type
+                if not isinstance(self.message_type, str)
+                else (ord(self.message_type[0]) if self.message_type else 0)
+            ) & 0xFF,
             self.reserved & 0xFF,
         )
 
@@ -95,7 +99,11 @@ class RF24NetworkHeader:
         return "from {} to {} type {} id {} reserved {}".format(
             oct(0o7777 if self.from_node is None else self.from_node),
             oct(self.to_node),
-            self.message_type,
+            (
+                self.message_type
+                if not isinstance(self.message_type, str)
+                else (ord(self.message_type[0]) if self.message_type else 0)
+            ) & 0xFF,
             self.frame_id,
             self.reserved,
         )

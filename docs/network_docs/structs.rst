@@ -35,26 +35,10 @@ Header
 
 .. autoattribute:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.message_type
 
-    This `int` must be less than 256.
-
-    .. note::
-        This attribute can only be set with a `str` from the `RF24NetworkHeader` constructor.
-        When set using a `str`, this attributes `int` value is the ASCII number of the string's
-        first character (see :py:func:`ord()`).
-
-        .. warning::
-            Setting this attribute directly using a `str` will likely lead to a `TypeError` or a
-            :py:exc:`struct.error` message.
-
-            .. code-block:: python
-
-                # DO NOT DO THIS
-                header.message_type = "T"
-
-                # INSTEAD USE `ord()`
-                header.message_type = ord("T")
-                # or
-                header.message_type = ord("TX"[0])
+    This `int` must be less than 256. When set using a `str`, this attribute's `int` value is
+    derived from the ASCII number of the string's first character (see :py:func:`ord()`).
+    Non-ASCII characters' values are truncated to 1 byte (see :py:meth:`str.isascii()`). A blank
+    `str` sets this attribute's value to ``0``.
 
     .. hint::
         Users are encouraged to specify a number in range [0, 127] (basically less
