@@ -134,7 +134,7 @@ The following list of `RF24` functions and attributes are exposed in the
   .. code-block:: python
 
       >>> # following command is the same as `nrf.print_details(0, 1)`
-      >>> nrf.print_details(0, 1)
+      >>> nrf.print_details(dump_pipes=False, network_only=True)
       Network frame_buf contents:
           Header is from 0o7777 to 0o0 type 0 id 1 reserved 0. Message contains:
               an empty buffer
