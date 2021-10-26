@@ -847,30 +847,28 @@ class RF24:
 
     def start_carrier_wave(self):
         """Starts a continuous carrier wave test."""
-        self.power = 0
-        self._ce_pin.value = 0
-        self.power = 1
-        self.listen = 0
+        self.power = False
+        self._ce_pin.value = False
+        self.power = True
+        self.listen = False
         self._rf_setup |= 0x90
         self._reg_write(RF_PA_RATE, self._rf_setup)
         if not self.is_plus_variant:
-            self.auto_ack = False
-            self._retry_setup = 0
-            self._reg_write(SETUP_RETR, self._retry_setup)
-            self._tx_address = bytearray([0xFF] * 5)
-            self._reg_write_bytes(TX_ADDRESS, self._tx_address)
+            self._reg_write(AUTO_ACK, 0)
+            self._reg_write(SETUP_RETR, 0)
+            self._reg_write_bytes(TX_ADDRESS, b"\xFF" * 5)
             self._reg_write_bytes(0xA0, b"\xFF" * 32)
-            self.crc = 0
-            self._ce_pin.value = 1
+            self._reg_write(CONFIGURE, 0x73)
+            self._ce_pin.value = True
             time.sleep(0.001)
-            self._ce_pin.value = 0
+            self._ce_pin.value = False
             self.clear_status_flags()
             self._reg_write(0x17, 0x40)
-        self._ce_pin.value = 1
+        self._ce_pin.value = True
 
     def stop_carrier_wave(self):
         """Stops a continuous carrier wave test."""
-        self._ce_pin.value = 0
-        self.power = 0
+        self._ce_pin.value = False
+        self.power = False
         self._rf_setup &= ~0x90
         self._reg_write(RF_PA_RATE, self._rf_setup)

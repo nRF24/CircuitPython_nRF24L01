@@ -447,7 +447,7 @@ FIFO management
         - A `bool` answer to the question:
 
           "Is the [TX/RX](``about_tx``) FIFO buffer [empty/full](``check_empty``)?
-        - If the ``check_empty`` parameter is not specified: an `int` in range [0,2] for which:
+        - If the ``check_empty`` parameter is not specified: an `int` in range [0, 2] for which:
 
           - ``1`` means the specified FIFO buffer is empty
           - ``2`` means the specified FIFO buffer is full
@@ -519,16 +519,14 @@ Ambiguous Signal Detection
 
     .. note::
         Calling this function puts the nRF24L01 to sleep (AKA power down mode).
-    .. hint:: If the radio is a non-plus variant (`is_plus_variant` returns
-        `False`), then use the following code snippet to re-establish the library
-        default settings:
+    .. hint::
+        If the radio is a non-plus variant (`is_plus_variant` returns
+        `False`), then use the `with` to re-establish the previous settings:
 
         .. code-block:: python
 
             # let `nrf` be the instantiated RF24 object
-            nrf.crc = 2
-            nrf.auto_ack = True
-            nrf.set_auto_retries(1500, 3)
-            nrf.open_tx_pipe(nrf.address())
+            with nrf:
+                pass  # settings are now restored
 
     .. versionadded:: 1.2.0
