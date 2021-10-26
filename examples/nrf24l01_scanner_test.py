@@ -101,7 +101,7 @@ def noise(timeout=1, channel=None):
     :param int channel: The specific channel to focus on. If not provided, then the
         radio's current setting is used.
     """
-    if channel:
+    if channel is not None:
         nrf.channel = channel
     nrf.listen = True
     timeout += time.monotonic()
