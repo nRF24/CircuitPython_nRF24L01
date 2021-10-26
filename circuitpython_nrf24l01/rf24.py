@@ -424,8 +424,8 @@ class RF24:
         print(f"Address length____________{self._addr_len} bytes")
         print(f"TX Payload lengths________{self._pl_len[0]} bytes")
         print(
-            f"Auto retry delay__________{((self._retry_setup & 0xF0) >> 4) * 250 + 250}",
-            "microseconds",
+            f"Auto retry delay__________"
+            f"{((self._retry_setup & 0xF0) >> 4) * 250 + 250} microseconds",
         )
         print(f"Auto retry attempts_______{self._retry_setup & 0x0F} maximum")
         print(f"Re-use TX FIFO____________{bool(_fifo & 64)}")
@@ -454,7 +454,7 @@ class RF24:
         print(
             "Ask no ACK_________{}ed    Custom ACK Payload___{}abled".format(
                 "_Allow" if self._features & 1 else "Disabl",
-                "En" if self._features & 2 else "Dis"
+                "En" if self._features & 2 else "Dis",
             ),
         )
         print(f"Dynamic Payloads___{dyn_p}    Auto Acknowledgment__{auto_a}")
