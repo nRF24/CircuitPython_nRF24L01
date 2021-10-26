@@ -25,7 +25,7 @@ RF24NetworkRoutingOnly class
     This is meant to be the python equivalent to TMRh20's ``DISABLE_USER_PAYLOADS`` macro in the
     C++ RF24Network library.
 
-    :param int node_address: The octal `int` for this node's address
+    :param int node_address: The octal `int` for this node's :ref:`Logical Address <Logical Address>`
 
     .. seealso::
         For all other parameters' descriptions, see the
@@ -37,7 +37,7 @@ RF24Network class
 .. autoclass:: circuitpython_nrf24l01.rf24_network.RF24Network
     :show-inheritance:
 
-    :param int node_address: The octal `int` for this node's address
+    :param int node_address: The octal `int` for this node's :ref:`Logical Address <Logical Address>`
 
     .. seealso::
         For all other parameters' descriptions, see the
