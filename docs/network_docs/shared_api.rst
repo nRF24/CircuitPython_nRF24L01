@@ -149,8 +149,8 @@ The following list of `RF24` functions and attributes are exposed in the
       Network node address_______0o0
 
   .. note::
-      The address ``0o7777`` (seen in output above) is used as a sentinel when frame is
-      uninitalized.
+      The address ``0o7777`` (seen in output above) is an invalid address used as a sentinel when
+      frame is unpopulated with a proper `from_node` address.
 
 External Systems API
 ********************
