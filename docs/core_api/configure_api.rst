@@ -71,13 +71,25 @@ Configurable RF24 API
 
     - ``1`` sets the frequency data rate to 1 Mbps
     - ``2`` sets the frequency data rate to 2 Mbps
-    - ``250`` sets the frequency data rate to 250 Kbps (see warning below)
+    - ``250`` sets the frequency data rate to 250 kbps (see warning below)
 
     Any invalid input throws a `ValueError` exception. Default is 1 Mbps.
 
-    .. warning:: 250 Kbps is not available for the non-plus variants of the
-        nRF24L01 transceivers. Trying to set the data rate to 250 kpbs when
-        `is_plus_variant` is `True` will throw a `NotImplementedError`.
+    .. warning::
+        250 kbps is not available for all variants of transceivers based on the
+        nRF24L01. This library will assume that the transceiver being used does
+        support 250 kbps, but there is no way to determine (via software) if that
+        is actually the case. Please refer to your transceiver's manufacturer information to
+        determine if 250 kbps is supposed to be supported.
+
+        .. hint::
+            You can perform a carrier wave test on 250 kbps to see if you transceiver hardware
+            does support that data rate. See `start_carrier_wave()`, `stop_carrier_wave()`, and
+            `rpd` to execute a hardware test.
+
+    .. versionchanged:: 2.2.0
+        Blindly allow confiuring the radio for 250 kbps as support is marginally dependent
+        on the hardware being used.
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.channel
 
