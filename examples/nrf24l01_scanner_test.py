@@ -9,7 +9,7 @@ from digitalio import DigitalInOut
 
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
-from circuitpython_nrf24l01.rf24 import RF24
+from circuitpython_nrf24l01.rf24 import RF24, address_repr
 
 # invalid default values for scoping
 SPI_BUS, CSN_PIN, CE_PIN = (None, None, None)
@@ -39,8 +39,16 @@ nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 #                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
 
 # turn off RX features specific to the nRF24L01 module
-nrf.auto_ack = 0
-nrf.dynamic_payloads = 0
+nrf.auto_ack = False
+nrf.dynamic_payloads = False
+nrf.crc = 0
+nrf.arc = 0
+nrf.allow_ask_no_ack = False
+
+# use reverse engineering tactics for a better "snapshot"
+nrf.address_length = 2
+nrf.open_rx_pipe(1, b"\0\x55")
+nrf.open_rx_pipe(0, b"\0\xAA")
 
 
 def scan(timeout=30):
@@ -63,7 +71,8 @@ def scan(timeout=30):
     start_timer = time.monotonic()  # start the timer
     while time.monotonic() - start_timer < timeout:
         nrf.channel = curr_channel
-        # time.sleep(0.00013)  # let radio modulate to new channel
+        if nrf.available():
+            nrf.flush_rx()  # flush the RX FIFO because it asserts the RPD flag
         nrf.listen = 1  # start a RX session
         time.sleep(0.00013)  # wait 130 microseconds
         signals[curr_channel] += nrf.rpd  # if interference is present
@@ -85,17 +94,44 @@ def scan(timeout=30):
     print("")
 
 
+def noise(timeout=1, channel=None):
+    """print a stream of detected noise for duration of time.
+
+    :param int timeout: The number of seconds to scan for ambiant noise.
+    :param int channel: The specific channel to focus on. If not provided, then the
+        radio's current setting is used.
+    """
+    if channel:
+        nrf.channel = channel
+    nrf.listen = True
+    timeout += time.monotonic()
+    while time.monotonic() < timeout:
+        signal = nrf.read()
+        if signal:
+            print(address_repr(signal, False, " "))
+    nrf.listen = False
+    while not nrf.fifo(False, True):
+        # dump the left overs in the RX FIFO
+        print(address_repr(nrf.read(), False, " "))
+
+
 def set_role():
     """Set the role using stdin stream. Timeout arg for scan() can be
     specified using a space delimiter (e.g. 'S 10' calls `scan(10)`)
     """
     user_input = (
-        input("*** Enter 'S' to perform scan.\n*** Enter 'Q' to quit example.\n")
-        or "?"
+        input(
+            "*** Enter 'S' to perform scan.\n"
+            "*** Enter 'N' to display noise.\n"
+            "*** Enter 'Q' to quit example.\n"
+        ) or "?"
     )
     user_input = user_input.split()
     if user_input[0].upper().startswith("S"):
         scan(*[int(x) for x in user_input[1:2]])
+        return True
+    if user_input[0].upper().startswith("N"):
+        noise(*[int(x) for x in user_input[1:3]])
         return True
     if user_input[0].upper().startswith("Q"):
         nrf.power = False
@@ -119,3 +155,4 @@ if __name__ == "__main__":
         nrf.power = False
 else:
     print("    Run scan() to initiate scan for ambient signals.")
+    print("    Run noise() to display ambient signals' data (AKA noise).")
