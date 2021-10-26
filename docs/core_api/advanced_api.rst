@@ -521,7 +521,7 @@ Ambiguous Signal Detection
         Calling this function puts the nRF24L01 to sleep (AKA power down mode).
     .. hint::
         If the radio is a non-plus variant (`is_plus_variant` returns
-        `False`), then use the `with` to re-establish the previous settings:
+        `False`), then use `with` to re-establish the previous settings:
 
         .. code-block:: python
 
