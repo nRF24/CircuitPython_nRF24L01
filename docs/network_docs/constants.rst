@@ -60,13 +60,16 @@ Reserved Network Message Types
     The message type used when forwarding acknowledgements directed to the
     instigating message's origin. This is not be confused with the radio's `auto_ack`
     attribute. In fact, all messages (except multicasted ones) take advantage of the
-    radio's `auto_ack` feature.
+    radio's `auto_ack` feature when transmitting between directly related nodes (ie
+    between a transmitting node's parent or child node).
 
-    .. important:: NETWORK_ACK messages are only sent by the last node in the route to a
+    .. important::
+        NETWORK_ACK messages are only sent by the last node in the route to a
         destination. For example: Node ``0o0`` sends an instigating message to node
         ``0o11``. The NETWORK_ACK message is sent from node ``0o1`` when it confirms node
         ``0o11`` received the instigating message.
-    .. hint:: This feature is not flawless because it assumes a reliable connection
+    .. hint::
+        This feature is not flawless because it assumes a reliable connection
         between all necessary network nodes.
 
 .. autodata:: circuitpython_nrf24l01.network.constants.NETWORK_POLL
