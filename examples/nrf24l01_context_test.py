@@ -6,21 +6,38 @@ display settings after changing contexts ( & thus configurations)
     .. warning:: This script is not compatible with the rf24_lite module
 """
 import board
-import digitalio
+from digitalio import DigitalInOut
 from circuitpython_nrf24l01.rf24 import RF24
 from circuitpython_nrf24l01.fake_ble import FakeBLE
 
-# change these (digital output) pins accordingly
-ce = digitalio.DigitalInOut(board.D4)
-csn = digitalio.DigitalInOut(board.D5)
+# invalid default values for scoping
+SPI_BUS, CSN_PIN, CE_PIN = (None, None, None)
 
-# using board.SPI() automatically selects the MCU's
-# available SPI pins, board.SCK, board.MOSI, board.MISO
-spi = board.SPI()  # init spi bus object
+try:  # on Linux
+    import spidev
+
+    SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
+    CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
+    CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
+
+except ImportError:  # on CircuitPython only
+    # using board.SPI() automatically selects the MCU's
+    # available SPI pins, board.SCK, board.MOSI, board.MISO
+    SPI_BUS = board.SPI()  # init spi bus object
+
+    # change these (digital output) pins accordingly
+    CE_PIN = DigitalInOut(board.D4)
+    CSN_PIN = DigitalInOut(board.D5)
+
 
 # initialize the nRF24L01 objects on the spi bus object
 # the first object will have all the features enabled
-nrf = RF24(spi, csn, ce)
+nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
+# On Linux, csn value is a bit coded
+#                 0 = bus 0, CE0  # SPI bus 0 is enabled by default
+#                10 = bus 1, CE0  # enable SPI bus 2 prior to running this
+#                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
+
 # enable the option to use custom ACK payloads
 nrf.ack = True
 # set the static payload length to 8 bytes
@@ -29,7 +46,7 @@ nrf.payload_length = 8
 nrf.pa_level = -18
 
 # the second object has most features disabled/altered
-ble = FakeBLE(spi, csn, ce)
+ble = FakeBLE(SPI_BUS, CSN_PIN, CE_PIN)
 # the IRQ pin is configured to only go active on "data fail"
 # NOTE BLE operations prevent the IRQ pin going active on "data fail" events
 ble.interrupt_config(data_recv=False, data_sent=False)

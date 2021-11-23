@@ -4,27 +4,40 @@ and retrieve custom automatic acknowledgment payloads.
 """
 import time
 import board
-import digitalio
+from digitalio import DigitalInOut
 
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
 
-# change these (digital output) pins accordingly
-ce = digitalio.DigitalInOut(board.D4)
-csn = digitalio.DigitalInOut(board.D5)
+# invalid default values for scoping
+SPI_BUS, CSN_PIN, CE_PIN = (None, None, None)
 
-# using board.SPI() automatically selects the MCU's
-# available SPI pins, board.SCK, board.MOSI, board.MISO
-spi = board.SPI()  # init spi bus object
+try:  # on Linux
+    import spidev
 
-# we'll be using the dynamic payload size feature (enabled by default)
+    SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
+    CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
+    CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
+
+except ImportError:  # on CircuitPython only
+    # using board.SPI() automatically selects the MCU's
+    # available SPI pins, board.SCK, board.MOSI, board.MISO
+    SPI_BUS = board.SPI()  # init spi bus object
+
+    # change these (digital output) pins accordingly
+    CE_PIN = DigitalInOut(board.D4)
+    CSN_PIN = DigitalInOut(board.D5)
+
+
+# initialize the nRF24L01 on the spi bus object
+nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
+# On Linux, csn value is a bit coded
+#                 0 = bus 0, CE0  # SPI bus 0 is enabled by default
+#                10 = bus 1, CE0  # enable SPI bus 2 prior to running this
+#                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
+
 # the custom ACK payload feature is disabled by default
-# the custom ACK payload feature should not be enabled
-# during instantiation due to its singular use nature
-# meaning 1 ACK payload per 1 RX'd payload
-nrf = RF24(spi, csn, ce)
-
 # NOTE the the custom ACK payload feature will be enabled
 # automatically when you call load_ack() passing:
 # a buffer protocol object (bytearray) of
@@ -75,23 +88,18 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             # fetched and saved to "result" via send()
             # print timer results upon transmission success
             print(
-                "Transmission successful! Time to transmit: "
-                "{} us. Sent: {}{}".format(
-                    int((end_timer - start_timer) / 1000),
-                    buffer[:6].decode("utf-8"),
-                    counter[0],
-                ),
+                "Transmission successful! Time to transmit:",
+                f"{int((end_timer - start_timer) / 1000)} us.",
+                "Sent: {}{}".format(buffer[:6].decode("utf-8"), counter[0]),
                 end=" ",
             )
             if isinstance(result, bool):
-                print(" Received an empty ACK packet")
+                print("Received an empty ACK packet")
             else:
                 # result[:6] truncates c-string NULL termiating char
                 # received counter is a unsigned byte, thus result[7:8][0]
                 print(
-                    " Received: {}{}".format(
-                        bytes(result[:6]).decode("utf-8"), result[7:8][0]
-                    )
+                    "Received: {}{}".format(result[:6].decode("utf-8"), result[7:8][0])
                 )
             counter[0] += 1  # increment payload counter
         elif not result:
@@ -123,14 +131,9 @@ def slave(timeout=6):
             counter[0] = received[7:8][0] + 1
             # the [:6] truncates the c-string NULL termiating char
             print(
-                "Received {} bytes on pipe {}: {}{} Sent: {}{}".format(
-                    length,
-                    pipe_number,
-                    bytes(received[:6]).decode("utf-8"),
-                    received[7:8][0],
-                    bytes(buffer[:6]).decode("utf-8"),
-                    buffer[7:8][0],
-                )
+                f"Received {length} bytes on pipe {pipe_number}:",
+                "{}{}".format(received[:6].decode("utf-8"), received[7:8][0]),
+                "Sent: {}{}".format(buffer[:6].decode("utf-8"), buffer[7:8][0]),
             )
             start = time.monotonic()  # reset timer
             buffer = b"World \0" + bytes([counter[0]])  # build new ACK
@@ -144,10 +147,6 @@ def slave(timeout=6):
 def set_role():
     """Set the role using stdin stream. Timeout arg for slave() can be
     specified using a space delimiter (e.g. 'R 10' calls `slave(10)`)
-
-    :return:
-        - True when role is complete & app should continue running.
-        - False when app should exit
     """
     user_input = (
         input(
@@ -159,16 +158,10 @@ def set_role():
     )
     user_input = user_input.split()
     if user_input[0].upper().startswith("R"):
-        if len(user_input) > 1:
-            slave(int(user_input[1]))
-        else:
-            slave()
+        slave(*[int(x) for x in user_input[1:2]])
         return True
     if user_input[0].upper().startswith("T"):
-        if len(user_input) > 1:
-            master(int(user_input[1]))
-        else:
-            master()
+        master(*[int(x) for x in user_input[1:2]])
         return True
     if user_input[0].upper().startswith("Q"):
         nrf.power = False

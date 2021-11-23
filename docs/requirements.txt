@@ -1,3 +1,1 @@
-sphinx-material
-sphinx-copybutton
-sphinx-sitemap
+sphinx-immaterial

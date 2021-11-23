@@ -1,29 +1,31 @@
 # see license and copyright information in rf24.py
 # pylint: disable=missing-docstring
-__version__ = "0.0.0-auto.0"
-__repo__ = "https://github.com/2bndy5/CircuitPython_nRF24L01.git"
 import time
-from adafruit_bus_device.spi_device import SPIDevice
+
+try:
+    from adafruit_bus_device.spi_device import SPIDevice
+except ImportError:
+    from .wrapper.upy_spi import SPIDevice
 
 
 class RF24:
-    def __init__(self, spi, csn, ce, spi_frequency=10000000):
+    def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
         self._spi = SPIDevice(
             spi, chip_select=csn, baudrate=spi_frequency, extra_clocks=8
         )
-        self.ce_pin = ce
-        self.ce_pin.switch_to_output(value=False)
         self._status = 0
         self._reg_write(0, 0x0E)
         if self._reg_read(0) & 3 != 2:
             raise RuntimeError("nRF24L01 Hardware not responding")
+        self._ce_pin = ce_pin
+        self._ce_pin.switch_to_output(value=False)
         self._reg_write(3, 3)
         self._reg_write(6, 7)
         self._reg_write(2, 0)
         self._reg_write(0x1C, 0x3F)
         self._reg_write(1, 0x3F)
         self._reg_write(0x1D, 5)
-        self._reg_write(4, 0x53)
+        self._reg_write(4, 0x5F)
         self._pipe0_read_addr = None
         self.channel = 76
         self.payload_length = 32
@@ -33,47 +35,51 @@ class RF24:
 
     # pylint: disable=no-member
     def _reg_read(self, reg):
-        out_buf = bytes([reg, 0])
         in_buf = bytearray([0, 0])
         with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
+            spi.write_readinto(bytes([reg, 0]), in_buf)
         self._status = in_buf[0]
         return in_buf[1]
 
     def _reg_read_bytes(self, reg, buf_len=5):
         in_buf = bytearray(buf_len + 1)
-        out_buf = bytes([reg]) + b"\0" * buf_len
         with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
+            spi.write_readinto(bytes([reg] + [0] * buf_len), in_buf)
         self._status = in_buf[0]
         return in_buf[1:]
 
     def _reg_write_bytes(self, reg, out_buf):
-        out_buf = bytes([0x20 | reg]) + out_buf
-        in_buf = bytearray(len(out_buf))
+        in_buf = bytearray(len(out_buf) + 1)
         with self._spi as spi:
-            spi.write_readinto(out_buf, in_buf)
+            spi.write_readinto(bytes([0x20 | reg]) + out_buf, in_buf)
         self._status = in_buf[0]
 
-    def _reg_write(self, reg, val=None):
+    def _reg_write(self, reg, value=None):
         out_buf = bytes([reg])
-        if val is not None:
-            out_buf = bytes([0x20 | reg, val])
+        if value is not None:
+            out_buf = bytes([(0x20 if reg != 0x50 else 0) | reg, value])
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
 
     # pylint: enable=no-member
+
+    @property
+    def ce_pin(self):
+        return self._ce_pin.value
+
+    @ce_pin.setter
+    def ce_pin(self, val):
+        self._ce_pin.value = val
+
     @property
     def address_length(self):
         return self._reg_read(0x03) + 2
 
     @address_length.setter
     def address_length(self, length):
-        if not 3 <= length <= 5:
-            raise ValueError("address_length must be in range [3, 5]")
-        self._reg_write(0x03, length - 2)
+        self._reg_write(0x03, (length - 2) if 3 <= length <= 5 else 0)
 
     def open_tx_pipe(self, addr):
         self._reg_write_bytes(0x0A, addr)
@@ -105,32 +111,28 @@ class RF24:
 
     @listen.setter
     def listen(self, is_rx):
-        self.ce_pin.value = 0
+        self.ce_pin = 0
+        self._reg_write(0, (self._reg_read(0) & 0xFC) | (2 + bool(is_rx)))
         if is_rx:
+            self.ce_pin = 1
             if self._pipe0_read_addr is not None:
                 self._reg_write_bytes(0x0A, self._pipe0_read_addr)
             else:
                 self.close_rx_pipe(0)
-            self._reg_write(0, (self._reg_read(0) & 0xFC) | 3)
-            time.sleep(0.00015)
-            self.clear_status_flags()
-            self.ce_pin.value = 1
-            time.sleep(0.00013)
         else:
             if self._reg_read(0x1D) & 6 == 6:
                 self.flush_tx()
-            self._reg_write(0, self._reg_read(0) & 0xFE | 2)
             self._reg_write(2, self._reg_read(2) | 1)
-            time.sleep(0.00016)
+        time.sleep(0.0001)
 
     def available(self):
-        return self.update() and self.pipe is not None
+        return self.update() and self._status >> 1 & 7 < 6
 
     def any(self):
-        if self._reg_read(0x1D) & 4 and self.pipe is not None:
+        if self._reg_read(0x1D) & 4 and self._status >> 1 & 7 < 6:
             return self._reg_read(0x60)
-        if self.pipe is not None:
-            return self._reg_read(0x11 + self.pipe)
+        if self._status >> 1 & 7 < 6:
+            return self._reg_read(0x11 + (self._status >> 1 & 7))
         return 0
 
     def read(self, length=None):
@@ -142,25 +144,23 @@ class RF24:
         return result
 
     def send(self, buf, ask_no_ack=False, force_retry=0, send_only=False):
-        self.ce_pin.value = 0
+        self.ce_pin = 0
         if isinstance(buf, (list, tuple)):
             result = []
             for b in buf:
                 result.append(self.send(b, ask_no_ack, force_retry, send_only))
             return result
-        self.flush_tx()
-        if not send_only and self.pipe is not None:
+        if self._status & 0x10 or self._status & 1:
+            self.flush_tx()
+        if not send_only and self._status >> 1 & 7 < 6:
             self.flush_rx()
         self.write(buf, ask_no_ack)
-        while not self._status & 0x70:
+        while not self._status & 0x30:
             self.update()
-        self.ce_pin.value = 0
-        result = self.irq_ds
-        if self.irq_df:
-            for _ in range(force_retry):
-                result = self.resend(send_only)
-                if result is None or result:
-                    break
+        result = bool(self._status & 0x20)
+        while force_retry and not result:
+            result = self.resend(send_only)
+            force_retry -= 1
         if self._status & 0x60 == 0x60 and not send_only:
             result = self.read()
         return result
@@ -171,8 +171,8 @@ class RF24:
 
     @property
     def pipe(self):
-        result = (self._status & 0x0E) >> 1
-        if result <= 5:
+        result = self._status >> 1 & 7
+        if result  < 6:
             return result
         return None
 
@@ -187,6 +187,10 @@ class RF24:
     @property
     def irq_df(self):
         return bool(self._status & 0x10)
+
+    def update(self):
+        self._reg_write(0xFF)
+        return True
 
     def clear_status_flags(self, data_recv=True, data_sent=True, data_fail=True):
         config = bool(data_recv) << 6 | bool(data_sent) << 5 | bool(data_fail) << 4
@@ -279,10 +283,8 @@ class RF24:
 
     @power.setter
     def power(self, is_on):
-        config = self._reg_read(0)
-        if bool(config & 2) != bool(is_on):
-            self._reg_write(0, config & 0x7D | bool(is_on) << 1)
-            time.sleep(0.00016)
+        self._reg_write(0, self._reg_read(0) & 0x7D | bool(is_on) << 1)
+        time.sleep(0.00015)
 
     @property
     def pa_level(self):
@@ -294,47 +296,41 @@ class RF24:
             raise ValueError("pa_level must be -18, -12, -6, or 0")
         self._reg_write(6, self._reg_read(6) & 0xF8 | (3 - int(pwr / -6)) * 2 | 1)
 
-    def update(self):
-        self._reg_write(0xFF)
-        return True
-
     def resend(self, send_only=False):
-        result = False
-        if not self.fifo(True, True):
-            self.ce_pin.value = 0
-            if not send_only and self.pipe is not None:
-                self.flush_rx()
-            self.clear_status_flags()
-            self._reg_write(0xE3)
-            self.ce_pin.value = 1
-            while not self._status & 0x30:
-                self.update()
-            self.ce_pin.value = 0
-            result = self.irq_ds
-            if self._status & 0x60 == 0x60 and not send_only:
-                result = self.read()
+        if self.fifo(True, True):
+            return False
+        self.ce_pin = 0
+        if not send_only and self._status >> 1 & 7 < 6:
+            self.flush_rx()
+        self.clear_status_flags()
+        self.ce_pin = 1
+        while not self._status & 0x30:
+            self.update()
+        result = bool(self._status & 0x20)
+        if self._status & 0x60 == 0x60 and not send_only:
+            result = self.read()
         return result
 
     def write(self, buf, ask_no_ack=False, write_only=False):
         if not buf or len(buf) > 32:
             raise ValueError("buffer length must be in range [1, 32]")
         self.clear_status_flags()
-        if self.tx_full:
+        if self._status & 1:
             return False
         config = self._reg_read(0)
         if config & 3 != 2:
             self._reg_write(0, (config & 0x7C) | 2)
-            time.sleep(0.00016)
+            time.sleep(0.00015)
         if not self.dynamic_payloads:
             pl_width = self.payload_length
             if len(buf) < pl_width:
-                buf += b"\0" * pl_width - len(buf)
+                buf += b"\0" * (pl_width - len(buf))
             elif len(buf) > pl_width:
                 buf = buf[:pl_width]
         self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
         if not write_only:
-            self.ce_pin.value = 1
-        return True
+            self.ce_pin = 1
+        return self._status & 0x10 == 0
 
     def flush_rx(self):
         self._reg_write(0xE2)

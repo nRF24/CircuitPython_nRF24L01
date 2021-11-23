@@ -16,16 +16,16 @@ from circuitpython_nrf24l01.rf24 import RF24
 irq_pin = digitalio.DigitalInOut(board.D12)
 irq_pin.switch_to_input()  # make sure its an input object
 # change these (digital output) pins accordingly
-ce = digitalio.DigitalInOut(board.D4)
-csn = digitalio.DigitalInOut(board.D5)
+CE_PIN = digitalio.DigitalInOut(board.D4)
+CSN_PIN = digitalio.DigitalInOut(board.D5)
 
 # using board.SPI() automatically selects the MCU's
 # available SPI pins, board.SCK, board.MOSI, board.MISO
-spi = board.SPI()  # init spi bus object
+SPI_BUS = board.SPI()  # init spi bus object
 
 # we'll be using the dynamic payload size feature (enabled by default)
 # initialize the nRF24L01 on the spi bus object
-nrf = RF24(spi, csn, ce)
+nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 
 # this example uses the ACK payload to trigger the IRQ pin active for
 # the "on data received" event
@@ -55,18 +55,14 @@ nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
 def _ping_and_prompt():
     """transmit 1 payload, wait till irq_pin goes active, print IRQ status
     flags."""
-    ce.value = 1  # tell the nRF24L01 to prepare sending a single packet
+    nrf.ce_pin = 1  # tell the nRF24L01 to prepare sending a single packet
     time.sleep(0.00001)  # mandatory 10 microsecond pulse starts transmission
-    ce.value = 0  # end 10 us pulse; use only 1 buffer from TX FIFO
+    nrf.ce_pin = 0  # end 10 us pulse; use only 1 buffer from TX FIFO
     while irq_pin.value:  # IRQ pin is active when LOW
         pass
     print("IRQ pin went active LOW.")
     nrf.update()  # update irq_d? status flags
-    print(
-        "\tirq_ds: {}, irq_dr: {}, irq_df: {}".format(
-            nrf.irq_ds, nrf.irq_dr, nrf.irq_df
-        )
-    )
+    print(f"\tirq_ds: {nrf.irq_ds}, irq_dr: {nrf.irq_dr}, irq_df: {nrf.irq_df}")
 
 
 def master():
@@ -84,22 +80,14 @@ def master():
     nrf.interrupt_config(data_sent=False)
     print("    Pinging slave node for an ACK payload...", end=" ")
     _ping_and_prompt()  # CE pin is managed by this function
-    print(
-        "\t'on data ready' event test{}successful".format(
-            " " if nrf.irq_dr else " un"
-        )
-    )
+    print("\t\"on data ready\" event test {}successful".format("un" * nrf.irq_dr))
 
     # on data sent test
     print("\nConfiguring IRQ pin to only ignore 'on data ready' event")
     nrf.interrupt_config(data_recv=False)
     print("    Pinging slave node again...             ", end=" ")
     _ping_and_prompt()  # CE pin is managed by this function
-    print(
-        "\t'on data sent' event test{}successful".format(
-            " " if nrf.irq_ds else " un"
-        )
-    )
+    print("\t\"on data sent\" event test {}successful".format("un" * nrf.irq_ds))
 
     # trigger slave node to exit by filling the slave node's RX FIFO
     print("\nSending one extra payload to fill RX FIFO on slave node.")
@@ -108,10 +96,7 @@ def master():
         if nrf.fifo(False, False):  # is RX FIFO full?
             print("Slave node should not be listening anymore.")
         else:
-            print(
-                "transmission succeeded, "
-                "but slave node might still be listening"
-            )
+            print("transmission succeeded, " "but slave node might still be listening")
     else:
         print("Slave node was unresponsive.")
 
@@ -122,11 +107,7 @@ def master():
     nrf.flush_tx()  # just in case any previous tests failed
     nrf.write(b"Dummy", write_only=True)  # CE pin is left LOW
     _ping_and_prompt()  # CE pin is managed by this function
-    print(
-        "\t'on data failed' event test{}successful".format(
-            " " if nrf.irq_df else " un"
-        )
-    )
+    print("\t\"on data failed\" event test {}successful".format("un" * nrf.irq_df))
     nrf.flush_tx()  # flush artifact payload in TX FIFO from last test
     # all 3 ACK payloads received were 4 bytes each, and RX FIFO is full
     # so, fetching 12 bytes from the RX FIFO also flushes RX FIFO
@@ -155,10 +136,6 @@ def slave(timeout=6):  # will listen for 6 seconds before timing out
 def set_role():
     """Set the role using stdin stream. Timeout arg for slave() can be
     specified using a space delimiter (e.g. 'R 10' calls `slave(10)`)
-
-    :return:
-        - True when role is complete & app should continue running.
-        - False when app should exit
     """
     user_input = (
         input(
@@ -170,10 +147,7 @@ def set_role():
     )
     user_input = user_input.split()
     if user_input[0].upper().startswith("R"):
-        if len(user_input) > 1:
-            slave(int(user_input[1]))
-        else:
-            slave()
+        slave(*[int(x) for x in user_input[1:2]])
         return True
     if user_input[0].upper().startswith("T"):
         master()

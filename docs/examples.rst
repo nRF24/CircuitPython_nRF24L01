@@ -1,3 +1,6 @@
+Examples
+~~~~~~~~~~~~
+
 nRF24L01 Features
 =================
 
@@ -15,6 +18,8 @@ Ensure your device works with this simple test.
     :caption: examples/nrf24l01_simple_test.py
     :start-at: import time
     :end-before: def set_role():
+    :linenos:
+    :lineno-match:
 
 ACK Payloads Example
 --------------------
@@ -32,6 +37,8 @@ This is a test to show how to use custom acknowledgment payloads.
     :caption: examples/nrf24l01_ack_payload_test.py
     :start-at: import time
     :end-before: def set_role():
+    :linenos:
+    :lineno-match:
 
 Multiceiver Example
 --------------------
@@ -68,6 +75,8 @@ transceiver. This technique is called `"Multiceiver" in the nRF24L01 Specificati
     :caption: examples/nrf24l01_multiceiver_test.py
     :start-at: import time
     :end-before: def set_role():
+    :linenos:
+    :lineno-match:
 
 Scanner Example
 ---------------
@@ -84,6 +93,8 @@ radio-emitting sources (i.e. WiFi, Bluetooth, or etc).
     :caption: examples/nrf24l01_scanner_test.py
     :start-at: import time
     :end-before: def set_role():
+    :linenos:
+    :lineno-match:
 
 Reading the scanner output
 **************************
@@ -117,7 +128,7 @@ IRQ Pin Example
     uses 2 addresses on pipes 1 & 0 to demonstrate proper addressing convention.
 
 This is a test to show how to use nRF24L01's interrupt pin using the non-blocking
-`write()`. Also the `ack` attribute is enabled to trigger the `irq_dr` event when
+:meth:`~circuitpython_nrf24l01.rf24.RF24.write()`. Also the `ack` attribute is enabled to trigger the `irq_dr` event when
 the master node receives ACK payloads. Simply put, this example is the most advanced
 example script (in this library), and it runs **very** quickly.
 
@@ -125,6 +136,8 @@ example script (in this library), and it runs **very** quickly.
     :caption: examples/nrf24l01_interrupt_test.py
     :start-at: import time
     :end-before: def set_role():
+    :linenos:
+    :lineno-match:
 
 Library-Specific Features
 =========================
@@ -137,16 +150,18 @@ Stream Example
 .. versionchanged:: 2.0.0
     uses 2 addresses on pipes 1 & 0 to demonstrate proper addressing convention.
 
-This is a test to show how to stream data. The ``master()`` uses the `send()`
+This is a test to show how to stream data. The ``master()`` uses the :meth:`~circuitpython_nrf24l01.rf24.RF24.send()`
 function to transmit multiple payloads with 1 function call. However
 ``master()`` only uses 1 level of the nRF24L01's TX FIFO. An alternate function,
 called ``master_fifo()`` uses all 3 levels of the nRF24L01's TX FIFO to stream
-data, but it uses the `write()` function to do so.
+data, but it uses the :meth:`~circuitpython_nrf24l01.rf24.RF24.write()` function to do so.
 
 .. literalinclude:: ../examples/nrf24l01_stream_test.py
     :caption: examples/nrf24l01_stream_test.py
     :start-at: import time
     :end-before: def set_role():
+    :linenos:
+    :lineno-match:
 
 Context Example
 ---------------
@@ -158,7 +173,9 @@ This is a test to show how to use `with` blocks to manage multiple different nRF
 
 .. literalinclude:: ../examples/nrf24l01_context_test.py
     :caption: examples/nrf24l01_context_test.py
-    :start-at: import board
+    :start-at: from circuitpython_nrf24l01.rf24 import RF24
+    :linenos:
+    :lineno-match:
 
 Manual ACK Example
 ------------------
@@ -181,6 +198,25 @@ transmission.
     :caption: examples/nrf24l01_manual_ack_test.py
     :start-at: import time
     :end-before: def set_role():
+    :linenos:
+    :lineno-match:
+
+Network Test
+-------------------
+
+.. versionadded:: 2.1.0
+
+The following network example is designed to be compatible with most of TMRh20's C++
+examples for the RF24Mesh and RF24Network libraries. However, due to some slight differences
+this example prompts for user input which can cover a broader spectrum of usage scenarios.
+
+.. literalinclude:: ../examples/nrf24l01_network_test.py
+    :caption: examples/nrf24l01_network_test.py
+    :start-at: import time
+    :end-before: def set_role():
+    :linenos:
+    :lineno-match:
+
 
 OTA compatibility
 =================
@@ -189,6 +225,8 @@ Fake BLE Example
 ----------------
 
 .. versionadded:: 1.2.0
+.. versionchanged:: 2.1.0
+    A new ``slave()`` function was added to demonstrate receiving BLE data.
 
 This is a test to show how to use the nRF24L01 as a BLE advertising beacon using the
 `FakeBLE` class.
@@ -197,20 +235,22 @@ This is a test to show how to use the nRF24L01 as a BLE advertising beacon using
     :caption: examples/nrf24l01_fake_ble_test.py
     :start-at: import time
     :end-before: def set_role():
+    :linenos:
+    :lineno-match:
 
-TMRh20's Arduino library
+TMRh20's C++ libraries
 ------------------------
 
-All examples are designed to work with TMRh20's RF24 library examples.
+All examples are designed to work with TMRh20's RF24, RF24Network, and RF24Mesh libraries' examples.
 This Circuitpython library uses dynamic payloads enabled by default.
-TMRh20's library uses static payload lengths by default.
+TMRh20's RF24 library uses static payload lengths by default.
 
 To make this circuitpython library compatible with
 `TMRh20's RF24 library <https://github.com/nRF24/RF24/>`_:
 
-1. set `dynamic_payloads` to `False`.
+1. set :attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads` to `False`.
 2. set `allow_ask_no_ack` to `False`.
-3. set :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length` to the value that
+3. set :attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length` to the value that
    is passed to TMRh20's ``RF24::setPayloadSize()``. 32 is the default (& maximum)
    payload length/size for both libraries.
 
@@ -225,16 +265,20 @@ For completness, TMRh20's RF24 library uses a default value of 15 for the `ard` 
 but this Circuitpython library uses a default value of 3.
 
 .. csv-table:: Corresponding examples
-    :header: circuitpython_nrf24l01, TMRh20 RF24
+    :header: circuitpython_nrf24l01, "TMRh20's C++ examples"
+    :widths: 10, 20
 
-    "nrf24l01_simple_test\ [1]_ ", gettingStarted
-    nrf24l01_ack_payload_test, acknowledgementPayloads
-    "nrf24l01_manual_ack_test\ [1]_ ", manualAcknowledgements
-    "nrf24l01_multiceiver_test\ [1]_ ", multiceiverDemo
-    "nrf24l01_stream_test\ [1]_ ", streamingData
-    nrf24l01_interrupt_test, interruptConfigure
-    nrf24l01_context_test, feature is not available
-    nrf24l01_fake_ble_test, feature is available via `floe's BTLE library <https://github.com/floe/BTLE>`_
+    "nrf24l01_simple_test (\ [1]_)", "RF24 gettingStarted"
+    nrf24l01_ack_payload_test, "RF24 acknowledgementPayloads"
+    "nrf24l01_manual_ack_test (\ [1]_)", "RF24 manualAcknowledgements"
+    "nrf24l01_multiceiver_test (\ [1]_)", "RF24 multiceiverDemo"
+    "nrf24l01_stream_test (\ [1]_)", "RF24 streamingData"
+    nrf24l01_interrupt_test, "RF24 interruptConfigure"
+    nrf24l01_context_test, "feature is not available in C++"
+    nrf24l01_fake_ble_test, "feature is available via `floe's BTLE library <https://github.com/floe/BTLE>`_"
+    "nrf24l01_network_test (\ [2]_)", "- all RF24Network examples except Network_Ping & Network_Ping_Sleep
+    - all RF24Mesh examples except RF24Mesh_Example_Node2NodeExtra
+      (which may still work but the data is not interpretted as a string)"
 
 .. [1] Some of the Circuitpython examples (that are compatible with TMRh20's examples)
        contain 2 or 3 lines of code that are commented out for easy modification. These lines
@@ -246,3 +290,6 @@ but this Circuitpython library uses a default value of 3.
            # nrf.allow_ask_no_ack = False
            # nrf.dynamic_payloads = False
            # nrf.payload_length = 4
+.. [2] When running the network examples, it is important to understand the typical
+       `network topology <network_docs/topology.html>`_. Otherwise, entering incorrect answers to the
+       example's user prompts may result in seemingly bad connections.

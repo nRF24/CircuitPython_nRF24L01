@@ -6,7 +6,7 @@ This example uses the nRF24L01 as a 'fake' BLE Beacon
 """
 import time
 import board
-import digitalio
+from digitalio import DigitalInOut
 from circuitpython_nrf24l01.fake_ble import (
     chunk,
     FakeBLE,
@@ -14,17 +14,34 @@ from circuitpython_nrf24l01.fake_ble import (
     BatteryServiceData,
     TemperatureServiceData,
 )
+from circuitpython_nrf24l01.rf24 import address_repr
 
-# change these (digital output) pins accordingly
-ce = digitalio.DigitalInOut(board.D4)
-csn = digitalio.DigitalInOut(board.D5)
+# invalid default values for scoping
+SPI_BUS, CSN_PIN, CE_PIN = (None, None, None)
 
-# using board.SPI() automatically selects the MCU's
-# available SPI pins, board.SCK, board.MOSI, board.MISO
-spi = board.SPI()  # init spi bus object
+try:  # on Linux
+    import spidev
+
+    SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
+    CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
+    CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
+
+except ImportError:  # on CircuitPython only
+    # using board.SPI() automatically selects the MCU's
+    # available SPI pins, board.SCK, board.MOSI, board.MISO
+    SPI_BUS = board.SPI()  # init spi bus object
+
+    # change these (digital output) pins accordingly
+    CE_PIN = DigitalInOut(board.D4)
+    CSN_PIN = DigitalInOut(board.D5)
+
 
 # initialize the nRF24L01 on the spi bus object as a BLE compliant radio
-nrf = FakeBLE(spi, csn, ce)
+nrf = FakeBLE(SPI_BUS, CSN_PIN, CE_PIN)
+# On Linux, csn value is a bit coded
+#                 0 = bus 0, CE0  # SPI bus 0 is enabled by default
+#                10 = bus 1, CE0  # enable SPI bus 2 prior to running this
+#                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
 
 # the name parameter is going to be its broadcasted BLE name
 # this can be changed at any time using the `name` attribute
@@ -131,13 +148,31 @@ def send_url(count=50):
                 time.sleep(0.2)
 
 
+def slave(timeout=6):
+    """read and decipher BLE payloads for `timeout` seconds."""
+    nrf.listen = True
+    end_timer = time.monotonic() + timeout
+    while time.monotonic() <= end_timer:
+        if nrf.available():
+            result = nrf.read()
+            print(
+                "recevied payload from MAC address",
+                address_repr(result.mac, delimit=":")
+            )
+            if result.name is not None:
+                print("\tdevice name:", result.name)
+            if result.pa_level is not None:
+                print("\tdevice transmitting PA Level:", result.pa_level, "dbm")
+            for service_data in result.data:
+                if isinstance(service_data, (bytearray, bytes)):
+                    print("\traw buffer:", address_repr(service_data, False, " "))
+                else:
+                    print("\t" + repr(service_data))
+
+
 def set_role():
     """Set the role using stdin stream. Count arg for all functions can be
     specified using a space delimiter (e.g. 'T 10' calls `send_temp(10)`)
-
-    :return:
-        - True when role is complete & app should continue running.
-        - False when app should exit
     """
     user_input = (
         input(
@@ -145,28 +180,23 @@ def set_role():
             " charge.\n"
             "*** Enter 'T' to broadcast the device name & a temperature\n"
             "*** Enter 'U' to broadcast a custom URL link\n"
+            "*** Enter 'R' to receive BLE payloads\n"
             "*** Enter 'Q' to quit example.\n"
         )
         or "?"
     )
     user_input = user_input.split()
     if user_input[0].upper().startswith("M"):
-        if len(user_input) > 1:
-            master(int(user_input[1]))
-        else:
-            master()
+        master(*[int(x) for x in user_input[1:]])
         return True
     if user_input[0].upper().startswith("T"):
-        if len(user_input) > 1:
-            send_temp(int(user_input[1]))
-        else:
-            send_temp()
+        send_temp(*[int(x) for x in user_input[1:2]])
         return True
     if user_input[0].upper().startswith("U"):
-        if len(user_input) > 1:
-            send_url(int(user_input[1]))
-        else:
-            send_url()
+        send_url(*[int(x) for x in user_input[1:2]])
+        return True
+    if user_input[0].upper().startswith("R"):
+        slave(*[int(x) for x in user_input[1:2]])
         return True
     if user_input[0].upper().startswith("Q"):
         nrf.power = False
@@ -185,8 +215,7 @@ if __name__ == "__main__":
         print(" Keyboard Interrupt detected. Powering down radio...")
         nrf.power = False
 else:
-    print(
-        "    Run master() to broadcast the device name, pa_level, & battery "
-        "charge\n    Run send_temp() to broadcast the device name & a "
-        "temperature\n    Run send_url() to broadcast a custom URL link"
-    )
+    print("    Run master() to broadcast the device name, pa_level, & battery charge")
+    print("    Run send_temp() to broadcast the device name & a temperature")
+    print("    Run send_url() to broadcast a custom URL link")
+    print("    Run slave() to receive BLE payloads.")
