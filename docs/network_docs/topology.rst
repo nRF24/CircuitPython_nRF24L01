@@ -232,8 +232,6 @@ For example:
 
     .. csv-table::
         :header: "pipe", "Phsyical Address (hexadecimal)"
-        :width: 10
-        :widths: 1, 9
 
         1, ``CC CC CC CC 3C``
         2, ``CC CC CC CC 33``
@@ -245,8 +243,6 @@ For example:
 
     .. csv-table::
         :header: "pipe", "Phsyical Address (hexadecimal)"
-        :width: 10
-        :widths: 1, 9
 
         1, ``CC CC CC 3C 3C``
         2, ``CC CC CC 3C 33``
@@ -258,8 +254,6 @@ For example:
 
     .. csv-table::
         :header: "pipe", "Phsyical Address (hexadecimal)"
-        :width: 10
-        :widths: 1, 9
 
         1, ``CC CC CC 33 3C``
         2, ``CC CC CC 33 33``
@@ -271,8 +265,6 @@ For example:
 
     .. csv-table::
         :header: "pipe", "Phsyical Address (hexadecimal)"
-        :width: 10
-        :widths: 1, 9
 
         1, ``CC 3C 33 CE 3C``
         2, ``CC 3C 33 CE 33``

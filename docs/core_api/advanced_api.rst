@@ -271,16 +271,16 @@ Debugging Output
         Changed this method's name from the private method ``_dump_pipes()`` to a public method
         ``print_pipes()``.
 
-.. automethod:: circuitpython_nrf24l01.rf24.address_repr
+.. autofunction:: circuitpython_nrf24l01.rf24.address_repr
 
-    This method is primarily used in :meth:`~RF24.print_details()` to
+    This method is primarily used in :meth:`~RF24.print_pipes()` to
     display how the address is used by the radio.
 
     .. code-block:: python
 
         >>> from circuitpython_nrf24l01.rf24 import address_repr
         >>> address_repr(b"1Node")
-        '65646f4e31'
+        '65646F4E31'
 
     :param bytes,bytearray buf: The buffer of bytes to convert into a hexlified
         string.

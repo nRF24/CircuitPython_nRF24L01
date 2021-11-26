@@ -129,12 +129,13 @@ The `adafruit_bus_device`, `Adafruit_Blinka library <https://github.com/adafruit
 and `SpiDev <https://pypi.org/project/spidev/>`_ libraries
 are installed automatically on Linux when installing this library.
 
-.. versionadded:: 2.1.0 Added support for the
-    `SpiDev <https://pypi.org/project/spidev/>`_ module
+.. versionadded:: 2.1.0
+    Added support for the `SpiDev <https://pypi.org/project/spidev/>`_ module
 
-.. important:: This library supports Python 3.7 or newer because it use
-    the function :py:func:`time.monotonic_ns()` which returns an arbitrary time "counter"
-    as an `int` of nanoseconds. CircuitPython firmware also supports :py:func:`time.monotonic_ns()`.
+.. important::
+    This library supports Python 3.7 or newer because it uses the function
+    :py:func:`time.monotonic_ns()` which returns an arbitrary time "counter" as an `int` of
+    nanoseconds. CircuitPython firmware also supports :py:func:`time.monotonic_ns()`.
 
 
 Installing from PyPI
@@ -196,7 +197,10 @@ to the MCU via a digital input pin during the interrupt example.
 Using The Examples
 ==================
 
-See `examples <examples.html>`_ for testing certain features of this the library. The examples were developed and tested on both Raspberry Pi and ItsyBitsy M4. Pins have been hard coded in the examples for the corresponding device, so please adjust these accordingly to your circuitpython device if necessary.
+See `examples <examples.html>`_ for testing certain features of this the library.
+The examples were developed and tested on both Raspberry Pi and ItsyBitsy M4.
+Pins have been hard coded in the examples for the corresponding device, so please adjust these
+accordingly to your circuitpython device if necessary.
 
 For an interactive REPL
 ---------------------------
@@ -205,7 +209,8 @@ All examples can be imported from within an interactive python REPL.
 
 1. Make sure the examples are located in the current working directory.
    On CircuitPython devices, this will be the root directory of the CIRCUITPY drive.
-2. Import everything from desired the example. The following code snippet demonstrates running the `Simple Test example <examples.html#simple-test>`_
+2. Import everything from the desired example. The following code snippet demonstrates running the
+   `Simple Test example <examples.html#simple-test>`_
 
    .. code-block:: python
 

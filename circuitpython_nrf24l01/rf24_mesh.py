@@ -92,7 +92,7 @@ class RF24MeshNoMaster(NetworkMixin):
                 return True
         return False
 
-    def renew_address(self, timeout: int = 7):
+    def renew_address(self, timeout: int = 7.5):
         """Connect to the mesh network and request a new `node_address`."""
         if self._rf24.available():
             self.update()

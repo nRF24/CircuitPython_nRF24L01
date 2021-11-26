@@ -55,12 +55,13 @@ Basic API
         for quicker operation.
 
     :param bytes,bytearray message: The frame's `message` to be transmitted.
-    :param str,int message_type: The `int` that describes the frame header's `message_type`.
 
-        .. note:: Be mindful of the message's size as this cannot exceed
-            `MAX_FRAG_SIZE` (24 bytes) if `fragmentation` is disabled. If `fragmentation` is
-            enabled (it is by default), then the message's size must be less than
+        .. note::
+            Be mindful of the message's size as this cannot exceed `MAX_FRAG_SIZE` (24 bytes) if
+            `fragmentation` is disabled. If `fragmentation` is enabled (it is by default), then
+            the message's size must be less than
             :attr:`~circuitpython_nrf24l01.rf24_network.RF24Network.max_message_length`.
+    :param str,int message_type: The `int` that describes the frame header's `message_type`.
     :param int to_node_id: The unique mesh network `node_id` of the frame's destination.
         Defaults to ``0`` (which is reserved for the master node.
 

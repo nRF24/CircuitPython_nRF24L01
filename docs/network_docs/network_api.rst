@@ -107,10 +107,6 @@ Basic API
         A `bool` describing if the message has been transmitted. This does not necessarily
         describe if the message has been received at its target destination.
 
-        .. note::
-            This function will always return `True` if a message is directed to a node's pipe
-            that does not have `auto_ack` enabled (which will likely be pipe 0 in most network
-            contexts).
         .. tip:: |use_msg_t|
 
 Advanced API
@@ -130,10 +126,13 @@ Advanced API
         describe if the message has been received at its target destination.
 
         .. note::
-            This function will always return  if a message is directed to a node's pipe
+            For multicasted messages, the radio's `auto_ack` feature is not used.
+            
+            This function will always return `True` if a message is directed to a node's pipe
             that does not have `auto_ack` enabled (which will likely be pipe 0 in most network
             contexts).
-        .. tip:: To ensure a message has been delivered to its target destination, set the
+        .. tip:: 
+            To ensure a message has been delivered to its target destination, set the
             header's `message_type` to an `int` in range [65, 127]. This will invoke a
             `NETWORK_ACK` response message.
 
@@ -145,9 +144,7 @@ Advanced API
 
         .. code-block:: python
 
-            from circuitpython_nrf24l01.network.structs import (
-                FrameQueue, RF24NetworkFrame, RF24NetworkHeader
-            )
+            from circuitpython_nrf24l01.network.structs import FrameQueue, RF24NetworkFrame, RF24NetworkHeader
 
             my_q = FrameQueue()
             for i in range(my_q.max_queue_size):

@@ -87,7 +87,7 @@ Order of Inheritence
     }
 
 The ``RadioMixin`` and ``NetworkMixin`` classes are not documented directly. Instead, this
-documentation follows the OSI (Open Systems Interconnection) model. This is done to mimmic how the
+documentation follows the OSI (Open Systems Interconnection) model. This is done to mimic how the
 TMRh20 C++ libraries and documentation are structured.
 
 Consequentially, all functions and members inherited from the ``NetworkMixin`` class are

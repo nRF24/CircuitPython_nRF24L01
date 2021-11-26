@@ -173,7 +173,7 @@ class NetworkMixin(RadoMixin):
         self.max_message_length = 144  #: The maximum length of a frame's message.
         #: The queue (FIFO) of recieved frames for this node
         self.queue = FrameQueueFrag()
-        #: A buffer containing the last frame received by the network node
+        #: A buffer containing the last frame handled by the network node
         self.frame_buf = RF24NetworkFrame()
         self.address_suffix = bytearray([0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3])
         """Each byte in this `bytearray` corresponds to the unique byte per pipe and

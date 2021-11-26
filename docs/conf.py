@@ -18,23 +18,19 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinx.ext.graphviz",
-    "sphinx_immaterial"
+    "sphinx_immaterial",
     # "rst2pdf.pdfbuilder",  # for local pdf builder support
 ]
 
 # Uncomment the below if you use native CircuitPython modules such as
 # digitalio, micropython and busio. List the modules you use. Without it, the
 # autodoc module docs will fail to generate with a warning.
-autodoc_mock_imports = ["digitalio", "busio", "usb_hid", "microcontroller", "logging"]
+autodoc_mock_imports = ["digitalio", "busio", "microcontroller"]
 autodoc_member_order = "bysource"
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "CircuitPython": ("https://circuitpython.readthedocs.io/en/latest/", None),
-    "Adafruit_logging": (
-        "https://circuitpython.readthedocs.io/projects/logging/en/latest/",
-        None,
-    ),
 }
 
 html_baseurl = "https://circuitpython-nrf24l01.readthedocs.io/"
