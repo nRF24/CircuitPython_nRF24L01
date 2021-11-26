@@ -397,7 +397,7 @@ First, install dependencies (feel free to reuse the virtual environment from
 
     python3 -m venv .env
     source .env/bin/activate
-    pip install Sphinx sphinx-material sphinx-copybutton
+    pip install Sphinx sphinx-immaterial
 
 Building the documentation
 **************************
