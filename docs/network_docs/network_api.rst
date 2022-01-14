@@ -29,7 +29,7 @@ RF24NetworkRoutingOnly class
 
     .. seealso::
         For all other parameters' descriptions, see the
-        :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' contructor documentation.
+        :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' constructor documentation.
 
 RF24Network class
 *****************
@@ -41,7 +41,7 @@ RF24Network class
 
     .. seealso::
         For all other parameters' descriptions, see the
-        :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' contructor documentation.
+        :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' constructor documentation.
 
 Basic API
 *********
@@ -56,7 +56,7 @@ Basic API
 
     .. warning::
 
-        1. If this attribute is set to an invald network
+        1. If this attribute is set to an invalid network
            :ref:`Logical Address <Logical Address>`, then nothing is done and the invalid address
            is ignored.
         2. A `RF24Mesh` object cannot set this attribute because the
@@ -68,7 +68,7 @@ Basic API
 .. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.update
 
     .. important::
-        It is imperitive that this function be called at least once during the application's main
+        It is imperative that this function be called at least once during the application's main
         loop. For applications that perform long operations on each iteration of its main loop,
         it is encouraged to call this function more than once when possible.
 
@@ -177,7 +177,7 @@ Advanced API
         .. note::
             This function will always return `True` if the ``traffic_direct`` parameter is set to
             anything other than its default value. Using the ``traffic_direct`` parameter assumes
-            there is a relaible/open connection to the `node_address` passed to ``traffic_direct``.
+            there is a reliable/open connection to the `node_address` passed to ``traffic_direct``.
         .. tip:: |use_msg_t|
 
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.parent

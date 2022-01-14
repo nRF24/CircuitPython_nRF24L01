@@ -201,7 +201,7 @@ Physical addresses vs Logical addresses
   number ``0``
 
   .. tip::
-      Use the `is_address_valid()` function to programatically check a Logical Address for validity.
+      Use the `is_address_valid()` function to programmatically check a Logical Address for validity.
 
 .. note::
     Remember that the nRF24L01 only has 6 data pipes for which to receive or transmit.
@@ -212,7 +212,7 @@ Physical addresses vs Logical addresses
 Translating Logical to Physical
 -------------------------------
 
-Before translating the Logical address, a single byte is used reptitively as the
+Before translating the Logical address, a single byte is used repetitively as the
 base case for all bytes of any Physical Address. This byte is the `address_prefix`
 attribute (stored as a mutable `bytearray`) in the `RF24Network` class. By default the
 `address_prefix` has a single byte value of ``b"\xCC"``.
@@ -225,13 +225,13 @@ data pipe number and child node's most significant byte in its Physical Address.
 
 For example:
     The Logical Address of the network's master node is ``0``. The radio's pipes
-    1-5 start with the `address_prefix`. To make each pipe's Phsyical address unique
+    1-5 start with the `address_prefix`. To make each pipe's Physical address unique
     to a child node's Physical address, the `address_suffix` is used.
 
     The Logical address of the master node: ``0o0``
 
     .. csv-table::
-        :header: "pipe", "Phsyical Address (hexadecimal)"
+        :header: "pipe", "Physical Address (hexadecimal)"
 
         1, ``CC CC CC CC 3C``
         2, ``CC CC CC CC 33``
@@ -242,7 +242,7 @@ For example:
     The Logical address of the master node's first child: ``0o1``
 
     .. csv-table::
-        :header: "pipe", "Phsyical Address (hexadecimal)"
+        :header: "pipe", "Physical Address (hexadecimal)"
 
         1, ``CC CC CC 3C 3C``
         2, ``CC CC CC 3C 33``
@@ -253,7 +253,7 @@ For example:
     The Logical address of the master node's second child: ``0o2``
 
     .. csv-table::
-        :header: "pipe", "Phsyical Address (hexadecimal)"
+        :header: "pipe", "Physical Address (hexadecimal)"
 
         1, ``CC CC CC 33 3C``
         2, ``CC CC CC 33 33``
@@ -264,7 +264,7 @@ For example:
     The Logical address of the master node's third child's second child's first child: ``0o123``
 
     .. csv-table::
-        :header: "pipe", "Phsyical Address (hexadecimal)"
+        :header: "pipe", "Physical Address (hexadecimal)"
 
         1, ``CC 3C 33 CE 3C``
         2, ``CC 3C 33 CE 33``

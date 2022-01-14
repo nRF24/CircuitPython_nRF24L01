@@ -80,7 +80,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             print("send() failed or timed out")
         else:  # sent successful; listen for a response
             nrf.listen = True  # get radio ready to receive a response
-            timeout = time.monotonic_ns() + 200000000  # set sentinal for timeout
+            timeout = time.monotonic_ns() + 200000000  # set sentinel for timeout
             while not nrf.available() and time.monotonic_ns() < timeout:
                 # this loop hangs for 200 ms or until response is received
                 pass
@@ -88,8 +88,8 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             end_timer = time.monotonic_ns()  # stop timer
             print(
                 "Transmission successful! Time to transmit:",
-                f"{int((end_timer - start_timer) / 1000)} us. Sent:",
-                "{}{}".format(buffer[:6].decode("utf-8"), counter[0]),
+                int((end_timer - start_timer) / 1000),
+                "us. Sent: {}{}".format(buffer[:6].decode("utf-8"), counter[0]),
                 end=" ",
             )
             if nrf.pipe is None:  # is there a payload?
@@ -102,7 +102,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
                 # save new counter from response
                 counter[0] = received[7:8][0]
                 print(
-                    f"Receieved {length} bytes with pipe {pipe_number}:",
+                    "Received {} bytes with pipe {}:".format(length, pipe_number),
                     "{}{}".format(bytes(received[:6]).decode("utf-8"), counter[0]),
                 )
         count -= 1
@@ -130,7 +130,7 @@ def slave(timeout=6):
                 result = nrf.send(b"World \0" + bytes([counter[0]]))
             nrf.listen = True  # put the radio back in RX mode
             print(
-                f"Received {length} on pipe {pipe}:",
+                "Received {} on pipe {}:".format(length, pipe),
                 "{}{}".format(bytes(received[:6]).decode("utf-8"), received[7:8][0]),
                 end=" Sent: ",
             )

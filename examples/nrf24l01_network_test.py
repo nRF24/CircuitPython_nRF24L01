@@ -4,7 +4,7 @@ An all-purpose example of using the nRF24L01 transceiver in a network of nodes.
 import time
 import struct
 import board
-from digitalio import DigitalInOut
+from circuitpython_nrf24l01.wrapper import DigitalInOut
 from circuitpython_nrf24l01.network.constants import MAX_FRAG_SIZE, NETWORK_DEFAULT_ADDR
 
 IS_MESH = (
@@ -108,7 +108,7 @@ def emit(node=not THIS_NODE, frag=False, count=5, interval=1):
     while failures < 6 and count:
         nrf.update()  # keep the network layer current
         now = time.monotonic()
-        if now >= start_timer + interval:  # its time to emmit
+        if now >= start_timer + interval:  # its time to emit
             start_timer = now
             count -= 1
             packets_sent[0] += 1
@@ -132,9 +132,9 @@ def emit(node=not THIS_NODE, frag=False, count=5, interval=1):
             end = time.monotonic_ns()
             failures += not result
             print(
-                f"Sending {packets_sent[0]} (len {len(message)})...",
+                "Sending {} (len {})...".format(packets_sent[0], len(message)),
                 "ok." if result else "failed.",
-                f"Transmission took {int((end - start) / 1000000)} ms",
+                "Transmission took {} ms".format(int((end - start) / 1000000)),
             )
 
 

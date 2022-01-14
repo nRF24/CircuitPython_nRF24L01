@@ -33,7 +33,7 @@ here has been adapted to work with CircuitPython.
 
        Use the helper function
        :py:func:`~circuitpython_nrf24l01.fake_ble.FakeBLE.len_available()` to
-       detirmine if your payload can be transmit.
+       determine if your payload can be transmit.
     2. the channels that BLE use are limited to the following three: 2.402
        GHz, 2.426 GHz, and 2.480 GHz. We have provided a tuple of these
        specific channels for convenience (See `BLE_FREQ` and `hop_channel()`).
@@ -45,7 +45,7 @@ here has been adapted to work with CircuitPython.
     4. :py:attr:`~circuitpython_nrf24l01.rf24.RF24.address_length` of BLE
        packet only uses 4 bytes, so we have set that accordingly.
     5. The :py:attr:`~circuitpython_nrf24l01.rf24.RF24.auto_ack` (automatic
-       acknowledgment) feature of the nRF24L01 is useless when tranmitting to
+       acknowledgment) feature of the nRF24L01 is useless when transmitting to
        BLE devices, thus it is disabled as well as automatic re-transmit
        (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.arc`) and custom ACK
        payloads (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.ack`) features
@@ -114,10 +114,10 @@ here has been adapted to work with CircuitPython.
 
     :param bytearray,bytes data: The buffer of data to be uncorrupted.
     :param int deg_poly: A preset "degree polynomial" in which each bit
-        represents a degree who's coefficient is 1. BLE specfications require
+        represents a degree who's coefficient is 1. BLE specifications require
         ``0x00065b`` (default value).
     :param int init_val: This will be the initial value that the checksum
-        will use while shifting in the buffer data. BLE specfications require
+        will use while shifting in the buffer data. BLE specifications require
         ``0x555555`` (default value).
     :returns: A 24-bit `bytearray` representing the checksum of the data (in
         proper little endian).
@@ -180,7 +180,7 @@ FakeBLE class
 
     .. seealso::
         For all parameters' descriptions, see the
-        :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' contructor documentation.
+        :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' constructor documentation.
 
 .. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.mac
 
@@ -227,7 +227,7 @@ FakeBLE class
     This is done according to BLE specifications.
 
     :param bytearray,bytes data: The packet to whiten.
-    :returns: A `bytearray` of the ``data`` with the whitening algorythm
+    :returns: A `bytearray` of the ``data`` with the whitening algorithm
         applied.
 
     .. note:: `advertise()` and
@@ -243,7 +243,7 @@ FakeBLE class
 
 .. automethod:: circuitpython_nrf24l01.fake_ble.FakeBLE.len_available
 
-    This is detirmined from the current state of `name` and `show_pa_level`
+    This is determined from the current state of `name` and `show_pa_level`
     attributes.
 
     :param bytearray,bytes hypothetical: Pass a potential `chunk()` of
@@ -403,7 +403,7 @@ Service data UUID numbers
 *************************
 
 These are the 16-bit UUID numbers used by the
-`Derivitive Children of the ServiceData class <ble_api.html#derivitive-children>`_
+`Derivative Children of the ServiceData class <ble_api.html#derivative-children>`_
 
 .. autodata:: circuitpython_nrf24l01.fake_ble.TEMPERATURE_UUID
     :annotation: = 0x1809
@@ -412,7 +412,7 @@ These are the 16-bit UUID numbers used by the
 .. autodata:: circuitpython_nrf24l01.fake_ble.EDDYSTONE_UUID
     :annotation: = 0xFEAA
 
-Derivitive Children
+Derivative Children
 *******************
 
 .. autoclass:: circuitpython_nrf24l01.fake_ble.TemperatureServiceData

@@ -53,7 +53,7 @@ def chunk(buf, data_type=0x16):
 
 
 def whitener(buf, coef):
-    """Whiten and dewhiten data according to the given coefficient."""
+    """Whiten and de-whiten data according to the given coefficient."""
     data = bytearray(buf)
     for i, byte in enumerate(data):
         res, mask = (0, 1)
@@ -247,7 +247,11 @@ class FakeBLE(RF24):
         of bits."""
         coef = (self._curr_freq + 37) | 0x40
         # print("buffer: 0x" + address_repr(data, 0))
-        # print(f"Whiten Coef: {hex(coef)} on channel {BLE_FREQ[self._curr_freq]}")
+        # print(
+        #     "Whiten Coef: {} on channel {}".format(
+        #         hex(coef), BLE_FREQ[self._curr_freq]
+        #     )
+        # )
         data = whitener(data, coef)
         # print("whitened: 0x" + address_repr(data, 0))
         return data
@@ -270,7 +274,9 @@ class FakeBLE(RF24):
         if name_length:
             buf += chunk(self.name, 0x08)
         buf += payload
-        # print(f"PL: {address_repr(buf, 0)} CRC: {address_repr(crc24_ble(buf), 0)}")
+        # print("PL: {} CRC: {}".format(
+        #     address_repr(buf, 0), address_repr(crc24_ble(buf), 0)
+        # ))
         buf += crc24_ble(buf)
         return buf
 
@@ -411,7 +417,7 @@ class ServiceData:
 
 
 class TemperatureServiceData(ServiceData):
-    """This derivitive of the `ServiceData` class can be used to represent
+    """This derivative of the `ServiceData` class can be used to represent
     temperature data values as a `float` value."""
 
     def __init__(self):
@@ -431,11 +437,11 @@ class TemperatureServiceData(ServiceData):
             self._data = value
 
     def __repr__(self) -> str:
-        return f"Temperature: {self.data} C"
+        return "Temperature: {} C".format(self.data)
 
 
 class BatteryServiceData(ServiceData):
-    """This derivitive of the `ServiceData` class can be used to represent
+    """This derivative of the `ServiceData` class can be used to represent
     battery charge percentage as a 1-byte value."""
 
     def __init__(self):
@@ -454,11 +460,11 @@ class BatteryServiceData(ServiceData):
             self._data = value
 
     def __repr__(self) -> str:
-        return f"Battery capacity remaining: {self.data}%"
+        return "Battery capacity remaining: {}%".format(self.data)
 
 
 class UrlServiceData(ServiceData):
-    """This derivitive of the `ServiceData` class can be used to represent
+    """This derivative of the `ServiceData` class can be used to represent
     URL data as a `bytes` value."""
 
     def __init__(self):

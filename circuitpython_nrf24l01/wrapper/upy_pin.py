@@ -49,7 +49,7 @@ class DigitalInOut:
         self._pin = Pin(pin_number, Pin.IN)
 
     def deinit(self):
-        """deinitialize the GPIO pin"""
+        """de-initialize the GPIO pin"""
         # deinit() not implemented in micropython
         # avoid raising a NotImplemented Error
         pass  # pylint: disable=unnecessary-pass

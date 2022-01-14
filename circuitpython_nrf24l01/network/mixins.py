@@ -19,7 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-"""A module to hold all usuall accesssible RF24 API via the RF24Network API"""
+"""A module to hold all usuall accessible RF24 API via the RF24Network API"""
 # pylint: disable=missing-docstring
 import time
 from ..rf24 import RF24, address_repr
@@ -46,7 +46,7 @@ from .constants import (
 )
 
 
-class RadoMixin:
+class RadioMixin:
     def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
         self._rf24 = RF24(spi, csn, ce_pin, spi_frequency=spi_frequency)
         super().__init__()
@@ -155,7 +155,7 @@ def _lvl_2_addr(level: int) -> int:
     return level_addr
 
 
-class NetworkMixin(RadoMixin):
+class NetworkMixin(RadioMixin):
     def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
         super().__init__(spi, csn, ce_pin, spi_frequency=spi_frequency)
         # setup private members
@@ -171,7 +171,7 @@ class NetworkMixin(RadoMixin):
         self.ret_sys_msg = False  #: Force `update()` to return on system message types.
         self._parenthood = True  # can mesh nodes respond to NETWORK_POLL messages?
         self.max_message_length = 144  #: The maximum length of a frame's message.
-        #: The queue (FIFO) of recieved frames for this node
+        #: The queue (FIFO) of received frames for this node
         self.queue = FrameQueueFrag()
         #: A buffer containing the last frame handled by the network node
         self.frame_buf = RF24NetworkFrame()
@@ -191,7 +191,7 @@ class NetworkMixin(RadoMixin):
             self._rf24.open_rx_pipe(i, self._pipe_address(n_addr, i))
         self._rf24.listen = True
 
-        # setup address-related instance attibutes
+        # setup address-related instance attributes
         self._addr = n_addr
         self._mask = 0
         self._net_lvl = 0
@@ -217,16 +217,18 @@ class NetworkMixin(RadoMixin):
         if not network_only:
             self._rf24.print_details(False)
         print(
-            f"Network frame_buf contents:\n    "
-            f"Header is {self.frame_buf.header.to_string()}. Message contains:\n\t",
+            "Network frame_buf contents:\n    "
+            "Header is {}. Message contains:\n\t".format(
+                self.frame_buf.header.to_string()
+            ),
             "{}".format(
                 "an empty buffer"
                 if not self.frame_buf.message
                 else address_repr(self.frame_buf.message, 0, " ")
             ),
         )
-        print(f"Return on system messages__{bool(self.ret_sys_msg)}")
-        print(f"Allow network multicasts___{bool(self.allow_multicast)}")
+        print("Return on system messages__{}".format(bool(self.ret_sys_msg)))
+        print("Allow network multicasts___{}".format(bool(self.allow_multicast)))
         print(
             "Multicast relay____________{}abled".format(
                 "En" if self._relay_enabled else "Dis"
@@ -237,10 +239,10 @@ class NetworkMixin(RadoMixin):
                 "En" if self._frag_enabled else "Dis"
             )
         )
-        print(f"Network max message length_{self.max_message_length} bytes")
-        print(f"Network TX timeout_________{self.tx_timeout} milliseconds")
-        print(f"Network Rounting timeout___{self.route_timeout} milliseconds")
-        print(f"Network node address_______{oct(self._addr)}")
+        print("Network max message length_{} bytes".format(self.max_message_length))
+        print("Network TX timeout_________{} milliseconds".format(self.tx_timeout))
+        print("Network Routing timeout___{} milliseconds".format(self.route_timeout))
+        print("Network node address_______{}".format(oct(self._addr)))
         if dump_pipes:
             self._rf24.print_pipes()
 
@@ -317,7 +319,7 @@ class NetworkMixin(RadoMixin):
 
     def _net_update(self) -> int:
         """keep the network layer current; returns the received message type"""
-        ret_val = 0  # sentinal indicating there is nothing to report
+        ret_val = 0  # sentinel indicating there is nothing to report
         while True:
             temp_buf = self._rf24.read()
             if temp_buf is None:

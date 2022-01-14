@@ -72,7 +72,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
     nrf.listen = False  # ensures the nRF24L01 is in TX mode
 
     while count:
-        # use struct.pack to packetize your data
+        # use struct.pack to structure your data
         # into a usable payload
         buffer = struct.pack("<f", payload[0])
         # "<f" means a single little endian (4 byte) float value.
@@ -84,7 +84,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         else:
             print(
                 "Transmission successful! Time to Transmit:",
-                f"{(end_timer - start_timer) / 1000} us. Sent: {payload[0]}"
+                "{} us. Sent: {}".format((end_timer - start_timer) / 1000, payload[0])
             )
             payload[0] += 0.01
         time.sleep(1)
@@ -107,7 +107,11 @@ def slave(timeout=6):
             # buffer[:4] truncates padded 0s if dynamic payloads are disabled
             payload[0] = struct.unpack("<f", buffer[:4])[0]
             # print details about the received packet
-            print(f"Received {payload_size} bytes on pipe {pipe_number}: {payload[0]}")
+            print(
+                "Received {} bytes on pipe {}: {}".format(
+                    payload_size, pipe_number, payload[0]
+                )
+            )
             start = time.monotonic()
 
     # recommended behavior is to keep in TX mode while idle

@@ -62,7 +62,7 @@ def _ping_and_prompt():
         pass
     print("IRQ pin went active LOW.")
     nrf.update()  # update irq_d? status flags
-    print(f"\tirq_ds: {nrf.irq_ds}, irq_dr: {nrf.irq_dr}, irq_df: {nrf.irq_df}")
+    print("\tirq_ds: {}, irq_dr: {}, irq_df: {}".format(nrf.irq_ds, nrf.irq_dr, nrf.irq_df))
 
 
 def master():
@@ -116,7 +116,7 @@ def master():
 
 def slave(timeout=6):  # will listen for 6 seconds before timing out
     """Only listen for 3 payload from the master node"""
-    # setup radio to recieve pings, fill TX FIFO with ACK payloads
+    # setup radio to receive pings, fill TX FIFO with ACK payloads
     nrf.load_ack(b"Yak ", 1)
     nrf.load_ack(b"Back", 1)
     nrf.load_ack(b" ACK", 1)

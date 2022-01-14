@@ -25,7 +25,7 @@ RF24MeshNoMaster class
     :param int node_id: The unique identifying `node_id` number for the instantiated mesh node.
 
     .. seealso:: For all parameters' descriptions, see the
-        :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' contructor documentation.
+        :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' constructor documentation.
 
 
 RF24Mesh class
@@ -37,7 +37,7 @@ RF24Mesh class
     :param int node_id: The unique identifying `node_id` number for the instantiated mesh node.
 
     .. seealso:: For all parameters' descriptions, see the
-        :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' contructor documentation.
+        :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' constructor documentation.
 
 Basic API
 *********

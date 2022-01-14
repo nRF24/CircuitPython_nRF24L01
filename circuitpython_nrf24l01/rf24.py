@@ -406,50 +406,60 @@ class RF24:
             if self._config & 2
             else "Off"
         )
-        print(f"Is a plus variant_________{self.is_plus_variant}")
+        print("Is a plus variant_________{}".format(self.is_plus_variant))
         print(
-            f"Channel___________________{self._channel}",
-            f"~ {(self._channel + 2400) / 1000} GHz",
+            "Channel___________________{}".format(self._channel),
+            "~ {} GHz".format((self._channel + 2400) / 1000),
         )
         print(
-            f"RF Data Rate______________{d_rate}", "Mbps" if d_rate != 250 else "Kbps"
+            "RF Data Rate______________{}".format(d_rate),
+            "Mbps" if d_rate != 250 else "Kbps"
         )
-        print(f"RF Power Amplifier________{_pa_level} dbm")
+        print("RF Power Amplifier________{} dbm".format(_pa_level))
         print(
             "RF Low Noise Amplifier____{}abled".format(
                 "En" if bool(self._rf_setup & 1) else "Dis"
             )
         )
-        print(f"CRC bytes_________________{_crc}")
-        print(f"Address length____________{self._addr_len} bytes")
-        print(f"TX Payload lengths________{self._pl_len[0]} bytes")
+        print("CRC bytes_________________{}".format(_crc))
+        print("Address length____________{} bytes".format(self._addr_len))
+        print("TX Payload lengths________{} bytes".format(self._pl_len[0]))
         print(
-            f"Auto retry delay__________"
-            f"{((self._retry_setup & 0xF0) >> 4) * 250 + 250} microseconds",
+            "Auto retry delay__________{} microseconds".format(
+                ((self._retry_setup & 0xF0) >> 4) * 250 + 250
+            )
         )
-        print(f"Auto retry attempts_______{self._retry_setup & 0x0F} maximum")
-        print(f"Re-use TX FIFO____________{bool(_fifo & 64)}")
-        print(f"Packets lost on current channel_____________________{observer >> 4}")
-        print(f"Retry attempts made for last transmission___________{observer & 0xF}")
+        print("Auto retry attempts_______{} maximum".format(self._retry_setup & 0x0F))
+        print("Re-use TX FIFO____________{}".format(bool(_fifo & 64)))
+        print(
+            "Packets lost on current channel_____________________{}".format(
+                observer >> 4
+            )
+        )
+        print(
+            "Retry attempts made for last transmission___________{}".format(
+                observer & 0xF
+            )
+        )
         print(
             "IRQ on Data Ready__{}abled".format("Dis" if self._config & 64 else "_En"),
-            f"   Data Ready___________{self.irq_dr}",
+            "   Data Ready___________{}".format(self.irq_dr),
         )
         print(
             "IRQ on Data Fail___{}abled".format("Dis" if self._config & 16 else "_En"),
-            f"   Data Failed__________{self.irq_df}",
+            "   Data Failed__________{}".format(self.irq_df),
         )
         print(
             "IRQ on Data Sent___{}abled".format("Dis" if self._config & 32 else "_En"),
-            f"   Data Sent____________{self.irq_ds}",
+            "   Data Sent____________{}".format(self.irq_ds),
         )
         print(
             "TX FIFO full__________{}e".format("_Tru" if _fifo & 0x20 else "Fals"),
-            f"   TX FIFO empty________{bool(_fifo & 0x10)}",
+            "   TX FIFO empty________{}".format(bool(_fifo & 0x10)),
         )
         print(
             "RX FIFO full__________{}e".format("_Tru" if _fifo & 2 else "Fals"),
-            f"   RX FIFO empty________{bool(_fifo & 1)}",
+            "   RX FIFO empty________{}".format(bool(_fifo & 1)),
         )
         print(
             "Ask no ACK_________{}ed    Custom ACK Payload___{}abled".format(
@@ -457,10 +467,10 @@ class RF24:
                 "En" if self._features & 2 else "Dis",
             ),
         )
-        print(f"Dynamic Payloads___{dyn_p}    Auto Acknowledgment__{auto_a}")
+        print("Dynamic Payloads___{}    Auto Acknowledgment__{}".format(dyn_p, auto_a))
         print(
             "Primary Mode_____________{}X".format("R" if self._config & 1 else "T"),
-            f"   Power Mode___________{pwr}",
+            "   Power Mode___________{}".format(pwr),
         )
         if dump_pipes:
             self.print_pipes()
@@ -476,7 +486,7 @@ class RF24:
             else:
                 self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
             self._pl_len[i] = self._reg_read(RX_PL_LENG + i)
-        print(f"TX address____________ 0x{address_repr(self.address())}")
+        print("TX address____________ 0x{}".format(address_repr(self.address())))
         for i in range(6):
             is_open = self._open_pipes & (1 << i)
             print(
@@ -485,11 +495,11 @@ class RF24:
                 ),
             )
             if is_open and not self._dyn_pl & (1 << i):
-                print(f"\t\texpecting {self._pl_len[i]} byte static payloads")
+                print("\t\texpecting {} byte static payloads".format(self._pl_len[i]))
 
     @property
     def is_plus_variant(self) -> bool:
-        """A `bool` descibing if the nRF24L01 is a plus variant or not (read-only)."""
+        """A `bool` describing if the nRF24L01 is a plus variant or not (read-only)."""
         return self._is_plus_variant
 
     @property
@@ -512,7 +522,7 @@ class RF24:
                 if i < 6 and val >= 0:  # skip pipe if val is negative
                     self._dyn_pl = (self._dyn_pl & ~(1 << i)) | (bool(val) << i)
         else:
-            raise ValueError(f"dynamic_payloads: {enable} is an invalid input")
+            raise ValueError("dynamic_payloads: {} is an invalid input".format(enable))
         self._features = (self._features & 3) | (bool(self._dyn_pl) << 2)
         self._reg_write(TX_FEATURE, self._features)
         self._reg_write(DYN_PL_LEN, self._dyn_pl)
@@ -623,7 +633,7 @@ class RF24:
                 if i < 6 and val >= 0:  # skip pipe if val is negative
                     self._aa = (self._aa & ~(1 << i)) | (bool(val) << i)
         else:
-            raise ValueError(f"auto_ack: {enable} is not a valid input")
+            raise ValueError("auto_ack: {} is not a valid input".format(enable))
         self._reg_write(AUTO_ACK, self._aa)
 
     def set_auto_ack(self, enable: bool, pipe_number: int):
