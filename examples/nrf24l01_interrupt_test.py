@@ -62,7 +62,11 @@ def _ping_and_prompt():
         pass
     print("IRQ pin went active LOW.")
     nrf.update()  # update irq_d? status flags
-    print("\tirq_ds: {}, irq_dr: {}, irq_df: {}".format(nrf.irq_ds, nrf.irq_dr, nrf.irq_df))
+    print(
+        "\tirq_ds: {}, irq_dr: {}, irq_df: {}".format(
+            nrf.irq_ds, nrf.irq_dr, nrf.irq_df
+        )
+    )
 
 
 def master():
