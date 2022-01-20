@@ -150,5 +150,4 @@ else:
         "    Run base() on the receiver\n    "
         "Run node(node_number) on a transmitter\n    "
         "node()'s parameter, `node_number`, must be in range [0, 5]"
-        ""
     )

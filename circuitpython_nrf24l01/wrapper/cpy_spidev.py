@@ -64,11 +64,13 @@ class SPIDevCtx:
         self._spi.close()
         return False
 
-    def write_readinto(self, out_buf, in_buf):
+    def write_readinto(self, out_buf, in_buf, in_end: int = None, out_end: int = None):
         """wraps ``spidev.SpiDev.xfer2()`` into MicroPython compatible
         ``spi.write_readinto()`` calls.
 
         .. warning:: The ``in_buf`` parameter must be a mutable `bytearray`.
             The ``out_buf`` can be either a `bytes` or `bytearray` object.
         """
-        in_buf[:] = bytearray(self._spi.xfer2(out_buf, self._baudrate))
+        out_end = out_end if out_end is not None else len(out_buf)
+        in_end = in_end if in_end is not None else len(in_buf)
+        in_buf[:in_end] = bytearray(self._spi.xfer2(out_buf[:out_end], self._baudrate))

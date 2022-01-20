@@ -4,7 +4,7 @@ An all-purpose example of using the nRF24L01 transceiver in a network of nodes.
 import time
 import struct
 import board
-from circuitpython_nrf24l01.wrapper import DigitalInOut
+from digitalio import DigitalInOut
 from circuitpython_nrf24l01.network.constants import MAX_FRAG_SIZE, NETWORK_DEFAULT_ADDR
 
 IS_MESH = (

@@ -79,7 +79,7 @@ def scan(timeout=30):
         nrf.listen = 0  # end the RX session
         curr_channel = curr_channel + 1 if curr_channel < 125 else 0
 
-        # ouptut the signal counts per channel
+        # output the signal counts per channel
         sig_cnt = signals[curr_channel]
         print(
             ("%X" % min(15, sig_cnt)) if sig_cnt else "-",
@@ -97,7 +97,7 @@ def scan(timeout=30):
 def noise(timeout=1, channel=None):
     """print a stream of detected noise for duration of time.
 
-    :param int timeout: The number of seconds to scan for ambiant noise.
+    :param int timeout: The number of seconds to scan for ambient noise.
     :param int channel: The specific channel to focus on. If not provided, then the
         radio's current setting is used.
     """

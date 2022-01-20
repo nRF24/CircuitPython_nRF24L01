@@ -48,14 +48,16 @@ class RF24:
     """A driver class for the nRF24L01(+) transceiver radios."""
 
     def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
+        self._in = bytearray(97)  # for full RX FIFO reads + STATUS byte
+        self._out = bytearray(33)  # for max payload writes + STATUS byte
         self._ce_pin = ce_pin
         self._ce_pin.switch_to_output(value=False)
         # init shadow copy of RX addresses for all pipes for context manager
-        self._pipes = []  # will be 2 bytearrays and 4 ints
-        # self._status = status byte returned on all SPI transactions
+        self._pipes = [bytearray(5)] * 2 + [0] * 4
+        # self._in[0] = status byte returned on all SPI transactions
         # pre-configure the CONFIGURE register:
         #   0x0E = all IRQs enabled, CRC is 2 bytes, and power up in TX mode
-        self._status, self._config, self._spi = (0, 0x0E, None)
+        self._in[0], self._config, self._spi = (0, 0x0E, None)
         # setup SPI
         if type(spi).__name__.endswith("SpiDev"):
             self._spi = SPIDevCtx(spi, csn, spi_frequency=spi_frequency)
@@ -66,9 +68,9 @@ class RF24:
             raise RuntimeError("radio hardware not responding")
         for i in range(6):  # capture RX addresses from registers
             if i < 2:
-                self._pipes.append(self._reg_read_bytes(RX_ADDR_P0 + i))
+                self._pipes[i] = self._reg_read_bytes(RX_ADDR_P0 + i)
             else:
-                self._pipes.append(self._reg_read(RX_ADDR_P0 + i))
+                self._pipes[i] = self._reg_read(RX_ADDR_P0 + i)
         # test is nRF24L01 is a plus variant using a command specific to
         # non-plus variants
         self._open_pipes, self._is_plus_variant = (0, False)  # close all RX pipes
@@ -142,44 +144,45 @@ class RF24:
         self._ce_pin.value = val
 
     def _reg_read(self, reg: int) -> int:
-        in_buf = bytearray([0, 0])
+        self._out[0] = reg
         with self._spi as spi:
             # time.sleep(0.000005)
-            spi.write_readinto(bytes([reg, 0]), in_buf)
-        self._status = in_buf[0]
-        # print("SPI read 1 byte from", ("%02X" % reg), ("%02X" % in_buf[1]))
-        return in_buf[1]
+            spi.write_readinto(self._out, self._in, out_end=2, in_end=2)
+        # print("SPI read 1 byte from", ("%02X" % reg), ("%02X" % self._in[1]))
+        return self._in[1]
 
     def _reg_read_bytes(self, reg: int, buf_len: int = 5) -> bytearray:
-        in_buf = bytearray(buf_len + 1)
+        self._out[0] = reg
+        buf_len += 1
         with self._spi as spi:
             # time.sleep(0.000005)
-            spi.write_readinto(bytes([reg] + [0] * buf_len), in_buf)
-        self._status = in_buf[0]
+            spi.write_readinto(self._out, self._in, out_end=buf_len, in_end=buf_len)
         # print("SPI read {} bytes from {} {}".format(
-        #     buf_len, ("%02X" % reg), address_repr(in_buf[1:], 0)
+        #     buf_len - 1, ("%02X" % reg), address_repr(self._in[1 : buf_len], 0)
         # ))
-        return in_buf[1:]
+        return self._in[1 : buf_len]
 
     def _reg_write_bytes(self, reg: int, out_buf):
-        in_buf = bytearray(len(out_buf) + 1)
+        self._out[0] = 0x20 | reg
+        buf_len = len(out_buf) + 1
+        self._out[1 : buf_len] = out_buf
         with self._spi as spi:
             # time.sleep(0.000005)
-            spi.write_readinto(bytes([0x20 | reg]) + out_buf, in_buf)
-        self._status = in_buf[0]
+            spi.write_readinto(self._out, self._in, out_end=buf_len, in_end=buf_len)
         # print("SPI write {} bytes to {} {}".format(
-        #     len(out_buf), ("%02X" % reg), address_repr(out_buf, 0)
+        #     buf_len - 1, ("%02X" % reg), address_repr(self._out[1 : buf_len], 0)
         # ))
 
     def _reg_write(self, reg: int, value: int = None):
-        out_buf = bytes([reg])
+        self._out[0] = reg
+        buf_len = 1
         if value is not None:
-            out_buf = bytes([(0x20 if reg != 0x50 else 0) | reg, value])
-        in_buf = bytearray(len(out_buf))
+            self._out[0] = (0x20 if reg != 0x50 else 0) | reg
+            self._out[1] = value
+            buf_len += 1
         with self._spi as spi:
             # time.sleep(0.000005)
-            spi.write_readinto(out_buf, in_buf)
-        self._status = in_buf[0]
+            spi.write_readinto(self._out, self._in, out_end=buf_len, in_end=buf_len)
         # if reg != 0xFF:
         #     print(
         #         "SPI write", "command" if value is None else "1 byte to",
@@ -270,15 +273,15 @@ class RF24:
 
     def available(self) -> bool:
         """A `bool` describing if there is a payload in the RX FIFO."""
-        return self.update() and self._status >> 1 & 7 < 6
+        return self.update() and self._in[0] >> 1 & 7 < 6
 
     def any(self) -> int:
         """This function reports the next available payload's length (in bytes)."""
         last_dyn_size = self._reg_read(0x60)
-        if self._status >> 1 & 7 < 6:
+        if self._in[0] >> 1 & 7 < 6:
             if self._features & 4:
                 return last_dyn_size
-            return self._pl_len[(self._status >> 1) & 7]
+            return self._pl_len[(self._in[0] >> 1) & 7]
         return 0
 
     def read(self, length: int = None) -> bytearray:
@@ -304,20 +307,20 @@ class RF24:
             for b in buf:
                 result.append(self.send(b, ask_no_ack, force_retry, send_only))
             return result
-        if self._status & 0x10 or self._status & 1:
+        if self._in[0] & 0x10 or self._in[0] & 1:
             self.flush_tx()
-        if not send_only and self._status >> 1 & 7 < 6:
+        if not send_only and self._in[0] >> 1 & 7 < 6:
             self.flush_rx()
         up_cnt = 0
         self.write(buf, ask_no_ack)
-        while not self._status & 0x30:
+        while not self._in[0] & 0x30:
             up_cnt += self.update()
-        result = bool(self._status & 0x20)
-        # print("send did {} updates. flags: {}".format(up_cnt, self._status >> 4))
+        result = bool(self._in[0] & 0x20)
+        # print("send did {} updates. flags: {}".format(up_cnt, self._in[0] >> 4))
         while force_retry and not result:
             result = self.resend(send_only)
             force_retry -= 1
-        if self._status & 0x60 == 0x60 and not send_only:
+        if self._in[0] & 0x60 == 0x60 and not send_only:
             result = self.read()
         # self._ce_pin.value = False
         return result
@@ -325,13 +328,13 @@ class RF24:
     @property
     def tx_full(self) -> bool:
         """An `bool` to represent if the TX FIFO is full. (read-only)"""
-        return bool(self._status & 1)
+        return bool(self._in[0] & 1)
 
     @property
     def pipe(self):
         """The number of the data pipe that received the next available
         payload in the RX FIFO. (read only)"""
-        result = self._status >> 1 & 7
+        result = self._in[0] >> 1 & 7
         if result <= 5 and self._spi is not None:
             return result
         return None
@@ -339,17 +342,17 @@ class RF24:
     @property
     def irq_dr(self) -> bool:
         """A `bool` that represents the "Data Ready" interrupted flag. (read-only)"""
-        return bool(self._status & 0x40)
+        return bool(self._in[0] & 0x40)
 
     @property
     def irq_ds(self) -> bool:
         """A `bool` that represents the "Data Sent" interrupted flag. (read-only)"""
-        return bool(self._status & 0x20)
+        return bool(self._in[0] & 0x20)
 
     @property
     def irq_df(self) -> bool:
         """A `bool` that represents the "Data Failed" interrupted flag. (read-only)"""
-        return bool(self._status & 0x10)
+        return bool(self._in[0] & 0x10)
 
     def update(self) -> True:
         """This function gets an updated status byte over SPI."""
@@ -778,18 +781,18 @@ class RF24:
         if self.fifo(True, True):
             return False
         self._ce_pin.value = False
-        if not send_only and (self._status >> 1) < 6:
+        if not send_only and (self._in[0] >> 1) < 6:
             self.flush_rx()
         self.clear_status_flags()
         # self._reg_write(0xE3)
         up_cnt = 0
         self._ce_pin.value = True
-        while not self._status & 0x30:
+        while not self._in[0] & 0x30:
             up_cnt += self.update()
         # self._ce_pin.value = False
-        result = bool(self._status & 0x20)
-        # print("resend did {} updates. flags: {}".format(up_cnt, self._status >> 4))
-        if result and self._status & 0x40 and not send_only:
+        result = bool(self._in[0] & 0x20)
+        # print("resend did {} updates. flags: {}".format(up_cnt, self._in[0] >> 4))
+        if result and self._in[0] & 0x40 and not send_only:
             return self.read()
         return result
 
@@ -799,22 +802,21 @@ class RF24:
         if not buf or len(buf) > 32:
             raise ValueError("buffer must have a length in range [1, 32]")
         self.clear_status_flags()
-        is_power_up = self._config & 2
-        if self._config & 3 != 2:  # is radio powered up in TX mode?
-            self._config = (self._config & 0x7C) | 2
-            self._reg_write(CONFIGURE, self._config)
-            if not is_power_up:
-                time.sleep(0.00015)
-        if self._status & 1:
+        # is_power_up = self._config & 2
+        # if self._config & 3 != 2:  # is radio powered up in TX mode?
+        #     self._config = (self._config & 0x7C) | 2
+        #     self._reg_write(CONFIGURE, self._config)
+        #     if not is_power_up:
+        #         time.sleep(0.00015)
+        if self._in[0] & 1:
             return False
-        if not bool((self._dyn_pl & 1) and (self._features & 4)):
-            if len(buf) < self._pl_len[0]:
-                buf += b"\0" * (self._pl_len[0] - len(buf))
-            elif len(buf) > self._pl_len[0]:
-                buf = buf[: self._pl_len[0]]
-        if ask_no_ack and self._features & 1 == 0:
-            self._features = self._features & 0xFE | 1
-            self._reg_write(TX_FEATURE, self._features)
+        if not self._dyn_pl & 1 and not self._features & 4:
+            buf_len = len(buf)
+            pl_len = self._pl_len[0]
+            if buf_len < pl_len:
+                buf += b"\0" * (pl_len - buf_len)
+            elif buf_len > pl_len:
+                buf = buf[:pl_len]
         self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
         if not write_only:
             self._ce_pin.value = True
