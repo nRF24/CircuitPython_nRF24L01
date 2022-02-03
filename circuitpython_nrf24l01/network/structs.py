@@ -108,6 +108,10 @@ class RF24NetworkHeader:
             self.reserved,
         )
 
+    def __repr__(self) -> str:
+        """Alias of `to_string()`"""
+        return "<RF24NetworkHeader " + self.to_string() + ">"
+
 
 class RF24NetworkFrame:
     """Structure of a single frame."""

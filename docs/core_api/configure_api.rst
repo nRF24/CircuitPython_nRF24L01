@@ -83,7 +83,7 @@ Configurable RF24 API
         determine if 250 kbps is supposed to be supported.
 
         .. hint::
-            You can perform a carrier wave test on 250 kbps to see if you transceiver hardware
+            You can perform a carrier wave test on 250 kbps to see if your transceiver hardware
             does support that data rate. See `start_carrier_wave()`, `stop_carrier_wave()`, and
             `rpd` to execute a hardware test.
 

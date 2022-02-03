@@ -295,6 +295,10 @@ Debugging Output
         A string of hexadecimal characters in big endian form of the
         specified ``buf`` parameter.
 
+    .. versionchanged:: 2.1.0
+        Added parameters ``reverse`` and ``delimit`` as this function proved vital to
+        debugging and developing `RF24NetworkHeader` & `RF24NetworkFrame`.
+
 Status Byte
 ******************************
 
@@ -317,7 +321,7 @@ Status Byte
 
         - `True` represents Data is in the RX FIFO buffer
         - `False` represents anything depending on context (state/condition of FIFO buffers);
-          usually this means the flag's been reset.
+          usually this means the flag has been reset.
 
     .. important:: It is recommended that this flag is only used when the IRQ pin is active.
         To determine if there is a payload in the RX FIFO, use `fifo()`, `any()`, or `pipe`.
@@ -335,7 +339,7 @@ Status Byte
 
         - `True` signifies the nRF24L01 attempted all configured retries
         - `False` represents anything depending on context (state/condition); usually this
-          means the flag's been reset.
+          means the flag has been reset.
 
     .. important:: This can only return `True` if `auto_ack` is enabled, otherwise this will
         always be `False`.
@@ -352,7 +356,7 @@ Status Byte
 
         - `True` represents a successful transmission
         - `False` represents anything depending on context (state/condition of FIFO buffers);
-          usually this means the flag's been reset.
+          usually this means the flag has been reset.
 
     Pass ``data_sent`` |irq note|
 
@@ -364,15 +368,15 @@ Status Byte
     Refreshing the status byte is vital to checking status of the interrupt flags, RX pipe
     number related to current RX payload, and if the TX FIFO buffer is full. This function
     returns nothing, but internally updates the `irq_dr`, `irq_ds`, `irq_df`, `pipe`, and
-    `tx_full` attributes. Internally this is a helper function to `available()`, `send()`, and `resend()`
-    functions.
+    `tx_full` attributes. Internally this is a helper function to `available()`, `send()`,
+    and `resend()` functions.
 
     :returns: `True` for every call. This value is meant to allow this function to be used
         in `if` or `while` *in conjunction with* attributes related to the
         refreshed status byte.
 
     .. versionchanged:: 1.2.3
-        arbitrarily returns `True`
+        Arbitrarily returns `True`.
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.pipe
 
@@ -485,7 +489,7 @@ Ambiguous Signal Detection
     .. code-block:: python
 
         # declare objects for SPI bus and CSN pin and CE pin
-        nrf. = RF24(spi, csn, ce)
+        nrf = RF24(spi, csn, ce)
         # set nrf.pa_level, nrf.channel, & nrf.data_rate values to
         # match the corresponding attributes on the device that is
         # transmitting the carrier wave

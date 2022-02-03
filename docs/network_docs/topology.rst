@@ -362,3 +362,61 @@ snippets to use as a template for such a scenario.
         with network_b_node as net_b:
             net_b.update()
             net_b.send(RF24NetworkHeader(0, "T"), b"data for net B master")
+
+RF24Mesh connecting process
+***************************
+
+As noted above, a single network *can* have up to 781 nodes. This number also includes
+up to 255 RF24Mesh nodes. The key difference from the user's perspective is that RF24Mesh
+API does not use a Logical Address. Instead the RF24Mesh API relies on a `node_id` number
+to identify a RF24Mesh node that may use a different Logical Address (which can change
+based on the node's physical location).
+
+.. important::
+    Any network that will use RF24mesh for a child node needs to have a RF24Mesh
+    master node. This will not interfere with RF24Network nodes since the RF24Mesh API
+    is layered on top of the RF24Network API.
+
+To better explain the difference between a node's `node_address` vs a node's `node_id`,
+we will examine the connecting process for a RF24Mesh node. These are the steps performed
+when calling `renew_address()`:
+
+1. Any RF24Mesh node not connected to a network will use the Logical Address ``0o444``
+   (that's ``2340`` in decimal). It is up to the network administrator to ensure that
+   each RF24Mesh node has a unique `node_id` (which is limited to the range [0, 255]).
+
+   .. hint::
+       Remember that ``0`` is reserved the master node's `node_id`.
+2. To get assigned a Logical Address, an unconnected node must poll the network for a
+   response (using a `NETWORK_POLL` message). Initially this happens on the network
+   level 1, but consecutive attempts will poll higher network levels (in order of low to
+   high) if this process fails.
+3. When a polling transmission is responded, the connecting mesh node sends an address
+   request which gets forwarded to the master node when necessary (using a
+   `MESH_ADDR_REQUEST` message).
+4. The master node will process the address request and respond with a `node_address`
+   (using a `MESH_ADDR_RESPONSE` message). If there is no available occupancy on the
+   network level from which the address request originated, then the master node will
+   respond with an invalid Logical Address.
+5. Once the requesting node receives the address response (and the assigned address is
+   valid), it assumes that as the `node_address` while maintaining its `node_id`.
+
+   - The connecting node will verify its new address by calling `check_connection`.
+   - If the assigned address is invalid or `check_connection()` returns `False`, then
+     the connecting node will re-start the process (step 1) on a different network level.
+
+Points of failure
+-----------------
+
+This process happens over a span of a few milliseconds. However,
+
+- If the connecting node is physically moving throughout the network very quickly,
+  then this process will take longer and is likely to fail.
+- If a master node is able to respond faster than the connecting node can prepare itself
+  to receive, then the process will fail entirely. This failure about faster master
+  nodes often results in some slower RF24Mesh nodes only being able to connect to the
+  network through another non-master node.
+
+If you run into trouble with this connection process, then please
+`open an issue on github <https://github.com/nRF24/CircuitPython_nRF24L01/issues>`_
+and describe the situation with as much detail as possible.
