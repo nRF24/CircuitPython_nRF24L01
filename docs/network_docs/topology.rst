@@ -389,7 +389,7 @@ when calling `renew_address()`:
        Remember that ``0`` is reserved the master node's `node_id`.
 2. To get assigned a Logical Address, an unconnected node must poll the network for a
    response (using a `NETWORK_POLL` message). Initially this happens on the network
-   level 1, but consecutive attempts will poll higher network levels (in order of low to
+   level 0, but consecutive attempts will poll higher network levels (in order of low to
    high) if this process fails.
 3. When a polling transmission is responded, the connecting mesh node sends an address
    request which gets forwarded to the master node when necessary (using a
