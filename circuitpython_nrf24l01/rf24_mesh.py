@@ -26,7 +26,7 @@ import struct
 try:
     import json
 except ImportError:
-    json = None
+    json = None  # some CircuitPython boards don't have the json module
 from .network.constants import (
     MESH_ADDR_REQUEST,
     MESH_ADDR_RESPONSE,
@@ -359,24 +359,34 @@ class RF24Mesh(RF24MeshNoMaster):
                     return
         self.dhcp_dict[node_id] = node_address
 
-    def save_dhcp(self, filename: str = "dhcp.json"):
+    def save_dhcp(self, filename: str = "dhcplist.json", as_bin: bool = False):
         """Save the `dhcp_dict` to a JSON file (meant for master nodes only)."""
-        if json is None:
-            return  # some CircuitPython boards don't have the json module
-        with open(filename, "w", encoding="utf8") as json_file:
+        with open(filename, "wb") as json_file:
             # This throws an OSError if file system is read-only. ALL MCU boards
             # running CircuitPython firmware (not RPi) have read-only file system.
-            json.dump(self.dhcp_dict, json_file)
+            if json is not None and not as_bin:
+                json.dump(self.dhcp_dict, json_file)
+            elif as_bin:
+                for _id, _addr in self.dhcp_dict.items():
+                    json_file.write(bytes([_id, 0]))  # pad id w/ 0 for mem alignment
+                    json_file.write(struct.pack("<H", _addr))
 
-    def load_dhcp(self, filename: str = "dhcp.json"):
+    def load_dhcp(self, filename: str = "dhcplist.json", as_bin: bool = False):
         """Load the `dhcp_dict` from a JSON file (meant for master nodes only)."""
-        if json is None:
-            return
-        with open(filename, "r", encoding="utf8") as json_file:
-            temp_dict = json.load(json_file)
-            # convert keys from `str` to `int`
-            for n_id, addr in temp_dict.items():
-                self.set_address(int(n_id), addr, True)
+        with open(filename, "rb") as json_file:
+            if json is not None and not as_bin:
+                temp_dict = json.load(json_file)  # type: dict
+                # convert keys from `str` to `int`
+                for n_id, addr in temp_dict.items():
+                    self.set_address(int(n_id), addr, True)
+            elif as_bin:
+                buffer = json_file.read()
+                for i in range(int(len(buffer) / 4)):
+                    index = i * 4
+                    self.set_address(
+                        buffer[index],  # skip index + 1 as it's only used for padding
+                        struct.unpack("<H", buffer[index + 2 : index + 4])[0]
+                    )
 
     def print_details(self, dump_pipes: bool = False, network_only: bool = False):
         """See RF24.print_details() and Shared Networking API docs"""

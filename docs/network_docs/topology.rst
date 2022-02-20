@@ -368,9 +368,9 @@ RF24Mesh connecting process
 
 As noted above, a single network *can* have up to 781 nodes. This number also includes
 up to 255 RF24Mesh nodes. The key difference from the user's perspective is that RF24Mesh
-API does not use a Logical Address. Instead the RF24Mesh API relies on a `node_id` number
-to identify a RF24Mesh node that may use a different Logical Address (which can change
-based on the node's physical location).
+API does not use a `Logical Address <logical_address>`. Instead the RF24Mesh API relies on
+a `node_id` number to identify a RF24Mesh node that may use a different
+`Logical Address <logical_address>` (which can change based on the node's physical location).
 
 .. important::
     Any network that will use RF24mesh for a child node needs to have a RF24Mesh
@@ -381,15 +381,15 @@ To better explain the difference between a node's `node_address` vs a node's `no
 we will examine the connecting process for a RF24Mesh node. These are the steps performed
 when calling `renew_address()`:
 
-1. Any RF24Mesh node not connected to a network will use the Logical Address ``0o444``
-   (that's ``2340`` in decimal). It is up to the network administrator to ensure that
+1. Any RF24Mesh node not connected to a network will use the `Logical Address <logical_address>`
+   ``0o444`` (that's ``2340`` in decimal). It is up to the network administrator to ensure that
    each RF24Mesh node has a unique `node_id` (which is limited to the range [0, 255]).
 
    .. hint::
        Remember that ``0`` is reserved the master node's `node_id`.
-2. To get assigned a Logical Address, an unconnected node must poll the network for a
-   response (using a `NETWORK_POLL` message). Initially this happens on the network
-   level 0, but consecutive attempts will poll higher network levels (in order of low to
+2. To get assigned a `Logical Address <logical_address>`, an unconnected node must poll the
+   network for a response (using a `NETWORK_POLL` message). Initially this happens on the
+   network level 0, but consecutive attempts will poll higher network levels (in order of low to
    high) if this process fails.
 3. When a polling transmission is responded, the connecting mesh node sends an address
    request which gets forwarded to the master node when necessary (using a
@@ -397,7 +397,7 @@ when calling `renew_address()`:
 4. The master node will process the address request and respond with a `node_address`
    (using a `MESH_ADDR_RESPONSE` message). If there is no available occupancy on the
    network level from which the address request originated, then the master node will
-   respond with an invalid Logical Address.
+   respond with an invalid `Logical Address <logical_address>`.
 5. Once the requesting node receives the address response (and the assigned address is
    valid), it assumes that as the `node_address` while maintaining its `node_id`.
 

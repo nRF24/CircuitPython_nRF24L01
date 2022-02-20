@@ -200,11 +200,17 @@ Advanced API
     Calling this function on a Linux device (like the Raspberry Pi) will save the
     `dhcp_dict` to a JSON file located in the program's working directory.
 
-    :param str filename: The name of the json file to be used. This value should end in a ".json"
+    :param str filename: The name of the json file to be used. This value should include a file extension
+        (like ".json" or ".txt").
+    :param bool as_bin: Set this parameter to `True` to save the DHCP list to a binary text file.
+        Defaults to `False` which saves the DHCP list as JSON syntax.
 
 .. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.load_dhcp
 
-    :param str filename: The name of the json file to be used. This value should end in a ".json"
+    :param str filename: The name of the json file to be used. This value should include a file extension
+        (like ".json" or ".txt").
+    :param bool as_bin: Set this parameter to `True` to load the DHCP list from a binary text file.
+        Defaults to `False` which loads the DHCP list from JSON syntax.
 
     .. warning::
         This function will raise an `OSError` exception if no file exists.
