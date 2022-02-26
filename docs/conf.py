@@ -137,8 +137,6 @@ html_theme_options = {
     "repo_url": "https://github.com/nRF24/CircuitPython_nRF24L01/",
     "repo_name": "CircuitPython_nRF24L01",
     "repo_type": "github",
-    # Visible levels of the global TOC; -1 means unlimited
-    "globaltoc_depth": -1,
     # If False, expand all TOC entries
     "globaltoc_collapse": False,
     # If True, show hidden TOC entries
