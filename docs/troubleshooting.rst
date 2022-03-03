@@ -1,3 +1,4 @@
+:hide-navigation:
 
 Troubleshooting info
 ~~~~~~~~~~~~~~~~~~~~

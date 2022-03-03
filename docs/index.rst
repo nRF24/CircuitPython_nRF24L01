@@ -1,4 +1,4 @@
-
+:hide-navigation:
 
 .. toctree::
     :hidden:
@@ -44,8 +44,8 @@
 
 .. only:: html
 
-    .. image:: https://open.vscode.dev/badges/open-in-vscode.svg
-        :target: https://open.vscode.dev/2bndy5/CircuitPython_nRF24L01
+    .. image:: https://img.shields.io/static/v1?label=Visual%20Studio%20Code&message=Use%20Online%20IDE&color=blue&logo=visualstudiocode&logoColor=3f9ae6
+        :target: https://vscode.dev/github/nRF24/CircuitPython_nRF24L01
         :alt: Open in Visual Studio Code
 
     .. image:: https://img.shields.io/badge/Gitpod-Use%20Online%20IDE-B16C04?logo=gitpod
@@ -256,9 +256,9 @@ What to purchase
 
 See the following links to Sparkfun or just google "nRF24L01+".
 
-    * `2.4GHz Transceiver IC - nRF24L01+ <https://www.sparkfun.com/products/690>`_
-    * `SparkFun Transceiver Breakout - nRF24L01+ <https://www.sparkfun.com/products/691>`_
-    * `SparkFun Transceiver Breakout - nRF24L01+ (RP-SMA) <https://www.sparkfun.com/products/705>`_
+* `2.4GHz Transceiver IC - nRF24L01+ <https://www.sparkfun.com/products/690>`_
+* `SparkFun Transceiver Breakout - nRF24L01+ <https://www.sparkfun.com/products/691>`_
+* `SparkFun Transceiver Breakout - nRF24L01+ (RP-SMA) <https://www.sparkfun.com/products/705>`_
 
 It is worth noting that you
 generally want to buy more than 1 as you need 2 for testing -- 1 to send & 1 to receive and

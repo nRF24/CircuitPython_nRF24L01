@@ -110,6 +110,7 @@ html_theme_options = {
         "navigation.top",
         # "search.highlight",
         "search.share",
+        "navigation.tabs.sticky",
     ],
     "palette": [
         {
@@ -139,8 +140,7 @@ html_theme_options = {
     "repo_type": "github",
     # If False, expand all TOC entries
     "globaltoc_collapse": False,
-    # If True, show hidden TOC entries
-    "globaltoc_includehidden": True,
+    "toc_title_is_page_title": True,
 }
 # Set link name generated in the top bar.
 html_title = "CircuitPython_nRF24L01"
