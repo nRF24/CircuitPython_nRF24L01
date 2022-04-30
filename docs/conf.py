@@ -27,6 +27,7 @@ extensions = [
 # autodoc module docs will fail to generate with a warning.
 autodoc_mock_imports = ["digitalio", "busio", "microcontroller"]
 autodoc_member_order = "bysource"
+autodoc_typehints_format = "short"
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
@@ -142,6 +143,13 @@ html_theme_options = {
     "globaltoc_collapse": False,
     "toc_title_is_page_title": True,
 }
+
+# turn off some features specific to sphinx-immaterial theme
+object_description_options = [
+    ("py:.*", dict(include_fields_in_toc=False, generate_synopses=None)),
+    ("py:parameter", dict(include_in_toc=False)),
+]
+
 # Set link name generated in the top bar.
 html_title = "CircuitPython_nRF24L01"
 
@@ -175,16 +183,16 @@ htmlhelp_basename = "nRF24L01_Library_doc"
 latex_elements = {
     #
     # The paper size ('letterpaper' or 'a4paper').
-    'papersize': 'letterpaper',
+    "papersize": "letterpaper",
     #
     # The font size ('10pt', '11pt' or '12pt').
-    'pointsize': '10pt',
+    "pointsize": "10pt",
     #
     # Additional stuff for the LaTeX preamble.
-    'preamble': '',
+    "preamble": "",
     #
     # Latex figure (float) alignment
-    'figure_align': 'htbp',
+    "figure_align": "htbp",
 }
 
 # Grouping the document tree into LaTeX files. List of tuples

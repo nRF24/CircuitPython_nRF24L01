@@ -22,7 +22,8 @@ RF24MeshNoMaster class
     It is the python equivalent to TMRh20's ``MESH_NO_MASTER`` macro in the C++ RF24Mesh library.
     All the API is the same as `RF24Mesh` class.
 
-    :param int node_id: The unique identifying `node_id` number for the instantiated mesh node.
+    :param int node_id: The unique identifying :attr:`~circuitpython_nrf24l01.rf24_mesh.RF24Mesh.node_id`
+        number for the instantiated mesh node.
 
     .. seealso:: For all parameters' descriptions, see the
         :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' constructor documentation.
@@ -54,6 +55,9 @@ Basic API
         then you can use :meth:`~circuitpython_nrf24l01.rf24_mesh.RF24Mesh.write()`
         for quicker operation.
 
+    :param int to_node: The unique mesh network `node_id` of the frame's destination.
+        Defaults to ``0`` (which is reserved for the master node.
+    :param str,int message_type: The `int` that describes the frame header's `message_type`.
     :param bytes,bytearray message: The frame's `message` to be transmitted.
 
         .. note::
@@ -61,9 +65,6 @@ Basic API
             `fragmentation` is disabled. If `fragmentation` is enabled (it is by default), then
             the message's size must be less than
             :attr:`~circuitpython_nrf24l01.rf24_network.RF24Network.max_message_length`.
-    :param str,int message_type: The `int` that describes the frame header's `message_type`.
-    :param int to_node_id: The unique mesh network `node_id` of the frame's destination.
-        Defaults to ``0`` (which is reserved for the master node.
 
     :Returns:
 
@@ -143,7 +144,7 @@ Advanced API
 
 .. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.write
 
-    :param int to_node_address: The network node's :ref:`Logical Address <Logical Address>`.
+    :param int to_node: The network node's :ref:`Logical Address <Logical Address>`.
         of the frame's destination. This must be the destination's network `node_address` which is
         not be confused with a mesh node's `node_id`.
     :param str,int message_type: The `int` that describes the frame header's `message_type`.
