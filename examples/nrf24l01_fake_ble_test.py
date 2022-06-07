@@ -99,7 +99,7 @@ def master(count=50):
 
 # create an object for manipulating temperature measurements
 temperature_service = TemperatureServiceData()
-# temperature's float data has up to 2 decimal places of percision
+# temperature's float data has up to 2 decimal places of precision
 temperature_service.data = 42.0
 
 

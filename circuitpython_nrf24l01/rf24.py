@@ -24,7 +24,8 @@
 import time
 
 try:
-    from typing import Union, Sequence, Optional, Literal, List, Tuple
+    from typing import Union, Sequence, Optional, List, Tuple
+    from typing_extensions import Literal
 except ImportError:
     pass
 from micropython import const
