@@ -168,6 +168,8 @@ def slave(timeout=6):
                     print("\traw buffer:", address_repr(service_data, False, " "))
                 else:
                     print("\t" + repr(service_data))
+    nrf.listen = False
+    nrf.flush_rx()  # discard any received raw BLE data
 
 
 def set_role():
