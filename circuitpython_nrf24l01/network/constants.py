@@ -34,7 +34,7 @@ MESH_MAX_CHILDREN = const(4)  #: The max number of children for 1 mesh node.
 MESH_WRITE_TIMEOUT = const(115)  #: The time (in milliseconds) used to send messages.
 
 # sending behavior types
-AUTO_ROUTING = const(0o70)  #: Send a message with automatic network rounting.
+AUTO_ROUTING = const(0o70)  #: Send a message with automatic network routing.
 TX_NORMAL = const(0)  #: Send a routed message.
 TX_ROUTED = const(1)  #: Send a routed message.
 TX_PHYSICAL = const(2)  #: Send a message directly to network node.

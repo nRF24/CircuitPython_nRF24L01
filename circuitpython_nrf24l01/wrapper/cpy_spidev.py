@@ -30,9 +30,9 @@ class SPIDevCtx:
     :param int,list,tuple csn: The CE pin number (``0``, ``1``, or ``2``) to
         use as the SPI device's CSN pin. For advanced users, a `list` or `tuple`
         can instead be used to specify a bus number and a pin number that isn't
-        controlled by the SPIDEV kernal. Where index ``0`` is the bus number
+        controlled by the SPIDEV kernel. Where index ``0`` is the bus number
         multiplied by 10, and index ``1`` is the pin number.
-    :param int spi_frequency: the SPI frquency to use for the SPI device.
+    :param int spi_frequency: the SPI frequency to use for the SPI device.
         Defaults to 10MHz.
     """
 

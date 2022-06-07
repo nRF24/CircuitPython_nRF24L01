@@ -19,9 +19,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-"""A module to hold all usuall accessible RF24 API via the RF24Network API"""
+"""A module to hold all usually accessible RF24 API via the RF24Network API"""
 # pylint: disable=missing-docstring
 import time
+
+try:
+    from typing import Tuple, Union
+except ImportError:
+    pass
+import busio
+from digitalio import DigitalInOut
 from ..rf24 import RF24, address_repr
 from .structs import RF24NetworkFrame, FrameQueue, FrameQueueFrag, is_address_valid
 from .constants import (
@@ -47,7 +54,13 @@ from .constants import (
 
 
 class RadioMixin:
-    def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
+    def __init__(
+        self,
+        spi: busio.SPI,
+        csn: DigitalInOut,
+        ce_pin: DigitalInOut,
+        spi_frequency: int = 10000000,
+    ):
         self._rf24 = RF24(spi, csn, ce_pin, spi_frequency=spi_frequency)
         super().__init__()
 
@@ -86,7 +99,7 @@ class RadioMixin:
     def set_dynamic_payloads(self, enable: bool, pipe: int = None):
         self._rf24.set_dynamic_payloads(enable, pipe_number=pipe)
 
-    def get_dynamic_payloads(self, pipe=None):
+    def get_dynamic_payloads(self, pipe: int = 0) -> bool:
         return self._rf24.get_dynamic_payloads(pipe)
 
     @property
@@ -156,7 +169,13 @@ def _lvl_2_addr(level: int) -> int:
 
 
 class NetworkMixin(RadioMixin):
-    def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
+    def __init__(
+        self,
+        spi: busio.SPI,
+        csn: DigitalInOut,
+        ce_pin: DigitalInOut,
+        spi_frequency: int = 10000000,
+    ):
         super().__init__(spi, csn, ce_pin, spi_frequency=spi_frequency)
         # setup private members
         self._net_lvl, self._addr, self._mask, self._mask_inv = (0,) * 4
@@ -349,7 +368,7 @@ class NetworkMixin(RadioMixin):
             if not keep_updating:
                 return ret_val
 
-    def _handle_frame_for_this_node(self, msg_t: int) -> tuple:
+    def _handle_frame_for_this_node(self, msg_t: int) -> Tuple[bool, int]:
         """Returns False if the frame is not consumed or True if consumed"""
         if msg_t == NETWORK_PING:
             return (True, msg_t)
@@ -366,7 +385,10 @@ class NetworkMixin(RadioMixin):
         if self.ret_sys_msg and msg_t > MAX_USR_DEF_MSG_TYPE or msg_t == NETWORK_ACK:
             # print("Received system payload type", msg_t)
             if msg_t not in (
-                MSG_FRAG_FIRST, MSG_FRAG_MORE, MSG_FRAG_LAST, NETWORK_EXT_DATA,
+                MSG_FRAG_FIRST,
+                MSG_FRAG_MORE,
+                MSG_FRAG_LAST,
+                NETWORK_EXT_DATA,
             ):
                 return (False, msg_t)
 
@@ -377,7 +399,7 @@ class NetworkMixin(RadioMixin):
             return (False, NETWORK_EXT_DATA)
         return (True, msg_t)
 
-    def _handle_frame_for_other_node(self, msg_t: int) -> tuple:
+    def _handle_frame_for_other_node(self, msg_t: int) -> Tuple[bool, int]:
         """Returns False if the frame is not consumed or True if consumed"""
         if self.allow_multicast:
             if self.frame_buf.header.to_node == NETWORK_MULTICAST_ADDR:
@@ -431,7 +453,12 @@ class NetworkMixin(RadioMixin):
         """Get (from `queue`) the next available frame."""
         return self.queue.dequeue()
 
-    def multicast(self, message, message_type, level: int = None) -> bool:
+    def multicast(
+        self,
+        message: Union[bytes, bytearray],
+        message_type: Union[str, int],
+        level: int = None,
+    ) -> bool:
         """Broadcast a message to all nodes on a certain network level."""
         if not self._validate_msg_len(len(message)):
             message = message[:MAX_FRAG_SIZE]
@@ -569,7 +596,7 @@ class NetworkMixin(RadioMixin):
 
     def _logi_2_phys(
         self, to_node: int, send_type: int, is_multicast: bool = False
-    ) -> tuple:
+    ) -> Tuple[int, int, bool]:
         """translate msg route into node address, pipe number, & multicast flag."""
         conv_to_node, conv_to_pipe = (self._parent, self._parent_pipe)
         if send_type > TX_ROUTED:

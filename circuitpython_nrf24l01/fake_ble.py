@@ -23,11 +23,18 @@
 http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery"""
 from os import urandom
 import struct
+
+try:
+    from typing import Union, List, Optional
+except ImportError:
+    pass
+import busio
+from digitalio import DigitalInOut
 from micropython import const
 from .rf24 import RF24, address_repr
 
 
-def swap_bits(original):
+def swap_bits(original: int) -> int:
     """This function reverses the bit order for a single byte."""
     original &= 0xFF
     reverse = 0
@@ -38,7 +45,7 @@ def swap_bits(original):
     return reverse
 
 
-def reverse_bits(original):
+def reverse_bits(original: Union[bytes, bytearray]) -> bytearray:
     """This function reverses the bit order for an entire buffer protocol object."""
     ret = bytearray(len(original))
     for i, byte in enumerate(original):
@@ -46,13 +53,13 @@ def reverse_bits(original):
     return ret
 
 
-def chunk(buf, data_type=0x16):
+def chunk(buf: Union[bytes, bytearray], data_type: int = 0x16) -> bytearray:
     """This function is used to pack data values into a block of data that
     make up part of the BLE payload per Bluetooth Core Specifications."""
     return bytearray([len(buf) + 1, data_type & 0xFF]) + buf
 
 
-def whitener(buf, coef):
+def whitener(buf: Union[bytes, bytearray], coef: int) -> bytearray:
     """Whiten and de-whiten data according to the given coefficient."""
     data = bytearray(buf)
     for i, byte in enumerate(data):
@@ -67,7 +74,9 @@ def whitener(buf, coef):
     return data
 
 
-def crc24_ble(data, deg_poly=0x65B, init_val=0x555555):
+def crc24_ble(
+    data: Union[bytes, bytearray], deg_poly: int = 0x65B, init_val: int = 0x555555
+) -> bytearray:
     """This function calculates a checksum of various sized buffers."""
     crc = init_val
     for byte in data:
@@ -98,7 +107,7 @@ class QueueElement:
         properties.
     """
 
-    def __init__(self, buffer):
+    def __init__(self, buffer: bytearray):
         #: The transmitting BLE device's MAC address as a `bytes` object.
         self.mac = bytes(buffer[2:8])
         self.name = None
@@ -111,7 +120,7 @@ class QueueElement:
 
         .. note:: This value does not represent the received signal strength.
             The nRF24L01 will receive anything over a -64 dbm threshold."""
-        self.data = []
+        self.data: List[bytearray, "ServiceData"] = []
         """A `list` of the transmitting device's data structures (if any).
         If an element in this `list` is not an instance (or descendant) of the
         `ServiceData` class, then it is likely a custom, user-defined, or unsupported
@@ -130,7 +139,7 @@ class QueueElement:
                 self.data.append(buffer[i : i + 1 + size])
             i += 1 + size
 
-    def _decode_data_struct(self, buf):
+    def _decode_data_struct(self, buf: bytearray):
         """Decode a data structure in a received BLE payload."""
         # print("decoding", address_repr(buf, 0, " "))
         if buf[0] not in (0x16, 0x0A, 0x08, 0x09):
@@ -167,7 +176,13 @@ class QueueElement:
 class FakeBLE(RF24):
     """A class to implement BLE advertisements using the nRF24L01."""
 
-    def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
+    def __init__(
+        self,
+        spi: busio.SPI,
+        csn: DigitalInOut,
+        ce_pin: DigitalInOut,
+        spi_frequency: int = 10000000,
+    ):
         super().__init__(spi, csn, ce_pin, spi_frequency=spi_frequency)
         self._curr_freq = 2
         self._show_dbm = False
@@ -192,13 +207,13 @@ class FakeBLE(RF24):
         return super().__exit__()
 
     @property
-    def mac(self):
+    def mac(self) -> Union[bytes, bytearray]:
         """This attribute returns a 6-byte buffer that is used as the
         arbitrary mac address of the BLE device being emulated."""
         return self._mac
 
     @mac.setter
-    def mac(self, address):
+    def mac(self, address: Optional[Union[bytes, bytearray, int]]):
         if address is None:
             self._mac = urandom(6)
         if isinstance(address, int):
@@ -214,7 +229,7 @@ class FakeBLE(RF24):
         return self._ble_name
 
     @name.setter
-    def name(self, _name):
+    def name(self, _name: Optional[Union[str, bytes, bytearray]]):
         if _name is not None:
             if isinstance(_name, str):
                 _name = _name.encode("utf-8")
@@ -242,7 +257,7 @@ class FakeBLE(RF24):
         self._curr_freq += 1 if self._curr_freq < 2 else -2
         self.channel = BLE_FREQ[self._curr_freq]
 
-    def whiten(self, data) -> bytearray:
+    def whiten(self, data: Union[bytes, bytearray]) -> bytearray:
         """Whitening the BLE packet data ensures there's no long repetition
         of bits."""
         coef = (self._curr_freq + 37) | 0x40
@@ -256,7 +271,7 @@ class FakeBLE(RF24):
         # print("whitened: 0x" + address_repr(data, 0))
         return data
 
-    def _make_payload(self, payload) -> bytes:
+    def _make_payload(self, payload: Union[bytes, bytearray]) -> bytes:
         """Assemble the entire packet to be transmitted as a payload."""
         if self.len_available(payload) < 0:
             raise ValueError(
@@ -280,13 +295,13 @@ class FakeBLE(RF24):
         buf += crc24_ble(buf)
         return buf
 
-    def len_available(self, hypothetical=b"") -> int:
+    def len_available(self, hypothetical: Union[bytes, bytearray] = b"") -> int:
         """This function will calculates how much length (in bytes) is
         available in the next payload."""
         name_length = (len(self._ble_name) + 2) if self._ble_name is not None else 0
         return 18 - name_length - self._show_dbm * 3 - len(hypothetical)
 
-    def advertise(self, buf=b"", data_type: int = 0xFF):
+    def advertise(self, buf: Union[bytes, bytearray] = b"", data_type: int = 0xFF):
         """This blocking function is used to broadcast a payload."""
         if not isinstance(buf, (bytearray, bytes, list, tuple)):
             raise ValueError("buffer is an invalid format")
@@ -368,7 +383,7 @@ class FakeBLE(RF24):
         raise NotImplementedError("BLE implementation only uses 1 address on pipe 0")
 
     def open_tx_pipe(self, address):
-        raise NotImplementedError("BLE implentation only uses 1 address")
+        raise NotImplementedError("BLE implantation only uses 1 address")
 
     # pylint: enable=unused-argument
 
@@ -377,7 +392,7 @@ class ServiceData:
     """An abstract helper class to package specific service data using
     Bluetooth SIG defined 16-bit UUID flags to describe the data type."""
 
-    def __init__(self, uuid):
+    def __init__(self, uuid: int):
         self._type = struct.pack("<H", uuid)
         self._data = b""
 
@@ -388,12 +403,12 @@ class ServiceData:
         return self._type
 
     @property
-    def data(self) -> bytes:
+    def data(self) -> Union[bytes, bytearray]:
         """This attribute is a `bytearray` or `bytes` object."""
         return self._data
 
     @data.setter
-    def data(self, value):
+    def data(self, value: Union[bytes, bytearray]):
         self._data = value
 
     @property
@@ -426,7 +441,7 @@ class TemperatureServiceData(ServiceData):
     @property
     def data(self) -> float:
         """This attribute is a `float` value."""
-        return struct.unpack("<i", self._data[:3] + b"\0")[0] * 10 ** -2
+        return struct.unpack("<i", self._data[:3] + b"\0")[0] * 10**-2
 
     @data.setter
     def data(self, value: float):

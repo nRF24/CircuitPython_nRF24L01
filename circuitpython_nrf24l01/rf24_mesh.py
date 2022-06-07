@@ -27,6 +27,12 @@ try:
     import json
 except ImportError:
     json = None  # some CircuitPython boards don't have the json module
+try:
+    from typing import Union
+except ImportError:
+    pass
+import busio
+from digitalio import DigitalInOut
 from .network.constants import (
     MESH_ADDR_REQUEST,
     MESH_ADDR_RESPONSE,
@@ -53,7 +59,14 @@ class RF24MeshNoMaster(NetworkMixin):
     """A descendant of the same mixin class that `RF24Network` inherits from. This
     class adds easy Mesh networking capability (non-master nodes only)."""
 
-    def __init__(self, spi, csn_pin, ce_pin, node_id, spi_frequency=10000000):
+    def __init__(
+        self,
+        spi: busio.SPI,
+        csn_pin: DigitalInOut,
+        ce_pin: DigitalInOut,
+        node_id: int,
+        spi_frequency: int = 10000000,
+    ):
         super().__init__(spi, csn_pin, ce_pin, spi_frequency)
         self._id = min(255, node_id)
         #: This variable can be assigned a function to perform during long operations.
@@ -235,7 +248,9 @@ class RF24MeshNoMaster(NetworkMixin):
     def allow_children(self, allow: bool):
         self._parenthood = allow
 
-    def send(self, to_node: int, message_type, message) -> bool:
+    def send(
+        self, to_node: int, message_type: int, message: Union[bytes, bytearray]
+    ) -> bool:
         """Send a message to a mesh `node_id`."""
         if self._addr == NETWORK_DEFAULT_ADDR:
             return False
@@ -255,7 +270,9 @@ class RF24MeshNoMaster(NetworkMixin):
             to_node = self._addr
         return self.write(to_node, message_type, message)
 
-    def write(self, to_node: int, message_type, message) -> bool:
+    def write(
+        self, to_node: int, message_type: int, message: Union[bytes, bytearray]
+    ) -> bool:
         """Send a message to a network `node_address`."""
         if not isinstance(message, (bytes, bytearray)):
             raise TypeError("message must be a `bytes` or `bytearray` object")
@@ -273,7 +290,14 @@ class RF24Mesh(RF24MeshNoMaster):
     """A descendant of the base class `RF24MeshNoMaster` that adds algorithms needed
     for Mesh network master nodes."""
 
-    def __init__(self, spi, csn_pin, ce_pin, node_id, spi_frequency=10000000):
+    def __init__(
+        self,
+        spi: busio.SPI,
+        csn_pin: DigitalInOut,
+        ce_pin: DigitalInOut,
+        node_id: int,
+        spi_frequency: int = 10000000,
+    ):
         super().__init__(spi, csn_pin, ce_pin, node_id, spi_frequency)
         self._do_dhcp = False
         self.dhcp_dict = {}  #: A `dict` that enables master nodes to act as a DNS.
@@ -385,7 +409,7 @@ class RF24Mesh(RF24MeshNoMaster):
                     index = i * 4
                     self.set_address(
                         buffer[index],  # skip index + 1 as it's only used for padding
-                        struct.unpack("<H", buffer[index + 2 : index + 4])[0]
+                        struct.unpack("<H", buffer[index + 2 : index + 4])[0],
                     )
 
     def print_details(self, dump_pipes: bool = False, network_only: bool = False):
