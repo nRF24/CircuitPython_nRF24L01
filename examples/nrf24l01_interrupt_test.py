@@ -100,7 +100,7 @@ def master():
         if nrf.fifo(False, False):  # is RX FIFO full?
             print("Slave node should not be listening anymore.")
         else:
-            print("transmission succeeded, " "but slave node might still be listening")
+            print("transmission succeeded, but slave node might still be listening")
     else:
         print("Slave node was unresponsive.")
 
