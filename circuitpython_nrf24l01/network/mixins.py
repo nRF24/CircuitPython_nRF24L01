@@ -236,7 +236,7 @@ class NetworkMixin(RadioMixin):
         if not network_only:
             self._rf24.print_details(False)
         print(
-            "Network frame_buf contents:\n    "
+            "Network frame_buf contents:\n    ",
             "Header is {}. Message contains:\n\t".format(
                 self.frame_buf.header.to_string()
             ),

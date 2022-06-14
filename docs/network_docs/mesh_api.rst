@@ -56,7 +56,7 @@ Basic API
         for quicker operation.
 
     :param int to_node: The unique mesh network `node_id` of the frame's destination.
-        Defaults to ``0`` (which is reserved for the master node.
+        Defaults to ``0`` (which is reserved for the master node).
     :param str,int message_type: The `int` that describes the frame header's `message_type`.
     :param bytes,bytearray message: The frame's `message` to be transmitted.
 

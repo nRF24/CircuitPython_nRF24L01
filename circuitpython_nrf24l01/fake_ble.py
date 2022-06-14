@@ -383,7 +383,7 @@ class FakeBLE(RF24):
         raise NotImplementedError("BLE implementation only uses 1 address on pipe 0")
 
     def open_tx_pipe(self, address):
-        raise NotImplementedError("BLE implantation only uses 1 address")
+        raise NotImplementedError("BLE implementation only uses 1 address")
 
     # pylint: enable=unused-argument
 
