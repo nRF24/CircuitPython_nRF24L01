@@ -249,7 +249,10 @@ class RF24MeshNoMaster(NetworkMixin):
         self._parenthood = allow
 
     def send(
-        self, to_node: int, message_type: Union[int, str], message: Union[bytes, bytearray]
+        self,
+        to_node: int,
+        message_type: Union[int, str],
+        message: Union[bytes, bytearray],
     ) -> bool:
         """Send a message to a mesh `node_id`."""
         if self._addr == NETWORK_DEFAULT_ADDR:
@@ -271,7 +274,10 @@ class RF24MeshNoMaster(NetworkMixin):
         return self.write(to_node, message_type, message)
 
     def write(
-        self, to_node: int, message_type: Union[int, str], message: Union[bytes, bytearray]
+        self,
+        to_node: int,
+        message_type: Union[int, str],
+        message: Union[bytes, bytearray],
     ) -> bool:
         """Send a message to a network `node_address`."""
         if not isinstance(message, (bytes, bytearray)):
