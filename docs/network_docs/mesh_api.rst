@@ -206,6 +206,9 @@ Advanced API
     :param bool as_bin: Set this parameter to `True` to save the DHCP list to a binary text file.
         Defaults to `False` which saves the DHCP list as JSON syntax.
 
+    .. versionchanged:: 2.1.1
+        Added ``as_bin`` parameter to make use of binary text files.
+
 .. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.load_dhcp
 
     :param str filename: The name of the json file to be used. This value should include a file extension
@@ -215,6 +218,8 @@ Advanced API
 
     .. warning::
         This function will raise an `OSError` exception if no file exists.
+    .. versionchanged:: 2.1.1
+        Added ``as_bin`` parameter to make use of binary text files.
 
 .. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.set_address
 
