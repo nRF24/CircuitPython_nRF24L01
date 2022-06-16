@@ -89,8 +89,8 @@ def master(count=5):  # count = 5 will only transmit 5 packets
             # print timer results upon transmission success
             print(
                 "Transmission successful! Time to transmit:",
-                f"{int((end_timer - start_timer) / 1000)} us.",
-                "Sent: {}{}".format(buffer[:6].decode("utf-8"), counter[0]),
+                int((end_timer - start_timer) / 1000),
+                "us. Sent: {}{}".format(buffer[:6].decode("utf-8"), counter[0]),
                 end=" ",
             )
             if isinstance(result, bool):
@@ -131,7 +131,7 @@ def slave(timeout=6):
             counter[0] = received[7:8][0] + 1
             # the [:6] truncates the c-string NULL termiating char
             print(
-                f"Received {length} bytes on pipe {pipe_number}:",
+                "Received {} bytes on pipe {}:".format(length, pipe_number),
                 "{}{}".format(received[:6].decode("utf-8"), received[7:8][0]),
                 "Sent: {}{}".format(buffer[:6].decode("utf-8"), buffer[7:8][0]),
             )

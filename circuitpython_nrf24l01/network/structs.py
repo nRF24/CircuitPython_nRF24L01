@@ -21,6 +21,11 @@
 # THE SOFTWARE.
 """This module contains the data structures used foe network packets."""
 import struct
+
+try:
+    from typing import Union
+except ImportError:
+    pass
 from .constants import (
     NETWORK_EXT_DATA,
     NETWORK_MULTICAST_ADDR,
@@ -28,6 +33,7 @@ from .constants import (
     MSG_FRAG_MORE,
     MSG_FRAG_LAST,
 )
+
 
 def is_address_valid(address) -> bool:
     """Test if a given address is a valid :ref:`Logical Address <Logical Address>`."""
@@ -47,16 +53,14 @@ def is_address_valid(address) -> bool:
 class RF24NetworkHeader:
     """The header information used for routing network messages."""
 
-    def __init__(self, to_node: int=None, message_type=None):
+    def __init__(self, to_node: int = None, message_type: Union[str, int] = None):
         self.from_node = None  #: |uint16_t|
         self.to_node = (to_node & 0xFFF) if to_node is not None else 0  #: |uint16_t|
-        #: The type of message.
-        self.message_type = 0 if message_type is None else message_type
         if isinstance(message_type, str):
             # convert the first char to int if `message_type` is a string
-            self.message_type = ord(message_type[0])
+            self.message_type = ord(message_type[0])  #: The type of message.
         else:
-            self.message_type &= 0xFF
+            self.message_type = 0 if message_type is None else message_type & 0xFF
         self.frame_id = RF24NetworkHeader.__next_id  #: |uint16_t|
         RF24NetworkHeader.__next_id = (RF24NetworkHeader.__next_id + 1) & 0xFFFF
         self.reserved = 0  #: A single byte reserved for network usage.
@@ -87,7 +91,8 @@ class RF24NetworkHeader:
                 self.message_type
                 if not isinstance(self.message_type, str)
                 else (ord(self.message_type[0]) if self.message_type else 0)
-            ) & 0xFF,
+            )
+            & 0xFF,
             self.reserved & 0xFF,
         )
 
@@ -103,16 +108,23 @@ class RF24NetworkHeader:
                 self.message_type
                 if not isinstance(self.message_type, str)
                 else (ord(self.message_type[0]) if self.message_type else 0)
-            ) & 0xFF,
+            )
+            & 0xFF,
             self.frame_id,
             self.reserved,
         )
+
+    def __repr__(self) -> str:
+        """Alias of `to_string()`"""
+        return "<RF24NetworkHeader " + self.to_string() + ">"
 
 
 class RF24NetworkFrame:
     """Structure of a single frame."""
 
-    def __init__(self, header: RF24NetworkHeader=None, message=None):
+    def __init__(
+        self, header: RF24NetworkHeader = None, message: Union[bytes, bytearray] = None
+    ):
         if header is not None and not isinstance(header, RF24NetworkHeader):
             raise TypeError("header must be a RF24NetworkHeader object")
         if message is not None and not isinstance(message, (bytes, bytearray)):
@@ -122,8 +134,7 @@ class RF24NetworkFrame:
         self.message = bytearray(0) if message is None else bytearray(message)
         """The entire message or a fragment of a message allocated to the frame."""
 
-
-    def unpack(self, buffer) -> bool:
+    def unpack(self, buffer: Union[bytes, bytearray]) -> bool:
         """Decode the `header` & `message` from a ``buffer``."""
         if self.header.unpack(buffer):
             self.message = buffer[8:]
@@ -182,6 +193,7 @@ class FrameQueue:
     def __len__(self) -> int:
         """:Returns: The number of the enqueued frames."""
         return len(self._queue)
+
 
 class FrameQueueFrag(FrameQueue):
     """A specialized `FrameQueue` with an additional cache for fragmented frames."""

@@ -28,10 +28,10 @@ jobs:
         awk -F '\/' '{ print tolower($2) }' |
         tr '-' '_'
         )
-    - name: Set up Python 3.7
+    - name: Set up Python 
       uses: actions/setup-python@v1
       with:
-        python-version: 3.7
+        python-version: 3.9
     - name: Versions
       run: |
         python3 --version
@@ -50,12 +50,9 @@ jobs:
     - name: Build assets
       run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --library_location .  --package_folder_prefix ${{ steps.pkg-name.outputs.pkg-name }}
     - name: Upload Release Assets
-      # the 'official' actions version does not yet support dynamically
-      # supplying asset names to upload. @csexton's version chosen based on
-      # discussion in the issue below, as its the simplest to implement and
-      # allows for selecting files with a pattern.
-      # https://github.com/actions/upload-release-asset/issues/4
-      #uses: actions/upload-release-asset@v1.0.1
+      # the 'official' actions version changes the release titlle upon upload.
+      # @csexton's version is chosen based on because it doesn't
+      #uses: actions/upload-release-asset@v2
       uses: csexton/release-asset-action@master
       with:
         pattern: "bundles/*"

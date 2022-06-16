@@ -26,7 +26,13 @@ import struct
 try:
     import json
 except ImportError:
-    json = None
+    json = None  # some CircuitPython boards don't have the json module
+try:
+    from typing import Union
+except ImportError:
+    pass
+import busio
+from digitalio import DigitalInOut
 from .network.constants import (
     MESH_ADDR_REQUEST,
     MESH_ADDR_RESPONSE,
@@ -53,7 +59,14 @@ class RF24MeshNoMaster(NetworkMixin):
     """A descendant of the same mixin class that `RF24Network` inherits from. This
     class adds easy Mesh networking capability (non-master nodes only)."""
 
-    def __init__(self, spi, csn_pin, ce_pin, node_id, spi_frequency=10000000):
+    def __init__(
+        self,
+        spi: busio.SPI,
+        csn_pin: DigitalInOut,
+        ce_pin: DigitalInOut,
+        node_id: int,
+        spi_frequency: int = 10000000,
+    ):
         super().__init__(spi, csn_pin, ce_pin, spi_frequency)
         self._id = min(255, node_id)
         #: This variable can be assigned a function to perform during long operations.
@@ -75,8 +88,8 @@ class RF24MeshNoMaster(NetworkMixin):
     def print_details(self, dump_pipes: bool = False, network_only: bool = False):
         """See RF24.print_details() and Shared Networking API docs"""
         super().print_details(False, network_only)
-        print(f"Network node id____________{self.node_id}")
-        print(f"Mesh node allows children__{self._parenthood}")
+        print("Network node id____________{}".format(self.node_id))
+        print("Mesh node allows children__{}".format(self._parenthood))
         if dump_pipes:
             self._rf24.print_pipes()
 
@@ -149,7 +162,7 @@ class RF24MeshNoMaster(NetworkMixin):
         return self.frame_buf.message[0]
 
     def check_connection(self) -> bool:
-        """Check for network conectivity (not for use on master node)."""
+        """Check for network connectivity (not for use on master node)."""
         # do a double check as a manual retry in lack of using auto-ack
         if self.lookup_address(self._id) < 1:
             if self.lookup_address(self._id) < 1:
@@ -235,7 +248,12 @@ class RF24MeshNoMaster(NetworkMixin):
     def allow_children(self, allow: bool):
         self._parenthood = allow
 
-    def send(self, to_node: int, message_type, message) -> bool:
+    def send(
+        self,
+        to_node: int,
+        message_type: Union[int, str],
+        message: Union[bytes, bytearray],
+    ) -> bool:
         """Send a message to a mesh `node_id`."""
         if self._addr == NETWORK_DEFAULT_ADDR:
             return False
@@ -255,7 +273,12 @@ class RF24MeshNoMaster(NetworkMixin):
             to_node = self._addr
         return self.write(to_node, message_type, message)
 
-    def write(self, to_node: int, message_type, message) -> bool:
+    def write(
+        self,
+        to_node: int,
+        message_type: Union[int, str],
+        message: Union[bytes, bytearray],
+    ) -> bool:
         """Send a message to a network `node_address`."""
         if not isinstance(message, (bytes, bytearray)):
             raise TypeError("message must be a `bytes` or `bytearray` object")
@@ -273,7 +296,14 @@ class RF24Mesh(RF24MeshNoMaster):
     """A descendant of the base class `RF24MeshNoMaster` that adds algorithms needed
     for Mesh network master nodes."""
 
-    def __init__(self, spi, csn_pin, ce_pin, node_id, spi_frequency=10000000):
+    def __init__(
+        self,
+        spi: busio.SPI,
+        csn_pin: DigitalInOut,
+        ce_pin: DigitalInOut,
+        node_id: int,
+        spi_frequency: int = 10000000,
+    ):
         super().__init__(spi, csn_pin, ce_pin, node_id, spi_frequency)
         self._do_dhcp = False
         self.dhcp_dict = {}  #: A `dict` that enables master nodes to act as a DNS.
@@ -359,24 +389,34 @@ class RF24Mesh(RF24MeshNoMaster):
                     return
         self.dhcp_dict[node_id] = node_address
 
-    def save_dhcp(self, filename: str = "dhcp.json"):
+    def save_dhcp(self, filename: str = "dhcplist.json", as_bin: bool = False):
         """Save the `dhcp_dict` to a JSON file (meant for master nodes only)."""
-        if json is None:
-            return  # some CircuitPython boards don't have the json module
-        with open(filename, "w", encoding="utf8") as json_file:
+        with open(filename, "wb") as json_file:
             # This throws an OSError if file system is read-only. ALL MCU boards
             # running CircuitPython firmware (not RPi) have read-only file system.
-            json.dump(self.dhcp_dict, json_file)
+            if json is not None and not as_bin:
+                json.dump(self.dhcp_dict, json_file)
+            elif as_bin:
+                for _id, _addr in self.dhcp_dict.items():
+                    json_file.write(bytes([_id, 0]))  # pad id w/ 0 for mem alignment
+                    json_file.write(struct.pack("<H", _addr))
 
-    def load_dhcp(self, filename: str = "dhcp.json"):
+    def load_dhcp(self, filename: str = "dhcplist.json", as_bin: bool = False):
         """Load the `dhcp_dict` from a JSON file (meant for master nodes only)."""
-        if json is None:
-            return
-        with open(filename, "r", encoding="utf8") as json_file:
-            temp_dict = json.load(json_file)
-            # convert keys from `str` to `int`
-            for n_id, addr in temp_dict.items():
-                self.set_address(int(n_id), addr, True)
+        with open(filename, "rb") as json_file:
+            if json is not None and not as_bin:
+                temp_dict = json.load(json_file)  # type: dict
+                # convert keys from `str` to `int`
+                for n_id, addr in temp_dict.items():
+                    self.set_address(int(n_id), addr, True)
+            elif as_bin:
+                buffer = json_file.read()
+                for i in range(int(len(buffer) / 4)):
+                    index = i * 4
+                    self.set_address(
+                        buffer[index],  # skip index + 1 as it's only used for padding
+                        struct.unpack("<H", buffer[index + 2 : index + 4])[0],
+                    )
 
     def print_details(self, dump_pipes: bool = False, network_only: bool = False):
         """See RF24.print_details() and Shared Networking API docs"""
@@ -384,7 +424,7 @@ class RF24Mesh(RF24MeshNoMaster):
         if not self._id and self.dhcp_dict:  # only on master node
             print("DHCP List:\n    ID\tAddress\n    ---\t-------")
             for n_id, addr in self.dhcp_dict.items():
-                print(f"    {n_id}\t{oct(addr)}")
+                print("    {}\t{}".format(n_id, oct(addr)))
         if dump_pipes:
             self._rf24.print_pipes()
 

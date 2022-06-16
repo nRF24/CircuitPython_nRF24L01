@@ -1,12 +1,12 @@
 Shared Networking API
 ======================
 
-Order of Inheritence
+Order of Inheritance
 ********************
 
 .. graphviz::
 
-    digraph inheritence {
+    digraph inheritance {
         bgcolor="#323232A1"
         fontcolor="#FEF9A9"
         fontsize=16
@@ -133,7 +133,7 @@ The following list of `RF24` functions and attributes are exposed in the
 
   .. code-block:: python
 
-      >>> # following command is the same as `nrf.print_details(0, 1)`
+      >>> # the following command is the same as `nrf.print_details(0, 1)`
       >>> nrf.print_details(dump_pipes=False, network_only=True)
       Network frame_buf contents:
           Header is from 0o7777 to 0o0 type 0 id 1 reserved 0. Message contains:
@@ -144,12 +144,12 @@ The following list of `RF24` functions and attributes are exposed in the
       Network fragmentation______Enabled
       Network max message length_144 bytes
       Network TX timeout_________25 milliseconds
-      Network Rounting timeout___75 milliseconds
+      Network Routing timeout___75 milliseconds
       Network node address_______0o0
 
   .. note::
       The address ``0o7777`` (seen in output above) is an invalid address used as a sentinel when
-      frame is unpopulated with a proper `from_node` address.
+      the frame is unpopulated with a proper `from_node` address.
 
 External Systems API
 ********************

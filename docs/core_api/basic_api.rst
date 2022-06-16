@@ -82,7 +82,7 @@ Basic RF24 API
       power up mode. Notice the CE pin is be held HIGH during RX mode.
     - `False` disables RX mode. As mentioned in above link, this puts nRF24L01's power in
       Standby-I mode (CE pin is LOW meaning low current & no transmissions) which is ideal
-      for post-reception work. Disabing RX mode doesn't flush the RX FIFO buffers, so
+      for post-reception work. Disabling RX mode doesn't flush the RX FIFO buffers, so
       remember to flush your 3-level FIFO buffers when appropriate using `flush_tx()` or
       `flush_rx()` (see also the `read()` function).
 
@@ -104,7 +104,7 @@ Basic RF24 API
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.available
 
-    This function is provided for convenience and is synonomous with the following statement:
+    This function is provided for convenience and is synonymous with the following statement:
 
     .. code-block:: python
 
@@ -115,7 +115,7 @@ Basic RF24 API
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.read
 
-    The `irq_dr` status flag is reset autmotically. This function can also be used to fetch
+    The `irq_dr` status flag is reset automatically. This function can also be used to fetch
     the last ACK packet's payload if `ack` is enabled.
 
     :param int length: An optional parameter to specify how many bytes to read from the RX

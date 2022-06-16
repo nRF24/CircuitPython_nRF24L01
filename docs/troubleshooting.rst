@@ -1,3 +1,4 @@
+:hide-navigation:
 
 Troubleshooting info
 ~~~~~~~~~~~~~~~~~~~~
@@ -11,7 +12,7 @@ Attribute dependency
 The nRF24L01 has 3 key features.
 
 1. `auto_ack` feature provides transmission verification by using the RX nRF24L01 to
-   automatically and immediatedly send an acknowledgment (ACK) packet in response to
+   automatically and immediately send an acknowledgment (ACK) packet in response to
    received payloads. `auto_ack` does not require
    :attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads` to be enabled.
 
@@ -38,9 +39,9 @@ The nRF24L01 has 3 key features.
 FIFO Capacity
 *************
 
-Remeber that the nRF24L01's FIFO (First-In, First-Out) buffers have 3 levels. This means that
+Remember that the nRF24L01's FIFO (First-In, First-Out) buffers have 3 levels. This means that
 there can be up to 3 payloads waiting to be read (RX) and up to 3 payloads waiting to be
-transmit (TX). Notice there are seperate FIFO buffers sending & receiving (respectively mentioned
+transmit (TX). Notice there are separate FIFO buffers sending & receiving (respectively mentioned
 in this documentation as TX FIFO & RX FIFO).
 
 Each of the 3 levels in the FIFO buffers can only store a *maximum* of 32 bytes. If you receive 2 payloads with a length of 4 bytes each, then there is only 1 level of the RX FIFO buffers left unoccupied.
@@ -70,7 +71,7 @@ the same 6 nRF24L01 radios.
 Channels
 --------
 
-Finnaly, the radio's channel is not be confused with the radio's pipes. Channel selection
+Finally, the radio's channel is not be confused with the radio's pipes. Channel selection
 is a way of specifying a certain radio frequency (frequency = [2400 + channel] MHz).
 Channel defaults to 76 (like the arduino library), but options range from 0 to 125 --
 that's 2.4 GHz to 2.525 GHz. The channel can be tweaked to find a less occupied frequency
@@ -80,7 +81,7 @@ frequencies.
 Settings that must Match
 ************************
 
-For successful transmissions, most of the endpoint trasceivers' settings/features must
+For successful transmissions, most of the endpoint transceivers' settings/features must
 match. These settings/features include:
 
 * The RX pipe's address on the receiving nRF24L01 (passed to `open_rx_pipe()`) MUST match

@@ -52,7 +52,7 @@ This example shows how use a group of 6 nRF24L01 transceivers to transmit to 1 n
 transceiver. This technique is called `"Multiceiver" in the nRF24L01 Specifications Sheet
 <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1104474>`_
 
-.. note:: This example follows the diagram illistrated in
+.. note:: This example follows the diagram illustrated in
     `figure 12 of section 7.7 of the nRF24L01 Specifications Sheet
     <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#page=39>`_
     Please note that if `auto_ack` (on the base station) and `arc` (on the
@@ -83,7 +83,7 @@ Scanner Example
 
 .. versionadded:: 2.0.0
 
-This example simply scans the entire RF frquency (2.4 GHz to 2.525 GHz)
+This example simply scans the entire RF frequency (2.4 GHz to 2.525 GHz)
 and outputs a vertical graph of how many signals (per
 :py:attr:`~circuitpython_nrf24l01.rf24.RF24.channel`) were detected. This example
 can be used to find a frequency with the least ambient interference from other
@@ -261,7 +261,7 @@ To make this circuitpython library compatible with
        This will help you comprehend how to configure
        :py:attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length`.
 
-For completness, TMRh20's RF24 library uses a default value of 15 for the `ard` attribute,
+For completeness, TMRh20's RF24 library uses a default value of 15 for the `ard` attribute,
 but this Circuitpython library uses a default value of 3.
 
 .. csv-table:: Corresponding examples
@@ -278,7 +278,7 @@ but this Circuitpython library uses a default value of 3.
     nrf24l01_fake_ble_test, "feature is available via `floe's BTLE library <https://github.com/floe/BTLE>`_"
     "nrf24l01_network_test (\ [2]_)", "- all RF24Network examples except Network_Ping & Network_Ping_Sleep
     - all RF24Mesh examples except RF24Mesh_Example_Node2NodeExtra
-      (which may still work but the data is not interpretted as a string)"
+      (which may still work but the data is not interpreted as a string)"
 
 .. [1] Some of the Circuitpython examples (that are compatible with TMRh20's examples)
        contain 2 or 3 lines of code that are commented out for easy modification. These lines

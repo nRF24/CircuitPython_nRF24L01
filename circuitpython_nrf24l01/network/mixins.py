@@ -19,9 +19,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-"""A module to hold all usuall accesssible RF24 API via the RF24Network API"""
+"""A module to hold all usually accessible RF24 API via the RF24Network API"""
 # pylint: disable=missing-docstring
 import time
+
+try:
+    from typing import Tuple, Union
+except ImportError:
+    pass
+import busio
+from digitalio import DigitalInOut
 from ..rf24 import RF24, address_repr
 from .structs import RF24NetworkFrame, FrameQueue, FrameQueueFrag, is_address_valid
 from .constants import (
@@ -46,8 +53,14 @@ from .constants import (
 )
 
 
-class RadoMixin:
-    def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
+class RadioMixin:
+    def __init__(
+        self,
+        spi: busio.SPI,
+        csn: DigitalInOut,
+        ce_pin: DigitalInOut,
+        spi_frequency: int = 10000000,
+    ):
         self._rf24 = RF24(spi, csn, ce_pin, spi_frequency=spi_frequency)
         super().__init__()
 
@@ -86,7 +99,7 @@ class RadoMixin:
     def set_dynamic_payloads(self, enable: bool, pipe: int = None):
         self._rf24.set_dynamic_payloads(enable, pipe_number=pipe)
 
-    def get_dynamic_payloads(self, pipe=None):
+    def get_dynamic_payloads(self, pipe: int = 0) -> bool:
         return self._rf24.get_dynamic_payloads(pipe)
 
     @property
@@ -155,8 +168,14 @@ def _lvl_2_addr(level: int) -> int:
     return level_addr
 
 
-class NetworkMixin(RadoMixin):
-    def __init__(self, spi, csn, ce_pin, spi_frequency=10000000):
+class NetworkMixin(RadioMixin):
+    def __init__(
+        self,
+        spi: busio.SPI,
+        csn: DigitalInOut,
+        ce_pin: DigitalInOut,
+        spi_frequency: int = 10000000,
+    ):
         super().__init__(spi, csn, ce_pin, spi_frequency=spi_frequency)
         # setup private members
         self._net_lvl, self._addr, self._mask, self._mask_inv = (0,) * 4
@@ -171,7 +190,7 @@ class NetworkMixin(RadoMixin):
         self.ret_sys_msg = False  #: Force `update()` to return on system message types.
         self._parenthood = True  # can mesh nodes respond to NETWORK_POLL messages?
         self.max_message_length = 144  #: The maximum length of a frame's message.
-        #: The queue (FIFO) of recieved frames for this node
+        #: The queue (FIFO) of received frames for this node
         self.queue = FrameQueueFrag()
         #: A buffer containing the last frame handled by the network node
         self.frame_buf = RF24NetworkFrame()
@@ -191,7 +210,7 @@ class NetworkMixin(RadoMixin):
             self._rf24.open_rx_pipe(i, self._pipe_address(n_addr, i))
         self._rf24.listen = True
 
-        # setup address-related instance attibutes
+        # setup address-related instance attributes
         self._addr = n_addr
         self._mask = 0
         self._net_lvl = 0
@@ -217,16 +236,18 @@ class NetworkMixin(RadoMixin):
         if not network_only:
             self._rf24.print_details(False)
         print(
-            f"Network frame_buf contents:\n    "
-            f"Header is {self.frame_buf.header.to_string()}. Message contains:\n\t",
+            "Network frame_buf contents:\n    ",
+            "Header is {}. Message contains:\n\t".format(
+                self.frame_buf.header.to_string()
+            ),
             "{}".format(
                 "an empty buffer"
                 if not self.frame_buf.message
                 else address_repr(self.frame_buf.message, 0, " ")
             ),
         )
-        print(f"Return on system messages__{bool(self.ret_sys_msg)}")
-        print(f"Allow network multicasts___{bool(self.allow_multicast)}")
+        print("Return on system messages__{}".format(bool(self.ret_sys_msg)))
+        print("Allow network multicasts___{}".format(bool(self.allow_multicast)))
         print(
             "Multicast relay____________{}abled".format(
                 "En" if self._relay_enabled else "Dis"
@@ -237,10 +258,10 @@ class NetworkMixin(RadoMixin):
                 "En" if self._frag_enabled else "Dis"
             )
         )
-        print(f"Network max message length_{self.max_message_length} bytes")
-        print(f"Network TX timeout_________{self.tx_timeout} milliseconds")
-        print(f"Network Rounting timeout___{self.route_timeout} milliseconds")
-        print(f"Network node address_______{oct(self._addr)}")
+        print("Network max message length_{} bytes".format(self.max_message_length))
+        print("Network TX timeout_________{} milliseconds".format(self.tx_timeout))
+        print("Network Routing timeout___{} milliseconds".format(self.route_timeout))
+        print("Network node address_______{}".format(oct(self._addr)))
         if dump_pipes:
             self._rf24.print_pipes()
 
@@ -317,7 +338,7 @@ class NetworkMixin(RadoMixin):
 
     def _net_update(self) -> int:
         """keep the network layer current; returns the received message type"""
-        ret_val = 0  # sentinal indicating there is nothing to report
+        ret_val = 0  # sentinel indicating there is nothing to report
         while True:
             temp_buf = self._rf24.read()
             if temp_buf is None:
@@ -347,7 +368,7 @@ class NetworkMixin(RadoMixin):
             if not keep_updating:
                 return ret_val
 
-    def _handle_frame_for_this_node(self, msg_t: int) -> tuple:
+    def _handle_frame_for_this_node(self, msg_t: int) -> Tuple[bool, int]:
         """Returns False if the frame is not consumed or True if consumed"""
         if msg_t == NETWORK_PING:
             return (True, msg_t)
@@ -364,7 +385,10 @@ class NetworkMixin(RadoMixin):
         if self.ret_sys_msg and msg_t > MAX_USR_DEF_MSG_TYPE or msg_t == NETWORK_ACK:
             # print("Received system payload type", msg_t)
             if msg_t not in (
-                MSG_FRAG_FIRST, MSG_FRAG_MORE, MSG_FRAG_LAST, NETWORK_EXT_DATA,
+                MSG_FRAG_FIRST,
+                MSG_FRAG_MORE,
+                MSG_FRAG_LAST,
+                NETWORK_EXT_DATA,
             ):
                 return (False, msg_t)
 
@@ -375,7 +399,7 @@ class NetworkMixin(RadoMixin):
             return (False, NETWORK_EXT_DATA)
         return (True, msg_t)
 
-    def _handle_frame_for_other_node(self, msg_t: int) -> tuple:
+    def _handle_frame_for_other_node(self, msg_t: int) -> Tuple[bool, int]:
         """Returns False if the frame is not consumed or True if consumed"""
         if self.allow_multicast:
             if self.frame_buf.header.to_node == NETWORK_MULTICAST_ADDR:
@@ -429,7 +453,12 @@ class NetworkMixin(RadoMixin):
         """Get (from `queue`) the next available frame."""
         return self.queue.dequeue()
 
-    def multicast(self, message, message_type, level: int = None) -> bool:
+    def multicast(
+        self,
+        message: Union[bytes, bytearray],
+        message_type: Union[str, int],
+        level: int = None,
+    ) -> bool:
         """Broadcast a message to all nodes on a certain network level."""
         if not self._validate_msg_len(len(message)):
             message = message[:MAX_FRAG_SIZE]
@@ -567,7 +596,7 @@ class NetworkMixin(RadoMixin):
 
     def _logi_2_phys(
         self, to_node: int, send_type: int, is_multicast: bool = False
-    ) -> tuple:
+    ) -> Tuple[int, int, bool]:
         """translate msg route into node address, pipe number, & multicast flag."""
         conv_to_node, conv_to_pipe = (self._parent, self._parent_pipe)
         if send_type > TX_ROUTED:

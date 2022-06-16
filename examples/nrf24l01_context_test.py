@@ -74,7 +74,7 @@ with ble as nerf:  # the "as nerf" part is optional
 # this is because the "with" statements load the existing settings
 # for the RF24 object specified after the word "with".
 
-# NOTE it is not advised to manipulate seperate RF24 objects outside of the
+# NOTE it is not advised to manipulate separate RF24 objects outside of the
 # "with" block; you will encounter bugs about configurations when doing so.
 # Be sure to use 1 "with" block per RF24 object when instantiating multiple
 # RF24 objects in your program.

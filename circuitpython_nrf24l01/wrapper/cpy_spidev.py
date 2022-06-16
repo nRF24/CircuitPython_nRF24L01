@@ -30,9 +30,9 @@ class SPIDevCtx:
     :param int,list,tuple csn: The CE pin number (``0``, ``1``, or ``2``) to
         use as the SPI device's CSN pin. For advanced users, a `list` or `tuple`
         can instead be used to specify a bus number and a pin number that isn't
-        controlled by the SPIDEV kernal. Where index ``0`` is the bus number
+        controlled by the SPIDEV kernel. Where index ``0`` is the bus number
         multiplied by 10, and index ``1`` is the pin number.
-    :param int spi_frequency: the SPI frquency to use for the SPI device.
+    :param int spi_frequency: the SPI frequency to use for the SPI device.
         Defaults to 10MHz.
     """
 
@@ -64,11 +64,13 @@ class SPIDevCtx:
         self._spi.close()
         return False
 
-    def write_readinto(self, out_buf, in_buf):
+    def write_readinto(self, out_buf, in_buf, in_end: int = None, out_end: int = None):
         """wraps ``spidev.SpiDev.xfer2()`` into MicroPython compatible
         ``spi.write_readinto()`` calls.
 
         .. warning:: The ``in_buf`` parameter must be a mutable `bytearray`.
             The ``out_buf`` can be either a `bytes` or `bytearray` object.
         """
-        in_buf[:] = bytearray(self._spi.xfer2(out_buf, self._baudrate))
+        out_end = out_end if out_end is not None else len(out_buf)
+        in_end = in_end if in_end is not None else len(in_buf)
+        in_buf[:in_end] = bytearray(self._spi.xfer2(out_buf[:out_end], self._baudrate))

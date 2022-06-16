@@ -201,7 +201,7 @@ Physical addresses vs Logical addresses
   number ``0``
 
   .. tip::
-      Use the `is_address_valid()` function to programatically check a Logical Address for validity.
+      Use the `is_address_valid()` function to programmatically check a Logical Address for validity.
 
 .. note::
     Remember that the nRF24L01 only has 6 data pipes for which to receive or transmit.
@@ -212,7 +212,7 @@ Physical addresses vs Logical addresses
 Translating Logical to Physical
 -------------------------------
 
-Before translating the Logical address, a single byte is used reptitively as the
+Before translating the Logical address, a single byte is used repetitively as the
 base case for all bytes of any Physical Address. This byte is the `address_prefix`
 attribute (stored as a mutable `bytearray`) in the `RF24Network` class. By default the
 `address_prefix` has a single byte value of ``b"\xCC"``.
@@ -225,13 +225,13 @@ data pipe number and child node's most significant byte in its Physical Address.
 
 For example:
     The Logical Address of the network's master node is ``0``. The radio's pipes
-    1-5 start with the `address_prefix`. To make each pipe's Phsyical address unique
+    1-5 start with the `address_prefix`. To make each pipe's Physical address unique
     to a child node's Physical address, the `address_suffix` is used.
 
     The Logical address of the master node: ``0o0``
 
     .. csv-table::
-        :header: "pipe", "Phsyical Address (hexadecimal)"
+        :header: "pipe", "Physical Address (hexadecimal)"
 
         1, ``CC CC CC CC 3C``
         2, ``CC CC CC CC 33``
@@ -242,7 +242,7 @@ For example:
     The Logical address of the master node's first child: ``0o1``
 
     .. csv-table::
-        :header: "pipe", "Phsyical Address (hexadecimal)"
+        :header: "pipe", "Physical Address (hexadecimal)"
 
         1, ``CC CC CC 3C 3C``
         2, ``CC CC CC 3C 33``
@@ -253,7 +253,7 @@ For example:
     The Logical address of the master node's second child: ``0o2``
 
     .. csv-table::
-        :header: "pipe", "Phsyical Address (hexadecimal)"
+        :header: "pipe", "Physical Address (hexadecimal)"
 
         1, ``CC CC CC 33 3C``
         2, ``CC CC CC 33 33``
@@ -264,7 +264,7 @@ For example:
     The Logical address of the master node's third child's second child's first child: ``0o123``
 
     .. csv-table::
-        :header: "pipe", "Phsyical Address (hexadecimal)"
+        :header: "pipe", "Physical Address (hexadecimal)"
 
         1, ``CC 3C 33 CE 3C``
         2, ``CC 3C 33 CE 33``
@@ -362,3 +362,61 @@ snippets to use as a template for such a scenario.
         with network_b_node as net_b:
             net_b.update()
             net_b.send(RF24NetworkHeader(0, "T"), b"data for net B master")
+
+RF24Mesh connecting process
+***************************
+
+As noted above, a single network *can* have up to 781 nodes. This number also includes
+up to 255 RF24Mesh nodes. The key difference from the user's perspective is that RF24Mesh
+API does not use a `Logical Address <logical address>`. Instead the RF24Mesh API relies on
+a `node_id` number to identify a RF24Mesh node that may use a different
+`Logical Address <logical address>` (which can change based on the node's physical location).
+
+.. important::
+    Any network that will use RF24mesh for a child node needs to have a RF24Mesh
+    master node. This will not interfere with RF24Network nodes since the RF24Mesh API
+    is layered on top of the RF24Network API.
+
+To better explain the difference between a node's `node_address` vs a node's `node_id`,
+we will examine the connecting process for a RF24Mesh node. These are the steps performed
+when calling `renew_address()`:
+
+1. Any RF24Mesh node not connected to a network will use the `Logical Address <logical address>`
+   ``0o444`` (that's ``2340`` in decimal). It is up to the network administrator to ensure that
+   each RF24Mesh node has a unique `node_id` (which is limited to the range [0, 255]).
+
+   .. hint::
+       Remember that ``0`` is reserved the master node's `node_id`.
+2. To get assigned a `Logical Address <logical address>`, an unconnected node must poll the
+   network for a response (using a `NETWORK_POLL` message). Initially this happens on the
+   network level 0, but consecutive attempts will poll higher network levels (in order of low to
+   high) if this process fails.
+3. When a polling transmission is responded, the connecting mesh node sends an address
+   request which gets forwarded to the master node when necessary (using a
+   `MESH_ADDR_REQUEST` message).
+4. The master node will process the address request and respond with a `node_address`
+   (using a `MESH_ADDR_RESPONSE` message). If there is no available occupancy on the
+   network level from which the address request originated, then the master node will
+   respond with an invalid `Logical Address <logical address>`.
+5. Once the requesting node receives the address response (and the assigned address is
+   valid), it assumes that as the `node_address` while maintaining its `node_id`.
+
+   - The connecting node will verify its new address by calling `check_connection`.
+   - If the assigned address is invalid or `check_connection()` returns `False`, then
+     the connecting node will re-start the process (step 1) on a different network level.
+
+Points of failure
+-----------------
+
+This process happens over a span of a few milliseconds. However,
+
+- If the connecting node is physically moving throughout the network very quickly,
+  then this process will take longer and is likely to fail.
+- If a master node is able to respond faster than the connecting node can prepare itself
+  to receive, then the process will fail entirely. This failure about faster master
+  nodes often results in some slower RF24Mesh nodes only being able to connect to the
+  network through another non-master node.
+
+If you run into trouble with this connection process, then please
+`open an issue on github <https://github.com/nRF24/CircuitPython_nRF24L01/issues>`_
+and describe the situation with as much detail as possible.

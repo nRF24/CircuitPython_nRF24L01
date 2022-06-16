@@ -20,11 +20,5 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """import only accessible API wrappers"""
+from adafruit_bus_device.spi_device import SPIDevice
 from .cpy_spidev import SPIDevCtx  # for linux only
-
-try:  # check for MicroPython's machine.Pin
-    from .upy_pin import DigitalInOut
-    from .upy_spi import SPIDevice
-except ImportError:  # must be on linux or CircuitPython compatible
-    from digitalio import DigitalInOut
-    from adafruit_bus_device.spi_device import SPIDevice

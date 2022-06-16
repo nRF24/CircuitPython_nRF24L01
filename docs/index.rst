@@ -1,4 +1,4 @@
-
+:hide-navigation:
 
 .. toctree::
     :hidden:
@@ -44,8 +44,8 @@
 
 .. only:: html
 
-    .. image:: https://open.vscode.dev/badges/open-in-vscode.svg
-        :target: https://open.vscode.dev/2bndy5/CircuitPython_nRF24L01
+    .. image:: https://img.shields.io/static/v1?label=Visual%20Studio%20Code&message=Use%20Online%20IDE&color=blue&logo=visualstudiocode&logoColor=3f9ae6
+        :target: https://vscode.dev/github/nRF24/CircuitPython_nRF24L01
         :alt: Open in Visual Studio Code
 
     .. image:: https://img.shields.io/badge/Gitpod-Use%20Online%20IDE-B16C04?logo=gitpod
@@ -99,11 +99,11 @@ Features currently supported
 * Adjust the nRF24L01's RF data rate (250kbps, 1Mbps, or 2Mbps)
 * An nRF24L01 driven by this library can communicate with a nRF24L01 on an Arduino driven by the
   `TMRh20 RF24 library <http://tmrh20.github.io/RF24/>`_.
-* fake BLE module for sending BLE beacon advertisments from the nRF24L01 as outlined by
+* fake BLE module for sending BLE beacon advertisements from the nRF24L01 as outlined by
   `Dmitry Grinberg in his write-up (including C source code) <http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery>`_.
 * Multiceiver\ :sup:`TM` mode (up to 6 TX nRF24L01 "talking" to 1 RX nRF24L01 simultaneously).
   See the `Multiceiver Example <examples.html#multiceiver-example>`_
-* Networking capability that allows up to 781 tranceivers to interact with each other.
+* Networking capability that allows up to 781 transceivers to interact with each other.
 
   * This does not mean the radio can connect to WiFi. The networking implementation is a
     custom protocol ported from TMRh20's RF24Network & RF24Mesh libraries.
@@ -121,7 +121,7 @@ This driver depends on:
 
   .. tip:: Use CircuitPython v6.3.0 or newer because faster SPI execution yields
       faster transmissions.
-* The `SpiDev <https://pypi.org/project/spidev/>`_ module is a C-extention that executes
+* The `SpiDev <https://pypi.org/project/spidev/>`_ module is a C-extension that executes
   SPI transactions faster than Adafruit's PureIO library (a dependency of the
   `Adafruit_Blinka library <https://github.com/adafruit/Adafruit_Blinka>`_).
 
@@ -188,8 +188,8 @@ to the MCU via a digital input pin during the interrupt example.
 
 .. tip::
     User reports and personal experiences have improved results if there is a capacitor of
-    100 mirofarads (+ another optional 0.1 microfarads capacitor for added stability) connected
-    in parrallel to the VCC and GND pins.
+    100 microfarads (+ another optional 0.1 microfarads capacitor for added stability) connected
+    in parallel to the VCC and GND pins.
 .. important::
     The nRF24L01's VCC pin is not 5V compliant. All other nRF24L01 pins *should* be 5V compliant,
     but it is safer to assume they are not.
@@ -238,7 +238,7 @@ For CircuitPython devices
 For CPython in Linux
 ---------------------------
 
-1. Clone the library repository, then navigate to the reository's example directory.
+1. Clone the library repository, then navigate to the repository's example directory.
 
    .. code-block:: shell
 
@@ -256,9 +256,9 @@ What to purchase
 
 See the following links to Sparkfun or just google "nRF24L01+".
 
-    * `2.4GHz Transceiver IC - nRF24L01+ <https://www.sparkfun.com/products/690>`_
-    * `SparkFun Transceiver Breakout - nRF24L01+ <https://www.sparkfun.com/products/691>`_
-    * `SparkFun Transceiver Breakout - nRF24L01+ (RP-SMA) <https://www.sparkfun.com/products/705>`_
+* `2.4GHz Transceiver IC - nRF24L01+ <https://www.sparkfun.com/products/690>`_
+* `SparkFun Transceiver Breakout - nRF24L01+ <https://www.sparkfun.com/products/691>`_
+* `SparkFun Transceiver Breakout - nRF24L01+ (RP-SMA) <https://www.sparkfun.com/products/705>`_
 
 It is worth noting that you
 generally want to buy more than 1 as you need 2 for testing -- 1 to send & 1 to receive and
@@ -274,8 +274,8 @@ Power Stability
 -------------------
 
 If you're not using a dedicated 3V regulator to supply power to the nRF24L01,
-then adding capcitor(s) (100 µF + an optional 0.1µF) in parrellel (& as close
-as possible) to the VCC and GND pins is highly recommended. Stablizing the power
+then adding capacitor(s) (100 µF + an optional 0.1µF) in parallel (& as close
+as possible) to the VCC and GND pins is highly recommended. Stabilizing the power
 input provides significant performance increases. More finite details about the
 nRF24L01 are available from the datasheet (referenced here in the documentation as the
 `nRF24L01+ Specification Sheet <https://www.sparkfun.com/datasheets/
@@ -377,7 +377,7 @@ Sphinx and Graphviz are used to build the documentation based on rST files and c
 Install Graphviz
 ****************
 On Windows, installing Graphviz library is done differently. Check out the
-`Graphviz downloads page <https://graphviz.org/download/>`_. Besure that the ``graphiz/bin``
+`Graphviz downloads page <https://graphviz.org/download/>`_. Be sure that the ``graphviz/bin``
 directory is in the ``PATH`` environment variable (there's an option in the installer for this).
 After Graphviz is installed, reboot the PC so the updated ``PATH`` environment variable takes affect.
 

@@ -20,6 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """rf24_network module containing the base class RF24Network"""
+try:
+    from typing import Union
+except ImportError:
+    pass
+import busio
+from digitalio import DigitalInOut
 from .network.mixins import NetworkMixin
 from .network.structs import RF24NetworkHeader, RF24NetworkFrame, is_address_valid
 from .network.constants import (
@@ -37,7 +43,14 @@ class RF24NetworkRoutingOnly(NetworkMixin):
     """A minimal Networking implementation for nodes that are meant for strictly
     routing data amidst a network of nodes."""
 
-    def __init__(self, spi, csn_pin, ce_pin, node_address, spi_frequency=10000000):
+    def __init__(
+        self,
+        spi: busio.SPI,
+        csn_pin: DigitalInOut,
+        ce_pin: DigitalInOut,
+        node_address: int,
+        spi_frequency=10000000,
+    ):
         if not is_address_valid(node_address):
             raise ValueError("node_address argument is invalid or malformed")
         super().__init__(spi, csn_pin, ce_pin, spi_frequency)
@@ -57,7 +70,7 @@ class RF24NetworkRoutingOnly(NetworkMixin):
 class RF24Network(RF24NetworkRoutingOnly):
     """The object used to instantiate the nRF24L01 as a network node."""
 
-    def send(self, header: RF24NetworkHeader, message) -> bool:
+    def send(self, header: RF24NetworkHeader, message: Union[bytes, bytearray]) -> bool:
         """Deliver a message according to the header information."""
         return self.write(RF24NetworkFrame(header, message))
 

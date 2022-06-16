@@ -59,7 +59,7 @@ addresses = [
 
 
 def base(timeout=10):
-    """Use the nRF24L01 as a base station for lisening to all nodes"""
+    """Use the nRF24L01 as a base station for listening to all nodes"""
     # write the addresses to all pipes.
     for pipe_n, addr in enumerate(addresses):
         nrf.open_rx_pipe(pipe_n, addr)
@@ -71,7 +71,7 @@ def base(timeout=10):
             # NOTE read() clears the pipe number and payload length data
             print("Received", nrf.any(), "on pipe", nrf.pipe, end=" ")
             node_id, payload_id = struct.unpack("<ii", nrf.read())
-            print(f"from node {node_id}. PayloadID: {payload_id}")
+            print("from node {}. PayloadID: {}".format(node_id, payload_id))
             start_timer = time.monotonic()  # reset timer with every payload
     nrf.listen = False
 
@@ -100,8 +100,10 @@ def node(node_number=0, count=6):
         # show something to see it isn't frozen
         if report:
             print(
-                f"Transmission of payloadID {counter} as node {node_number} success"
-                f"full! Transmission time: {int((end_timer - start_timer) / 1000)} us"
+                "Transmission of payloadID {} as node {} successfull!".format(
+                    counter, node_number
+                ),
+                "Transmission time: {} us".format(int((end_timer - start_timer) / 1000))
             )
         else:
             print("Transmission failed or timed out")
@@ -148,5 +150,4 @@ else:
         "    Run base() on the receiver\n    "
         "Run node(node_number) on a transmitter\n    "
         "node()'s parameter, `node_number`, must be in range [0, 5]"
-        ""
     )

@@ -140,7 +140,7 @@ FrameQueueFrag
 Logical Address Validation
 --------------------------
 
-.. automethod:: circuitpython_nrf24l01.network.structs.is_address_valid
+.. autofunction:: circuitpython_nrf24l01.network.structs.is_address_valid
 
     :param int address: The :ref:`Logical Address <Logical Address>` to validate.
 

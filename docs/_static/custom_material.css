@@ -13,12 +13,13 @@
   background-color: hsl(301, 100%, 63%);
 }
 
-.md-typeset .admonition.seealso {
-  border-left: .2rem solid hsl(301, 100%, 63%);
+.md-typeset :is(.admonition):is(.seealso) {
+  border-color: hsl(301, 100%, 63%);
 }
 
-.md-typeset .admonition.seealso>.admonition-title {
-  background-color: hsla(287, 100%, 63%, 0.25);
+.md-typeset :is(.seealso)> :is(.admonition-title) {
+  background-color: hsla(287, 100%, 63%, 0.1);
+  border-color: hsl(301, 100%, 63%);
 }
 
 .md-typeset .admonition.important>.admonition-title::before {
@@ -26,24 +27,26 @@
   background-color: hsl(123, 100%, 63%);
 }
 
-.md-typeset .admonition.important {
-  border-left: .2rem solid hsl(123, 100%, 63%);
+.md-typeset :is(.admonition):is(.important) {
+  border-color: hsl(123, 100%, 63%);
 }
 
-.md-typeset .admonition.important>.admonition-title {
-  background-color: hsla(123, 100%, 63%, 0.25);
+.md-typeset :is(.important) > :is(.admonition-title) {
+  background-color: hsla(123, 100%, 63%, 0.1);
+  border-color: hsl(123, 100%, 63%);
 }
 
 .md-typeset .admonition.warning>.admonition-title::before {
   background-color: hsl(0, 100%, 63%);
 }
 
-.md-typeset .admonition.warning {
-  border-left: .2rem solid hsl(0, 100%, 63%);
+.md-typeset :is(.admonition):is(.warning) {
+  border-color: hsl(0, 100%, 63%);
 }
 
-.md-typeset .admonition.warning>.admonition-title {
-  background-color: hsla(0, 100%, 63%, 0.25);
+.md-typeset :is(.warning) > :is(.admonition-title) {
+  background-color: hsla(0, 100%, 63%, 0.1);
+  border-color: hsl(0, 100%, 63%);
 }
 
 html .md-nav--primary .md-nav__title--site .md-nav__button {
@@ -66,16 +69,18 @@ html .md-nav--primary .md-nav__title--site .md-nav__button {
   --md-code-bg-color: #e8e7e7;
 }
 
-.md-nav__title .md-nav__button.md-logo img, .md-nav__title .md-nav__button.md-logo svg {
+.md-nav__title .md-nav__button.md-logo img,
+.md-nav__title .md-nav__button.md-logo svg {
   height: 3rem;
   width: auto;
 }
 
-.md-header__button.md-logo img, .md-header__button.md-logo svg {
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
   width: auto;
 }
 
-.linenos {
-  background-color: var(--md-default-bg-color--light);
-  margin-right: 0.5rem;
+thead {
+  background-color: var(--md-default-fg-color--light);
+  color: var(--md-primary-bg-color);
 }

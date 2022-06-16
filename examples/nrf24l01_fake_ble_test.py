@@ -61,9 +61,9 @@ nrf.pa_level = -12
 def _prompt(remaining):
     if remaining % 5 == 0 or remaining < 5:
         if remaining - 1:
-            print(remaining, "advertisments left to go!")
+            print(remaining, "advertisements left to go!")
         else:
-            print(remaining, "advertisment left to go!")
+            print(remaining, "advertisement left to go!")
 
 
 # create an object for manipulating the battery level data
@@ -99,7 +99,7 @@ def master(count=50):
 
 # create an object for manipulating temperature measurements
 temperature_service = TemperatureServiceData()
-# temperature's float data has up to 2 decimal places of percision
+# temperature's float data has up to 2 decimal places of precision
 temperature_service.data = 42.0
 
 
@@ -156,7 +156,7 @@ def slave(timeout=6):
         if nrf.available():
             result = nrf.read()
             print(
-                "recevied payload from MAC address",
+                "received payload from MAC address",
                 address_repr(result.mac, delimit=":")
             )
             if result.name is not None:
@@ -168,6 +168,8 @@ def slave(timeout=6):
                     print("\traw buffer:", address_repr(service_data, False, " "))
                 else:
                     print("\t" + repr(service_data))
+    nrf.listen = False
+    nrf.flush_rx()  # discard any received raw BLE data
 
 
 def set_role():

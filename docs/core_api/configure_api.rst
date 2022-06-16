@@ -57,7 +57,7 @@ Configurable RF24 API
         The procedure for handling :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr` IRQ
         should be:
 
-        1. retreive the payload from RX FIFO using `read()`
+        1. retrieve the payload from RX FIFO using `read()`
         2. clear :py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr` status flag (taken care
            of by using `read()` in previous step)
         3. read FIFO_STATUS register to check if there are more payloads available in RX FIFO
@@ -83,12 +83,12 @@ Configurable RF24 API
         determine if 250 kbps is supposed to be supported.
 
         .. hint::
-            You can perform a carrier wave test on 250 kbps to see if you transceiver hardware
+            You can perform a carrier wave test on 250 kbps to see if your transceiver hardware
             does support that data rate. See `start_carrier_wave()`, `stop_carrier_wave()`, and
             `rpd` to execute a hardware test.
 
     .. versionchanged:: 2.2.0
-        Blindly allow confiuring the radio for 250 kbps as support is marginally dependent
+        Blindly allow configuring the radio for 250 kbps as support is marginally dependent
         on the hardware being used.
 
 .. autoattribute:: circuitpython_nrf24l01.rf24.RF24.channel

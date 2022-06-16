@@ -5,14 +5,16 @@ https://packaging.python.org/en/latest/distributing.html
 https://github.com/pypa/sampleproject
 """
 import os
+import platform
 from codecs import open as open_codec  # To use a consistent encoding
 from setuptools import setup, find_packages
 
 
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 REPO = "https://github.com/nRF24/CircuitPython_nRF24L01"
-DEPS = ["adafruit-blinka", "adafruit-circuitpython-busdevice"]
-if os.name == "posix":
+DEPS = ["adafruit-blinka", "adafruit-circuitpython-busdevice", "typing-extensions"]
+sys_desc = platform.uname()
+if sys_desc[0].title() == "Linux" and sys_desc[4].lower().startswith("arm"):
     DEPS.append("spidev")
 
 # Get the long description from the README file
@@ -43,14 +45,14 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
     ],
-    keywords="adafruit blinka circuitpython micropython nrf24l01 nRF24L01+"
+    keywords="adafruit blinka circuitpython nrf24l01 nRF24L01+"
     " raspberry pi driver radio transceiver",
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
     # TODO: IF LIBRARY FILES ARE A PACKAGE FOLDER,
     #       CHANGE `py_modules=['...']` TO `packages=['...']`
     packages=find_packages(),
-    # Specifiy your homepage URL for your project here
+    # Specify your homepage URL for your project here
     url=REPO,
     # Extra links for the sidebar on pypi
     project_urls={
