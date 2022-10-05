@@ -8,9 +8,9 @@
 Network Data Structures
 =======================
 
-.. versionadded:: 2.1.0
+.. automodule:: circuitpython_nrf24l01.network.structs
 
-These classes are used to structure the payload data for wireless network transactions.
+.. versionadded:: 2.1.0
 
 Header
 -----------------

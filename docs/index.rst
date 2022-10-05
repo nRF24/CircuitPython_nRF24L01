@@ -47,7 +47,6 @@
     .. image:: https://img.shields.io/static/v1?label=Visual%20Studio%20Code&message=Use%20Online%20IDE&color=blue&logo=visualstudiocode&logoColor=3f9ae6
         :target: https://vscode.dev/github/nRF24/CircuitPython_nRF24L01
         :alt: Open in Visual Studio Code
-
     .. image:: https://img.shields.io/badge/Gitpod-Use%20Online%20IDE-B16C04?logo=gitpod
         :target: https://gitpod.io/#https://github.com/2bndy5/CircuitPython_nRF24L01
         :alt: Open in Gitpod

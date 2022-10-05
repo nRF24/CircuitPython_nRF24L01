@@ -1,3 +1,6 @@
+
+.. module:: circuitpython_nrf24l01.network.mixins
+
 Shared Networking API
 ======================
 
@@ -33,11 +36,10 @@ Order of Inheritance
         }
 
         subgraph cluster_network_mixins{
-            label="circuitpython_nrf24l01.network.mixins"
-            tooltip="circuitpython_nrf24l01.network.mixins module"
+            graph [xref=":mod:`circuitpython_nrf24l01.network.mixins`"]
             rank="same"
-            RadioMixin [tooltip="RadioMixin class"]
-            NetworkMixin [tooltip="NetworkMixin class"]
+            RadioMixin [tooltip="RadioMixin (Python class)"]
+            NetworkMixin [tooltip="NetworkMixin (Python class)"]
             RadioMixin -> NetworkMixin
         }
 

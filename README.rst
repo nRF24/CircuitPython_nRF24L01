@@ -15,6 +15,10 @@
     :target: https://pepy.tech/project/circuitpython-nrf24l01
     :alt: Total PyPI downloads
 
+.. image:: https://codecov.io/gh/nRF24/CircuitPython_nRF24L01/branch/master/graph/badge.svg?token=0CKIC3TVB6
+    :target: https://codecov.io/gh/nRF24/CircuitPython_nRF24L01
+    :alt: Code Coverage
+
 Read The Docs
 =============
 

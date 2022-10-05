@@ -1,6 +1,8 @@
 Network Constants
 ========================
 
+.. automodule:: circuitpython_nrf24l01.network.constants
+
 .. versionadded:: 2.1.0
 
 Sending Behavior Types
