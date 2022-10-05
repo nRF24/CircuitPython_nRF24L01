@@ -29,8 +29,8 @@ try:
 except ImportError:
     pass
 from micropython import const
-from digitalio import DigitalInOut
-import busio
+from digitalio import DigitalInOut  # type: ignore[import]
+import busio  # type: ignore[import]
 from .wrapper import SPIDevCtx, SPIDevice
 
 CONFIGURE = const(0x00)  # IRQ masking, CRC scheme, PWR control, & RX/TX roles
@@ -70,7 +70,7 @@ class RF24:
         # self._in[0] = status byte returned on all SPI transactions
         # pre-configure the CONFIGURE register:
         #   0x0E = all IRQs enabled, CRC is 2 bytes, and power up in TX mode
-        self._in[0], self._config, self._spi = (0, 0x0E, None)
+        self._in[0], self._config = (0, 0x0E)
         # setup SPI
         if type(spi).__name__.endswith("SpiDev"):
             self._spi = SPIDevCtx(spi, csn, spi_frequency=spi_frequency)
@@ -100,7 +100,7 @@ class RF24:
         self._features = 5
         # init shadow copy of last RX_ADDR_P0 written to pipe 0 needed as
         # open_tx_pipe() appropriates pipe 0 for ACK packet
-        self._pipe0_read_addr = None
+        self._pipe0_read_addr: Optional[Union[bytes, bytearray]] = None
         # shadow copy of the TX_ADDRESS
         self._tx_address = self._reg_read_bytes(TX_ADDRESS)
         # pre-configure the SETUP_RETR register
@@ -217,7 +217,7 @@ class RF24:
         """Open a data pipe for TX transmissions."""
         if self._pipe0_read_addr != address and self._aa & 1:
             for i, val in enumerate(address):
-                self._pipes[0][i] = val
+                self._pipes[0][i] = val  # type: ignore[assignment, index]
             self._reg_write_bytes(RX_ADDR_P0, address)
         for i, val in enumerate(address):
             self._tx_address[i] = val
@@ -242,7 +242,7 @@ class RF24:
             if not pipe_number:
                 self._pipe0_read_addr = address
             for i, val in enumerate(address):
-                self._pipes[pipe_number][i] = val
+                self._pipes[pipe_number][i] = val  # type: ignore[assignment, index]
             self._reg_write_bytes(RX_ADDR_P0 + pipe_number, address)
         else:
             self._pipes[pipe_number] = address[0]
@@ -268,7 +268,7 @@ class RF24:
                 and self._pipe0_read_addr != self.address(0)
             ):
                 for i, val in enumerate(self._pipe0_read_addr):
-                    self._pipes[0][i] = val
+                    self._pipes[0][i] = val  # type: ignore[index]
                 self._reg_write_bytes(RX_ADDR_P0, self._pipe0_read_addr)
             elif self._pipe0_read_addr is None and self._open_pipes & 1:
                 self._open_pipes &= 0x3E  # close_rx_pipe(0) is slower
@@ -297,7 +297,7 @@ class RF24:
             return self._pl_len[(self._in[0] >> 1) & 7]
         return 0
 
-    def read(self, length: int = None) -> bytearray:
+    def read(self, length: int = None) -> Optional[bytearray]:
         """This function is used to retrieve data from the RX FIFO."""
         return_size = length if length is not None else self.any()
         if not return_size:
@@ -317,26 +317,27 @@ class RF24:
         self._ce_pin.value = False
         if isinstance(buf, (list, tuple)):
             result = []
-            for b in buf:
-                result.append(self.send(b, ask_no_ack, force_retry, send_only))
-            return result
+            for byte in buf:
+                result.append(self.send(byte, ask_no_ack, force_retry, send_only))
+            return result  # type: ignore[return-value]
         if self._in[0] & 0x10 or self._in[0] & 1:
             self.flush_tx()
         if not send_only and self._in[0] >> 1 & 7 < 6:
             self.flush_rx()
         up_cnt = 0
+        assert isinstance(buf, (bytes, bytearray))
         self.write(buf, ask_no_ack)
         while not self._in[0] & 0x30:
             up_cnt += self.update()
-        result = bool(self._in[0] & 0x20)
+        result = bool(self._in[0] & 0x20)  # type: ignore[assignment]
         # print("send did {} updates. flags: {}".format(up_cnt, self._in[0] >> 4))
         while force_retry and not result:
             result = self.resend(send_only)
             force_retry -= 1
         if self._in[0] & 0x60 == 0x60 and not send_only:
-            result = self.read()
+            result = self.read()  # type: ignore[assignment]
         # self._ce_pin.value = False
-        return result
+        return result  # type: ignore[return-value]
 
     @property
     def tx_full(self) -> bool:
@@ -776,11 +777,12 @@ class RF24:
     def pa_level(self, power: Union[bool, Tuple[bool, int]]):
         lna_bit = True
         if isinstance(power, (list, tuple)) and len(power) > 1:
-            lna_bit, power = bool(power[1]), int(power[0])
+            lna_bit, power = bool(power[1]), int(power[0])  # type: ignore[assignment]
+        assert isinstance(power, int)
         if power not in (-18, -12, -6, 0):
             raise ValueError("pa_level must be -18, -12, -6, or 0 (in dBm)")
-        power = (3 - int(power / -6)) * 2
-        self._rf_setup = (self._rf_setup & 0xF8) | power | lna_bit
+        pwr = (3 - int(power / -6)) * 2
+        self._rf_setup = (self._rf_setup & 0xF8) | pwr | lna_bit
         self._reg_write(RF_PA_RATE, self._rf_setup)
 
     @property
@@ -863,7 +865,7 @@ class RF24:
             return self._tx_address
         if index <= 1:
             return self._pipes[index]
-        return bytes([self._pipes[index]]) + self._pipes[1][1:]
+        return bytes([self._pipes[index]]) + self._pipes[1][1:]  # type: ignore
 
     @property
     def rpd(self) -> bool:

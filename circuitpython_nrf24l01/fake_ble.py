@@ -28,8 +28,8 @@ try:
     from typing import Union, List, Optional
 except ImportError:
     pass
-import busio
-from digitalio import DigitalInOut
+import busio  # type: ignore[import]
+from digitalio import DigitalInOut  # type: ignore[import]
 from micropython import const
 from .rf24 import RF24, address_repr
 
@@ -110,7 +110,7 @@ class QueueElement:
     def __init__(self, buffer: bytearray):
         #: The transmitting BLE device's MAC address as a `bytes` object.
         self.mac = bytes(buffer[2:8])
-        self.name = None
+        self.name: Optional[Union[str, bytes]] = None
         """The transmitting BLE device's name. This will be a `str`, `bytes` object (if
         a `UnicodeError` was caught), or `None` (if not included in the received
         payload)."""
@@ -120,7 +120,7 @@ class QueueElement:
 
         .. note:: This value does not represent the received signal strength.
             The nRF24L01 will receive anything over a -64 dbm threshold."""
-        self.data: List[bytearray, "ServiceData"] = []
+        self.data: List[Union[bytearray, "ServiceData"]] = []
         """A `list` of the transmitting device's data structures (if any).
         If an element in this `list` is not an instance (or descendant) of the
         `ServiceData` class, then it is likely a custom, user-defined, or unsupported
@@ -157,16 +157,16 @@ class QueueElement:
             service_data_uuid = struct.unpack("<H", buf[1:3])[0]
             if service_data_uuid == TEMPERATURE_UUID:
                 service = TemperatureServiceData()
-                service.data = buf[3:]
+                service.data = buf[3:]  # type: ignore[assignment]
                 self.data.append(service)
             elif service_data_uuid == BATTERY_UUID:
-                service = BatteryServiceData()
-                service.data = buf[3:]
+                service = BatteryServiceData()  # type: ignore[assignment]
+                service.data = buf[3:]  # type: ignore[assignment]
                 self.data.append(service)
             elif service_data_uuid == EDDYSTONE_UUID:
-                service = UrlServiceData()
-                service.pa_level_at_1_meter = buf[4:5]
-                service.data = buf[5:]
+                service = UrlServiceData()  # type: ignore[assignment]
+                service.pa_level_at_1_meter = buf[4:5]  # type: ignore[attr-defined]
+                service.data = buf[5:]  # type: ignore[assignment]
                 self.data.append(service)
             else:
                 self.data.append(buf)
@@ -186,7 +186,7 @@ class FakeBLE(RF24):
         super().__init__(spi, csn, ce_pin, spi_frequency=spi_frequency)
         self._curr_freq = 2
         self._show_dbm = False
-        self._ble_name = None
+        self._ble_name: Optional[Union[bytearray, bytes]] = None
         self._mac = urandom(6)
         self._config = self._config & 3 | 0x10  # disable CRC
         # disable auto_ack, dynamic payloads, all TX features, & auto-retry
@@ -196,7 +196,7 @@ class FakeBLE(RF24):
         with self:
             super().open_rx_pipe(0, b"\x71\x91\x7D\x6B\0")
         #: The internal queue of received BLE payloads' data.
-        self.rx_queue = []
+        self.rx_queue: List[QueueElement] = []
         self.rx_cache = bytearray(0)
         """The internal cache used when validating received BLE payloads."""
         self.hop_channel()
@@ -224,7 +224,7 @@ class FakeBLE(RF24):
             self._mac += urandom(6 - len(self._mac))
 
     @property
-    def name(self):
+    def name(self) -> Optional[bytes]:
         """The broadcasted BLE name of the nRF24L01."""
         return self._ble_name
 
@@ -248,7 +248,7 @@ class FakeBLE(RF24):
 
     @show_pa_level.setter
     def show_pa_level(self, enable: bool):
-        if enable and len(self.name) > 16:
+        if enable and self._ble_name is not None and len(self._ble_name) > 16:
             raise ValueError("there is not enough room to show the pa_level.")
         self._show_dbm = bool(enable)
 
@@ -278,7 +278,7 @@ class FakeBLE(RF24):
                 "Payload length exceeds maximum buffer size by "
                 "{} bytes".format(abs(self.len_available(payload)))
             )
-        name_length = (len(self.name) + 2) if self.name is not None else 0
+        name_length = 0 if self._ble_name is None else (len(self._ble_name) + 2)
         pl_size = 9 + len(payload) + name_length + self._show_dbm * 3
         buf = bytes([0x42, pl_size]) + self.mac
         buf += chunk(b"\x05", 1)
@@ -286,8 +286,8 @@ class FakeBLE(RF24):
         if self._show_dbm:
             pa_level = chunk(struct.pack(">b", self.pa_level), 0x0A)
         buf += pa_level
-        if name_length:
-            buf += chunk(self.name, 0x08)
+        if name_length and self._ble_name is not None:
+            buf += chunk(self._ble_name, 0x08)
         buf += payload
         # print("PL: {} CRC: {}".format(
         #     address_repr(buf, 0), address_repr(crc24_ble(buf), 0)
@@ -298,7 +298,7 @@ class FakeBLE(RF24):
     def len_available(self, hypothetical: Union[bytes, bytearray] = b"") -> int:
         """This function will calculates how much length (in bytes) is
         available in the next payload."""
-        name_length = (len(self._ble_name) + 2) if self._ble_name is not None else 0
+        name_length = 0 if self._ble_name is None else (len(self._ble_name) + 2)
         return 18 - name_length - self._show_dbm * 3 - len(hypothetical)
 
     def advertise(self, buf: Union[bytes, bytearray] = b"", data_type: int = 0xFF):
@@ -307,8 +307,8 @@ class FakeBLE(RF24):
             raise ValueError("buffer is an invalid format")
         payload = b""
         if isinstance(buf, (list, tuple)):
-            for b in buf:
-                payload += b
+            for byte in buf:
+                payload += byte
         else:
             payload = chunk(buf, data_type) if buf else b""
         payload = self.whiten(self._make_payload(payload))
@@ -323,7 +323,7 @@ class FakeBLE(RF24):
         if dump_pipes:
             super().print_pipes()
 
-    @RF24.channel.setter
+    @RF24.channel.setter  # type: ignore[attr-defined]
     def channel(self, value: int):
         if value in BLE_FREQ:
             self._channel = value
@@ -332,7 +332,7 @@ class FakeBLE(RF24):
     def available(self) -> bool:
         """A `bool` describing if there is a payload in the `rx_queue`."""
         if super().available():
-            self.rx_cache = super().read(self.payload_length)
+            self.rx_cache = super().read(self.payload_length)  # type: ignore
             self.rx_cache = self.whiten(reverse_bits(self.rx_cache))
             end = self.rx_cache[1] + 2
             self.rx_cache = self.rx_cache[: end + 3]
@@ -345,7 +345,7 @@ class FakeBLE(RF24):
         return bool(self.rx_queue)
 
     # pylint: disable=arguments-differ
-    def read(self) -> QueueElement:
+    def read(self) -> Optional[QueueElement]:  # type: ignore[override]
         """Get the First Out element from the queue."""
         if self.rx_queue:
             ret_val = self.rx_queue[0]
@@ -355,27 +355,27 @@ class FakeBLE(RF24):
 
     # pylint: enable=arguments-differ
     # pylint: disable=unused-argument
-    @RF24.dynamic_payloads.setter
+    @RF24.dynamic_payloads.setter  # type: ignore[attr-defined]
     def dynamic_payloads(self, val):
         raise NotImplementedError("using dynamic_payloads breaks BLE specifications")
 
-    @RF24.data_rate.setter
+    @RF24.data_rate.setter  # type: ignore[attr-defined]
     def data_rate(self, val):
         raise NotImplementedError("adjusting data_rate breaks BLE specifications")
 
-    @RF24.address_length.setter
+    @RF24.address_length.setter  # type: ignore[attr-defined]
     def address_length(self, val):
         raise NotImplementedError("adjusting address_length breaks BLE specifications")
 
-    @RF24.auto_ack.setter
+    @RF24.auto_ack.setter  # type: ignore[attr-defined]
     def auto_ack(self, val):
         raise NotImplementedError("using auto_ack breaks BLE specifications")
 
-    @RF24.ack.setter
+    @RF24.ack.setter  # type: ignore[attr-defined]
     def ack(self, val):
         raise NotImplementedError("adjusting ack breaks BLE specifications")
 
-    @RF24.crc.setter
+    @RF24.crc.setter  # type: ignore[attr-defined]
     def crc(self, val):
         raise NotImplementedError("BLE specifications only use crc24")
 
@@ -403,13 +403,13 @@ class ServiceData:
         return self._type
 
     @property
-    def data(self) -> Union[bytes, bytearray]:
+    def data(self) -> Union[int, float, str, bytes, bytearray]:
         """This attribute is a `bytearray` or `bytes` object."""
         return self._data
 
     @data.setter
-    def data(self, value: Union[bytes, bytearray]):
-        self._data = value
+    def data(self, value: Union[int, float, str, bytes, bytearray]):
+        self._data = value  # type: ignore[assignment]
 
     @property
     def buffer(self) -> bytes:
@@ -444,7 +444,7 @@ class TemperatureServiceData(ServiceData):
         return struct.unpack("<i", self._data[:3] + b"\0")[0] * 10**-2
 
     @data.setter
-    def data(self, value: float):
+    def data(self, value: Union[float, bytes, bytearray]):
         if isinstance(value, float):
             value = struct.pack("<i", int(value * 100) & 0xFFFFFF)
             self._data = value[:3] + bytes([0xFE])
@@ -468,7 +468,7 @@ class BatteryServiceData(ServiceData):
         return int(self._data[0])
 
     @data.setter
-    def data(self, value: int):
+    def data(self, value: Union[int, bytes, bytearray]):
         if isinstance(value, int):
             self._data = struct.pack("B", value)
         elif isinstance(value, (bytes, bytearray)):
@@ -519,7 +519,7 @@ class UrlServiceData(ServiceData):
         return value
 
     @data.setter
-    def data(self, value: str):
+    def data(self, value: Union[str, bytes, bytearray]):
         if isinstance(value, str):
             for i, b_code in enumerate(UrlServiceData.codex_prefix):
                 value = value.replace(b_code, chr(i), 1)

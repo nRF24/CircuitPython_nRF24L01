@@ -23,7 +23,7 @@
 import struct
 
 try:
-    from typing import Union
+    from typing import Union, Optional
 except ImportError:
     pass
 from .constants import (
@@ -35,7 +35,7 @@ from .constants import (
 )
 
 
-def is_address_valid(address) -> bool:
+def is_address_valid(address: Optional[int]) -> bool:
     """Test if a given address is a valid :ref:`Logical Address <Logical Address>`."""
     if address is None:
         return False
@@ -53,9 +53,11 @@ def is_address_valid(address) -> bool:
 class RF24NetworkHeader:
     """The header information used for routing network messages."""
 
+    __next_id = 0
+
     def __init__(self, to_node: int = None, message_type: Union[str, int] = None):
-        self.from_node = None  #: |uint16_t|
-        self.to_node = (to_node & 0xFFF) if to_node is not None else 0  #: |uint16_t|
+        self.from_node: int = 0o7777  #: |uint16_t|
+        self.to_node: int = 0 if to_node is None else (to_node & 0xFFF)  #: |uint16_t|
         if isinstance(message_type, str):
             # convert the first char to int if `message_type` is a string
             self.message_type = ord(message_type[0])  #: The type of message.
@@ -64,8 +66,6 @@ class RF24NetworkHeader:
         self.frame_id = RF24NetworkHeader.__next_id  #: |uint16_t|
         RF24NetworkHeader.__next_id = (RF24NetworkHeader.__next_id + 1) & 0xFFFF
         self.reserved = 0  #: A single byte reserved for network usage.
-
-    __next_id = 0
 
     def unpack(self, buffer) -> bool:
         """Decode header data from the first 8 bytes of a frame's buffer."""
@@ -82,17 +82,15 @@ class RF24NetworkHeader:
 
     def pack(self) -> bytes:
         """This function |internal_use|"""
+        msg_t = self.message_type
+        if isinstance(self.message_type, str) and self.message_type:
+            msg_t = ord(self.message_type[0])
         return struct.pack(
             "HHHBB",
-            0o7777 if self.from_node is None else self.from_node & 0xFFF,
+            self.from_node & 0xFFF,
             self.to_node & 0xFFF,
             self.frame_id & 0xFFFF,
-            (
-                self.message_type
-                if not isinstance(self.message_type, str)
-                else (ord(self.message_type[0]) if self.message_type else 0)
-            )
-            & 0xFF,
+            msg_t & 0xFF,
             self.reserved & 0xFF,
         )
 
@@ -101,15 +99,13 @@ class RF24NetworkHeader:
 
     def to_string(self) -> str:
         """:Returns: A `str` describing all of the header's attributes."""
+        msg_t = self.message_type
+        if isinstance(self.message_type, str) and self.message_type:
+            msg_t = ord(self.message_type[0])
         return "from {} to {} type {} id {} reserved {}".format(
-            oct(0o7777 if self.from_node is None else self.from_node),
+            oct(self.from_node),
             oct(self.to_node),
-            (
-                self.message_type
-                if not isinstance(self.message_type, str)
-                else (ord(self.message_type[0]) if self.message_type else 0)
-            )
-            & 0xFF,
+            msg_t & 0xFF,
             self.frame_id,
             self.reserved,
         )
@@ -131,7 +127,7 @@ class RF24NetworkFrame:
             raise TypeError("message must be a `bytes` or `bytearray` object")
         self.header = header if header is not None else RF24NetworkHeader()
         """The `RF24NetworkHeader` about the frame's `message`."""
-        self.message = bytearray(0) if message is None else bytearray(message)
+        self.message = bytes(0) if message is None else bytearray(message)
         """The entire message or a fragment of a message allocated to the frame."""
 
     def unpack(self, buffer: Union[bytes, bytearray]) -> bool:
@@ -182,11 +178,11 @@ class FrameQueue:
         self._queue.append(new_frame)
         return True
 
-    def peek(self) -> RF24NetworkFrame:
+    def peek(self) -> Optional[RF24NetworkFrame]:
         """:Returns: The First Out element without removing it from the queue."""
         return None if not self._queue else self._queue[0]
 
-    def dequeue(self) -> RF24NetworkFrame:
+    def dequeue(self) -> Optional[RF24NetworkFrame]:
         """:Returns: The First Out element and removes it from the queue."""
         return None if not self._queue else self._queue.pop(0)
 

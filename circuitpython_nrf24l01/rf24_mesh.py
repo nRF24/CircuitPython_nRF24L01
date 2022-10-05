@@ -26,13 +26,13 @@ import struct
 try:
     import json
 except ImportError:
-    json = None  # some CircuitPython boards don't have the json module
+    pass  # some CircuitPython boards don't have the json module
 try:
-    from typing import Union
+    from typing import Union, Dict, List
 except ImportError:
     pass
-import busio
-from digitalio import DigitalInOut
+import busio  # type:ignore[import]
+from digitalio import DigitalInOut  # type:ignore[import]
 from .network.constants import (
     MESH_ADDR_REQUEST,
     MESH_ADDR_RESPONSE,
@@ -105,7 +105,7 @@ class RF24MeshNoMaster(NetworkMixin):
                 return True
         return False
 
-    def renew_address(self, timeout: int = 7.5):
+    def renew_address(self, timeout: Union[float, int] = 7.5):
         """Connect to the mesh network and request a new `node_address`."""
         if self._rf24.available():
             self.update()
@@ -218,9 +218,9 @@ class RF24MeshNoMaster(NetworkMixin):
                 return False
         return True
 
-    def _make_contact(self, lvl: int) -> list:
+    def _make_contact(self, lvl: int) -> List[int]:
         """Make a list of connections after multicasting a `NETWORK_POLL` message."""
-        responders = []
+        responders: List[int] = []
         self.frame_buf.header.to_node = NETWORK_MULTICAST_ADDR
         self.frame_buf.header.from_node = NETWORK_DEFAULT_ADDR
         self.frame_buf.header.message_type = NETWORK_POLL
@@ -306,7 +306,8 @@ class RF24Mesh(RF24MeshNoMaster):
     ):
         super().__init__(spi, csn_pin, ce_pin, node_id, spi_frequency)
         self._do_dhcp = False
-        self.dhcp_dict = {}  #: A `dict` that enables master nodes to act as a DNS.
+        #: A `dict` that enables master nodes to act as a DNS.
+        self.dhcp_dict = {}  # type: Dict[int, int]
 
     def update(self) -> int:
         """Checks for incoming network data and returns last message type (if any)"""
@@ -395,7 +396,9 @@ class RF24Mesh(RF24MeshNoMaster):
             # This throws an OSError if file system is read-only. ALL MCU boards
             # running CircuitPython firmware (not RPi) have read-only file system.
             if json is not None and not as_bin:
-                json.dump(self.dhcp_dict, json_file)
+                json_file.write(
+                    json.dumps(self.dhcp_dict, indent=2).encode(encoding="utf-8")
+                )
             elif as_bin:
                 for _id, _addr in self.dhcp_dict.items():
                     json_file.write(bytes([_id, 0]))  # pad id w/ 0 for mem alignment
@@ -405,7 +408,7 @@ class RF24Mesh(RF24MeshNoMaster):
         """Load the `dhcp_dict` from a JSON file (meant for master nodes only)."""
         with open(filename, "rb") as json_file:
             if json is not None and not as_bin:
-                temp_dict = json.load(json_file)  # type: dict
+                temp_dict = json.load(json_file)  # type: Dict[str, int]
                 # convert keys from `str` to `int`
                 for n_id, addr in temp_dict.items():
                     self.set_address(int(n_id), addr, True)
