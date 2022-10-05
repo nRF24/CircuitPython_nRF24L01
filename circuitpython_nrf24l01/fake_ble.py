@@ -513,7 +513,9 @@ class UrlServiceData(ServiceData):
         """This attribute is a `str` of URL data."""
         value = self._data.decode()
         for i, b_code in enumerate(UrlServiceData.codex_prefix):
-            value = value.replace(chr(i), b_code, 1)
+            if value.startswith(chr(i)):
+                value = value.replace(chr(i), b_code, 1)
+                break
         for i, b_code in enumerate(UrlServiceData.codex_suffix):
             value = value.replace(chr(i), b_code)
         return value
@@ -522,7 +524,8 @@ class UrlServiceData(ServiceData):
     def data(self, value: Union[str, bytes, bytearray]):
         if isinstance(value, str):
             for i, b_code in enumerate(UrlServiceData.codex_prefix):
-                value = value.replace(b_code, chr(i), 1)
+                if value.startswith(b_code):
+                    value = value.replace(b_code, chr(i), 1)
             for i, b_code in enumerate(UrlServiceData.codex_suffix):
                 value = value.replace(b_code, chr(i))
             self._data = value.encode("utf-8")
