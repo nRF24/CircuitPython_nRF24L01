@@ -124,7 +124,8 @@ def set_role():
             "*** Enter 'S' to perform scan.\n"
             "*** Enter 'N' to display noise.\n"
             "*** Enter 'Q' to quit example.\n"
-        ) or "?"
+        )
+        or "?"
     )
     user_input = user_input.split()
     if user_input[0].upper().startswith("S"):

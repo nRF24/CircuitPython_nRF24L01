@@ -84,14 +84,14 @@ def master():
     nrf.interrupt_config(data_sent=False)
     print("    Pinging slave node for an ACK payload...", end=" ")
     _ping_and_prompt()  # CE pin is managed by this function
-    print("\t\"on data ready\" event test {}successful".format("un" * nrf.irq_dr))
+    print('\t"on data ready" event test {}successful'.format("un" * nrf.irq_dr))
 
     # on data sent test
     print("\nConfiguring IRQ pin to only ignore 'on data ready' event")
     nrf.interrupt_config(data_recv=False)
     print("    Pinging slave node again...             ", end=" ")
     _ping_and_prompt()  # CE pin is managed by this function
-    print("\t\"on data sent\" event test {}successful".format("un" * nrf.irq_ds))
+    print('\t"on data sent" event test {}successful'.format("un" * nrf.irq_ds))
 
     # trigger slave node to exit by filling the slave node's RX FIFO
     print("\nSending one extra payload to fill RX FIFO on slave node.")
@@ -111,7 +111,7 @@ def master():
     nrf.flush_tx()  # just in case any previous tests failed
     nrf.write(b"Dummy", write_only=True)  # CE pin is left LOW
     _ping_and_prompt()  # CE pin is managed by this function
-    print("\t\"on data failed\" event test {}successful".format("un" * nrf.irq_df))
+    print('\t"on data failed" event test {}successful'.format("un" * nrf.irq_df))
     nrf.flush_tx()  # flush artifact payload in TX FIFO from last test
     # all 3 ACK payloads received were 4 bytes each, and RX FIFO is full
     # so, fetching 12 bytes from the RX FIFO also flushes RX FIFO
