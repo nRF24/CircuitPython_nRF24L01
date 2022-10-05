@@ -8,10 +8,6 @@ jobs:
   upload-release-assets:
     runs-on: ubuntu-latest
     steps:
-    - name: Dump GitHub context
-      env:
-        GITHUB_CONTEXT: ${{ toJson(github) }}
-      run: echo "$GITHUB_CONTEXT"
     - name: Translate Repo Name For Build Tools filename_prefix
       id: repo-name
       run: |
@@ -28,7 +24,7 @@ jobs:
         awk -F '\/' '{ print tolower($2) }' |
         tr '-' '_'
         )
-    - name: Set up Python 
+    - name: Set up Python
       uses: actions/setup-python@v1
       with:
         python-version: 3.9
@@ -62,22 +58,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: Check For setup.py
-      id: need-pypi
-      run: |
-        echo ::set-output name=setup-py::$( find . -wholename './setup.py' )
     - name: Set up Python
-      if: contains(steps.need-pypi.outputs.setup-py, 'setup.py')
       uses: actions/setup-python@v1
       with:
         python-version: '3.x'
     - name: Install dependencies
-      if: contains(steps.need-pypi.outputs.setup-py, 'setup.py')
       run: |
         python -m pip install --upgrade pip
         pip install setuptools wheel twine
     - name: Build and publish
-      if: contains(steps.need-pypi.outputs.setup-py, 'setup.py')
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.pypi_token }}
