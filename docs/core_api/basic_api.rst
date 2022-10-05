@@ -2,6 +2,8 @@
 Basic RF24 API
 --------------
 
+.. module:: circuitpython_nrf24l01.rf24
+
 .. autoclass:: circuitpython_nrf24l01.rf24.RF24
     :no-members:
 

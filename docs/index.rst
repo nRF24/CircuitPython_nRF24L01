@@ -416,4 +416,5 @@ Build CI, does. This is a good way to locally verify it will pass.
 Site Index
 ==========
 
-:ref:`genindex`
+* :ref:`genindex`
+* :ref:`modindex`

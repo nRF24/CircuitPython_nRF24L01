@@ -17,8 +17,8 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
-    "sphinx.ext.graphviz",
     "sphinx_immaterial",
+    "sphinx_immaterial.graphviz",
     # "rst2pdf.pdfbuilder",  # for local pdf builder support
 ]
 
@@ -33,6 +33,9 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "CircuitPython": ("https://circuitpython.readthedocs.io/en/latest/", None),
 }
+
+# ignore theme warning on windows about graphviz font metrics
+graphviz_ignore_incorrect_font_metrics = True
 
 html_baseurl = "https://circuitpython-nrf24l01.readthedocs.io/"
 

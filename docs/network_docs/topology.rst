@@ -18,31 +18,30 @@ integers and use an octal counting scheme.
   children of the master node.
 
 .. graphviz::
+    :align: center
 
     graph network_hierarchy {
-        bgcolor="#323232A1"
         newrank=true
         // ratio="0.65"
         node [
             fontcolor="#FEFEFE"
             fontsize=14
-            fontname=Arial
         ]
         pad="0"
         margin="0"
         subgraph cluster_hierarchy {
-            bgcolor="#24242400"
             color="#24242400"
             node [
+                fontcolor="#FEFEFE"
                 style=filled
-                color="#FEFEFE7f"
+                color="var(--md-graphviz-edge-color)"
             ]
-            edge [color="#FEFEFE" style="setlinewidth(2)"]
+            edge [style="setlinewidth(2)"]
             subgraph lvl_0 {
                 "0o0" [
                     shape="circle"
                     style="radial"
-                    fillcolor="0.85:#018268;0:#000"
+                    fillcolor="#000000;0.85:#018268"
                 ]
             }
             subgraph lvl_1 {
@@ -68,10 +67,7 @@ integers and use an octal counting scheme.
             "0o324" -- "0o2324"; "0o324" -- "0o3324"; "0o324" -- "0o4324"; "0o324" -- "0o5324"
         }
         subgraph cluster_legend {
-            bgcolor="#242424"
-            color="#24242400"
             "Legend" [
-                color="#FEF9A9"
                 shape=plain
                 margin=0
                 label=<
@@ -81,7 +77,7 @@ integers and use an octal counting scheme.
                             </TR>
                             <TR>
                                 <TD>Network Level 0</TD>
-                                <TD BORDER="1" STYLE="rounded,radial" BGCOLOR="#000:#018268">        </TD>
+                                <TD BORDER="1" STYLE="rounded,radial" BGCOLOR="#000000:#018268">        </TD>
                             </TR>
                             <TR>
                                 <TD>Network Level 1</TD>
@@ -125,43 +121,61 @@ graph only demonstrates
 
 
 .. graphviz::
+    :align: center
 
     graph network_levels {
         layout=twopi
-        bgcolor="#323232A1"
         ratio="0.825"
-        node [
-            style=filled
-            fontcolor="#FEFEFE"
-            color="#FEFEFE7f"
-            fontsize=14
-            fontname=Arial
-        ]
-        edge [color="#FEFEFE" style="setlinewidth(2)"]
+        edge [style="setlinewidth(2)"]
         ranksep="0.85:0.9:0.95:1.1"
         subgraph lvl_0 {
+            node [
+                color="var(--md-graphviz-edge-color)"
+                fontcolor="#FEFEFE"
+                fontsize=14
+            ]
             "0o0" [
                 root=true
                 shape="circle"
                 style="radial"
-                fillcolor="0.9:#018268;0:#000"
+                fillcolor="#000000;0.9:#018268"
             ]
         }
         subgraph lvl_1 {
-            node [fillcolor="#3E0180"]
+            node [
+                fillcolor="#3E0180"
+                color="var(--md-graphviz-edge-color)"
+                fontcolor="#FEFEFE"
+                fontsize=14
+            ]
             "0o1" "0o2" "0o3" "0o4" "0o5"
         }
         subgraph lvl_2 {
-            node [fillcolor="#014B80"]
+            node [
+                fillcolor="#014B80"
+                color="var(--md-graphviz-edge-color)"
+                fontcolor="#FEFEFE"
+                fontsize=14
+            ]
             "0o11" "0o21" "0o12" "0o22" "0o13" "0o23" "0o14" "0o24" "0o15" "0o25"
         }
         subgraph lvl_3 {
-            node [fillcolor="#0E6902"]
+            node [
+                fillcolor="#0E6902"
+                color="var(--md-graphviz-edge-color)"
+                fontcolor="#FEFEFE"
+                fontsize=14
+            ]
             "0o311" "0o411" "0o321" "0o421" "0o312" "0o412" "0o322" "0o422" "0o313" "0o413"
             "0o323" "0o423" "0o314" "0o414" "0o324" "0o424" "0o315" "0o415" "0o325" "0o425"
         }
         subgraph lvl_4 {
-            node [fillcolor="#80010B"]
+            node [
+                fillcolor="#80010B"
+                color="var(--md-graphviz-edge-color)"
+                fontcolor="#FEFEFE"
+                fontsize=14
+            ]
             "0o5311" "0o5411" "0o5321" "0o5312" "0o5421" "0o5313" "0o5314" "0o5315" "0o5322"
             "0o5323" "0o5324" "0o5325" "0o5412" "0o5423" "0o5422" "0o5413" "0o5414" "0o5424"
             "0o5415" "0o5425"
@@ -207,7 +221,7 @@ Physical addresses vs Logical addresses
     Remember that the nRF24L01 only has 6 data pipes for which to receive or transmit.
     Since only data pipe 0 can be used to transmit, the other other data pipes 1-5 are
     devoted to receiving transmissions from other network nodes; data pipe 0 also receives
-    multicasted messages about the node's network level).
+    multicasted messages about the node's network level.
 
 Translating Logical to Physical
 -------------------------------

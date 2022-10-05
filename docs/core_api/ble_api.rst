@@ -1,3 +1,6 @@
+
+.. module:: circuitpython_nrf24l01.fake_ble
+
 BLE API
 =================
 

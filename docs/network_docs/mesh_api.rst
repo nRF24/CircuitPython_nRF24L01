@@ -1,3 +1,6 @@
+
+.. module:: circuitpython_nrf24l01.rf24_mesh
+
 .. |use_msg_t| replace:: To ensure a message has been delivered to its target destination, set the
     ``message_type`` parameter to an `int` in range [65, 127]. This will invoke
     a `NETWORK_ACK` response message.

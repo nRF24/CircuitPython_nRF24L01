@@ -1,3 +1,6 @@
+
+.. module:: circuitpython_nrf24l01.rf24_network
+
 .. |if_nothing_in_queue| replace:: If there is nothing in the `queue`, this method will return
 .. |use_msg_t| replace:: To ensure a message has been delivered to its target destination, set the
     frame's header's `message_type` to an `int` in range [65, 127]. This will invoke
@@ -127,11 +130,11 @@ Advanced API
 
         .. note::
             For multicasted messages, the radio's `auto_ack` feature is not used.
-            
+
             This function will always return `True` if a message is directed to a node's pipe
             that does not have `auto_ack` enabled (which will likely be pipe 0 in most network
             contexts).
-        .. tip:: 
+        .. tip::
             To ensure a message has been delivered to its target destination, set the
             header's `message_type` to an `int` in range [65, 127]. This will invoke a
             `NETWORK_ACK` response message.
