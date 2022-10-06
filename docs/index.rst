@@ -28,6 +28,7 @@
 .. toctree::
     :hidden:
 
+    contributing
     troubleshooting
 
 .. toctree::
@@ -348,7 +349,12 @@ Contributing
 
 Contributions are welcome! Please read our `Code of Conduct
 <https://github.com/2bndy5/CircuitPython_nRF24L01/blob/master/CODE_OF_CONDUCT.md>`_
-before contributing to help this project stay welcoming. To contribute, all you need to do is fork `this repository <https://github.com/2bndy5/CircuitPython_nRF24L01.git>`_, develop your idea(s) and submit a pull request when stable. To initiate a discussion of idea(s), you need only open an issue on the aforementioned repository (doesn't have to be a bug report).
+before contributing to help this project stay welcoming.
+
+Please review our :doc:`contributing` for details on the development workflow.
+
+To initiate a discussion of idea(s), you need only open an issue on the aforementioned repository
+(it doesn't have to be a bug report).
 
 
 Future Project Ideas/Additions
@@ -371,46 +377,7 @@ The following are only ideas; they are not currently supported by this circuitpy
 Sphinx documentation
 -----------------------
 
-Sphinx and Graphviz are used to build the documentation based on rST files and comments in the code.
-
-Install Graphviz
-****************
-On Windows, installing Graphviz library is done differently. Check out the
-`Graphviz downloads page <https://graphviz.org/download/>`_. Be sure that the ``graphviz/bin``
-directory is in the ``PATH`` environment variable (there's an option in the installer for this).
-After Graphviz is installed, reboot the PC so the updated ``PATH`` environment variable takes affect.
-
-On Linux, just run:
-
-.. code-block:: shell
-
-    sudo apt-get install graphviz
-
-Installing Sphinx necessities
-*****************************
-
-First, install dependencies (feel free to reuse the virtual environment from
-`above <greetings.html#installing-from-pypi>`_):
-
-.. code-block:: shell
-
-    python3 -m venv .env
-    source .env/bin/activate
-    pip install Sphinx sphinx-immaterial
-
-Building the documentation
-**************************
-
-Now, once you have the virtual environment activated:
-
-.. code-block:: shell
-
-    cd docs
-    sphinx-build -E -W -b html . _build
-
-This will output the documentation to ``docs/_build`` directory. Open the *index.html* in your
-browser to view them. It will also (due to -W) error out on any warning like the Github action,
-Build CI, does. This is a good way to locally verify it will pass.
+Please read our :doc:`contributing` for instrcutions on how to build the documentation.
 
 Site Index
 ==========

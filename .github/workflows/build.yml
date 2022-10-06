@@ -47,7 +47,6 @@ jobs:
         run: pre-commit run --all-files
 
   test-coverage:
-    needs: [build-wheel, linters]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -56,22 +55,13 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: download wheel artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: wheel
-          path: dist
-
-      - name: Install pkg from wheel
-        run: pip install dist/*.whl
-
       - name: Install testing tools
         run: pip install -r requirements.txt -r tests/requirements.txt
 
       - name: Collect coverage
         run: |
-          coverage run -m pytest -vv
-          coverage report -m
+          coverage run -m pytest
+          coverage report
           coverage xml
 
       - name: Upload coverage reports to Codecov
