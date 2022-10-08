@@ -176,7 +176,8 @@ Basic RF24 API
           ACK payload can be bypassed by setting the ``send_only`` parameter as `True`.
 
     :param bytearray,bytes,list,tuple buf: The payload to transmit. This bytearray must have a
-        length in range [1, 32], otherwise a `ValueError` exception is thrown. This can
+        length in range [1, 32], otherwise a `ValueError` exception is thrown when the
+        `dynamic_payloads` attribute is enabled. This can
         also be a list or tuple of payloads (`bytearray`); in which case, all items in the
         list/tuple are processed for consecutive transmissions.
 

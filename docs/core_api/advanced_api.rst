@@ -47,7 +47,8 @@ Advanced RF24 API
     :returns: `True` if the payload was added to the TX FIFO buffer. `False` if the TX FIFO
         buffer is already full, and no payload could be added to it.
     :param bytearray buf: The payload to transmit. This bytearray must have a length greater
-        than 0 and less than 32 bytes, otherwise a `ValueError` exception is thrown.
+        than 0 and less than 32 bytes, otherwise a `ValueError` exception is thrown when the
+        `dynamic_payloads` attribute is enabled.
 
         - If the `dynamic_payloads` attribute is disabled for data pipe 0 and this bytearray's
           length is less than the `payload_length` attribute for data pipe 0, then this

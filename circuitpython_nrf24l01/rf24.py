@@ -349,7 +349,7 @@ class RF24:
         """The number of the data pipe that received the next available
         payload in the RX FIFO. (read only)"""
         result = self._in[0] >> 1 & 7
-        if result <= 5 and self._spi is not None:
+        if result <= 5:
             return result
         return None
 
@@ -778,8 +778,7 @@ class RF24:
         lna_bit = True
         if isinstance(power, (list, tuple)) and len(power) > 1:
             lna_bit, power = bool(power[1]), int(power[0])  # type: ignore[assignment]
-        assert isinstance(power, int)
-        if power not in (-18, -12, -6, 0):
+        if not isinstance(power, int) or power not in (-18, -12, -6, 0):
             raise ValueError("pa_level must be -18, -12, -6, or 0 (in dBm)")
         pwr = (3 - int(power / -6)) * 2
         self._rf_setup = (self._rf_setup & 0xF8) | pwr | lna_bit
@@ -819,24 +818,18 @@ class RF24:
     ) -> bool:
         """This non-blocking and helper function to `send()` can only handle
         one payload at a time."""
-        if not buf or len(buf) > 32:
-            raise ValueError("buffer must have a length in range [1, 32]")
-        self.clear_status_flags()
-        # is_power_up = self._config & 2
-        # if self._config & 3 != 2:  # is radio powered up in TX mode?
-        #     self._config = (self._config & 0x7C) | 2
-        #     self._reg_write(CONFIGURE, self._config)
-        #     if not is_power_up:
-        #         time.sleep(0.00015)
-        if self._in[0] & 1:
-            return False
-        if not self._dyn_pl & 1 and not self._features & 4:
+        if not self._dyn_pl & 1:
             buf_len = len(buf)
             pl_len = self._pl_len[0]
             if buf_len < pl_len:
                 buf += b"\0" * (pl_len - buf_len)
             elif buf_len > pl_len:
                 buf = buf[:pl_len]
+        elif not buf or len(buf) > 32:
+            raise ValueError("buffer must have a length in range [1, 32]")
+        self.clear_status_flags()
+        if self._in[0] & 1:
+            return False
         self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
         if not write_only:
             self._ce_pin.value = True
