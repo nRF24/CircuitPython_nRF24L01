@@ -10,7 +10,7 @@ up to 5 other children. This is not limitless because this network is designed f
 devices. Consequently, all node's :ref:`Logical Address <logical address>` are limited to 12-bit
 integers and use an octal counting scheme.
 
-- The master node (designated with the :ref:`Logical Address <logical address>` ``0o0``)
+- The master node (designated with the :ref:`Logical Address <logical address>` :python:`0o0`)
   is always the only node in the lowest level (denoted as level 0).
 - Child nodes are designated by the most significant octal digit in their
   :ref:`Logical Address <Logical Address>`. A child node address' least significant digits are
@@ -107,8 +107,9 @@ integers and use an octal counting scheme.
 Hopefully, you should see the pattern. There can be up to a maximum of 5 network levels (that's
 0-4 ordered from lowest to highest).
 
-For a message to travel from node ``0o124`` to node ``0o3``, it must be passed through any applicable
-network levels. So, the message flows ``0o124`` -> ``0o24`` -> ``0o4`` -> ``0o0`` -> ``0o3``.
+For a message to travel from node :python:`0o124` to node :python:`0o3`, it must be passed through any
+applicable network levels. So, the message flows :python:`0o124` -> :python:`0o24` ->
+:python:`0o4` -> :python:`0o0` -> :python:`0o3`.
 
 A single network can potentially have a maximum of 781 nodes (all operating on the same
 :attr:`~circuitpython_nrf24l01.rf24.RF24.channel`), but for readability reasons, the following
@@ -212,7 +213,7 @@ Physical addresses vs Logical addresses
 - The Logical address is the 12-bit integer representing a network node.
   The Logical address uses an octal counting scheme. A valid Logical Address must only
   contain octal digits in range [1, 5]. The master node is the exception for it uses the
-  number ``0``
+  number :python:`0`
 
   .. tip::
       Use the `is_address_valid()` function to programmatically check a Logical Address for validity.
@@ -229,12 +230,12 @@ Translating Logical to Physical
 Before translating the Logical address, a single byte is used repetitively as the
 base case for all bytes of any Physical Address. This byte is the `address_prefix`
 attribute (stored as a mutable `bytearray`) in the `RF24Network` class. By default the
-`address_prefix` has a single byte value of ``b"\xCC"``.
+`address_prefix` has a single byte value of :python:`b"\\xCC"`.
 
 The `RF24Network` class also has a predefined list of bytes used for translating
 unique Logical addresses into unique Physical addresses. This list is called
 `address_suffix` (also stored as a mutable `bytearray`). By default the `address_suffix`
-has 6-byte value of ``b"\xC3\x3C\x33\xCE\x3E\xE3"`` where the order of bytes pertains to the
+has 6-byte value of :python:`b"\\xC3\\x3C\\x33\\xCE\\x3E\\xE3"` where the order of bytes pertains to the
 data pipe number and child node's most significant byte in its Physical Address.
 
 For example:
@@ -242,7 +243,7 @@ For example:
     1-5 start with the `address_prefix`. To make each pipe's Physical address unique
     to a child node's Physical address, the `address_suffix` is used.
 
-    The Logical address of the master node: ``0o0``
+    The Logical address of the master node: :python:`0o0`
 
     .. csv-table::
         :header: "pipe", "Physical Address (hexadecimal)"
@@ -253,7 +254,7 @@ For example:
         4, ``CC CC CC CC 3E``
         5, ``CC CC CC CC E3``
 
-    The Logical address of the master node's first child: ``0o1``
+    The Logical address of the master node's first child: :python:`0o1`
 
     .. csv-table::
         :header: "pipe", "Physical Address (hexadecimal)"
@@ -264,7 +265,7 @@ For example:
         4, ``CC CC CC 3C 3E``
         5, ``CC CC CC 3C E3``
 
-    The Logical address of the master node's second child: ``0o2``
+    The Logical address of the master node's second child: :python:`0o2`
 
     .. csv-table::
         :header: "pipe", "Physical Address (hexadecimal)"
@@ -275,7 +276,8 @@ For example:
         4, ``CC CC CC 33 3E``
         5, ``CC CC CC 33 E3``
 
-    The Logical address of the master node's third child's second child's first child: ``0o123``
+    The Logical address of the master node's third child's second child's first child:
+    :python:`0o123`
 
     .. csv-table::
         :header: "pipe", "Physical Address (hexadecimal)"
@@ -396,11 +398,11 @@ we will examine the connecting process for a RF24Mesh node. These are the steps 
 when calling `renew_address()`:
 
 1. Any RF24Mesh node not connected to a network will use the `Logical Address <logical address>`
-   ``0o444`` (that's ``2340`` in decimal). It is up to the network administrator to ensure that
-   each RF24Mesh node has a unique `node_id` (which is limited to the range [0, 255]).
+   :python:`0o444` (that's :python:`2340` in decimal). It is up to the network administrator to
+   ensure that each RF24Mesh node has a unique `node_id` (which is limited to the range [0, 255]).
 
    .. hint::
-       Remember that ``0`` is reserved the master node's `node_id`.
+       Remember that :python:`0` is reserved the master node's `node_id`.
 2. To get assigned a `Logical Address <logical address>`, an unconnected node must poll the
    network for a response (using a `NETWORK_POLL` message). Initially this happens on the
    network level 0, but consecutive attempts will poll higher network levels (in order of low to

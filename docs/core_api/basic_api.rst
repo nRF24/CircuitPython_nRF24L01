@@ -22,7 +22,7 @@ Basic RF24 API
         CSN (Chip Select Not) pin. This is required.
     :param ~digitalio.DigitalInOut ce_pin: The digital output pin that is connected to the nRF24L01's
         CE (Chip Enable) pin. This is required.
-    :param int spi_frequency: Specify which SPI frequency (in Hz) to use on the SPI bus. This
+    :param spi_frequency: Specify which SPI frequency (in Hz) to use on the SPI bus. This
         parameter only applies to the instantiated `RF24` object and is made persistent via
         :py:class:`~adafruit_bus_device.SPIDevice`.
 
@@ -34,7 +34,7 @@ Basic RF24 API
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.open_tx_pipe
 
-    :param bytearray,bytes address: The virtual address of the receiving nRF24L01. The address
+    :param address: The virtual address of the receiving nRF24L01. The address
         specified here must match the address set to one of the RX data pipes of the receiving
         nRF24L01. The existing address can be altered by writing a bytearray with a length
         less than 5. The nRF24L01 will use the first `address_length` number of bytes for the
@@ -48,7 +48,7 @@ Basic RF24 API
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.close_rx_pipe
 
-    :param int pipe_number: The data pipe to use for RX transactions. This must be in range
+    :param pipe_number: The data pipe to use for RX transactions. This must be in range
         [0, 5]. Otherwise a `IndexError` exception is thrown.
 
     .. versionchanged:: 1.2.0
@@ -57,9 +57,9 @@ Basic RF24 API
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.open_rx_pipe
 
-    :param int pipe_number: The data pipe to use for RX transactions. This must be in range
+    :param pipe_number: The data pipe to use for RX transactions. This must be in range
         [0, 5]. Otherwise a `IndexError` exception is thrown.
-    :param bytearray,bytes address: The virtual address to the receiving nRF24L01. If using a
+    :param address: The virtual address to the receiving nRF24L01. If using a
         ``pipe_number`` greater than 1, then only the MSByte of the address is written, so make
         sure MSByte (first character) is unique among other simultaneously receiving addresses.
         The existing address can be altered by writing a bytearray with a length less than 5.
@@ -69,7 +69,7 @@ Basic RF24 API
     .. note:: The nRF24L01 shares the addresses' last 4 LSBytes on data pipes 2 through
         5. These shared LSBytes are determined by the address set to data pipe 1.
 
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.listen
+.. autoproperty:: circuitpython_nrf24l01.rf24.RF24.listen
 
     Setting this attribute incorporates the proper transitioning to/from RX mode as it involves
     playing with the `power` attribute and the nRF24L01's CE pin. This attribute does not power
@@ -120,7 +120,7 @@ Basic RF24 API
     The `irq_dr` status flag is reset automatically. This function can also be used to fetch
     the last ACK packet's payload if `ack` is enabled.
 
-    :param int length: An optional parameter to specify how many bytes to read from the RX
+    :param length: An optional parameter to specify how many bytes to read from the RX
         FIFO buffer. This parameter is not constrained in any way.
 
         - If this parameter is less than the length of the first available payload in the
@@ -175,7 +175,7 @@ Basic RF24 API
           transmission) as a `bytearray` (or `True` if ACK payload is empty). Returning the
           ACK payload can be bypassed by setting the ``send_only`` parameter as `True`.
 
-    :param bytearray,bytes,list,tuple buf: The payload to transmit. This bytearray must have a
+    :param buf: The payload to transmit. This bytearray must have a
         length in range [1, 32], otherwise a `ValueError` exception is thrown when the
         `dynamic_payloads` attribute is enabled. This can
         also be a list or tuple of payloads (`bytearray`); in which case, all items in the
@@ -189,7 +189,7 @@ Basic RF24 API
             bytearray's length is greater than `payload_length` attribute for pipe 0,
             then this bytearray's length is truncated to equal the `payload_length`
             attribute for pipe 0.
-    :param bool ask_no_ack: Pass this parameter as `True` to tell the nRF24L01 not to wait
+    :param ask_no_ack: Pass this parameter as `True` to tell the nRF24L01 not to wait
         for an acknowledgment from the receiving nRF24L01. This parameter directly controls a
         ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information
         about the payload). Therefore, it takes advantage of an nRF24L01 feature specific to
@@ -206,7 +206,7 @@ Basic RF24 API
             Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
             nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1136318>`_ for more
             details.
-    :param int force_retry: The number of brute-force attempts to `resend()` a failed
+    :param force_retry: The number of brute-force attempts to `resend()` a failed
         transmission. Default is 0. This parameter has no affect on transmissions if
         `auto_ack` is disabled or if ``ask_no_ack`` parameter is set to `True`. Each
         re-attempt still takes advantage of
@@ -214,7 +214,7 @@ Basic RF24 API
         processing, this parameter is meant to slow down CircuitPython devices just enough
         for the Raspberry Pi to catch up (due to the Raspberry Pi's seemingly slower SPI
         speeds).
-    :param bool send_only: This parameter only applies when the `ack` attribute is set to
+    :param send_only: This parameter only applies when the `ack` attribute is set to
         `True`. Pass this parameter as `True` if the RX FIFO is not to be manipulated. Many
         other libraries' behave as though this parameter is `True`
         (e.g. The popular TMRh20 Arduino RF24 library). This parameter defaults to `False`.

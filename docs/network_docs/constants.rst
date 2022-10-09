@@ -67,9 +67,9 @@ Reserved Network Message Types
 
     .. important::
         NETWORK_ACK messages are only sent by the last node in the route to a
-        destination. For example: Node ``0o0`` sends an instigating message to node
-        ``0o11``. The NETWORK_ACK message is sent from node ``0o1`` when it confirms node
-        ``0o11`` received the instigating message.
+        destination. For example: Node :python:`0o0` sends an instigating message to node
+        :python:`0o11`. The NETWORK_ACK message is sent from node :python:`0o1` when it
+        confirms node :python:`0o11` received the instigating message.
     .. hint::
         This feature is not flawless because it assumes a reliable connection
         between all necessary network nodes.

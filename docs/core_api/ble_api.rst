@@ -88,10 +88,10 @@ here has been adapted to work with CircuitPython.
 
 .. autofunction:: circuitpython_nrf24l01.fake_ble.chunk
 
-    :param bytearray,bytes buf: The actual data contained in the block.
-    :param int data_type: The type of data contained in the chunk. This is a
+    :param buf: The actual data contained in the block.
+    :param data_type: The type of data contained in the chunk. This is a
         predefined number according to BLE specifications. The default value
-        ``0x16`` describes all service data. ``0xFF`` describes manufacturer
+        :python:`0x16` describes all service data. :python:`0xFF` describes manufacturer
         information. Any other values are not applicable to BLE
         advertisements.
 
@@ -115,11 +115,11 @@ here has been adapted to work with CircuitPython.
     This is exposed for convenience and should not be used for other buffer
     protocols that require big endian CRC24 format.
 
-    :param bytearray,bytes data: The buffer of data to be uncorrupted.
-    :param int deg_poly: A preset "degree polynomial" in which each bit
+    :param data: The buffer of data to be uncorrupted.
+    :param deg_poly: A preset "degree polynomial" in which each bit
         represents a degree who's coefficient is 1. BLE specifications require
         ``0x00065b`` (default value).
-    :param int init_val: This will be the initial value that the checksum
+    :param init_val: This will be the initial value that the checksum
         will use while shifting in the buffer data. BLE specifications require
         ``0x555555`` (default value).
     :returns: A 24-bit `bytearray` representing the checksum of the data (in
@@ -131,9 +131,9 @@ here has been adapted to work with CircuitPython.
     `FakeBLE` class to allow whitening and dewhitening a BLE payload without the
     hardcoded coefficient.
 
-    :param bytes,bytearray buf: The BLE payloads data. This data should include the
+    :param buf: The BLE payloads data. This data should include the
         CRC24 checksum.
-    :param int coef: The whitening coefficient used to avoid repeating binary patterns.
+    :param coef: The whitening coefficient used to avoid repeating binary patterns.
         This is the index of `BLE_FREQ` tuple for nRF24L01 channel that the payload transits
         (plus 37).
 
@@ -185,12 +185,12 @@ FakeBLE class
         For all parameters' descriptions, see the
         :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' constructor documentation.
 
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.mac
+.. autoproperty:: circuitpython_nrf24l01.fake_ble.FakeBLE.mac
 
    You can set this attribute using a 6-byte `int` or `bytearray`. If this is
    set to `None`, then a random 6-byte address is generated.
 
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.name
+.. autoproperty:: circuitpython_nrf24l01.fake_ble.FakeBLE.name
 
     This is not required. In fact, setting this attribute will subtract from
     the available payload length (in bytes). Set this attribute to `None` to
@@ -206,7 +206,7 @@ FakeBLE class
     .. versionchanged:: 2.2.0
         This attribute can also be set with a `str`, but it must be UTF-8 compatible.
 
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.show_pa_level
+.. autoproperty:: circuitpython_nrf24l01.fake_ble.FakeBLE.show_pa_level
 
     The default value of `False` will exclude this optional information.
 
@@ -214,7 +214,7 @@ FakeBLE class
         really only useful for some applications to calculate proximity to the
         nRF24L01 transceiver.
 
-.. autoattribute:: circuitpython_nrf24l01.fake_ble.FakeBLE.channel
+.. autoproperty:: circuitpython_nrf24l01.fake_ble.FakeBLE.channel
 
     The only allowed channels are those contained in the `BLE_FREQ` tuple.
 
@@ -267,7 +267,7 @@ FakeBLE class
     :returns: Nothing as every transmission will register as a success
         under the required settings for BLE beacons.
 
-    :param bytearray buf: The payload to transmit. This bytearray must have
+    :param buf: The payload to transmit. This bytearray must have
         a length greater than 0 and less than 22 bytes Otherwise a
         `ValueError` exception is thrown whose prompt will tell you the
         maximum length allowed under the current configuration. This can
@@ -275,7 +275,7 @@ FakeBLE class
         all items in the list/tuple are processed are packed into 1
         payload for a single transmissions. See example code below about
         passing a `list` or `tuple` to this parameter.
-    :param int data_type: This is used to describe the buffer data passed
+    :param data_type: This is used to describe the buffer data passed
         to the ``buf`` parameter. ``0x16`` describes all service data. The
         default value ``0xFF`` describes manufacturer information. This
         parameter is ignored when a `tuple` or `list` is passed to the
@@ -397,7 +397,7 @@ Abstract Parent
     :members:
     :special-members: __len__,__repr__
 
-    :param int uuid: The 16-bit UUID `"GATT Service assigned number"
+    :param uuid: The 16-bit UUID `"GATT Service assigned number"
         <https://specificationrefs.bluetooth.com/assigned-values/16-bit%20UUID%20Numbers%20Document.pdf#page=19>`_ defined by the
         Bluetooth SIG to describe the service data. This parameter is
         required.

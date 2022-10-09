@@ -182,14 +182,15 @@ class NetworkMixin(RadioMixin):
         self._relay_enabled, self._frag_enabled = (False, True)
 
         #: The timeout (in milliseconds) to wait for successful transmission.
-        self.tx_timeout = 25
+        self.tx_timeout: int = 25
         #: The timeout (in milliseconds) to wait for transmission's `NETWORK_ACK`.
-        self.route_timeout = 3 * self.tx_timeout
+        self.route_timeout: int = 3 * self.tx_timeout
         #: enable/disable (`True`/`False`) multicasting
-        self.allow_multicast = True
-        self.ret_sys_msg = False  #: Force `update()` to return on system message types.
+        self.allow_multicast: bool = True
+        #: Force `update()` to return on system message types.
+        self.ret_sys_msg: bool = False
         self._parenthood = True  # can mesh nodes respond to NETWORK_POLL messages?
-        self.max_message_length = 144  #: The maximum length of a frame's message.
+        self.max_message_length: int = 144  #: The maximum length of a frame's message.
         #: The queue (FIFO) of received frames for this node
         self.queue: Union[FrameQueueFrag, FrameQueue] = FrameQueueFrag()
         #: A buffer containing the last frame handled by the network node
@@ -267,8 +268,7 @@ class NetworkMixin(RadioMixin):
 
     @property
     def node_address(self) -> int:
-        """get/set the node's :ref:`Logical Address <Logical Address>` for the
-        `RF24Network` object."""
+        """The node's :ref:`Logical Address <Logical Address>`."""
         return self._addr
 
     @property
@@ -313,7 +313,7 @@ class NetworkMixin(RadioMixin):
 
     @property
     def parent(self) -> int:
-        """Get address for the parent node"""
+        """Get address for the parent node (read-only)."""
         return self._parent
 
     def _pipe_address(self, node_addr: int, pipe_number: int) -> bytearray:

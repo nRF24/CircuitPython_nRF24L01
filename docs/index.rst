@@ -232,7 +232,7 @@ For CircuitPython devices
 1. Copy the examples to the root directory of the CIRCUITPY device.
 2. Rename the desired example file to ``main.py``.
 3. If the REPL is not already running, then the example should start automatically.
-   If the REPL is already running in interactive mode, then press ``ctrl+d`` to do a
+   If the REPL is already running in interactive mode, then press :keys:`ctrl+D` to do a
    soft reset, and the example should start automatically.
 
 For CPython in Linux

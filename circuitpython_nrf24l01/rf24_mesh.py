@@ -28,7 +28,7 @@ try:
 except ImportError:
     pass  # some CircuitPython boards don't have the json module
 try:
-    from typing import Union, Dict, List
+    from typing import Union, Dict, List, Optional, Callable, Any
 except ImportError:
     pass
 import busio  # type:ignore[import]
@@ -70,7 +70,7 @@ class RF24MeshNoMaster(NetworkMixin):
         super().__init__(spi, csn_pin, ce_pin, spi_frequency)
         self._id = min(255, node_id)
         #: This variable can be assigned a function to perform during long operations.
-        self.block_less_callback = None
+        self.block_less_callback: Optional[Callable[[], Any]] = None
         self.ret_sys_msg = True  # force _net_update() to return system message types
         self._begin(0 if not node_id else NETWORK_DEFAULT_ADDR)  # setup radio
 

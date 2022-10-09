@@ -24,7 +24,7 @@ transactions."""
 import struct
 
 try:
-    from typing import Union, Optional
+    from typing import Union, Optional, List
 except ImportError:
     pass
 from .constants import (
@@ -126,10 +126,12 @@ class RF24NetworkFrame:
             raise TypeError("header must be a RF24NetworkHeader object")
         if message is not None and not isinstance(message, (bytes, bytearray)):
             raise TypeError("message must be a `bytes` or `bytearray` object")
-        self.header = header if header is not None else RF24NetworkHeader()
-        """The `RF24NetworkHeader` about the frame's `message`."""
-        self.message = bytes(0) if message is None else bytearray(message)
-        """The entire message or a fragment of a message allocated to the frame."""
+        #: The `RF24NetworkHeader` about the frame's `message`.
+        self.header: RF24NetworkHeader = (
+            RF24NetworkHeader() if header is None else header
+        )
+        #: The entire message or a fragment of a message allocated to the frame.
+        self.message: Union[bytes, bytearray] = bytes(0) if message is None else message
 
     def unpack(self, buffer: Union[bytes, bytearray]) -> bool:
         """Decode the `header` & `message` from a ``buffer``."""
@@ -153,13 +155,13 @@ class RF24NetworkFrame:
 class FrameQueue:
     """A class that wraps a `list` with RF24Network Queue behavior."""
 
-    def __init__(self, queue=None):
+    def __init__(self, queue: Union["FrameQueue", "FrameQueueFrag"] = None):
         #: The maximum number of frames that can be enqueued at once. Defaults to 6.
-        self.max_queue_size = 6
-        self._queue = []
+        self.max_queue_size: int = 6
+        self._queue: List[RF24NetworkFrame] = []
         if queue is not None:
             while queue:
-                self._queue.append(queue.dequeue())
+                self._queue.append(queue.dequeue())  # type: ignore[arg-type]
             self.max_queue_size = queue.max_queue_size
         super().__init__()
 
@@ -195,7 +197,7 @@ class FrameQueue:
 class FrameQueueFrag(FrameQueue):
     """A specialized `FrameQueue` with an additional cache for fragmented frames."""
 
-    def __init__(self, queue=None):
+    def __init__(self, queue: Union["FrameQueue", "FrameQueueFrag"] = None):
         super().__init__(queue)
         self._frags = RF24NetworkFrame()  # initialize cache
 

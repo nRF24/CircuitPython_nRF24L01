@@ -45,7 +45,9 @@ DYN_PL_LEN = const(0x1C)  # dynamic payloads status for all pipes
 TX_FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
 
 
-def address_repr(buf, reverse: bool = True, delimit: str = "") -> str:
+def address_repr(
+    buf: Union[bytes, bytearray], reverse: bool = True, delimit: str = ""
+) -> str:
     """Convert a buffer into a hexlified string."""
     order = range(len(buf) - 1, -1, -1) if reverse else range(len(buf))
     return delimit.join(["%02X" % buf[byte] for byte in order])
@@ -688,7 +690,7 @@ class RF24:
         self._features = self._features & 5 | bool(enable) << 1
         self._reg_write(TX_FEATURE, self._features)
 
-    def load_ack(self, buf, pipe_number: int) -> bool:
+    def load_ack(self, buf: Union[bytes, bytearray], pipe_number: int) -> bool:
         """Load a payload into the TX FIFO for use on a specific data pipe."""
         if pipe_number < 0 or pipe_number > 5:
             raise IndexError("pipe_number must be in range [0, 5]")

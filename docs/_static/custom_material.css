@@ -84,3 +84,7 @@ thead {
   background-color: var(--md-default-fg-color--light);
   color: var(--md-primary-bg-color);
 }
+
+.viewcode-block .viewcode-back {
+  float: right;
+}

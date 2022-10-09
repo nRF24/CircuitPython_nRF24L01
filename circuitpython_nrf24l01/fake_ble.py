@@ -109,12 +109,12 @@ class QueueElement:
 
     def __init__(self, buffer: bytearray):
         #: The transmitting BLE device's MAC address as a `bytes` object.
-        self.mac = bytes(buffer[2:8])
+        self.mac: Union[bytes, bytearray] = bytes(buffer[2:8])
         self.name: Optional[Union[str, bytes]] = None
         """The transmitting BLE device's name. This will be a `str`, `bytes` object (if
         a `UnicodeError` was caught), or `None` (if not included in the received
         payload)."""
-        self.pa_level = None
+        self.pa_level: Optional[int] = None
         """The transmitting device's PA Level (if included in the received payload)
         as an `int`.
 
@@ -197,7 +197,7 @@ class FakeBLE(RF24):
             super().open_rx_pipe(0, b"\x71\x91\x7D\x6B\0")
         #: The internal queue of received BLE payloads' data.
         self.rx_queue: List[QueueElement] = []
-        self.rx_cache = bytearray(0)
+        self.rx_cache: bytearray = bytearray(0)
         """The internal cache used when validating received BLE payloads."""
         self.hop_channel()
 

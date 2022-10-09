@@ -28,7 +28,7 @@ RF24NetworkRoutingOnly class
     This is meant to be the python equivalent to TMRh20's ``DISABLE_USER_PAYLOADS`` macro in the
     C++ RF24Network library.
 
-    :param int node_address: The octal `int` for this node's :ref:`Logical Address <Logical Address>`
+    :param node_address: The octal `int` for this node's :ref:`Logical Address <Logical Address>`
 
     .. seealso::
         For all other parameters' descriptions, see the
@@ -40,7 +40,7 @@ RF24Network class
 .. autoclass:: circuitpython_nrf24l01.rf24_network.RF24Network
     :show-inheritance:
 
-    :param int node_address: The octal `int` for this node's :ref:`Logical Address <Logical Address>`
+    :param node_address: The octal `int` for this node's :ref:`Logical Address <Logical Address>`
 
     .. seealso::
         For all other parameters' descriptions, see the
@@ -49,7 +49,7 @@ RF24Network class
 Basic API
 *********
 
-.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.node_address
+.. autoproperty:: circuitpython_nrf24l01.rf24_network.RF24Network.node_address
 
     Setting this attribute will alter
 
@@ -117,9 +117,9 @@ Advanced API
 
 .. automethod:: circuitpython_nrf24l01.rf24_network.RF24Network.multicast
 
-    :param bytes,bytearray message: The outgoing frame's `message`.
-    :param str,int message_type: The outgoing frame's `message_type`.
-    :param int level: The `network level <topology.html#network-levels>`_ of nodes to broadcast to.
+    :param message: The outgoing frame's `message`.
+    :param message_type: The outgoing frame's `message_type`.
+    :param level: The `network level <topology.html#network-levels>`_ of nodes to broadcast to.
         If this optional parameter is not specified, then the node's `multicast_level` is used.
 
     .. seealso:: `multicast_level`, `multicast_relay`, and `allow_multicast`
@@ -162,9 +162,9 @@ Advanced API
                 # let `nrf` be the instantiated RF24Network object
                 nrf.write(my_q.dequeue())
 
-    :param RF24NetworkFrame frame: The complete frame to send. It is important to
+    :param frame: The complete frame to send. It is important to
         have the header's `to_node` attribute set to the target network node's address.
-    :param int traffic_direct: The specified direction of the frame. By default, this
+    :param traffic_direct: The specified direction of the frame. By default, this
         will invoke the automatic routing mechanisms. However, this parameter
         can be set to a network node's :ref:`Logical Address <logical address>` for direct
         transmission to the specified node - meaning the transmission's automatic routing
@@ -183,36 +183,36 @@ Advanced API
             there is a reliable/open connection to the `node_address` passed to ``traffic_direct``.
         .. tip:: |use_msg_t|
 
-.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.parent
+.. autoproperty:: circuitpython_nrf24l01.rf24_network.RF24Network.parent
 
-    Returns ``0`` if called on the network's master node.
+    Returns :python:`0` if called on the network's master node.
 
 Configuration API
 *****************
 
 .. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.max_message_length
 
-    By default this is set to ``144``. If a network node is driven by the TMRh20
-    RF24Network library on a ATTiny-based board, set this to ``72`` (as per TMRh20's
+    By default this is set to :python:`144`. If a network node is driven by the TMRh20
+    RF24Network library on a ATTiny-based board, set this to :python:`72` (as per TMRh20's
     RF24Network library default behavior).
 
     Configuring the `fragmentation` attribute will automatically change the value that
     `max_message_length` attribute is set to.
 
-.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.fragmentation
+.. autoproperty:: circuitpython_nrf24l01.rf24_network.RF24Network.fragmentation
 
     Changing this attribute's state will also appropriately changes the type of `FrameQueue`
     (or `FrameQueueFrag`) object used for storing incoming network packets. Disabling
     fragmentation can save some memory (not as much as TMRh20's RF24Network library's
-    ``DISABLE_FRAGMENTATION`` macro), but `max_message_length` will be limited to ``24`` bytes
-    (`MAX_FRAG_SIZE`) maximum. Enabling this attribute will set `max_message_length` attribute
-    to ``144`` bytes.
+    ``DISABLE_FRAGMENTATION`` macro), but `max_message_length` will be limited to :python:`24`
+    bytes (`MAX_FRAG_SIZE`) maximum. Enabling this attribute will set `max_message_length`
+    attribute to :python:`144` bytes.
 
-.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.multicast_relay
+.. autoproperty:: circuitpython_nrf24l01.rf24_network.RF24Network.multicast_relay
 
     Forwarded frames will also be enqueued on the forwarding node as a received frame.
 
-.. autoattribute:: circuitpython_nrf24l01.rf24_network.RF24Network.multicast_level
+.. autoproperty:: circuitpython_nrf24l01.rf24_network.RF24Network.multicast_level
 
     Setting this attribute will also change the :ref:`physical address <Physical Address>`
     on the radio's RX data pipe 0.
