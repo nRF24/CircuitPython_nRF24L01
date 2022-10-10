@@ -82,6 +82,14 @@ jobs:
           tr '_' '-'
           )
 
+      - name: Translate Repo Name For Build Tools package_prefix
+        id: pkg-name
+        run: |
+          echo ::set-output name=pkg-name::$(
+          echo ${{ github.repository }} |
+          awk -F '\/' '{ print tolower($2) }'
+          )
+
       - uses: actions/checkout@v3
 
       - name: Set up Python 3.x
@@ -93,7 +101,7 @@ jobs:
         run: pip install circuitpython-build-tools
 
       - name: Build assets
-        run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --package_folder_prefix "" --library_location .
+        run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --package_folder_prefix ${{ steps.pkg-name.outputs.pkg-name }} --library_location .
 
       - name: Archive bundles
         uses: actions/upload-artifact@v3

@@ -23,6 +23,14 @@ jobs:
           tr '_' '-'
           )
 
+      - name: Translate Repo Name For Build Tools package_prefix
+        id: pkg-name
+        run: |
+          echo ::set-output name=pkg-name::$(
+          echo ${{ github.repository }} |
+          awk -F '\/' '{ print tolower($2) }'
+          )
+
       - name: Set up Python 3.x
         uses: actions/setup-python@v2
         with:
@@ -45,7 +53,7 @@ jobs:
           source actions-ci/install.sh
 
       - name: Build assets
-        run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --package_folder_prefix "" --library_location .
+        run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --package_folder_prefix ${{ steps.pkg-name.outputs.pkg-name }} --library_location .
 
       - name: Upload Release Assets
         # the 'official' actions version does not yet support dynamically
