@@ -1,6 +1,19 @@
 """Simple tests for Network data structures."""
+import struct
 from typing import Union, Optional, List
 import pytest
+from circuitpython_nrf24l01.fake_ble import (
+    chunk,
+    FakeBLE,
+    QueueElement,
+    ServiceData,
+    BatteryServiceData,
+    TemperatureServiceData,
+    UrlServiceData,
+    BATTERY_UUID,
+    TEMPERATURE_UUID,
+    EDDYSTONE_UUID,
+)
 from circuitpython_nrf24l01.network.structs import (
     is_address_valid,
     RF24NetworkHeader,
@@ -114,3 +127,39 @@ def test_frag_queue(types: List[int]):
             frame.header.reserved = MSG_FRAG_LAST - typ
         print("queueing frame", frame.header.to_string())
         assert queue.enqueue(frame)
+
+
+@pytest.mark.parametrize("dev_name", [b"n", b"\xFF", None])
+def test_queue_element(ble_obj: FakeBLE, dev_name: Optional[bytes]):
+    """test the deciphering of BLE payload data from buffers."""
+    batt = BatteryServiceData()
+    batt.data = 100
+    assert "100%" in str(batt)
+    assert batt.uuid == struct.pack("<H", BATTERY_UUID)
+    assert len(batt) == 3
+    temp = TemperatureServiceData()
+    temp.data = 32.1
+    assert "32.1 C" in str(temp)
+    assert temp.uuid == struct.pack("<H", TEMPERATURE_UUID)
+    assert len(temp) == 6
+    url = UrlServiceData()
+    url.data = "https://null.com/"  # payload size is a significant factor with URLs
+    url.pa_level_at_1_meter = 20
+    assert "https://null.com/" in str(url)
+    assert url.uuid == struct.pack("<H", EDDYSTONE_UUID)
+    assert url.pa_level_at_1_meter == 20
+    assert len(url) == 10  # enough to include a 1 char name and pa_level in payload
+
+    ble_obj.name = dev_name
+    ble_obj.show_pa_level = True
+    for data in [batt, temp, url]:
+        queue = QueueElement(ble_obj._make_payload(chunk(data.buffer, 0x16)))
+        assert queue.mac == ble_obj.mac
+        if isinstance(queue.name, str):
+            assert queue.name == ble_obj.name.decode(encoding="utf-8")
+        else:
+            assert queue.name == ble_obj.name
+        assert queue.pa_level == ble_obj.pa_level
+        for chunk_d in queue.data:
+            if isinstance(chunk_d, ServiceData):
+                assert chunk_d.data == data.data
