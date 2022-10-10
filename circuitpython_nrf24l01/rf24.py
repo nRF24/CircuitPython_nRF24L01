@@ -63,16 +63,15 @@ class RF24:
         ce_pin: DigitalInOut,
         spi_frequency=10000000,
     ):
-        self._in = bytearray(97)  # for full RX FIFO reads + STATUS byte
-        self._out = bytearray(33)  # for max payload writes + STATUS byte
+        self._in = bytearray(97)  # MISO buffer for full RX FIFO reads + STATUS byte
+        self._out = bytearray(97)  # MOSI buffer length must equal MISO buffer length
         self._ce_pin = ce_pin
         self._ce_pin.switch_to_output(value=False)
         # init shadow copy of RX addresses for all pipes for context manager
         self._pipes = [bytearray(5)] * 2 + [0] * 4
-        # self._in[0] = status byte returned on all SPI transactions
         # pre-configure the CONFIGURE register:
         #   0x0E = all IRQs enabled, CRC is 2 bytes, and power up in TX mode
-        self._in[0], self._config = (0, 0x0E)
+        self._config = 0x0E
         # setup SPI
         if type(spi).__name__.endswith("SpiDev"):
             self._spi = SPIDevCtx(spi, csn, spi_frequency=spi_frequency)

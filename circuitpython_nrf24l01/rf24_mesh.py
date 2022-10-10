@@ -91,7 +91,7 @@ class RF24MeshNoMaster(NetworkMixin):
         print("Network node id____________{}".format(self.node_id))
         print("Mesh node allows children__{}".format(self._parenthood))
         if dump_pipes:
-            self._rf24.print_pipes()
+            self.print_pipes()
 
     def release_address(self) -> bool:
         """Forces an address lease to expire from the master."""

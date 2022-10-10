@@ -264,7 +264,7 @@ class NetworkMixin(RadioMixin):
         print("Network Routing timeout___{} milliseconds".format(self.route_timeout))
         print("Network node address_______{}".format(oct(self._addr)))
         if dump_pipes:
-            self._rf24.print_pipes()
+            self.print_pipes()
 
     @property
     def node_address(self) -> int:
