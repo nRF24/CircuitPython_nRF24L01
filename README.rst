@@ -31,7 +31,7 @@ This is a Circuitpython driver library for the nRF24L01 transceiver.
 
 Originally this code was a Micropython module written by Damien P. George
 & Peter Hinch which can still be found `here
-<https://github.com/micropython/micropython/tree/master/drivers/nrf24l01>`_
+<https://github.com/micropython/micropython-lib/tree/master/micropython/drivers/radio/nrf24l01>`_
 
 The Micropython source has since been rewritten to expose all the nRF24L01's
 features and for Circuitpython compatible devices (including linux-based
