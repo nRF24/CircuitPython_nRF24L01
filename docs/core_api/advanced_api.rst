@@ -22,7 +22,7 @@ Advanced RF24 API
     :returns: Data returned from this function follows the same pattern that `send()`
         returns with the added condition that this function will return `False` if the TX
         FIFO buffer is empty.
-    :param bool send_only: This parameter only applies when the `ack` attribute is set to
+    :param send_only: This parameter only applies when the `ack` attribute is set to
         `True`. Pass this parameter as `True` if the RX FIFO is not to be manipulated. Many
         other libraries' behave as though this parameter is `True`
         (e.g. The popular TMRh20 Arduino RF24 library). This parameter defaults to `False`.
@@ -46,8 +46,9 @@ Advanced RF24 API
 
     :returns: `True` if the payload was added to the TX FIFO buffer. `False` if the TX FIFO
         buffer is already full, and no payload could be added to it.
-    :param bytearray buf: The payload to transmit. This bytearray must have a length greater
-        than 0 and less than 32 bytes, otherwise a `ValueError` exception is thrown.
+    :param buf: The payload to transmit. This bytearray must have a length greater
+        than 0 and less than 32 bytes, otherwise a `ValueError` exception is thrown when the
+        `dynamic_payloads` attribute is enabled.
 
         - If the `dynamic_payloads` attribute is disabled for data pipe 0 and this bytearray's
           length is less than the `payload_length` attribute for data pipe 0, then this
@@ -57,7 +58,7 @@ Advanced RF24 API
           length is greater than `payload_length` attribute for data pipe 0, then this
           bytearray's length is truncated to equal the `payload_length` attribute for data
           pipe 0.
-    :param bool ask_no_ack: Pass this parameter as `True` to tell the nRF24L01 not to wait for
+    :param ask_no_ack: Pass this parameter as `True` to tell the nRF24L01 not to wait for
         an acknowledgment from the receiving nRF24L01. This parameter directly controls a
         ``NO_ACK`` flag in the transmission's Packet Control Field (9 bits of information about
         the payload). Therefore, it takes advantage of an nRF24L01 feature specific to
@@ -74,7 +75,7 @@ Advanced RF24 API
             Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
             nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1136318>`_ for more
             details.
-    :param bool write_only: This function will not manipulate the nRF24L01's CE pin if this
+    :param write_only: This function will not manipulate the nRF24L01's CE pin if this
         parameter is `True`. The default value of `False` will ensure that the CE pin is
         HIGH upon exiting this function. This function does not set the CE pin LOW at
         any time. Use this parameter as `True` to fill the TX FIFO buffer before beginning
@@ -119,12 +120,12 @@ Advanced RF24 API
     (ACK) packet that is sent when *new* data is received on the specified pipe. See
     `read()` on how to fetch a received custom ACK payloads.
 
-    :param bytearray,bytes buf: This will be the data attached to an automatic ACK packet on the
+    :param buf: This will be the data attached to an automatic ACK packet on the
         incoming transmission about the specified ``pipe_number`` parameter. This must have a
         length in range [1, 32] bytes, otherwise a `ValueError` exception is thrown. Any ACK
         payloads will remain in the TX FIFO buffer until transmitted successfully or
         `flush_tx()` is called.
-    :param int pipe_number: This will be the pipe number to use for deciding which
+    :param pipe_number: This will be the pipe number to use for deciding which
         transmissions get a response with the specified ``buf`` parameter's data. This number
         must be in range [0, 5], otherwise a `IndexError` exception is thrown.
 
@@ -143,7 +144,7 @@ Advanced RF24 API
         (TX FIFO buffer) if it can. Use `flush_tx()` to discard unused ACK payloads when done
         listening.
 
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.power
+.. autoproperty:: circuitpython_nrf24l01.rf24.RF24.power
 
     This is exposed for convenience.
 
@@ -162,7 +163,7 @@ Advanced RF24 API
         nRF24L01+ Specifications Sheet <https://www.sparkfun.com/datasheets/Components/SMD/
         nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1132980>`_ for more details.
 
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.address_length
+.. autoproperty:: circuitpython_nrf24l01.rf24.RF24.address_length
 
     A valid input value must be an `int` in range [3, 5]. Default is set to the nRF24L01's maximum of 5.
     Any invalid input value results in a address length of 2 bytes.
@@ -177,19 +178,19 @@ Advanced RF24 API
     This function returns the full content of the nRF24L01's registers about RX/TX addresses
     despite what `address_length` is set to.
 
-    :param int index: the number of the data pipe whose address is to be returned. A valid
+    :param index: the number of the data pipe whose address is to be returned. A valid
         index ranges [0,5] for RX addresses or any negative number for the TX address.
         Otherwise an `IndexError` is thrown. This parameter defaults to ``-1``.
 
     .. versionadded:: 1.2.0
 
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.last_tx_arc
+.. autoproperty:: circuitpython_nrf24l01.rf24.RF24.last_tx_arc
 
     This attribute resets to 0 at the beginning of every transmission in TX mode.
     Remember that the number of automatic retry attempts made for each transmission is
     configured with the `arc` attribute or the `set_auto_retries()` function.
 
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.is_plus_variant
+.. autoproperty:: circuitpython_nrf24l01.rf24.RF24.is_plus_variant
 
     This information is determined upon instantiation.
 
@@ -244,7 +245,7 @@ Debugging Output
         - ``Primary Mode`` The current mode (RX or TX) of communication of the nRF24L01 device.
         - ``Power Mode`` The power state can be Off, Standby-I, Standby-II, or On.
 
-    :param bool dump_pipes: `True` appends the output and prints:
+    :param dump_pipes: `True` appends the output and prints:
 
         - the current address used for TX transmissions. This value is the entire content of
           the nRF24L01's register about the TX address (despite what `address_length` is set
@@ -282,13 +283,13 @@ Debugging Output
         >>> address_repr(b"1Node")
         '65646F4E31'
 
-    :param bytes,bytearray buf: The buffer of bytes to convert into a hexlified
+    :param buf: The buffer of bytes to convert into a hexlified
         string.
-    :param bool reverse: A `bool` to control the resulting endianess. `True`
+    :param reverse: A `bool` to control the resulting endianess. `True`
         outputs the result as big endian. `False` outputs the result as little
         endian. This parameter defaults to `True` since `bytearray` and `bytes`
         objects are stored in big endian but written in little endian.
-    :param str delimit: A `chr` or `str` to use as a delimiter between bytes.
+    :param delimit: A `chr` or `str` to use as a delimiter between bytes.
         Defaults to an empty string.
 
     :Returns:
@@ -302,7 +303,7 @@ Debugging Output
 Status Byte
 ******************************
 
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.tx_full
+.. autoproperty:: circuitpython_nrf24l01.rf24.RF24.tx_full
 
 
     |update manually| (especially after calling
@@ -314,7 +315,7 @@ Status Byte
         - `False` for TX FIFO buffer is not full. This doesn't mean the TX FIFO buffer is
           empty.
 
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.irq_dr
+.. autoproperty:: circuitpython_nrf24l01.rf24.RF24.irq_dr
 
 
     :Returns:
@@ -332,7 +333,7 @@ Status Byte
     |update manually| (especially after calling
     :py:func:`~circuitpython_nrf24l01.rf24.RF24.clear_status_flags()`).
 
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.irq_df
+.. autoproperty:: circuitpython_nrf24l01.rf24.RF24.irq_df
 
 
     :Returns:
@@ -349,7 +350,7 @@ Status Byte
     |update manually| (especially after calling
     :py:func:`~circuitpython_nrf24l01.rf24.RF24.clear_status_flags()`).
 
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.irq_ds
+.. autoproperty:: circuitpython_nrf24l01.rf24.RF24.irq_ds
 
 
     :Returns:
@@ -378,7 +379,7 @@ Status Byte
     .. versionchanged:: 1.2.3
         Arbitrarily returns `True`.
 
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.pipe
+.. autoproperty:: circuitpython_nrf24l01.rf24.RF24.pipe
 
 
     .. versionchanged:: 1.2.0
@@ -398,11 +399,11 @@ Status Byte
 
     Internally, this is automatically called by `send()`, `write()`, `read()`.
 
-    :param bool data_recv: specifies whether to clear the "RX Data Ready"
+    :param data_recv: specifies whether to clear the "RX Data Ready"
         (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_dr`) flag.
-    :param bool data_sent: specifies whether to clear the "TX Data Sent"
+    :param data_sent: specifies whether to clear the "TX Data Sent"
         (:py:attr:`~circuitpython_nrf24l01.rf24.RF24.irq_ds`) flag.
-    :param bool data_fail: specifies whether to clear the "Max Re-transmit reached"
+    :param data_fail: specifies whether to clear the "Max Re-transmit reached"
         (`irq_df`) flag.
 
     .. note:: Clearing the ``data_fail`` flag is necessary for continued transmissions from the
@@ -437,11 +438,11 @@ FIFO management
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.fifo
 
-    :param bool about_tx:
+    :param about_tx:
         - `True` means the information returned is about the TX FIFO buffer.
         - `False` means the information returned is about the RX FIFO buffer. This parameter
           defaults to `False` when not specified.
-    :param bool check_empty:
+    :param check_empty:
         - `True` tests if the specified FIFO buffer is empty.
         - `False` tests if the specified FIFO buffer is full.
         - `None` (when not specified) returns a 2 bit number representing both empty (bit 1) &
@@ -460,7 +461,7 @@ FIFO management
 Ambiguous Signal Detection
 ******************************
 
-.. autoattribute:: circuitpython_nrf24l01.rf24.RF24.rpd
+.. autoproperty:: circuitpython_nrf24l01.rf24.RF24.rpd
 
     The RPD (Received Power Detector) flag is triggered in the following cases:
 

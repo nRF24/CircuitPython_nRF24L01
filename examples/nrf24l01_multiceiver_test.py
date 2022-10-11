@@ -103,7 +103,9 @@ def node(node_number=0, count=6):
                 "Transmission of payloadID {} as node {} successfull!".format(
                     counter, node_number
                 ),
-                "Transmission time: {} us".format(int((end_timer - start_timer) / 1000))
+                "Transmission time: {} us".format(
+                    int((end_timer - start_timer) / 1000)
+                ),
             )
         else:
             print("Transmission failed or timed out")

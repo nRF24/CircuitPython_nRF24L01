@@ -1,1 +1,1 @@
-sphinx-immaterial
+sphinx-immaterial[keys]

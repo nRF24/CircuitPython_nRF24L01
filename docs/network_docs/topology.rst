@@ -10,7 +10,7 @@ up to 5 other children. This is not limitless because this network is designed f
 devices. Consequently, all node's :ref:`Logical Address <logical address>` are limited to 12-bit
 integers and use an octal counting scheme.
 
-- The master node (designated with the :ref:`Logical Address <logical address>` ``0o0``)
+- The master node (designated with the :ref:`Logical Address <logical address>` :python:`0o0`)
   is always the only node in the lowest level (denoted as level 0).
 - Child nodes are designated by the most significant octal digit in their
   :ref:`Logical Address <Logical Address>`. A child node address' least significant digits are
@@ -18,31 +18,30 @@ integers and use an octal counting scheme.
   children of the master node.
 
 .. graphviz::
+    :align: center
 
     graph network_hierarchy {
-        bgcolor="#323232A1"
         newrank=true
         // ratio="0.65"
         node [
             fontcolor="#FEFEFE"
             fontsize=14
-            fontname=Arial
         ]
         pad="0"
         margin="0"
         subgraph cluster_hierarchy {
-            bgcolor="#24242400"
             color="#24242400"
             node [
+                fontcolor="#FEFEFE"
                 style=filled
-                color="#FEFEFE7f"
+                color="var(--md-graphviz-edge-color)"
             ]
-            edge [color="#FEFEFE" style="setlinewidth(2)"]
+            edge [style="setlinewidth(2)"]
             subgraph lvl_0 {
                 "0o0" [
                     shape="circle"
                     style="radial"
-                    fillcolor="0.85:#018268;0:#000"
+                    fillcolor="#000000;0.85:#018268"
                 ]
             }
             subgraph lvl_1 {
@@ -68,10 +67,7 @@ integers and use an octal counting scheme.
             "0o324" -- "0o2324"; "0o324" -- "0o3324"; "0o324" -- "0o4324"; "0o324" -- "0o5324"
         }
         subgraph cluster_legend {
-            bgcolor="#242424"
-            color="#24242400"
             "Legend" [
-                color="#FEF9A9"
                 shape=plain
                 margin=0
                 label=<
@@ -81,7 +77,7 @@ integers and use an octal counting scheme.
                             </TR>
                             <TR>
                                 <TD>Network Level 0</TD>
-                                <TD BORDER="1" STYLE="rounded,radial" BGCOLOR="#000:#018268">        </TD>
+                                <TD BORDER="1" STYLE="rounded,radial" BGCOLOR="#000000:#018268">        </TD>
                             </TR>
                             <TR>
                                 <TD>Network Level 1</TD>
@@ -111,8 +107,9 @@ integers and use an octal counting scheme.
 Hopefully, you should see the pattern. There can be up to a maximum of 5 network levels (that's
 0-4 ordered from lowest to highest).
 
-For a message to travel from node ``0o124`` to node ``0o3``, it must be passed through any applicable
-network levels. So, the message flows ``0o124`` -> ``0o24`` -> ``0o4`` -> ``0o0`` -> ``0o3``.
+For a message to travel from node :python:`0o124` to node :python:`0o3`, it must be passed through any
+applicable network levels. So, the message flows :python:`0o124` -> :python:`0o24` ->
+:python:`0o4` -> :python:`0o0` -> :python:`0o3`.
 
 A single network can potentially have a maximum of 781 nodes (all operating on the same
 :attr:`~circuitpython_nrf24l01.rf24.RF24.channel`), but for readability reasons, the following
@@ -125,43 +122,61 @@ graph only demonstrates
 
 
 .. graphviz::
+    :align: center
 
     graph network_levels {
         layout=twopi
-        bgcolor="#323232A1"
         ratio="0.825"
-        node [
-            style=filled
-            fontcolor="#FEFEFE"
-            color="#FEFEFE7f"
-            fontsize=14
-            fontname=Arial
-        ]
-        edge [color="#FEFEFE" style="setlinewidth(2)"]
+        edge [style="setlinewidth(2)"]
         ranksep="0.85:0.9:0.95:1.1"
         subgraph lvl_0 {
+            node [
+                color="var(--md-graphviz-edge-color)"
+                fontcolor="#FEFEFE"
+                fontsize=14
+            ]
             "0o0" [
                 root=true
                 shape="circle"
                 style="radial"
-                fillcolor="0.9:#018268;0:#000"
+                fillcolor="#000000;0.9:#018268"
             ]
         }
         subgraph lvl_1 {
-            node [fillcolor="#3E0180"]
+            node [
+                fillcolor="#3E0180"
+                color="var(--md-graphviz-edge-color)"
+                fontcolor="#FEFEFE"
+                fontsize=14
+            ]
             "0o1" "0o2" "0o3" "0o4" "0o5"
         }
         subgraph lvl_2 {
-            node [fillcolor="#014B80"]
+            node [
+                fillcolor="#014B80"
+                color="var(--md-graphviz-edge-color)"
+                fontcolor="#FEFEFE"
+                fontsize=14
+            ]
             "0o11" "0o21" "0o12" "0o22" "0o13" "0o23" "0o14" "0o24" "0o15" "0o25"
         }
         subgraph lvl_3 {
-            node [fillcolor="#0E6902"]
+            node [
+                fillcolor="#0E6902"
+                color="var(--md-graphviz-edge-color)"
+                fontcolor="#FEFEFE"
+                fontsize=14
+            ]
             "0o311" "0o411" "0o321" "0o421" "0o312" "0o412" "0o322" "0o422" "0o313" "0o413"
             "0o323" "0o423" "0o314" "0o414" "0o324" "0o424" "0o315" "0o415" "0o325" "0o425"
         }
         subgraph lvl_4 {
-            node [fillcolor="#80010B"]
+            node [
+                fillcolor="#80010B"
+                color="var(--md-graphviz-edge-color)"
+                fontcolor="#FEFEFE"
+                fontsize=14
+            ]
             "0o5311" "0o5411" "0o5321" "0o5312" "0o5421" "0o5313" "0o5314" "0o5315" "0o5322"
             "0o5323" "0o5324" "0o5325" "0o5412" "0o5423" "0o5422" "0o5413" "0o5414" "0o5424"
             "0o5415" "0o5425"
@@ -198,7 +213,7 @@ Physical addresses vs Logical addresses
 - The Logical address is the 12-bit integer representing a network node.
   The Logical address uses an octal counting scheme. A valid Logical Address must only
   contain octal digits in range [1, 5]. The master node is the exception for it uses the
-  number ``0``
+  number :python:`0`
 
   .. tip::
       Use the `is_address_valid()` function to programmatically check a Logical Address for validity.
@@ -207,7 +222,7 @@ Physical addresses vs Logical addresses
     Remember that the nRF24L01 only has 6 data pipes for which to receive or transmit.
     Since only data pipe 0 can be used to transmit, the other other data pipes 1-5 are
     devoted to receiving transmissions from other network nodes; data pipe 0 also receives
-    multicasted messages about the node's network level).
+    multicasted messages about the node's network level.
 
 Translating Logical to Physical
 -------------------------------
@@ -215,12 +230,12 @@ Translating Logical to Physical
 Before translating the Logical address, a single byte is used repetitively as the
 base case for all bytes of any Physical Address. This byte is the `address_prefix`
 attribute (stored as a mutable `bytearray`) in the `RF24Network` class. By default the
-`address_prefix` has a single byte value of ``b"\xCC"``.
+`address_prefix` has a single byte value of :python:`b"\\xCC"`.
 
 The `RF24Network` class also has a predefined list of bytes used for translating
 unique Logical addresses into unique Physical addresses. This list is called
 `address_suffix` (also stored as a mutable `bytearray`). By default the `address_suffix`
-has 6-byte value of ``b"\xC3\x3C\x33\xCE\x3E\xE3"`` where the order of bytes pertains to the
+has 6-byte value of :python:`b"\\xC3\\x3C\\x33\\xCE\\x3E\\xE3"` where the order of bytes pertains to the
 data pipe number and child node's most significant byte in its Physical Address.
 
 For example:
@@ -228,7 +243,7 @@ For example:
     1-5 start with the `address_prefix`. To make each pipe's Physical address unique
     to a child node's Physical address, the `address_suffix` is used.
 
-    The Logical address of the master node: ``0o0``
+    The Logical address of the master node: :python:`0o0`
 
     .. csv-table::
         :header: "pipe", "Physical Address (hexadecimal)"
@@ -239,7 +254,7 @@ For example:
         4, ``CC CC CC CC 3E``
         5, ``CC CC CC CC E3``
 
-    The Logical address of the master node's first child: ``0o1``
+    The Logical address of the master node's first child: :python:`0o1`
 
     .. csv-table::
         :header: "pipe", "Physical Address (hexadecimal)"
@@ -250,7 +265,7 @@ For example:
         4, ``CC CC CC 3C 3E``
         5, ``CC CC CC 3C E3``
 
-    The Logical address of the master node's second child: ``0o2``
+    The Logical address of the master node's second child: :python:`0o2`
 
     .. csv-table::
         :header: "pipe", "Physical Address (hexadecimal)"
@@ -261,7 +276,8 @@ For example:
         4, ``CC CC CC 33 3E``
         5, ``CC CC CC 33 E3``
 
-    The Logical address of the master node's third child's second child's first child: ``0o123``
+    The Logical address of the master node's third child's second child's first child:
+    :python:`0o123`
 
     .. csv-table::
         :header: "pipe", "Physical Address (hexadecimal)"
@@ -382,11 +398,11 @@ we will examine the connecting process for a RF24Mesh node. These are the steps 
 when calling `renew_address()`:
 
 1. Any RF24Mesh node not connected to a network will use the `Logical Address <logical address>`
-   ``0o444`` (that's ``2340`` in decimal). It is up to the network administrator to ensure that
-   each RF24Mesh node has a unique `node_id` (which is limited to the range [0, 255]).
+   :python:`0o444` (that's :python:`2340` in decimal). It is up to the network administrator to
+   ensure that each RF24Mesh node has a unique `node_id` (which is limited to the range [0, 255]).
 
    .. hint::
-       Remember that ``0`` is reserved the master node's `node_id`.
+       Remember that :python:`0` is reserved the master node's `node_id`.
 2. To get assigned a `Logical Address <logical address>`, an unconnected node must poll the
    network for a response (using a `NETWORK_POLL` message). Initially this happens on the
    network level 0, but consecutive attempts will poll higher network levels (in order of low to

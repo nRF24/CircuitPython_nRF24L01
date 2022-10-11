@@ -1,3 +1,6 @@
+
+.. module:: circuitpython_nrf24l01.rf24_mesh
+
 .. |use_msg_t| replace:: To ensure a message has been delivered to its target destination, set the
     ``message_type`` parameter to an `int` in range [65, 127]. This will invoke
     a `NETWORK_ACK` response message.
@@ -22,7 +25,7 @@ RF24MeshNoMaster class
     It is the python equivalent to TMRh20's ``MESH_NO_MASTER`` macro in the C++ RF24Mesh library.
     All the API is the same as `RF24Mesh` class.
 
-    :param int node_id: The unique identifying :attr:`~circuitpython_nrf24l01.rf24_mesh.RF24Mesh.node_id`
+    :param node_id: The unique identifying :attr:`~circuitpython_nrf24l01.rf24_mesh.RF24Mesh.node_id`
         number for the instantiated mesh node.
 
     .. seealso:: For all parameters' descriptions, see the
@@ -35,7 +38,7 @@ RF24Mesh class
 .. autoclass:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh
     :show-inheritance:
 
-    :param int node_id: The unique identifying `node_id` number for the instantiated mesh node.
+    :param node_id: The unique identifying `node_id` number for the instantiated mesh node.
 
     .. seealso:: For all parameters' descriptions, see the
         :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' constructor documentation.
@@ -55,10 +58,10 @@ Basic API
         then you can use :meth:`~circuitpython_nrf24l01.rf24_mesh.RF24Mesh.write()`
         for quicker operation.
 
-    :param int to_node: The unique mesh network `node_id` of the frame's destination.
-        Defaults to ``0`` (which is reserved for the master node).
-    :param str,int message_type: The `int` that describes the frame header's `message_type`.
-    :param bytes,bytearray message: The frame's `message` to be transmitted.
+    :param to_node: The unique mesh network `node_id` of the frame's destination.
+        Defaults to :python:`0` (which is reserved for the master node).
+    :param message_type: The `int` that describes the frame header's `message_type`.
+    :param message: The frame's `message` to be transmitted.
 
         .. note::
             Be mindful of the message's size as this cannot exceed `MAX_FRAG_SIZE` (24 bytes) if
@@ -75,7 +78,7 @@ Basic API
         .. tip:: |use_msg_t|
 
 
-.. autoattribute:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.node_id
+.. autoproperty:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.node_id
 
     This is not to be confused with the network node's `node_address`. This attribute is meant to
     distinguish different mesh network nodes that may, at separate instances, use the same
@@ -94,7 +97,7 @@ Basic API
 
 .. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.renew_address
 
-    :param float,int timeout: The amount of time (in seconds) to continue trying to connect
+    :param timeout: The amount of time (in seconds) to continue trying to connect
         and get an assigned :ref:`Logical Address <Logical Address>`. Defaults to 7.5 seconds.
 
     .. note:: This function automatically sets the `node_address` accordingly.
@@ -103,7 +106,7 @@ Basic API
         * If successful: The `node_address` that was set to the newly assigned
           :ref:`Logical Address <Logical Address>`.
         * If unsuccessful: `None`, and the `node_address` attribute will be set to
-          `NETWORK_DEFAULT_ADDR` (``0o4444`` in octal or ``2340`` in decimal).
+          `NETWORK_DEFAULT_ADDR` (:python:`0o4444` in octal or :python:`2340` in decimal).
 
 
 Advanced API
@@ -111,49 +114,49 @@ Advanced API
 
 .. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.lookup_node_id
 
-    :param int address: The :ref:`Logical Address <Logical Address>` for which
+    :param address: The :ref:`Logical Address <Logical Address>` for which
         a unique `node_id` is assigned from network master node.
 
     :Returns:
         - The unique `node_id` assigned to the specified ``address``.
         - Error codes include
 
-          - ``-2`` means the specified ``address`` has not been assigned a
+          - :python:`-2` means the specified ``address`` has not been assigned a
             unique `node_id` from the master node or the requesting
             network node's `node_address` is equal to `NETWORK_DEFAULT_ADDR`.
-          - ``-1`` means the address lookup operation failed due to no network connection
+          - :python:`-1` means the address lookup operation failed due to no network connection
             or the master node has not assigned a unique `node_id`
             for the specified ``address``.
 
 .. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.lookup_address
 
-    :param int node_id: The unique `node_id` for which a
+    :param node_id: The unique `node_id` for which a
         :ref:`Logical Address <Logical Address>` is assigned from network master node.
 
     :Returns:
         - The :ref:`Logical Address <Logical Address>` assigned to the specified ``node_id``.
         - Error codes include
 
-          - ``-2`` means the specified ``node_id`` has not been assigned a
+          - :python:`-2` means the specified ``node_id`` has not been assigned a
             :ref:`Logical Address <Logical Address>` from the master node or the requesting
             network node's `node_address` is equal to `NETWORK_DEFAULT_ADDR`.
-          - ``-1`` means the address lookup operation failed due to no network connection
+          - :python:`-1` means the address lookup operation failed due to no network connection
             or the master node has not assigned a :ref:`Logical Address <Logical Address>`
             for the specified ``node_id``.
 
 
 .. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.write
 
-    :param int to_node: The network node's :ref:`Logical Address <Logical Address>`.
+    :param to_node: The network node's :ref:`Logical Address <Logical Address>`.
         of the frame's destination. This must be the destination's network `node_address` which is
         not be confused with a mesh node's `node_id`.
-    :param str,int message_type: The `int` that describes the frame header's `message_type`.
+    :param message_type: The `int` that describes the frame header's `message_type`.
 
         .. note:: Be mindful of the message's size as this cannot exceed
             `MAX_FRAG_SIZE` (24 bytes) if `fragmentation` is disabled. If `fragmentation` is
             enabled (it is by default), then the message's size must be less than
             :attr:`~circuitpython_nrf24l01.rf24_network.RF24Network.max_message_length`.
-    :param bytes,bytearray message: The frame's `message` to be transmitted.
+    :param message: The frame's `message` to be transmitted.
 
     :Returns:
 
@@ -172,7 +175,7 @@ Advanced API
         This is also recommended for mesh network nodes that are entering a powered down (or
         sleep) mode.
 
-.. autoattribute:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.allow_children
+.. autoproperty:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.allow_children
 
 .. autoattribute:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.block_less_callback
 
@@ -183,6 +186,20 @@ Advanced API
 
     The assigned function will be called during `renew_address()`, `lookup_address()` and
     `lookup_node_id()`.
+
+    The callback function assigned should take no positional parameters and it's returned data (if
+    any) is ignored. For example:
+
+    .. code-block:: python
+        :caption: In user/app code space
+
+        arbitrary_global_counter = [0]
+
+        def callback_func(kw_arg: int = 1):
+            arbitrary_global_counter[0] += kw_arg
+
+        # let `mesh_node` be the instantiated RF24Mesh object
+        mesh_node.block_less_callback = callback_func
 
 .. autoattribute:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.dhcp_dict
 
@@ -201,9 +218,9 @@ Advanced API
     Calling this function on a Linux device (like the Raspberry Pi) will save the
     `dhcp_dict` to a JSON file located in the program's working directory.
 
-    :param str filename: The name of the json file to be used. This value should include a file extension
+    :param filename: The name of the json file to be used. This value should include a file extension
         (like ".json" or ".txt").
-    :param bool as_bin: Set this parameter to `True` to save the DHCP list to a binary text file.
+    :param as_bin: Set this parameter to `True` to save the DHCP list to a binary text file.
         Defaults to `False` which saves the DHCP list as JSON syntax.
 
     .. versionchanged:: 2.1.1
@@ -211,9 +228,9 @@ Advanced API
 
 .. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.load_dhcp
 
-    :param str filename: The name of the json file to be used. This value should include a file extension
+    :param filename: The name of the json file to be used. This value should include a file extension
         (like ".json" or ".txt").
-    :param bool as_bin: Set this parameter to `True` to load the DHCP list from a binary text file.
+    :param as_bin: Set this parameter to `True` to load the DHCP list from a binary text file.
         Defaults to `False` which loads the DHCP list from JSON syntax.
 
     .. warning::
@@ -226,6 +243,6 @@ Advanced API
     This function is only meant to be called on the mesh network's master node.
     Use this function to manually assign a `node_id` to a `RF24Network.node_address`.
 
-    :param int node_id: A unique identifying number ranging [1, 255].
-    :param int node_address: A :ref:`Logical Address <Logical Address>`
-    :param bool search_by_address: A flag to traverse the `dhcp_dict` by value instead of by key.
+    :param node_id: A unique identifying number ranging [1, 255].
+    :param node_address: A :ref:`Logical Address <Logical Address>`
+    :param search_by_address: A flag to traverse the `dhcp_dict` by value instead of by key.

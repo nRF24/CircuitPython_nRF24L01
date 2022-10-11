@@ -1,3 +1,6 @@
+
+.. module:: circuitpython_nrf24l01.network.mixins
+
 Shared Networking API
 ======================
 
@@ -5,6 +8,7 @@ Order of Inheritance
 ********************
 
 .. graphviz::
+    :align: center
 
     digraph inheritance {
         bgcolor="#323232A1"
@@ -20,7 +24,6 @@ Order of Inheritance
             color="#FEFEFE"
             fontcolor="#FEFEFE"
             fontsize=16
-            fontname="Roboto"
         ]
         edge [
             color="white"
@@ -28,56 +31,43 @@ Order of Inheritance
         ]
 
         subgraph cluster_rf24 {
-            bgcolor="#404040"
-            tooltip="circuitpython_nrf24l01.rf24 module"
-            label="  circuitpython_nrf24l01.rf24  ";
-            RF24 [
-                URL="../core_api/basic_api.html#basic-rf24-api"
-                tooltip="RF24 class"
-            ]
+            graph [xref=":mod:`circuitpython_nrf24l01.rf24`"]
+            RF24 [xref=":class:`~circuitpython_nrf24l01.rf24.RF24`"]
         }
 
         subgraph cluster_network_mixins{
-            bgcolor="#404040"
-            label="                                circuitpython_nrf24l01.network.mixins  "
-            tooltip="circuitpython_nrf24l01.network.mixins module"
-            node [
-                fillcolor="#014B80"
-            ]
+            graph [xref=":mod:`circuitpython_nrf24l01.network.mixins`"]
             rank="same"
-            RadioMixin [tooltip="RadioMixin class"]
-            NetworkMixin [tooltip="NetworkMixin class"]
+            RadioMixin [tooltip="RadioMixin (Python class)"]
+            NetworkMixin [tooltip="NetworkMixin (Python class)"]
             RadioMixin -> NetworkMixin
         }
 
         subgraph cluster_rf24_network {
-            bgcolor="#404040"
-            labelloc="b"
-            label="  circuitpython_nrf24l01.rf24_network  "
-            tooltip="circuitpython_nrf24l01.rf24_network module"
+            graph [
+                labelloc="b"
+                //label="  circuitpython_nrf24l01.rf24_network  "
+                xref=":mod:`circuitpython_nrf24l01.rf24_network`"
+            ]
             RF24NetworkRoutingOnly [
-                URL="network_api.html#rf24networkroutingonly-class"
-                tooltip="RF24NetworkRoutingOnly class"
+                xref=":class:`~circuitpython_nrf24l01.rf24_network.RF24NetworkRoutingOnly`"
             ]
             RF24Network [
-                URL="network_api.html#rf24network-class"
-                tooltip="RF24Network class"
+                xref=":class:`~circuitpython_nrf24l01.rf24_network.RF24Network`"
             ]
             RF24NetworkRoutingOnly -> RF24Network
         }
 
         subgraph cluster_rf24_mesh {
-            bgcolor="#404040"
             labelloc="b"
-            label="  circuitpython_nrf24l01.rf24_mesh  "
-            tooltip="circuitpython_nrf24l01.rf24_mesh module"
+            graph [
+                xref=":mod:`circuitpython_nrf24l01.rf24_mesh`"
+            ]
             RF24MeshNoMaster [
-                URL="mesh_api.html#rf24meshnomaster-class"
-                tooltip="RF24MeshNoMaster class"
+                xref=":class:`~circuitpython_nrf24l01.rf24_mesh.RF24MeshNoMaster`"
             ]
             RF24Mesh [
-                URL="mesh_api.html#rf24mesh-class"
-                tooltip="RF24Mesh class"
+                xref=":class:`~circuitpython_nrf24l01.rf24_mesh.RF24Mesh`"
             ]
             RF24MeshNoMaster -> RF24Mesh
         }
@@ -148,8 +138,8 @@ The following list of `RF24` functions and attributes are exposed in the
       Network node address_______0o0
 
   .. note::
-      The address ``0o7777`` (seen in output above) is an invalid address used as a sentinel when
-      the frame is unpopulated with a proper `from_node` address.
+      The address :python:`0o7777` (seen in output above) is an invalid address used as a
+      sentinel when the frame is unpopulated with a proper `from_node` address.
 
 External Systems API
 ********************

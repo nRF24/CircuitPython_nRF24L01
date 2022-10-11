@@ -17,8 +17,9 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
-    "sphinx.ext.graphviz",
     "sphinx_immaterial",
+    "sphinx_immaterial.graphviz",
+    "sphinx_immaterial.kbd_keys",
     # "rst2pdf.pdfbuilder",  # for local pdf builder support
 ]
 
@@ -33,6 +34,9 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "CircuitPython": ("https://circuitpython.readthedocs.io/en/latest/", None),
 }
+
+# ignore theme warning on windows about graphviz font metrics
+graphviz_ignore_incorrect_font_metrics = True
 
 html_baseurl = "https://circuitpython-nrf24l01.readthedocs.io/"
 
@@ -93,6 +97,15 @@ todo_emit_warnings = False
 
 napoleon_numpy_docstring = False
 
+rst_prolog = """
+.. role:: python(code)
+   :language: python
+   :class: highlight
+.. role:: cpp(code)
+   :language: cpp
+   :class: highlight
+"""
+
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -149,6 +162,10 @@ object_description_options = [
     ("py:.*", dict(include_fields_in_toc=False, generate_synopses=None)),
     ("py:parameter", dict(include_in_toc=False)),
 ]
+python_strip_property_prefix = True
+python_type_aliases = {
+    "typing.Callable": "Callable",
+}
 
 # Set link name generated in the top bar.
 html_title = "CircuitPython_nRF24L01"

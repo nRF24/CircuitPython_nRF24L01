@@ -8,11 +8,16 @@ from digitalio import DigitalInOut
 from circuitpython_nrf24l01.network.constants import MAX_FRAG_SIZE, NETWORK_DEFAULT_ADDR
 
 IS_MESH = (
-    input(
-        "    nrf24l01_network_test example\n"
-        "Would you like to run as a mesh network node (y/n)? Defaults to 'Y' "
-    ) or "Y"
-).upper().startswith("Y")
+    (
+        input(
+            "    nrf24l01_network_test example\n"
+            "Would you like to run as a mesh network node (y/n)? Defaults to 'Y' "
+        )
+        or "Y"
+    )
+    .upper()
+    .startswith("Y")
+)
 
 
 # to use different addresses on a set of radios, we need a variable to

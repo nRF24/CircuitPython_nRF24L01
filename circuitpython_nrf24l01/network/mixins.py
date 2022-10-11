@@ -24,11 +24,11 @@
 import time
 
 try:
-    from typing import Tuple, Union
+    from typing import Tuple, Union, List, Optional
 except ImportError:
     pass
-import busio
-from digitalio import DigitalInOut
+import busio  # type:ignore[import]
+from digitalio import DigitalInOut  # type:ignore[import]
 from ..rf24 import RF24, address_repr
 from .structs import RF24NetworkFrame, FrameQueue, FrameQueueFrag, is_address_valid
 from .constants import (
@@ -182,16 +182,17 @@ class NetworkMixin(RadioMixin):
         self._relay_enabled, self._frag_enabled = (False, True)
 
         #: The timeout (in milliseconds) to wait for successful transmission.
-        self.tx_timeout = 25
+        self.tx_timeout: int = 25
         #: The timeout (in milliseconds) to wait for transmission's `NETWORK_ACK`.
-        self.route_timeout = 3 * self.tx_timeout
+        self.route_timeout: int = 3 * self.tx_timeout
         #: enable/disable (`True`/`False`) multicasting
-        self.allow_multicast = True
-        self.ret_sys_msg = False  #: Force `update()` to return on system message types.
+        self.allow_multicast: bool = True
+        #: Force `update()` to return on system message types.
+        self.ret_sys_msg: bool = False
         self._parenthood = True  # can mesh nodes respond to NETWORK_POLL messages?
-        self.max_message_length = 144  #: The maximum length of a frame's message.
+        self.max_message_length: int = 144  #: The maximum length of a frame's message.
         #: The queue (FIFO) of received frames for this node
-        self.queue = FrameQueueFrag()
+        self.queue: Union[FrameQueueFrag, FrameQueue] = FrameQueueFrag()
         #: A buffer containing the last frame handled by the network node
         self.frame_buf = RF24NetworkFrame()
         self.address_suffix = bytearray([0xC3, 0x3C, 0x33, 0xCE, 0x3E, 0xE3])
@@ -243,7 +244,7 @@ class NetworkMixin(RadioMixin):
             "{}".format(
                 "an empty buffer"
                 if not self.frame_buf.message
-                else address_repr(self.frame_buf.message, 0, " ")
+                else address_repr(self.frame_buf.message, False, " ")
             ),
         )
         print("Return on system messages__{}".format(bool(self.ret_sys_msg)))
@@ -263,12 +264,11 @@ class NetworkMixin(RadioMixin):
         print("Network Routing timeout___{} milliseconds".format(self.route_timeout))
         print("Network node address_______{}".format(oct(self._addr)))
         if dump_pipes:
-            self._rf24.print_pipes()
+            self.print_pipes()
 
     @property
     def node_address(self) -> int:
-        """get/set the node's :ref:`Logical Address <Logical Address>` for the
-        `RF24Network` object."""
+        """The node's :ref:`Logical Address <Logical Address>`."""
         return self._addr
 
     @property
@@ -313,7 +313,7 @@ class NetworkMixin(RadioMixin):
 
     @property
     def parent(self) -> int:
-        """Get address for the parent node"""
+        """Get address for the parent node (read-only)."""
         return self._parent
 
     def _pipe_address(self, node_addr: int, pipe_number: int) -> bytearray:
@@ -445,11 +445,11 @@ class NetworkMixin(RadioMixin):
         """:Returns: A `bool` describing if there is a frame waiting in the `queue`."""
         return bool(len(self.queue))
 
-    def peek(self) -> RF24NetworkFrame:
+    def peek(self) -> Optional[RF24NetworkFrame]:
         """Get (from `queue`) the next available frame."""
         return self.queue.peek()
 
-    def read(self) -> RF24NetworkFrame:
+    def read(self) -> Optional[RF24NetworkFrame]:
         """Get (from `queue`) the next available frame."""
         return self.queue.dequeue()
 
@@ -538,7 +538,7 @@ class NetworkMixin(RadioMixin):
 
     def _write_to_pipe(self, to_node: int, to_pipe: int, is_multicast: bool) -> bool:
         """send prepared frame to a particular node's pipe"""
-        result = False
+        result = False  # type: Union[bool, bytearray, List[Union[bool, bytearray]]]
         if to_node == self._addr:
             return self.queue.enqueue(self.frame_buf)
         self._rf24.auto_ack = 0x3E + (not is_multicast)
@@ -585,7 +585,7 @@ class NetworkMixin(RadioMixin):
                 if not result:
                     break
             self.frame_buf.header.message_type = msg_t
-        return result
+        return result  # type: ignore
 
     def _tx_standby(self, delta_time: int) -> bool:
         result = False

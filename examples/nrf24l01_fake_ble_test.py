@@ -157,7 +157,7 @@ def slave(timeout=6):
             result = nrf.read()
             print(
                 "received payload from MAC address",
-                address_repr(result.mac, delimit=":")
+                address_repr(result.mac, delimit=":"),
             )
             if result.name is not None:
                 print("\tdevice name:", result.name)

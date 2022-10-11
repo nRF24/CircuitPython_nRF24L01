@@ -146,15 +146,15 @@ Stream Example
 ---------------
 
 .. versionchanged:: 1.2.3
-    added ``master_fifo()`` to demonstrate using full TX FIFO to stream data.
+    added :python:`master_fifo()` to demonstrate using full TX FIFO to stream data.
 .. versionchanged:: 2.0.0
     uses 2 addresses on pipes 1 & 0 to demonstrate proper addressing convention.
 
-This is a test to show how to stream data. The ``master()`` uses the :meth:`~circuitpython_nrf24l01.rf24.RF24.send()`
-function to transmit multiple payloads with 1 function call. However
-``master()`` only uses 1 level of the nRF24L01's TX FIFO. An alternate function,
-called ``master_fifo()`` uses all 3 levels of the nRF24L01's TX FIFO to stream
-data, but it uses the :meth:`~circuitpython_nrf24l01.rf24.RF24.write()` function to do so.
+This is a test to show how to stream data. The :python:`master()` uses the
+:meth:`~circuitpython_nrf24l01.rf24.RF24.send()` function to transmit multiple payloads with
+1 function call. However :python:`master()` only uses 1 level of the nRF24L01's TX FIFO. An
+alternate function, called :python:`master_fifo()` uses all 3 levels of the nRF24L01's TX FIFO to
+stream data, but it uses the :meth:`~circuitpython_nrf24l01.rf24.RF24.write()` function to do so.
 
 .. literalinclude:: ../examples/nrf24l01_stream_test.py
     :caption: examples/nrf24l01_stream_test.py
@@ -226,7 +226,7 @@ Fake BLE Example
 
 .. versionadded:: 1.2.0
 .. versionchanged:: 2.1.0
-    A new ``slave()`` function was added to demonstrate receiving BLE data.
+    A new :python:`slave()` function was added to demonstrate receiving BLE data.
 
 This is a test to show how to use the nRF24L01 as a BLE advertising beacon using the
 `FakeBLE` class.
@@ -251,7 +251,7 @@ To make this circuitpython library compatible with
 1. set :attr:`~circuitpython_nrf24l01.rf24.RF24.dynamic_payloads` to `False`.
 2. set `allow_ask_no_ack` to `False`.
 3. set :attr:`~circuitpython_nrf24l01.rf24.RF24.payload_length` to the value that
-   is passed to TMRh20's ``RF24::setPayloadSize()``. 32 is the default (& maximum)
+   is passed to TMRh20's :cpp:`RF24::setPayloadSize()`. 32 is the default (& maximum)
    payload length/size for both libraries.
 
    .. warning:: Certain C++ datatypes allocate a different amount of memory depending on

@@ -95,7 +95,7 @@ def master(count=1, size=32):  # count = 5 will transmit the list 5 times
             successful += 1 if r else 0
     print(
         "successfully sent {}%".format(successful / (size * count) * 100),
-        "({}/{})".format(successful, size * count)
+        "({}/{})".format(successful, size * count),
     )
 
 
@@ -136,7 +136,7 @@ def master_fifo(count=1, size=32):
         end_timer = time.monotonic_ns()  # end timer
         print(
             "Transmission took {} us".format((end_timer - start_timer) / 1000),
-            "with {} failures detected.".format(failures)
+            "with {} failures detected.".format(failures),
         )
 
 
@@ -150,7 +150,7 @@ def slave(timeout=5):
             count += 1
             # retreive the received packet's payload
             buffer = nrf.read()  # clears flags & empties RX FIFO
-            print("Received:", buffer,"-", count)
+            print("Received:", buffer, "-", count)
             start_timer = time.monotonic()  # reset timer on every RX payload
 
     # recommended behavior is to keep in TX mode while idle

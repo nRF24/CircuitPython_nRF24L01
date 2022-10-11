@@ -6,14 +6,73 @@ on:
   push:
 
 jobs:
-  test:
+  build-wheel:
     runs-on: ubuntu-latest
     steps:
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
 
+      - uses: actions/checkout@v3
+
+      - name: Build wheel
+        run: pip wheel -w dist --no-deps .
+
+      - name: check dist
+        run: pipx run twine check dist/*
+
+      - name: Archive wheel
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheel
+          path: ${{ github.workspace }}/dist/
+
+  linters:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - uses: actions/checkout@v3
+
+      - name: Install pre-commit and deps
+        run: pip install pre-commit -r requirements.txt
+
+      - name: Setup problem matchers
+        uses: adafruit/circuitpython-action-library-ci-problem-matchers@v1
+
+      - name: Pre-commit hooks
+        run: pre-commit run --all-files
+
+  test-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install testing tools
+        run: pip install -r requirements.txt -r tests/requirements.txt
+
+      - name: Collect coverage
+        run: |
+          coverage run -m pytest
+          coverage report
+          coverage xml
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          verbose: true # optional (default = false)
+
+  build-bundles:
+    runs-on: ubuntu-latest
+    steps:
       - name: Translate Repo Name For Build Tools filename_prefix
         id: repo-name
         run: |
@@ -28,63 +87,49 @@ jobs:
         run: |
           echo ::set-output name=pkg-name::$(
           echo ${{ github.repository }} |
-          awk -F '\/' '{ print tolower($2) }' |
-          tr '-' '_'
+          awk -F '\/' '{ print tolower($2) }'
           )
 
-      - name: Set up Python
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.9
+      - uses: actions/checkout@v3
 
-      - name: Versions
-        run: |
-          python3 --version
-
-      - name: Checkout Current Repo
-        uses: actions/checkout@v1
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v4
         with:
-          submodules: true
-
-      - name: Checkout tools repo
-        uses: actions/checkout@v2
-        with:
-          repository: adafruit/actions-ci-circuitpython-libs
-          path: actions-ci
+          python-version: "3.x"
 
       - name: Install deps
-        run: |
-          source actions-ci/install.sh
-
-      - name: Pip install pylint & Sphinx stuff (and graphviz)
-        run: |
-          pip install --upgrade setuptools twine wheel pylint
-          pip install -r docs/requirements.txt
-          sudo apt install graphviz
-
-
-      - name: Library version
-        run: git describe --dirty --always --tags
-
-      - name: PyLint
-        run: |
-          pylint circuitpython_nrf24l01/*.py  circuitpython_nrf24l01/*/*.py
-          pylint --disable=c-extension-no-member examples/*.py
+        run: pip install circuitpython-build-tools
 
       - name: Build assets
-        run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --library_location . --package_folder_prefix ${{ steps.pkg-name.outputs.pkg-name }}
+        run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --package_folder_prefix ${{ steps.pkg-name.outputs.pkg-name }} --library_location .
 
       - name: Archive bundles
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: bundles
           path: ${{ github.workspace }}/bundles/
+
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install deps
+        run: |
+          pip install -r docs/requirements.txt -r requirements.txt
+          sudo apt-get install graphviz
 
       - name: Build docs
         working-directory: docs
         run: sphinx-build -E -W -b html . _build/html
 
-      - name: Check package distribution
-        run: |
-          python setup.py sdist
-          twine check dist/*
+      - name: Archive docs
+        uses: actions/upload-artifact@v3
+        with:
+          name: docs
+          path: ${{ github.workspace }}/docs/_build/html

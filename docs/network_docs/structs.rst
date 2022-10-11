@@ -8,18 +8,18 @@
 Network Data Structures
 =======================
 
-.. versionadded:: 2.1.0
+.. automodule:: circuitpython_nrf24l01.network.structs
 
-These classes are used to structure the payload data for wireless network transactions.
+.. versionadded:: 2.1.0
 
 Header
 -----------------
 
 .. autoclass:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader
 
-    :param int to_node: The :ref:`Logical Address <logical address>` designating the
+    :param to_node: The :ref:`Logical Address <logical address>` designating the
         message's destination.
-    :param int,str message_type: A 1-byte `int` representing the `message_type`. If a
+    :param message_type: A 1-byte `int` representing the `message_type`. If a
         `str` is passed, then the first character's numeric ASCII representation is
         used.
 
@@ -62,7 +62,7 @@ Header
 
     This function |internal_use|
 
-    :param bytes,bytearray buffer: |unpacked_buf|
+    :param buffer: |unpacked_buf|
     :Returns: `True` if successful; otherwise `False`.
 
 .. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkHeader.pack
@@ -79,8 +79,8 @@ Frame
     This is used for either a single fragment of an individually large message (greater than 24
     bytes) or a single message that is less than 25 bytes.
 
-    :param RF24NetworkHeader header: The header describing the frame's `message`.
-    :param bytes,bytearray message: The actual `message` containing the payload
+    :param header: The header describing the frame's `message`.
+    :param message: The actual `message` containing the payload
         or a fragment of a payload.
 
     .. note:: |can_be_blank|
@@ -94,7 +94,7 @@ Frame
 
     This function |internal_use|
 
-    :param bytes,bytearray buffer: |unpacked_buf|
+    :param buffer: |unpacked_buf|
     :Returns: `True` if successful; otherwise `False`.
 
 .. automethod:: circuitpython_nrf24l01.network.structs.RF24NetworkFrame.pack
@@ -110,7 +110,7 @@ FrameQueue
 
 .. autoclass:: circuitpython_nrf24l01.network.structs.FrameQueue
 
-    :param FrameQueue,FrameQueueFrag queue: To move (not copy) the contents of another
+    :param queue: To move (not copy) the contents of another
         `FrameQueue` based object, you can pass the object to this parameter. Doing so
         will also copy the object's `max_queue_size` attribute.
 
@@ -142,13 +142,13 @@ Logical Address Validation
 
 .. autofunction:: circuitpython_nrf24l01.network.structs.is_address_valid
 
-    :param int address: The :ref:`Logical Address <Logical Address>` to validate.
+    :param address: The :ref:`Logical Address <Logical Address>` to validate.
 
     :Returns:
         `True` if the given address can be used as a `node_address` or `to_node`
         destination. Otherwise, this function returns `False`.
 
         .. warning::
-            Please note that this function also allows the value ``0o100`` to validate
+            Please note that this function also allows the value :python:`0o100` to validate
             because it is used as the `NETWORK_MULTICAST_ADDR` for multicasted messages.
-            Technically, ``0o100`` is an invalid address.
+            Technically, :python:`0o100` is an invalid address.

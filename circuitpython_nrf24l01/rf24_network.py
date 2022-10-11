@@ -24,8 +24,8 @@ try:
     from typing import Union
 except ImportError:
     pass
-import busio
-from digitalio import DigitalInOut
+import busio  # type:ignore[import]
+from digitalio import DigitalInOut  # type:ignore[import]
 from .network.mixins import NetworkMixin
 from .network.structs import RF24NetworkHeader, RF24NetworkFrame, is_address_valid
 from .network.constants import (
@@ -56,7 +56,7 @@ class RF24NetworkRoutingOnly(NetworkMixin):
         super().__init__(spi, csn_pin, ce_pin, spi_frequency)
         self._begin(node_address)  # setup radio
 
-    @NetworkMixin.node_address.setter
+    @NetworkMixin.node_address.setter  # type: ignore
     def node_address(self, val: int):
         if not is_address_valid(val):
             return

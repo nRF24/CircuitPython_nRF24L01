@@ -84,7 +84,7 @@ def master(count=5):  # count = 5 will only transmit 5 packets
         else:
             print(
                 "Transmission successful! Time to Transmit:",
-                "{} us. Sent: {}".format((end_timer - start_timer) / 1000, payload[0])
+                "{} us. Sent: {}".format((end_timer - start_timer) / 1000, payload[0]),
             )
             payload[0] += 0.01
         time.sleep(1)

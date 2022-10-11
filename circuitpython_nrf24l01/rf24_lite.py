@@ -1,11 +1,7 @@
 # see license and copyright information in rf24.py
 # pylint: disable=missing-docstring
 import time
-
-try:
-    from adafruit_bus_device.spi_device import SPIDevice
-except ImportError:
-    from .wrapper.upy_spi import SPIDevice
+from adafruit_bus_device.spi_device import SPIDevice  # type: ignore[import]
 
 
 class RF24:
@@ -147,8 +143,8 @@ class RF24:
         self.ce_pin = 0
         if isinstance(buf, (list, tuple)):
             result = []
-            for b in buf:
-                result.append(self.send(b, ask_no_ack, force_retry, send_only))
+            for byte in buf:
+                result.append(self.send(byte, ask_no_ack, force_retry, send_only))
             return result
         if self._status & 0x10 or self._status & 1:
             self.flush_tx()
@@ -172,7 +168,7 @@ class RF24:
     @property
     def pipe(self):
         result = self._status >> 1 & 7
-        if result  < 6:
+        if result < 6:
             return result
         return None
 
