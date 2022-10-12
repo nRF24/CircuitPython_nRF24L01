@@ -1,8 +1,4 @@
-# SPDX-FileCopyrightText: 2017 Scott Shawcroft, written for Adafruit Industries
-#
-# SPDX-License-Identifier: MIT
-
-name: Release Actions
+name: Release
 
 on:
   release:
@@ -11,7 +7,6 @@ on:
 
 jobs:
   upload-release-assets:
-    if: github.event_name != 'workflow_dispatch' && github.repository == 'nRF24/CircuitPython_nRF24L01'
     runs-on: ubuntu-latest
     steps:
       - name: Translate Repo Name For Build Tools filename_prefix
@@ -54,7 +49,15 @@ jobs:
       - name: Build assets
         run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --package_folder_prefix ${{ steps.pkg-name.outputs.pkg-name }} --library_location .
 
+      - name: Archive bundles
+        if: github.event_name == 'workflow_dispatch' && github.repository == 'nRF24/CircuitPython_nRF24L01'
+        uses: actions/upload-artifact@v3
+        with:
+          name: bundles
+          path: ${{ github.workspace }}/bundles/
+
       - name: Upload Release Assets
+        if: github.event_name != 'workflow_dispatch' && github.repository == 'nRF24/CircuitPython_nRF24L01'
         # the 'official' actions version does not yet support dynamically
         # supplying asset names to upload. @csexton's version chosen based on
         # discussion in the issue below, as its the simplest to implement and
