@@ -60,7 +60,6 @@ version_scheme= "no-guess-dev"
 # Test PyPI does not support local versions.
 local_scheme = "no-local-version"
 fallback_version = "0.0.0"
-write_to = "circuitpython_nrf24l01/_version.py"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
