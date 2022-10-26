@@ -50,14 +50,14 @@ jobs:
         run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --package_folder_prefix ${{ steps.pkg-name.outputs.pkg-name }} --library_location .
 
       - name: Archive bundles
-        if: github.event_name == 'workflow_dispatch' && github.repository == 'nRF24/CircuitPython_nRF24L01'
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v3
         with:
           name: bundles
           path: ${{ github.workspace }}/bundles/
 
       - name: Upload Release Assets
-        if: github.event_name == 'release' && github.repository == 'nRF24/CircuitPython_nRF24L01'
+        if: github.event_name == 'release'
         uses: shogo82148/actions-upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
