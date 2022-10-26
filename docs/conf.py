@@ -126,6 +126,41 @@ html_theme_options = {
         "search.share",
         "navigation.tabs.sticky",
     ],
+    "icon": {
+        "repo": "fontawesome/brands/github",
+        "admonition": {
+            "note": "material/note-edit-outline",
+            "tip": "material/school",
+            "warning": "octicons/alert-16",
+        },
+    },
+    "social": [
+        {
+            "icon": "fontawesome/brands/github",
+            "link": "https://github.com/nRF24/CircuitPython_nRF24L01",
+        },
+        {
+            "icon": "fontawesome/brands/python",
+            "link": "https://pypi.org/project/circuitpython-nrf24l01/",
+        },
+        {
+            "icon": "fontawesome/brands/discord",
+            "link": "https://adafru.it/discord",
+        },
+        {
+            "icon": "simple/adafruit",
+            "link": "https://www.adafruit.com/",
+        },
+        {
+            "icon": "simple/sparkfun",
+            "link": "https://www.sparkfun.com/",
+        },
+        {
+            "name": "CircuitPython Downloads",
+            "icon": "octicons/download-24",
+            "link": "https://circuitpython.org",
+        },
+    ],
     "palette": [
         {
             "media": "(prefers-color-scheme: dark)",

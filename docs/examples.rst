@@ -105,11 +105,13 @@ Reading the scanner output
 The output of the scanner example is supposed to be read vertically (as columns).
 So, the following
 
-    | 000
-    | 111
-    | 789
-    | ~~~
-    | 13-
+.. code-block:: text
+
+    000
+    111
+    789
+    ~~~
+    13-
 
 should be interpreted as
 

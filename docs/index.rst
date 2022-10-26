@@ -31,18 +31,6 @@
     contributing
     troubleshooting
 
-.. toctree::
-    :caption: Other Links
-    :hidden:
-
-    Download <https://github.com/2bndy5/CircuitPython_nRF24L01/releases/latest>
-    CircuitPython Reference Documentation <https://circuitpython.readthedocs.io>
-    CircuitPython Support Forum <https://forums.adafruit.com/viewforum.php?f=60>
-    Discord Chat <https://adafru.it/discord>
-    Adafruit Learning System <https://learn.adafruit.com>
-    Adafruit Blog <https://blog.adafruit.com>
-    Adafruit Store <https://www.adafruit.com>
-
 .. only:: html
 
     .. image:: https://img.shields.io/static/v1?label=Visual%20Studio%20Code&message=Use%20Online%20IDE&color=blue&logo=visualstudiocode&logoColor=3f9ae6
@@ -62,7 +50,7 @@ This is a Circuitpython driver library for the nRF24L01(+) transceiver.
 
 Originally this code was a Micropython module written by Damien P. George
 & Peter Hinch which can still be found `here
-<https://github.com/micropython/micropython/tree/master/drivers/nrf24l01>`_
+<https://github.com/micropython/micropython-lib/tree/master/micropython/drivers/radio/nrf24l01>`_
 
 The Micropython source has since been rewritten to expose all the nRF24L01's
 features and for Circuitpython compatible devices (including linux-based
@@ -220,11 +208,11 @@ All examples can be imported from within an interactive python REPL.
            Run slave() on receiver
            Run master() on transmitter
        >>> master()
-       Transmission successful! Time to Transmit: 3906.25 us. Sent: 0.0
-       Transmission successful! Time to Transmit: 2929.69 us. Sent: 0.01
-       Transmission successful! Time to Transmit: 2929.69 us. Sent: 0.02
-       Transmission successful! Time to Transmit: 3906.25 us. Sent: 0.03
-       Transmission successful! Time to Transmit: 4882.81 us. Sent: 0.04
+       Transmission successful! Time to Transmit: 1563.904 us. Sent: 0.0
+       Transmission successful! Time to Transmit: 1804.938 us. Sent: 0.01
+       Transmission successful! Time to Transmit: 1690.977 us. Sent: 0.02
+       Transmission successful! Time to Transmit: 1674.681 us. Sent: 0.03
+       Transmission successful! Time to Transmit: 1729.976 us. Sent: 0.04
 
 For CircuitPython devices
 ---------------------------
@@ -267,7 +255,7 @@ take Amazon or eBay for granted! There are other wireless transceivers that are 
 with this library. For instance, the esp8266-01 (also sold in packs) is NOT compatible with
 this library, but looks very similar to the nRF24L01+ and could lead to an accidental purchase.
 
-.. seealso::
+.. warning::
     Beware, there are also `nrf24l01(+) clones and counterfeits`_ that may not work the same.
 
 Power Stability
