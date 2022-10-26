@@ -76,19 +76,19 @@ jobs:
       - name: Translate Repo Name For Build Tools filename_prefix
         id: repo-name
         run: |
-          echo ::set-output name=repo-name::$(
+          echo repo-name=$(
           echo ${{ github.repository }} |
           awk -F '\/' '{ print tolower($2) }' |
           tr '_' '-'
-          )
+          ) >> $GITHUB_OUTPUT
 
       - name: Translate Repo Name For Build Tools package_prefix
         id: pkg-name
         run: |
-          echo ::set-output name=pkg-name::$(
+          echo pkg-name=$(
           echo ${{ github.repository }} |
           awk -F '\/' '{ print tolower($2) }'
-          )
+          ) >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@v3
 
