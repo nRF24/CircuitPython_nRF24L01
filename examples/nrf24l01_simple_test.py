@@ -99,20 +99,23 @@ def slave(timeout=6):
     start = time.monotonic()
     while (time.monotonic() - start) < timeout:
         if nrf.available():
-            # grab information about the received payload
-            payload_size, pipe_number = (nrf.any(), nrf.pipe)
-            # fetch 1 payload from RX FIFO
-            buffer = nrf.read()  # also clears nrf.irq_dr status flag
-            # expecting a little endian float, thus the format string "<f"
-            # buffer[:4] truncates padded 0s if dynamic payloads are disabled
-            payload[0] = struct.unpack("<f", buffer[:4])[0]
-            # print details about the received packet
-            print(
-                "Received {} bytes on pipe {}: {}".format(
-                    payload_size, pipe_number, payload[0]
+            try:
+                # grab information about the received payload
+                payload_size, pipe_number = (nrf.any(), nrf.pipe)
+                # fetch 1 payload from RX FIFO
+                buffer = nrf.read()  # also clears nrf.irq_dr status flag
+                # expecting a little endian float, thus the format string "<f"
+                # buffer[:4] truncates padded 0s if dynamic payloads are disabled
+                payload[0] = struct.unpack("<f", buffer[:4])[0]
+                # print details about the received packet
+                print(
+                    "Received {} bytes on pipe {}: {}".format(
+                        payload_size, pipe_number, payload[0]
+                    )
                 )
-            )
-            start = time.monotonic()
+                start = time.monotonic()
+            except Exception as e:
+                print("Failed to unpack payload: {}".format(e))
 
     # recommended behavior is to keep in TX mode while idle
     nrf.listen = False  # put the nRF24L01 is in TX mode
