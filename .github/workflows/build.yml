@@ -97,8 +97,15 @@ jobs:
         with:
           python-version: "3.x"
 
+      - name: Checkout tools repo
+        uses: actions/checkout@v3
+        with:
+          repository: adafruit/actions-ci-circuitpython-libs
+          path: actions-ci
+
       - name: Install deps
-        run: pip install circuitpython-build-tools
+        run: |
+          source actions-ci/install.sh
 
       - name: Build assets
         run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --package_folder_prefix ${{ steps.pkg-name.outputs.pkg-name }} --library_location .
