@@ -336,14 +336,14 @@ Contributing
 ============
 
 Contributions are welcome! Please read our `Code of Conduct
-<https://github.com/2bndy5/CircuitPython_nRF24L01/blob/master/CODE_OF_CONDUCT.md>`_
+<https://github.com/nRF24/CircuitPython_nRF24L01/blob/master/CODE_OF_CONDUCT.md>`_
 before contributing to help this project stay welcoming.
 
 Please review our :doc:`contributing` for details on the development workflow.
 
-To initiate a discussion of idea(s), you need only open an issue on the aforementioned repository
+To initiate a discussion of idea(s), you need only open an issue on the
+`source's git repository <https://github.com/nRF24/CircuitPython_nRF24L01>`_
 (it doesn't have to be a bug report).
-
 
 Future Project Ideas/Additions
 ------------------------------
@@ -356,19 +356,8 @@ The following are only ideas; they are not currently supported by this circuitpy
   resistor and a capacitor)
 * TCI/IP OSI layer, maybe something like `TMRh20's RF24Ethernet
   <http://nRF24.github.io/RF24Ethernet/>`_
-* implement the Gazelle-based protocol used by the BBC micro-bit (`makecode.com's radio
-  blocks <https://makecode.microbit.org/reference/radio>`_) Additional resources can be found at
-  `the MicroPython firmware source code <https://github.com/bbcmicrobit/micropython/blob/master/source/microbit/modradio.cpp>`_
-  and `its related documentation <https://microbit-micropython.readthedocs.io/en/latest/radio.html>`_.
-
 
 Sphinx documentation
 -----------------------
 
-Please read our :doc:`contributing` for instrcutions on how to build the documentation.
-
-Site Index
-==========
-
-* :ref:`genindex`
-* :ref:`modindex`
+Please read our :doc:`contributing` for instructions on how to build the documentation.

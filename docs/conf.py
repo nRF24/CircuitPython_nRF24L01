@@ -128,11 +128,6 @@ html_theme_options = {
     ],
     "icon": {
         "repo": "fontawesome/brands/github",
-        "admonition": {
-            "note": "material/note-edit-outline",
-            "tip": "material/school",
-            "warning": "octicons/alert-16",
-        },
     },
     "social": [
         {
@@ -197,6 +192,43 @@ object_description_options = [
     ("py:.*", dict(include_fields_in_toc=False, generate_synopses=None)),
     ("py:parameter", dict(include_in_toc=False)),
 ]
+
+sphinx_immaterial_custom_admonitions = [
+    {
+        "name": "warning",
+        "color": (255, 66, 66),
+        "icon": "octicons/alert-24",
+        "override": True,
+    },
+    {
+        "name": "note",
+        "icon": "octicons/pencil-24",
+        "override": True,
+    },
+    {
+        "name": "seealso",
+        "color": (255, 66, 252),
+        "icon": "octicons/eye-24",
+        "title": "See Also",
+        "override": True,
+    },
+    {
+        "name": "hint",
+        "icon": "material/school",
+        "override": True,
+    },
+    {
+        "name": "tip",
+        "icon": "material/school",
+        "override": True,
+    },
+    {
+        "name": "important",
+        "icon": "material/school",
+        "override": True,
+    },
+]
+
 python_strip_property_prefix = True
 python_type_aliases = {
     "typing.Callable": "Callable",
