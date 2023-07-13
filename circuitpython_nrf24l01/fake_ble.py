@@ -438,7 +438,7 @@ class TemperatureServiceData(ServiceData):
     def __init__(self):
         super().__init__(TEMPERATURE_UUID)
 
-    @property
+    @property  # type: ignore[override]
     def data(self) -> float:
         """This attribute is a `float` value."""
         return struct.unpack("<i", self._data[:3] + b"\0")[0] * 10**-2
@@ -462,7 +462,7 @@ class BatteryServiceData(ServiceData):
     def __init__(self):
         super().__init__(BATTERY_UUID)
 
-    @property
+    @property  # type: ignore[override]
     def data(self) -> int:
         """The attribute is a 1-byte unsigned `int` value."""
         return int(self._data[0])
@@ -508,7 +508,7 @@ class UrlServiceData(ServiceData):
     def uuid(self) -> bytes:
         return self._type[:2]
 
-    @property
+    @property  # type: ignore[override]
     def data(self) -> str:
         """This attribute is a `str` of URL data."""
         value = self._data.decode()

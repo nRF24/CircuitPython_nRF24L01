@@ -1,3 +1,5 @@
+:description: How a network is constructed, address composition, and common points of failure during Mesh connecting.
+
 Network Topology
 ================
 

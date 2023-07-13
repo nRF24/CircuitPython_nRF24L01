@@ -52,8 +52,10 @@ Basic RF24 API
         [0, 5]. Otherwise a `IndexError` exception is thrown.
 
     .. versionchanged:: 1.2.0
-        removed the ``reset`` parameter. Addresses assigned to pipes will persist until
-        changed or power to the nRF24L01 is discontinued.
+        Removed the ``reset`` parameter
+
+        Addresses assigned to pipes will persist until changed or power to the nRF24L01 is
+        discontinued.
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.open_rx_pipe
 
@@ -94,9 +96,10 @@ Basic RF24 API
         the TX FIFO.
 
     .. versionchanged:: 2.1.0
-        Prior to v2.1.0 this attribute would clear the status flags when entering RX mode. This
-        was removed to expedite applications that use manually transmitted acknowledgement
-        payloads.
+        Previously, this attribute would clear the status flags when entering RX mode.
+
+        This behavior was removed to expedite applications that use manually transmitted
+        acknowledgement payloads.
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.any
 
@@ -153,11 +156,12 @@ Basic RF24 API
         of that length despite the contents of the RX FIFO.
 
     .. versionadded:: 1.2.0
-        ``length`` parameter
+        Added ``length`` parameter
 
     .. versionchanged:: 2.0.0
-        renamed this method from ``recv()`` to ``read()`` because it isn't doing
-        any actual receiving. Rather, it is only reading data from the RX FIFO that
+        Renamed this method from ``recv()`` to ``read()``
+
+        It isn't doing any actual receiving. Rather, it is only reading data from the RX FIFO that
         was already received/validated by the radio.
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.send
@@ -234,4 +238,4 @@ Basic RF24 API
         remain in the TX FIFO until `send()` or `flush_tx()` is called after failed
         transmissions.
     .. versionadded:: 1.2.0
-        ``send_only`` parameter
+        Added ``send_only`` parameter

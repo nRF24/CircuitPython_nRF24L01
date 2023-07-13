@@ -187,7 +187,7 @@ class RF24:
         #     buf_len - 1, ("%02X" % reg), address_repr(self._out[1 : buf_len], 0)
         # ))
 
-    def _reg_write(self, reg: int, value: int = None):
+    def _reg_write(self, reg: int, value: Optional[int] = None):
         self._out[0] = reg
         buf_len = 1
         if value is not None:
@@ -298,7 +298,7 @@ class RF24:
             return self._pl_len[(self._in[0] >> 1) & 7]
         return 0
 
-    def read(self, length: int = None) -> Optional[bytearray]:
+    def read(self, length: Optional[int] = None) -> Optional[bytearray]:
         """This function is used to retrieve data from the RX FIFO."""
         return_size = length if length is not None else self.any()
         if not return_size:
@@ -545,7 +545,7 @@ class RF24:
         self._reg_write(TX_FEATURE, self._features)
         self._reg_write(DYN_PL_LEN, self._dyn_pl)
 
-    def set_dynamic_payloads(self, enable: bool, pipe_number: int = None):
+    def set_dynamic_payloads(self, enable: bool, pipe_number: Optional[int] = None):
         """Control the dynamic payload feature for a specific data pipe."""
         if pipe_number is None:
             self.dynamic_payloads = bool(enable)
@@ -577,7 +577,7 @@ class RF24:
                 self._pl_len[i] = min(32, val)
                 self._reg_write(RX_PL_LENG + i, self._pl_len[i])
 
-    def set_payload_length(self, length: int, pipe_number: int = None):
+    def set_payload_length(self, length: int, pipe_number: Optional[int] = None):
         """Sets the static payload length feature for each/all data pipes."""
         if pipe_number is None:
             self.payload_length = length
@@ -722,7 +722,7 @@ class RF24:
 
     @data_rate.setter
     def data_rate(self, speed: int):
-        if not speed in (1, 2, 250):
+        if speed not in (1, 2, 250):
             raise ValueError("data_rate must be 1 (Mbps), 2 (Mbps), or 250 (kbps)")
         speed = 0 if speed == 1 else (0x20 if speed != 2 else 8)
         self._rf_setup = self._reg_read(RF_PA_RATE) & 0xD7 | speed
@@ -844,7 +844,7 @@ class RF24:
         """Flush all 3 levels of the TX FIFO."""
         self._reg_write(0xE1)
 
-    def fifo(self, about_tx: bool = False, check_empty: bool = None):
+    def fifo(self, about_tx: bool = False, check_empty: Optional[bool] = None):
         """This provides the status of the TX/RX FIFO buffers. (read-only)"""
         _fifo, about_tx = (self._reg_read(0x17), bool(about_tx))
         if check_empty is None:

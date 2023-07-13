@@ -20,5 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """import only accessible API wrappers"""
+# ruff: noqa: F401
 from adafruit_bus_device.spi_device import SPIDevice  # type: ignore[import]
 from .cpy_spidev import SPIDevCtx  # for linux only

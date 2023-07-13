@@ -218,8 +218,9 @@ FakeBLE class
 
     The only allowed channels are those contained in the `BLE_FREQ` tuple.
 
-    .. versionchanged:: 2.1.0
-        Any invalid input value (that is not found in `BLE_FREQ`) had raised a
+    .. versionchanged:: 2.1.0 Invalid input ignored
+
+        Prevoiusly, any invalid input value (that is not found in `BLE_FREQ`) had raised a
         `ValueError` exception. This behavior changed to ignoring invalid input values,
         and the exception is no longer raised.
 
@@ -256,7 +257,9 @@ FakeBLE class
         a single payload.
 
     .. versionchanged:: 2.0.0
-        The name of this function changed from "available" to "len_available" to avoid confusion with
+        The name of this function changed from "available" to "len_available".
+
+        This was done to avoid confusion with
         :py:func:`circuitpython_nrf24l01.rf24.RF24.available()`. This change also
         allows providing the underlying `RF24` class'
         :py:func:`~circuitpython_nrf24l01.rf24.RF24.available()` method in the

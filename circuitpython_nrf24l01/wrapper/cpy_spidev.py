@@ -20,6 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """This module contains a wrapper class for `spidev.SpiDev` in CPython on Linux"""
+try:
+    from typing import Optional
+except ImportError:
+    pass  # do not perform type checking on CirPy devices
 
 
 class SPIDevCtx:
@@ -64,7 +68,13 @@ class SPIDevCtx:
         self._spi.close()
         return False
 
-    def write_readinto(self, out_buf, in_buf, in_end: int = None, out_end: int = None):
+    def write_readinto(
+        self,
+        out_buf,
+        in_buf,
+        in_end: Optional[int] = None,
+        out_end: Optional[int] = None,
+    ):
         """wraps ``spidev.SpiDev.xfer2()`` into MicroPython compatible
         ``spi.write_readinto()`` calls.
 
