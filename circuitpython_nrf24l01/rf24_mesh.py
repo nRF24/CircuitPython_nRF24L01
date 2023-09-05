@@ -183,6 +183,13 @@ class RF24MeshNoMaster(NetworkMixin):
         if not contacts:
             return False
 
+        def _get_level(address: int) -> int:
+            count = 0
+            while address:
+                address >>= 3
+                count += 1
+            return count
+
         new_addr = None
         for contact in contacts:
             # print("Requesting address from", oct(contact))
@@ -199,8 +206,7 @@ class RF24MeshNoMaster(NetworkMixin):
                     and self.frame_buf.header.reserved == self.node_id
                 ):
                     new_addr = struct.unpack("<H", self.frame_buf.message[:2])[0]
-                    level = 0 if contact < 7 else len(oct(contact)[2:])
-                    test_addr = new_addr & ~(0xFFFF << (level * 3))
+                    test_addr = new_addr & ~(0xFFFF << (_get_level(contact) * 3))
                     if test_addr != contact:
                         new_addr = None
                     else:
