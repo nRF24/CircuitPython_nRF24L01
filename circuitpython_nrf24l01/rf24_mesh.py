@@ -199,8 +199,10 @@ class RF24MeshNoMaster(NetworkMixin):
                     and self.frame_buf.header.reserved == self.node_id
                 ):
                     new_addr = struct.unpack("<H", self.frame_buf.message[:2])[0]
-                    level = 0 if contact < 7 else len(oct(contact)[2:])
+                    level = 0 if contact == 0 else (1 if 0 < contact < 7 else len(oct(contact)[2:]))
                     test_addr = new_addr & ~(0xFFFF << (level * 3))
+                    # print(f'=== Frame ===\nHeader: {self.frame_buf.header.to_string()}\nMessage (Encoded): {self.frame_buf.message}\nMessage (Decoded): {self.frame_buf.message.decode()}')
+                    # print(f'=== Variables ===\ncontact: {oct(contact)}\nnew_addr: {oct(new_addr)}\nlevel: {level}\ntest_addr: {oct(test_addr)}')
                     if test_addr != contact:
                         new_addr = None
                     else:
