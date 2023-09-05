@@ -167,15 +167,17 @@ class RadioState:
         # self.logger.debug("offset: %02X, cmd_bits: %02X", __offset, cmd_bits)
         if cmd_bits == 0x20 or not cmd_bits:
             if not cmd_bits:
-                # self.logger.debug("register %02X is a read register operation.", __offset)
+                # self.logger.debug(
+                #     "register %02X is a read register operation.", __offset
+                # )
                 raise RegisterReadOnly(
                     "writing a register requires the 0x20 bit asserted"
                 )
             register = __offset & 0x1F
             if register == 7:
                 # STATUS register bits 4-7 are write-able (bits 0-3 are read-only)
-                # since bits 4-7 don't stick (used to clear IRQ), then we use the value as
-                # a mask for testing
+                # since bits 4-7 don't stick (used to clear IRQ), then we use the value
+                # as a mask for testing
                 self.registers[7][0] &= ~value[0]
             else:
                 self.registers[register] = value

@@ -112,7 +112,7 @@ Advanced RF24 API
         calculating an adequate transmission timeout sentinel.
 
     .. versionadded:: 1.2.0
-        ``write_only`` parameter
+        Added ``write_only`` parameter
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.load_ack
 
@@ -170,8 +170,9 @@ Advanced RF24 API
 
     .. versionchanged:: 2.1.0
         A `ValueError` exception was thrown when an invalid input value was encountered.
-        This changed to setting the address length to 2 bytes (for possible reverse engineering protocol
-        purposes).
+
+        This was changed to allow setting the address length to 2 bytes (for possible reverse
+        engineering protocol purposes).
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.address
 
@@ -297,8 +298,10 @@ Debugging Output
         specified ``buf`` parameter.
 
     .. versionchanged:: 2.1.0
-        Added parameters ``reverse`` and ``delimit`` as this function proved vital to
-        debugging and developing `RF24NetworkHeader` & `RF24NetworkFrame`.
+        Added parameters ``reverse`` and ``delimit``
+
+        This function proved vital to debugging and developing `RF24NetworkHeader` &
+        `RF24NetworkFrame`.
 
 Status Byte
 ******************************
@@ -382,7 +385,8 @@ Status Byte
 .. autoproperty:: circuitpython_nrf24l01.rf24.RF24.pipe
 
 
-    .. versionchanged:: 1.2.0
+    .. versionchanged:: 1.2.0 Changed from method to property
+
         In previous versions of this library, this attribute was a read-only function
         (``pipe()``).
 

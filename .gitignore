@@ -70,6 +70,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/social_cards_cache/
 
 # PyBuilder
 target/

@@ -88,8 +88,10 @@ Configurable RF24 API
             `rpd` to execute a hardware test.
 
     .. versionchanged:: 2.2.0
-        Blindly allow configuring the radio for 250 kbps as support is marginally dependent
-        on the hardware being used.
+        Blindly allow configuring the radio for 250 kbps
+
+        Support for 250 kbps is dependent on the hardware being used, and there's no agnostic way
+        to detect such support.
 
 .. autoproperty:: circuitpython_nrf24l01.rf24.RF24.channel
 
@@ -220,8 +222,9 @@ payload_length
         The current setting of the expected static payload length feature for pipe 0 only.
 
     .. versionchanged:: 1.2.0
-        Return a list of all payload length settings for all pipes. This implementation
-        introduced a couple bugs:
+        Return a list of all payload length settings for all pipes.
+
+        This implementation introduced a couple bugs:
 
         1. The settings could be changed improperly in a way that was not written to the
            nRF24L01 registers.
@@ -231,7 +234,9 @@ payload_length
 
     .. versionchanged:: 2.0.0
         This attribute returns the configuration about static payload length for data pipe 0
-        only. Use `get_payload_length()` to fetch the configuration of the static payload
+        only.
+
+        Use `get_payload_length()` to fetch the configuration of the static payload
         length feature for any data pipe.
 
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.set_payload_length
@@ -345,8 +350,9 @@ Auto-Retry feature
         Invalid input values are clamped to proper range instead of throwing a `ValueError`
         exception.
     .. versionchanged:: 2.2.0
-        Default value changed from 3 to the maximum 15. This only affects performance in
-        scenarios that experience unreliable reception.
+        Default value changed from 3 to the maximum 15.
+
+        This only affects performance in scenarios that experience unreliable reception.
 
 .. autoproperty:: circuitpython_nrf24l01.rf24.RF24.ard
 

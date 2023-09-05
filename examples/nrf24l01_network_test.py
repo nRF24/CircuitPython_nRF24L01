@@ -199,7 +199,6 @@ def set_role():
 
 
 if __name__ == "__main__":
-
     try:
         while set_role():
             pass  # continue example until 'Q' is entered

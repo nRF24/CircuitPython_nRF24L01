@@ -77,7 +77,7 @@ class RadioMixin:
     def flush_tx(self):
         self._rf24.flush_tx()
 
-    def fifo(self, about_tx: bool, check_empty: bool = None):
+    def fifo(self, about_tx: bool, check_empty: Optional[bool] = None):
         return self._rf24.fifo(about_tx, check_empty)
 
     @property
@@ -96,7 +96,7 @@ class RadioMixin:
     def channel(self, val: int):
         self._rf24.channel = val
 
-    def set_dynamic_payloads(self, enable: bool, pipe: int = None):
+    def set_dynamic_payloads(self, enable: bool, pipe: Optional[int] = None):
         self._rf24.set_dynamic_payloads(enable, pipe_number=pipe)
 
     def get_dynamic_payloads(self, pipe: int = 0) -> bool:
@@ -457,7 +457,7 @@ class NetworkMixin(RadioMixin):
         self,
         message: Union[bytes, bytearray],
         message_type: Union[str, int],
-        level: int = None,
+        level: Optional[int] = None,
     ) -> bool:
         """Broadcast a message to all nodes on a certain network level."""
         if not self._validate_msg_len(len(message)):
@@ -538,7 +538,7 @@ class NetworkMixin(RadioMixin):
 
     def _write_to_pipe(self, to_node: int, to_pipe: int, is_multicast: bool) -> bool:
         """send prepared frame to a particular node's pipe"""
-        result = False  # type: Union[bool, bytearray, List[Union[bool, bytearray]]]
+        result: Union[bool, bytearray, List[Union[bool, bytearray]]] = False
         if to_node == self._addr:
             return self.queue.enqueue(self.frame_buf)
         self._rf24.auto_ack = 0x3E + (not is_multicast)

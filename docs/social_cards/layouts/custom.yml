@@ -1,0 +1,81 @@
+# {% block color_vals %}
+bg_color: &bg_color '{{ layout.background_color | yaml }}'
+fg_color: &fg_color '{{ layout.color | yaml }}'
+# {% endblock %}
+
+row1_width: &row1_width 1080
+row2_width: &row2_width 500
+col2: &col2 310
+
+layers:
+  # the base layer for the background
+  - background:
+      color: *bg_color
+      image: '{{ layout.background_image }}'
+  # the layer for the logo/icon image
+  - size: { width: 60, height: 60 }
+    offset: { x: 1050, y: 60 }
+    icon:
+      image: >
+        #% if page.meta.icon %#
+        '{{ page.meta.icon }}'
+        #% elif layout.logo.image %#
+        '{{ layout.logo.image }}'
+        #% endif %#
+      color: '{{ layout.logo.color | yaml }}'
+  # the layer for the large logo image
+  - size: { width: 640, height: 320 }
+    offset: { x: 560, y: *col2 }
+    icon:
+      image: '{{ layout.background_image }}'
+  # fancy bg art
+  - offset: { x: -630, y: -630 }
+    size: { width: 1260, height: 1260 }
+    ellipse:
+      radial_gradient:
+        colors:
+          0.5: rgba(0, 0, 0, 0)
+          1.0: rgba(128, 42, 3, 0.24)
+        spread: repeat
+        center: { x: 0, y: 0 }
+        radius: 90
+  # the layer for the site's name
+  - offset: { x: 60, y: 60 }
+    size: { width: 960, height: 60 }
+    typography:
+      content: '{{ config.docstitle }}'
+      align: end center
+      color: '{{ layout.color }}'
+  # the layer for the page's title
+  - size: { width: *row1_width, height: 150 }
+    offset: { x: 60, y: 150 }
+    typography:
+      content: >-
+        #% if page.meta.title %#
+        '{{ page.meta.title }}'
+        #% elif page.title %#
+        '{{ page.title }}'
+        #% endif %#
+      line:
+        height: 0.9
+      font:
+        weight: 500
+      color: *fg_color
+      align: center
+      overflow: on
+  # the layer for the site's (or page's) description
+  - offset: { x: 60, y: *col2 }
+    size: { width: 490, height: 290 }
+    typography:
+      content: >-
+        #% if page.meta and page.meta.description %#
+        '{{ page.meta.description }}'
+        #% else %#
+        '{{ config.site_description }}'
+        #% endif %#
+      line:
+        height: 0.87
+        amount: 4
+      overflow: on
+      align: start bottom
+      color: '{{ layout.color | yaml }}'

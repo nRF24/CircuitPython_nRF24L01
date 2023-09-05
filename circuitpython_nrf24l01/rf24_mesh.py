@@ -122,7 +122,7 @@ class RF24MeshNoMaster(NetworkMixin):
             total_requests = (total_requests + 1) % 10
         return self._addr
 
-    def lookup_address(self, node_id: int = None) -> int:
+    def lookup_address(self, node_id: Optional[int] = None) -> int:
         """Convert a node's unique ID number into its corresponding
         :ref:`Logical Address <Logical Address>`."""
         if not node_id:
@@ -131,7 +131,7 @@ class RF24MeshNoMaster(NetworkMixin):
             return -2
         return self._lookup_2_master(node_id, MESH_ADDR_LOOKUP)
 
-    def lookup_node_id(self, address: int = None) -> int:
+    def lookup_node_id(self, address: Optional[int] = None) -> int:
         """Convert a node's :ref:`Logical Address <Logical Address>` into its
         corresponding unique ID number."""
         if not address:
@@ -307,7 +307,7 @@ class RF24Mesh(RF24MeshNoMaster):
         super().__init__(spi, csn_pin, ce_pin, node_id, spi_frequency)
         self._do_dhcp = False
         #: A `dict` that enables master nodes to act as a DNS.
-        self.dhcp_dict = {}  # type: Dict[int, int]
+        self.dhcp_dict: Dict[int, int] = {}
 
     def update(self) -> int:
         """Checks for incoming network data and returns last message type (if any)"""
@@ -408,7 +408,7 @@ class RF24Mesh(RF24MeshNoMaster):
         """Load the `dhcp_dict` from a JSON file (meant for master nodes only)."""
         with open(filename, "rb") as json_file:
             if json is not None and not as_bin:
-                temp_dict = json.load(json_file)  # type: Dict[str, int]
+                temp_dict: Dict[str, int] = json.load(json_file)
                 # convert keys from `str` to `int`
                 for n_id, addr in temp_dict.items():
                     self.set_address(int(n_id), addr, True)
@@ -431,7 +431,7 @@ class RF24Mesh(RF24MeshNoMaster):
         if dump_pipes:
             self._rf24.print_pipes()
 
-    def lookup_address(self, node_id: int = None) -> int:
+    def lookup_address(self, node_id: Optional[int] = None) -> int:
         """Convert a node's unique ID number into its corresponding
         :ref:`Logical Address <Logical Address>`."""
         if not node_id:
@@ -442,7 +442,7 @@ class RF24Mesh(RF24MeshNoMaster):
             return self._get_address(node_id, MESH_ADDR_LOOKUP)
         return self._lookup_2_master(node_id, MESH_ADDR_LOOKUP)
 
-    def lookup_node_id(self, address: int = None) -> int:
+    def lookup_node_id(self, address: Optional[int] = None) -> int:
         """Convert a node's :ref:`Logical Address <Logical Address>` into its
         corresponding unique ID number."""
         if not address:

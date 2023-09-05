@@ -32,10 +32,17 @@ jobs:
     steps:
 
       - uses: actions/setup-python@v4
+        id: python-setup
         with:
           python-version: "3.x"
 
       - uses: actions/checkout@v3
+
+      - name: Cache pre-commit environments
+        uses: actions/cache@v3
+        with:
+          path: '~/.cache/pre-commit'
+          key: pre-commit-${{ steps.python-setup.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
 
       - name: Install pre-commit and deps
         run: pip install pre-commit -r requirements.txt
@@ -118,6 +125,8 @@ jobs:
 
   build-docs:
     runs-on: ubuntu-latest
+    env:
+      QT_QPA_PLATFORM: offscreen
     steps:
       - uses: actions/checkout@v3
 
@@ -128,8 +137,9 @@ jobs:
 
       - name: Install deps
         run: |
-          pip install -r docs/requirements.txt -r requirements.txt
-          sudo apt-get install graphviz
+          pip install -r docs/requirements.txt
+          pip install -e .
+          sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 graphviz
 
       - name: Build docs
         working-directory: docs
