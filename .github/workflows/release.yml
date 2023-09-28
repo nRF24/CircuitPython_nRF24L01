@@ -32,12 +32,12 @@ jobs:
           python-version: "3.x"
 
       - name: Checkout Current Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Checkout tools repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: adafruit/actions-ci-circuitpython-libs
           path: actions-ci
@@ -66,7 +66,7 @@ jobs:
   upload-pypi:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
