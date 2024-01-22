@@ -39,7 +39,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Cache pre-commit environments
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: '~/.cache/pre-commit'
           key: pre-commit-${{ steps.python-setup.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
