@@ -276,7 +276,7 @@ class FakeBLE(RF24):
         """Assemble the entire packet to be transmitted as a payload."""
         if self.len_available(payload) < 0:
             raise ValueError(
-                "Payload length exceeds maximum buffer size by " "{} bytes".format(
+                "Payload length exceeds maximum buffer size by {} bytes".format(
                     abs(self.len_available(payload))
                 )
             )
