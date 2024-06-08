@@ -31,6 +31,8 @@ except ImportError:
 from .constants import (
     NETWORK_EXT_DATA,
     NETWORK_MULTICAST_ADDR,
+    NETWORK_MULTICAST_ADDR_LVL_2,
+    NETWORK_MULTICAST_ADDR_LVL_4,
     MSG_FRAG_FIRST,
     MSG_FRAG_MORE,
     MSG_FRAG_LAST,
@@ -41,7 +43,11 @@ def is_address_valid(address: Optional[int]) -> bool:
     """Test if a given address is a valid :ref:`Logical Address <Logical Address>`."""
     if address is None:
         return False
-    if address == NETWORK_MULTICAST_ADDR:
+    if address in (
+        NETWORK_MULTICAST_ADDR,
+        NETWORK_MULTICAST_ADDR_LVL_2,
+        NETWORK_MULTICAST_ADDR_LVL_4,
+    ):
         return True
     byte_count = 0
     while address:
