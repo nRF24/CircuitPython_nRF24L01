@@ -2,6 +2,7 @@
 Simple example of using the library to transmit
 and retrieve custom automatic acknowledgment payloads.
 """
+
 import time
 import board
 from digitalio import DigitalInOut

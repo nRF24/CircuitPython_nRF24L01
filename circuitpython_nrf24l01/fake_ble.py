@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 """Original research was done by Dmitry Grinberg and his write-up can be found at
 http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery"""
+
 from os import urandom
 import struct
 
@@ -192,9 +193,9 @@ class FakeBLE(RF24):
         # disable auto_ack, dynamic payloads, all TX features, & auto-retry
         self._aa, self._dyn_pl, self._features, self._retry_setup = (0,) * 4
         self._addr_len = 4  # use only 4 byte address length
-        self._tx_address[:4] = b"\x71\x91\x7D\x6B"
+        self._tx_address[:4] = b"\x71\x91\x7d\x6b"
         with self:
-            super().open_rx_pipe(0, b"\x71\x91\x7D\x6B\0")
+            super().open_rx_pipe(0, b"\x71\x91\x7d\x6b\0")
         #: The internal queue of received BLE payloads' data.
         self.rx_queue: List[QueueElement] = []
         self.rx_cache: bytearray = bytearray(0)
@@ -275,8 +276,9 @@ class FakeBLE(RF24):
         """Assemble the entire packet to be transmitted as a payload."""
         if self.len_available(payload) < 0:
             raise ValueError(
-                "Payload length exceeds maximum buffer size by "
-                "{} bytes".format(abs(self.len_available(payload)))
+                "Payload length exceeds maximum buffer size by {} bytes".format(
+                    abs(self.len_available(payload))
+                )
             )
         name_length = 0 if self._ble_name is None else (len(self._ble_name) + 2)
         pl_size = 9 + len(payload) + name_length + self._show_dbm * 3
@@ -344,7 +346,6 @@ class FakeBLE(RF24):
                 self.rx_queue.append(QueueElement(self.rx_cache))
         return bool(self.rx_queue)
 
-    # pylint: disable=arguments-differ
     def read(self) -> Optional[QueueElement]:  # type: ignore[override]
         """Get the First Out element from the queue."""
         if self.rx_queue:
@@ -353,8 +354,6 @@ class FakeBLE(RF24):
             return ret_val
         return None
 
-    # pylint: enable=arguments-differ
-    # pylint: disable=unused-argument
     @RF24.dynamic_payloads.setter  # type: ignore[attr-defined]
     def dynamic_payloads(self, val):
         raise NotImplementedError("using dynamic_payloads breaks BLE specifications")
@@ -384,8 +383,6 @@ class FakeBLE(RF24):
 
     def open_tx_pipe(self, address):
         raise NotImplementedError("BLE implementation only uses 1 address")
-
-    # pylint: enable=unused-argument
 
 
 class ServiceData:

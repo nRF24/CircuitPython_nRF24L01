@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """rf24_network module containing the base class RF24Network"""
+
 import time
 import struct
 
@@ -154,7 +155,7 @@ class RF24MeshNoMaster(NetworkMixin):
         timeout = MESH_LOOKUP_TIMEOUT * 1000000 + time.monotonic_ns()
         while self._net_update() not in (MESH_ID_LOOKUP, MESH_ADDR_LOOKUP):
             if callable(self.block_less_callback):
-                self.block_less_callback()  # pylint: disable=not-callable
+                self.block_less_callback()
             if time.monotonic_ns() > timeout:
                 return -1
         if lookup_type == MESH_ADDR_LOOKUP:
@@ -212,7 +213,7 @@ class RF24MeshNoMaster(NetworkMixin):
                     else:
                         break
             if callable(self.block_less_callback):
-                self.block_less_callback()  # pylint: disable=not-callable
+                self.block_less_callback()
         if new_addr is None:
             return False
         super()._begin(new_addr)

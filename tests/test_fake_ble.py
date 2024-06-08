@@ -1,4 +1,5 @@
 """tests related to helper functions."""
+
 import os
 import struct
 from typing import Union, Optional
@@ -16,11 +17,9 @@ from circuitpython_nrf24l01.fake_ble import (
     BATTERY_UUID,
 )
 
-# pylint: disable=redefined-outer-name
-
 
 @pytest.mark.parametrize(
-    "addr,expected", [(b"1Node", "65646F4E31"), (b"\0\xFF\1", "01FF00")]
+    "addr,expected", [(b"1Node", "65646F4E31"), (b"\0\xff\1", "01FF00")]
 )
 def test_addr_repr(addr: Union[bytes, bytearray], expected: str):
     """test address_repr()"""
@@ -62,7 +61,7 @@ def test_rev_bits():
         assert x == swap_bits(y)
 
 
-@pytest.mark.parametrize("addr", [None, 0xAABBCCDDEEFF, b"\xAA\xBB\xCC"])
+@pytest.mark.parametrize("addr", [None, 0xAABBCCDDEEFF, b"\xaa\xbb\xcc"])
 def test_ble_mac(ble_obj: FakeBLE, addr: Optional[Union[int, bytes]]):
     """test the FakeBLE mac attribute."""
     assert isinstance(ble_obj.mac, (bytes, bytearray))

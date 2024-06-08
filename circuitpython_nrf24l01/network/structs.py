@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 """These classes are used to structure/store the payload data for wireless network
 transactions."""
+
 import struct
 
 try:

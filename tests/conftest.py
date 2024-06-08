@@ -1,5 +1,6 @@
 """Monkeypatch for converting SPI transaction into logging functions that store
 registers in a dict."""
+
 import logging
 from typing import Union, Tuple
 import pytest
@@ -10,8 +11,6 @@ from circuitpython_nrf24l01.rf24 import (
 from circuitpython_nrf24l01.fake_ble import FakeBLE
 from circuitpython_nrf24l01.rf24_network import RF24Network
 from circuitpython_nrf24l01.rf24_mesh import RF24Mesh
-
-# pylint: disable=redefined-outer-name
 
 
 class RegisterError(Exception):
@@ -36,13 +35,13 @@ class RadioState:
         7: bytearray([4]),  # STATUS
         8: bytearray([0]),  # OBSERVE_TX
         9: bytearray([0]),  # RPD
-        0x0A: bytearray(b"\xE7" * 5),  # RX_ADDR_P0
-        0x0B: bytearray(b"\xC2" * 5),  # RX_ADDR_P1
-        0x0C: bytearray(b"\xC3"),  # RX_ADDR_P2
-        0x0D: bytearray(b"\xC4"),  # RX_ADDR_P3
-        0x0E: bytearray(b"\xC5"),  # RX_ADDR_P4
-        0x0F: bytearray(b"\xC6"),  # RX_ADDR_P5
-        0x10: bytearray(b"\xE7" * 5),  # TX_ADDRESS
+        0x0A: bytearray(b"\xe7" * 5),  # RX_ADDR_P0
+        0x0B: bytearray(b"\xc2" * 5),  # RX_ADDR_P1
+        0x0C: bytearray(b"\xc3"),  # RX_ADDR_P2
+        0x0D: bytearray(b"\xc4"),  # RX_ADDR_P3
+        0x0E: bytearray(b"\xc5"),  # RX_ADDR_P4
+        0x0F: bytearray(b"\xc6"),  # RX_ADDR_P5
+        0x10: bytearray(b"\xe7" * 5),  # TX_ADDRESS
         0x11: bytearray([32]),  # RX_PL_LENG P0
         0x12: bytearray([32]),  # RX_PL_LENG P1
         0x13: bytearray([32]),  # RX_PL_LENG P2
@@ -264,12 +263,9 @@ def net_obj(
     """creates a RF24Network object (used as pytest fixture)."""
     network = RF24Network(*spi_obj, node_address=n_id)
 
-    # pylint: disable=unused-argument
     def pseudo_send(buf, ask_no_ack=False, send_only=False):
         spi_obj[0].state.tx_fifo.append(buf)
         return True
-
-    # pylint: enable=unused-argument
 
     monkeypatch.setattr(network._rf24, "send", pseudo_send)
     return network
@@ -284,12 +280,9 @@ def mesh_obj(
     """creates a RF24Mesh object (used as pytest fixture)."""
     mesh = RF24Mesh(*spi_obj, node_id=n_id)
 
-    # pylint: disable=unused-argument
     def pseudo_send(buf, ask_no_ack=False, send_only=False):
         spi_obj[0].state.tx_fifo.append(buf)
         return True
-
-    # pylint: enable=unused-argument
 
     monkeypatch.setattr(mesh._rf24, "send", pseudo_send)
     return mesh

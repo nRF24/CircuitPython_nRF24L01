@@ -1,4 +1,5 @@
 """Simple tests for Network data structures."""
+
 import struct
 from typing import Union, Optional, List
 import pytest
@@ -129,7 +130,7 @@ def test_frag_queue(types: List[int]):
         assert queue.enqueue(frame)
 
 
-@pytest.mark.parametrize("dev_name", [b"n", b"\xFF", None])
+@pytest.mark.parametrize("dev_name", [b"n", b"\xff", None])
 def test_queue_element(ble_obj: FakeBLE, dev_name: Optional[bytes]):
     """test the deciphering of BLE payload data from buffers."""
     batt = BatteryServiceData()

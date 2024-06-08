@@ -4,6 +4,7 @@ nRF24L01
     .. note:: this script uses the non-blocking `write()` function because
         the function `send()` clears the IRQ flags upon returning
 """
+
 import time
 import board
 import digitalio

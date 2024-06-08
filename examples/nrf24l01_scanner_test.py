@@ -3,6 +3,7 @@ This is an example of how to use the nRF24L01's builtin
 Received Power Detection (RPD) to scan for possible interference.
 This example does not require a counterpart node.
 """
+
 import time
 import board
 from digitalio import DigitalInOut
@@ -48,7 +49,7 @@ nrf.allow_ask_no_ack = False
 # use reverse engineering tactics for a better "snapshot"
 nrf.address_length = 2
 nrf.open_rx_pipe(1, b"\0\x55")
-nrf.open_rx_pipe(0, b"\0\xAA")
+nrf.open_rx_pipe(0, b"\0\xaa")
 
 
 def scan(timeout=30):

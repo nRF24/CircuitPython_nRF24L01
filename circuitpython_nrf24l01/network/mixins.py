@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """A module to hold all usually accessible RF24 API via the RF24Network API"""
-# pylint: disable=missing-docstring
+
 import time
 
 try:

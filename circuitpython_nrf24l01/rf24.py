@@ -21,6 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """rf24 module containing the base class RF24"""
+
 import time
 
 try:
@@ -877,8 +878,8 @@ class RF24:
         if not self.is_plus_variant:
             self._reg_write(AUTO_ACK, 0)
             self._reg_write(SETUP_RETR, 0)
-            self._reg_write_bytes(TX_ADDRESS, b"\xFF" * 5)
-            self._reg_write_bytes(0xA0, b"\xFF" * 32)
+            self._reg_write_bytes(TX_ADDRESS, b"\xff" * 5)
+            self._reg_write_bytes(0xA0, b"\xff" * 32)
             self._reg_write(CONFIGURE, 0x73)
             self._ce_pin.value = True
             time.sleep(0.001)

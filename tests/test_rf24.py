@@ -1,4 +1,5 @@
 """Test functions related to core RF24 functionality."""
+
 from typing import Optional
 import pytest
 from circuitpython_nrf24l01.rf24 import RF24
@@ -69,7 +70,7 @@ def test_rx_pipe(rf24_obj: RF24, pipe: int, addr: bytes):
 
 def inject_rx_fifo(obj: RF24):
     """Fake a received payloads by injecting them into the state machine."""
-    obj._spi._spi.state.rx_fifo.append(bytearray(b"\xFF" * 32))
+    obj._spi._spi.state.rx_fifo.append(bytearray(b"\xff" * 32))
     obj._spi._spi.state.registers[7][0] &= 0xF1
     obj._spi._spi.state.registers[7][0] |= 4
 
@@ -99,8 +100,8 @@ def test_read(rf24_obj: RF24, dyn_pl):
 
     for _ in range(4):  # inject 128 bytes in state machine's RX FIFO
         inject_rx_fifo(rf24_obj)
-    assert rf24_obj.read() == bytearray(b"\xFF" * 32)
-    assert rf24_obj.read(96) == bytearray(b"\xFF" * 96)
+    assert rf24_obj.read() == bytearray(b"\xff" * 32)
+    assert rf24_obj.read(96) == bytearray(b"\xff" * 96)
     assert rf24_obj.any() == 0
 
 
@@ -109,7 +110,7 @@ def test_tx_full(rf24_obj: RF24):
     assert not rf24_obj.tx_full
     rf24_obj.ack = True
     for _ in range(3):
-        assert rf24_obj.load_ack(b"\xFF" * 32, 1)
+        assert rf24_obj.load_ack(b"\xff" * 32, 1)
     assert rf24_obj.update() and rf24_obj.tx_full
 
 
@@ -215,7 +216,7 @@ def test_ack(rf24_obj: RF24, enable: bool):
 @pytest.mark.parametrize(
     "pipe", [0, 1, 2, 3, 4, 5, pytest.param(6, marks=pytest.mark.xfail)]
 )
-@pytest.mark.parametrize("buf", [b"\xFF", pytest.param(b"", marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("buf", [b"\xff", pytest.param(b"", marks=pytest.mark.xfail)])
 def test_load_ack(rf24_obj: RF24, pipe: int, buf: bytes):
     """test load_ack()"""
     for _ in range(3):
@@ -233,10 +234,10 @@ def test_allow_ask_no_ack(rf24_obj: RF24, enable: bool):
 @pytest.mark.parametrize(
     "buf,dyn_pl",
     [
-        (b"\xFF", False),
+        (b"\xff", False),
         (b"\0" * 33, False),
         (b"", False),
-        (b"\xFF", True),
+        (b"\xff", True),
         pytest.param(b"\0" * 33, True, marks=pytest.mark.xfail),
         pytest.param(b"", True, marks=pytest.mark.xfail),
     ],
@@ -263,7 +264,7 @@ def test_write(rf24_obj: RF24, buf: bytes, dyn_pl: bool):
 )
 def test_address(rf24_obj: RF24, pipe: int):
     """test address()"""
-    addr = b"\xCC" * 5
+    addr = b"\xcc" * 5
     if pipe < 0:
         rf24_obj.open_tx_pipe(addr)
         assert rf24_obj.address() == addr
@@ -290,8 +291,8 @@ def test_carrier_functions(rf24_obj: RF24, monkeypatch: pytest.MonkeyPatch):
     # some additional settings should be altered for non-plus variants
     assert not rf24_obj.auto_ack
     assert (250, 0) == rf24_obj.get_auto_retries()
-    assert rf24_obj._spi._spi.state.registers[0x10] == bytearray(b"\xFF" * 5)
-    assert rf24_obj._spi._spi.state.tx_fifo[0] == bytearray(b"\xFF" * 32)
+    assert rf24_obj._spi._spi.state.registers[0x10] == bytearray(b"\xff" * 5)
+    assert rf24_obj._spi._spi.state.tx_fifo[0] == bytearray(b"\xff" * 32)
     assert rf24_obj._spi._spi.state.registers[0][0] & 0x73 == 0x73
 
     rf24_obj.stop_carrier_wave()
