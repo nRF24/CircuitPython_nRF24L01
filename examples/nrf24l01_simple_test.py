@@ -1,6 +1,7 @@
 """
 Simple example of using the RF24 class.
 """
+
 import time
 import struct
 import board

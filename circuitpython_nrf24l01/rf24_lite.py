@@ -1,5 +1,4 @@
 # see license and copyright information in rf24.py
-# pylint: disable=missing-docstring
 import time
 from adafruit_bus_device.spi_device import SPIDevice  # type: ignore[import]
 
@@ -29,7 +28,6 @@ class RF24:
         self.flush_tx()
         self.clear_status_flags()
 
-    # pylint: disable=no-member
     def _reg_read(self, reg):
         in_buf = bytearray([0, 0])
         with self._spi as spi:
@@ -58,8 +56,6 @@ class RF24:
         with self._spi as spi:
             spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
-
-    # pylint: enable=no-member
 
     @property
     def ce_pin(self):

@@ -2,6 +2,7 @@
 Simple example of using 1 nRF24L01 to receive data from up to 6 other
 transceivers. This technique is called "multiceiver" in the datasheet.
 """
+
 import time
 import struct
 import board
@@ -45,11 +46,11 @@ nrf.pa_level = -12
 # setup the addresses for all transmitting nRF24L01 nodes
 addresses = [
     b"\x78" * 5,
-    b"\xF1\xB6\xB5\xB4\xB3",
-    b"\xCD\xB6\xB5\xB4\xB3",
-    b"\xA3\xB6\xB5\xB4\xB3",
-    b"\x0F\xB6\xB5\xB4\xB3",
-    b"\x05\xB6\xB5\xB4\xB3",
+    b"\xf1\xb6\xb5\xb4\xb3",
+    b"\xcd\xb6\xb5\xb4\xb3",
+    b"\xa3\xb6\xb5\xb4\xb3",
+    b"\x0f\xb6\xb5\xb4\xb3",
+    b"\x05\xb6\xb5\xb4\xb3",
 ]
 
 # uncomment the following 3 lines for compatibility with TMRh20 library

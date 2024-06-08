@@ -5,6 +5,7 @@ display settings after changing contexts ( & thus configurations)
 
     .. warning:: This script is not compatible with the rf24_lite module
 """
+
 import board
 from digitalio import DigitalInOut
 from circuitpython_nrf24l01.rf24 import RF24

@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """rf24_network module containing the base class RF24Network"""
+
 try:
     from typing import Union
 except ImportError:

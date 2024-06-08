@@ -1,6 +1,7 @@
 """
 Example of library usage for streaming multiple payloads.
 """
+
 import time
 import board
 from digitalio import DigitalInOut

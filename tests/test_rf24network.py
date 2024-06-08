@@ -1,4 +1,5 @@
 """Tests related to the RF24Network class."""
+
 from typing import Optional, Union, Tuple
 import pytest
 from circuitpython_nrf24l01.rf24_network import RF24Network
@@ -163,10 +164,10 @@ def test_context(spi_obj):
 
     with network_a_node as net_a:
         assert net_a.address_prefix == bytearray([0xCC])
-        assert net_a.address_suffix == bytearray(b"\xC3\x3C\x33\xCE\x3E\xE3")
+        assert net_a.address_suffix == bytearray(b"\xc3\x3c\x33\xce\x3e\xe3")
     with network_b_node as net_b:
         assert net_b.address_prefix == bytearray([0xDB])
-        assert net_b.address_suffix == bytearray(b"\xDD\x99\xB6\xD9\x9D\x66")
+        assert net_b.address_suffix == bytearray(b"\xdd\x99\xb6\xd9\x9d\x66")
 
 
 @pytest.mark.parametrize(

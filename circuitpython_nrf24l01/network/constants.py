@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """All the constants related to managing a network with nRF24L01 radios."""
+
 from micropython import const
 
 

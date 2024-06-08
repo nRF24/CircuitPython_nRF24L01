@@ -1,6 +1,7 @@
 """
 An all-purpose example of using the nRF24L01 transceiver in a network of nodes.
 """
+
 import time
 import struct
 import board
@@ -152,12 +153,10 @@ def emit(
             message += struct.pack("<L", packets_sent[0])
         result = False
         start = time.monotonic_ns()
-        # pylint: disable=no-value-for-parameter
         if IS_MESH:  # send() is a little different for RF24Mesh vs RF24Network
             result = nrf.send(node, "M", message)
         else:
             result = nrf.send(RF24NetworkHeader(node, "T"), message)
-        # pylint: enable=no-value-for-parameter
         end = time.monotonic_ns()
         print(
             "Sending {} (len {})...".format(packets_sent[0], len(message)),

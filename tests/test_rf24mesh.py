@@ -1,4 +1,5 @@
 """Test RF24Mesh class"""
+
 from pathlib import Path
 from typing import Dict
 import pytest
