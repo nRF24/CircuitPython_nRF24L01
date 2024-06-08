@@ -40,8 +40,7 @@ Linting the source code
 
 This library uses pre-commit_ for some linting tools like
 
-- `black <https://black.readthedocs.io/en/stable/>`_
-- `pylint <https://pylint.pycqa.org/en/stable/>`_
+- `ruff <https://docs.astral.sh/ruff>`_
 - `mypy <https://mypy.readthedocs.io/en/stable/>`_
 
 To use pre-commit_, you must install it and create the cached environments that it needs.
