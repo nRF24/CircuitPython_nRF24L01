@@ -214,16 +214,17 @@ class RF24MeshNoMaster(NetworkMixin):
                         break
             if callable(self.block_less_callback):
                 self.block_less_callback()
-        if new_addr is None:
-            return False
-        super()._begin(new_addr)
-        # print("new address assigned:", oct(new_addr))
-        # do a double check as a manual retry in lack of using auto-ack
-        if self.lookup_node_id(self._addr) != self._id:
+            if new_addr is None:
+                continue
+            super()._begin(new_addr)
+            # print("new address assigned:", oct(new_addr))
+            # do a double check as a manual retry in lack of using auto-ack
             if self.lookup_node_id(self._addr) != self._id:
-                super()._begin(NETWORK_DEFAULT_ADDR)
-                return False
-        return True
+                if self.lookup_node_id(self._addr) != self._id:
+                    super()._begin(NETWORK_DEFAULT_ADDR)
+                    continue
+            return True
+        return False
 
     def _make_contact(self, lvl: int) -> List[int]:
         """Make a list of connections after multicasting a `NETWORK_POLL` message."""
