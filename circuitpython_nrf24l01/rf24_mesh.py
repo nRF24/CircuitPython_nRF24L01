@@ -29,7 +29,7 @@ try:
 except ImportError:
     pass  # some CircuitPython boards don't have the json module
 try:
-    from typing import Union, Dict, List, Optional, Callable, Any
+    from typing import Union, Dict, Set, Optional, Callable, Any
 except ImportError:
     pass
 import busio  # type:ignore[import]
@@ -226,9 +226,9 @@ class RF24MeshNoMaster(NetworkMixin):
             return True
         return False
 
-    def _make_contact(self, lvl: int) -> List[int]:
-        """Make a list of connections after multicasting a `NETWORK_POLL` message."""
-        responders: List[int] = []
+    def _make_contact(self, lvl: int) -> Set[int]:
+        """Make a set of connections after multicasting a `NETWORK_POLL` message."""
+        responders: Set[int] = set()
         self.frame_buf.header.to_node = NETWORK_MULTICAST_ADDR
         self.frame_buf.header.from_node = NETWORK_DEFAULT_ADDR
         self.frame_buf.header.message_type = NETWORK_POLL
@@ -238,9 +238,7 @@ class RF24MeshNoMaster(NetworkMixin):
         timeout = 55000000 + time.monotonic_ns()
         while time.monotonic_ns() < timeout and len(responders) < MESH_MAX_POLL:
             if self._net_update() == NETWORK_POLL:
-                contacted = self.frame_buf.header.from_node
-                if contacted not in responders:
-                    responders.append(contacted)
+                responders.add(self.frame_buf.header.from_node)
         return responders
 
     @property
