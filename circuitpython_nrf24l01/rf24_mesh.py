@@ -239,11 +239,7 @@ class RF24MeshNoMaster(NetworkMixin):
         while time.monotonic_ns() < timeout and len(responders) < MESH_MAX_POLL:
             if self._net_update() == NETWORK_POLL:
                 contacted = self.frame_buf.header.from_node
-                is_duplicate = False
-                for contact in responders:
-                    if contacted == contact:
-                        is_duplicate = True
-                if not is_duplicate:
+                if contacted not in responders:
                     responders.append(contacted)
         return responders
 
