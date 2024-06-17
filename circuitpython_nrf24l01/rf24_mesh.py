@@ -162,13 +162,15 @@ class RF24MeshNoMaster(NetworkMixin):
             return struct.unpack("<H", self.frame_buf.message[:2])[0]
         return self.frame_buf.message[0]
 
-    def check_connection(self) -> bool:
+    def check_connection(self, attempts: int = 3) -> bool:
         """Check for network connectivity (not for use on master node)."""
-        # do a double check as a manual retry in lack of using auto-ack
-        if self.lookup_address(self._id) < 1:
-            if self.lookup_address(self._id) < 1:
+        for _ in range(attempts):
+            result = self.lookup_address(self._id)
+            if result in (-2, 0):
                 return False
-        return True
+            if result == self.node_address:
+                return True
+        return False
 
     def update(self) -> int:
         """Checks for incoming network data and returns last message type (if any)"""
