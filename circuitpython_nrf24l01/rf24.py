@@ -319,8 +319,8 @@ class RF24:
         self._ce_pin.value = False
         if isinstance(buf, (list, tuple)):
             result = []
-            for byte in buf:
-                result.append(self.send(byte, ask_no_ack, force_retry, send_only))
+            for b_array in buf:
+                result.append(self.send(b_array, ask_no_ack, force_retry, send_only))
             return result  # type: ignore[return-value]
         if self._in[0] & 0x10 or self._in[0] & 1:
             self.flush_tx()
