@@ -31,6 +31,15 @@ RF24MeshNoMaster class
     .. seealso:: For all parameters' descriptions, see the
         :py:class:`~circuitpython_nrf24l01.rf24.RF24` class' constructor documentation.
 
+.. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24MeshNoMaster.release_address
+
+    .. hint::
+        This should be called from a mesh network node that is disconnecting from the network.
+        This is also recommended for mesh network nodes that are entering a powered down (or
+        sleep) mode.
+
+    :returns: `True` if the address was released, otherwise `False`.
+
 
 RF24Mesh class
 **************
@@ -170,10 +179,14 @@ Advanced API
 
 .. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.release_address
 
-    .. hint::
-        This should be called from a mesh network node that is disconnecting from the network.
-        This is also recommended for mesh network nodes that are entering a powered down (or
-        sleep) mode.
+    :param address: The address to release.
+    :returns: `True` if the address was released, otherwise `False`.
+
+    .. versionadded:: 2.2.0
+        Allows master nodes to forcibly release an assigned address.
+
+        This function is essentially an overload of `RF24MeshNoMaster.release_address()`
+        specifically designed for use on a master node.
 
 .. autoproperty:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.allow_children
 

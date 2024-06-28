@@ -333,10 +333,7 @@ class RF24Mesh(RF24MeshNoMaster):
                     self.frame_buf.message = bytes([ret_val])
                 self._write(self.frame_buf.header.to_node, TX_NORMAL)
             elif msg_t == MESH_ADDR_RELEASE:
-                for n_id, addr in self.dhcp_dict.items():
-                    if addr == self.frame_buf.header.from_node:
-                        del self.dhcp_dict[n_id]
-                        break
+                self.release_address(self.frame_buf.header.from_node)
             self._dhcp()
         return msg_t
 
@@ -434,6 +431,22 @@ class RF24Mesh(RF24MeshNoMaster):
                 print("    {}\t{}".format(n_id, oct(addr)))
         if dump_pipes:
             self._rf24.print_pipes()
+
+    def release_address(self, address: int = 0) -> bool:
+        """Release an assigned address from any corresponding mesh node's ID.
+
+        .. important::
+            This function is meant for use on master nodes. If the ``address``
+            parameter is not specified, then
+            `RF24MeshNoMaster.release_address()` is called.
+        """
+        if not address:
+            return super().release_address()
+        for id, addr in self.dhcp_dict.items():
+            if addr == address:
+                del self.dhcp_dict[id]
+                return True
+        return False
 
     def lookup_address(self, node_id: Optional[int] = None) -> int:
         """Convert a node's unique ID number into its corresponding
