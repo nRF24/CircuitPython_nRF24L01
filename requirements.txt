@@ -1,4 +1,4 @@
 Adafruit-Blinka
 adafruit-circuitpython-busdevice
-spidev; sys_platform == 'linux' and platform_machine == 'armv7l' or platform_machine == 'armv6l'
+spidev; sys_platform == 'linux' and ( platform_machine == 'armv7l' or platform_machine == 'armv6l' or platform_machine == 'aarch64' )
 typing-extensions
