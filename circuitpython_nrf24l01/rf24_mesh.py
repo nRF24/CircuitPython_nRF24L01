@@ -40,6 +40,7 @@ from .network.constants import (
     NETWORK_DEFAULT_ADDR,
     NETWORK_MULTICAST_ADDR,
     NETWORK_POLL,
+    NETWORK_PING,
     MESH_ADDR_RELEASE,
     MESH_ADDR_LOOKUP,
     MESH_ID_LOOKUP,
@@ -162,13 +163,20 @@ class RF24MeshNoMaster(NetworkMixin):
             return struct.unpack("<H", self.frame_buf.message[:2])[0]
         return self.frame_buf.message[0]
 
-    def check_connection(self, attempts: int = 3) -> bool:
+    def check_connection(self, attempts: int = 3, ping_master: bool = False) -> bool:
         """Check for network connectivity (not for use on master node)."""
+        if not self._id:
+            return True
+        if self._addr == NETWORK_DEFAULT_ADDR:
+            return False
         for _ in range(attempts):
-            result = self.lookup_address(self._id)
-            if result in (-2, 0):
-                return False
-            if result == self.node_address:
+            if ping_master:
+                result = self.lookup_address(self._id)
+                if result == -2:
+                    return False
+                if result == self._addr:
+                    return True
+            elif self.write(self._parent, NETWORK_PING, b""):
                 return True
         return False
 

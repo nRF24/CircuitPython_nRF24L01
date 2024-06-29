@@ -177,6 +177,31 @@ Advanced API
 
 .. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.check_connection
 
+    :param attempts: The number of attempts to test for active connection to the mesh network.
+    :param ping_master: If this parameter is set to `True`, then this function will verify the
+        connectivity by using `lookup_address()` to transact with the master node. Setting this
+        parameter to `False` will simply ping the node's parent.
+
+        .. warning::
+            Setting this parameter to `True` can result in performance cost when used in
+            a large mesh network. The disadvantages in such a situation are:
+
+            - increased load on master node
+            - increased network congestion
+            - unreliable connectivity information when a parent or grandparent of the current
+              node briefly loses connection.
+
+    :returns:
+        - `True` if connected to the mesh network (or current node is the master node).
+        - `False` if not connected to the mesh network or mesh network is unresponsive.
+
+    .. versionchanged:: 2.2.0
+        Added ``attempts`` and ``ping_master`` parameters; changed return value for master nodes
+
+        Previously, this function would return `False` when called from a master node.
+        This was changed to return `True` to help avoid erroneous user code calling
+        `renew_address()` on a master node.
+
 .. automethod:: circuitpython_nrf24l01.rf24_mesh.RF24Mesh.release_address
 
     :param address: The address to release.
