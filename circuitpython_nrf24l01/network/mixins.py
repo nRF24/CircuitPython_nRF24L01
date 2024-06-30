@@ -551,9 +551,8 @@ class NetworkMixin(RadioMixin):
                 result = self._tx_standby(self.tx_timeout)
         else:
             # break message into fragments and send the multiple resulting frames
-            total = bool(len(self.frame_buf.message) % MAX_FRAG_SIZE) + int(
-                len(self.frame_buf.message) / MAX_FRAG_SIZE
-            )
+            msg_len = len(self.frame_buf.message)
+            total = bool(msg_len % MAX_FRAG_SIZE) + int(msg_len / MAX_FRAG_SIZE)
             msg_t = self.frame_buf.header.message_type
             for count in range(total):
                 buf_start = count * MAX_FRAG_SIZE

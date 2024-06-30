@@ -29,6 +29,11 @@ MAX_USR_DEF_MSG_TYPE = const(127)  #: A convenient sentinel value.
 NETWORK_DEFAULT_ADDR = const(0o4444)  #: Primarily used by RF24Mesh.
 MAX_FRAG_SIZE = const(24)  #: Maximum message size for a single frame's message.
 NETWORK_MULTICAST_ADDR = const(0o100)  #: A reserved address for multicast messages.
+#: A reserved address for multicast messages to level 2
+NETWORK_MULTICAST_ADDR_LVL_2 = const(0o10)
+#: A reserved address for multicast messages to level 4
+NETWORK_MULTICAST_ADDR_LVL_4 = const(0o1000)
+
 MESH_LOOKUP_TIMEOUT = const(135)  #: Used for `lookup_address()` & `lookup_node_id()`
 MESH_MAX_POLL = const(4)  #: The max number of contacts made during `renew_address()`.
 MESH_MAX_CHILDREN = const(4)  #: The max number of children for 1 mesh node.

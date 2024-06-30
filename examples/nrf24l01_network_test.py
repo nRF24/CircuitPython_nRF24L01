@@ -72,7 +72,7 @@ except ImportError:  # on CircuitPython only
     CSN_PIN = DigitalInOut(board.D5)
 
 
-# initialize this node as the network
+# initialize this node as part of the network
 nrf = Network(SPI_BUS, CSN_PIN, CE_PIN, THIS_NODE)
 
 # TMRh20 examples use channel 97 for RF24Mesh library
@@ -87,15 +87,22 @@ nrf.pa_level = -12
 # list to store our number of the payloads sent
 packets_sent = [0]
 
+
+def connect_mesh_node(timeout: float = 7.5) -> bool:
+    """For RF24Mesh child nodes only! This function attempts to (re)connect to a mesh
+    network. This is not needed for RF24Mesh master nodes.
+
+    :param timeout: The time in seconds spent trying to connect. See renew_address().
+    """
+    print("Connecting to mesh network...", end=" ")
+    result = nrf.renew_address(timeout) is not None
+    print(("assigned address " + oct(nrf.node_address)) if result else "failed.")
+    return result
+
+
 if THIS_NODE:  # if this node is not the network master node
     if IS_MESH:  # mesh nodes need to bond with the master node
-        print("Connecting to mesh network...", end=" ")
-
-        # get this node's assigned address and connect to network
-        if nrf.renew_address() is None:
-            print("failed. Please try again manually with `nrf.renew_address()`")
-        else:
-            print("assigned address:", oct(nrf.node_address))
+        connect_mesh_node()
 else:
     print("Acting as network master node.")
 
@@ -152,17 +159,28 @@ def emit(
             # TMRh20's RF24Network examples use 2 long ints, so add another
             message += struct.pack("<L", packets_sent[0])
         result = False
+        print("Sending {} (len {})...".format(packets_sent[0], len(message)), end=" ")
         start = time.monotonic_ns()
         if IS_MESH:  # send() is a little different for RF24Mesh vs RF24Network
             result = nrf.send(node, "M", message)
         else:
             result = nrf.send(RF24NetworkHeader(node, "T"), message)
         end = time.monotonic_ns()
-        print(
-            "Sending {} (len {})...".format(packets_sent[0], len(message)),
-            "ok." if result else "failed.",
-            "Transmission took {} ms".format(int((end - start) / 1000000)),
-        )
+        if result:
+            print("ok. Transmission took {} ms".format(int((end - start) / 1000000)))
+        else:
+            print("failed.")
+            # RF24Network is a network of static nodes. Its connectivity is determined
+            # by a node's ability to successfully transmit to other nodes.
+            if IS_MESH:
+                # RF24Mesh is more complex in terms of connectivity. We have special API
+                # to test and establish mesh network connectivity.
+                print("Testing connection to mesh network...")
+                if nrf.check_connection():
+                    print("Connected to mesh network.")
+                elif not connect_mesh_node():
+                    print("Aborting emit()")
+                    return
 
 
 def set_role():
@@ -175,14 +193,13 @@ def set_role():
         "*** Enter 'E <node number> 1' to emit fragmented messages.\n"
     )
     if IS_MESH and THIS_NODE:
-        if nrf.node_address == NETWORK_DEFAULT_ADDR:
+        if nrf.check_connection():
             prompt += "!!! Mesh node not connected.\n"
         prompt += "*** Enter 'C' to connect to to mesh master node.\n"
     user_input = (input(prompt + "*** Enter 'Q' to quit example.\n") or "?").split()
     if user_input[0].upper().startswith("C"):
-        print("Connecting to mesh network...", end=" ")
-        result = nrf.renew_address(*[int(x) for x in user_input[1:2]]) is not None
-        print(("assigned address " + oct(nrf.node_address)) if result else "failed.")
+        if IS_MESH and THIS_NODE:
+            connect_mesh_node(*[int(x) for x in user_input[1:2]])
         return True
     if user_input[0].upper().startswith("I"):
         idle(*[int(x) for x in user_input[1:3]])

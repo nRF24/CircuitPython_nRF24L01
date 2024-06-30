@@ -29,7 +29,7 @@ try:
 except ImportError:
     pass  # some CircuitPython boards don't have the json module
 try:
-    from typing import Union, Dict, List, Optional, Callable, Any
+    from typing import Union, Dict, Set, Optional, Callable, Any
 except ImportError:
     pass
 import busio  # type:ignore[import]
@@ -40,6 +40,7 @@ from .network.constants import (
     NETWORK_DEFAULT_ADDR,
     NETWORK_MULTICAST_ADDR,
     NETWORK_POLL,
+    NETWORK_PING,
     MESH_ADDR_RELEASE,
     MESH_ADDR_LOOKUP,
     MESH_ID_LOOKUP,
@@ -162,13 +163,22 @@ class RF24MeshNoMaster(NetworkMixin):
             return struct.unpack("<H", self.frame_buf.message[:2])[0]
         return self.frame_buf.message[0]
 
-    def check_connection(self) -> bool:
+    def check_connection(self, attempts: int = 3, ping_master: bool = False) -> bool:
         """Check for network connectivity (not for use on master node)."""
-        # do a double check as a manual retry in lack of using auto-ack
-        if self.lookup_address(self._id) < 1:
-            if self.lookup_address(self._id) < 1:
-                return False
-        return True
+        if not self._id:
+            return True
+        if self._addr == NETWORK_DEFAULT_ADDR:
+            return False
+        for _ in range(attempts):
+            if ping_master:
+                result = self.lookup_address(self._id)
+                if result == -2:
+                    return False
+                if result == self._addr:
+                    return True
+            elif self.write(self._parent, NETWORK_PING, b""):
+                return True
+        return False
 
     def update(self) -> int:
         """Checks for incoming network data and returns last message type (if any)"""
@@ -214,20 +224,21 @@ class RF24MeshNoMaster(NetworkMixin):
                         break
             if callable(self.block_less_callback):
                 self.block_less_callback()
-        if new_addr is None:
-            return False
-        super()._begin(new_addr)
-        # print("new address assigned:", oct(new_addr))
-        # do a double check as a manual retry in lack of using auto-ack
-        if self.lookup_node_id(self._addr) != self._id:
+            if new_addr is None:
+                continue
+            super()._begin(new_addr)
+            # print("new address assigned:", oct(new_addr))
+            # do a double check as a manual retry in lack of using auto-ack
             if self.lookup_node_id(self._addr) != self._id:
-                super()._begin(NETWORK_DEFAULT_ADDR)
-                return False
-        return True
+                if self.lookup_node_id(self._addr) != self._id:
+                    super()._begin(NETWORK_DEFAULT_ADDR)
+                    continue
+            return True
+        return False
 
-    def _make_contact(self, lvl: int) -> List[int]:
-        """Make a list of connections after multicasting a `NETWORK_POLL` message."""
-        responders: List[int] = []
+    def _make_contact(self, lvl: int) -> Set[int]:
+        """Make a set of connections after multicasting a `NETWORK_POLL` message."""
+        responders: Set[int] = set()
         self.frame_buf.header.to_node = NETWORK_MULTICAST_ADDR
         self.frame_buf.header.from_node = NETWORK_DEFAULT_ADDR
         self.frame_buf.header.message_type = NETWORK_POLL
@@ -237,13 +248,7 @@ class RF24MeshNoMaster(NetworkMixin):
         timeout = 55000000 + time.monotonic_ns()
         while time.monotonic_ns() < timeout and len(responders) < MESH_MAX_POLL:
             if self._net_update() == NETWORK_POLL:
-                contacted = self.frame_buf.header.from_node
-                is_duplicate = False
-                for contact in responders:
-                    if contacted == contact:
-                        is_duplicate = True
-                if not is_duplicate:
-                    responders.append(contacted)
+                responders.add(self.frame_buf.header.from_node)
         return responders
 
     @property
@@ -316,6 +321,16 @@ class RF24Mesh(RF24MeshNoMaster):
         #: A `dict` that enables master nodes to act as a DNS.
         self.dhcp_dict: Dict[int, int] = {}
 
+    def renew_address(self, timeout: Union[float, int] = 7.5):
+        if not self._id:
+            return 0
+        return super().renew_address(timeout)
+
+    def check_connection(self, attempts: int = 3, ping_master: bool = False) -> bool:
+        if not self._id:
+            return True
+        return super().check_connection(attempts, ping_master)
+
     def update(self) -> int:
         """Checks for incoming network data and returns last message type (if any)"""
         msg_t = super().update()
@@ -336,10 +351,7 @@ class RF24Mesh(RF24MeshNoMaster):
                     self.frame_buf.message = bytes([ret_val])
                 self._write(self.frame_buf.header.to_node, TX_NORMAL)
             elif msg_t == MESH_ADDR_RELEASE:
-                for n_id, addr in self.dhcp_dict.items():
-                    if addr == self.frame_buf.header.from_node:
-                        del self.dhcp_dict[n_id]
-                        break
+                self.release_address(self.frame_buf.header.from_node)
             self._dhcp()
         return msg_t
 
@@ -437,6 +449,22 @@ class RF24Mesh(RF24MeshNoMaster):
                 print("    {}\t{}".format(n_id, oct(addr)))
         if dump_pipes:
             self._rf24.print_pipes()
+
+    def release_address(self, address: int = 0) -> bool:
+        """Release an assigned address from any corresponding mesh node's ID.
+
+        .. important::
+            This function is meant for use on master nodes. If the ``address``
+            parameter is not specified, then
+            `RF24MeshNoMaster.release_address()` is called.
+        """
+        if not address:
+            return super().release_address()
+        for id, addr in self.dhcp_dict.items():
+            if addr == address:
+                del self.dhcp_dict[id]
+                return True
+        return False
 
     def lookup_address(self, node_id: Optional[int] = None) -> int:
         """Convert a node's unique ID number into its corresponding
