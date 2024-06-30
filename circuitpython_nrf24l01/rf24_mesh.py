@@ -321,10 +321,15 @@ class RF24Mesh(RF24MeshNoMaster):
         #: A `dict` that enables master nodes to act as a DNS.
         self.dhcp_dict: Dict[int, int] = {}
 
-    def renew_address(self, timeout: float | int = 7.5):
+    def renew_address(self, timeout: Union[float, int] = 7.5):
         if not self._id:
             return 0
         return super().renew_address(timeout)
+
+    def check_connection(self, attempts: int = 3, ping_master: bool = False) -> bool:
+        if not self._id:
+            return True
+        return super().check_connection(attempts, ping_master)
 
     def update(self) -> int:
         """Checks for incoming network data and returns last message type (if any)"""
