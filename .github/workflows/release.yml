@@ -65,6 +65,8 @@ jobs:
 
   upload-pypi:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -87,14 +89,10 @@ jobs:
 
       - name: Publish package (to TestPyPI)
         if: github.event_name == 'workflow_dispatch' && github.repository == 'nRF24/CircuitPython_nRF24L01'
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_TOKEN }}
-        run: twine upload --repository testpypi dist/*
+        uses: pypa/gh-action-pypi-publish@v1.10.3
+        with:
+          repository-url: https://test.pypi.org/legacy/
 
       - name: Publish package (to PyPI)
         if: github.event_name != 'workflow_dispatch' && github.repository == 'nRF24/CircuitPython_nRF24L01'
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-        run: twine upload dist/*
+        uses: pypa/gh-action-pypi-publish@v1.10.3
