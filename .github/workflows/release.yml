@@ -89,10 +89,10 @@ jobs:
 
       - name: Publish package (to TestPyPI)
         if: github.event_name == 'workflow_dispatch' && github.repository == 'nRF24/CircuitPython_nRF24L01'
-        uses: pypa/gh-action-pypi-publish@v1.10.3
+        uses: pypa/gh-action-pypi-publish@v1.12.4
         with:
           repository-url: https://test.pypi.org/legacy/
 
       - name: Publish package (to PyPI)
         if: github.event_name != 'workflow_dispatch' && github.repository == 'nRF24/CircuitPython_nRF24L01'
-        uses: pypa/gh-action-pypi-publish@v1.10.3
+        uses: pypa/gh-action-pypi-publish@v1.12.4
