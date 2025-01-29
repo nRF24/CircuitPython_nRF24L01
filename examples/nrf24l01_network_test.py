@@ -193,7 +193,7 @@ def set_role():
         "*** Enter 'E <node number> 1' to emit fragmented messages.\n"
     )
     if IS_MESH and THIS_NODE:
-        if nrf.check_connection():
+        if nrf.node_address == NETWORK_DEFAULT_ADDR:
             prompt += "!!! Mesh node not connected.\n"
         prompt += "*** Enter 'C' to connect to to mesh master node.\n"
     user_input = (input(prompt + "*** Enter 'Q' to quit example.\n") or "?").split()
