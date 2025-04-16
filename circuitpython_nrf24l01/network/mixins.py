@@ -415,12 +415,12 @@ class NetworkMixin(RadioMixin):
                         return (True, 0)
                 self.queue.enqueue(self.frame_buf)
                 if self.multicast_relay:
-                    print(
-                        "Forwarding multicast frame from {} to {}".format(
-                            oct(self.frame_buf.header.from_node),
-                            oct(self.frame_buf.header.to_node),
-                        ),
-                    )
+                    # print(
+                    #     "Forwarding multicast frame from {} to {}".format(
+                    #         oct(self.frame_buf.header.from_node),
+                    #         oct(self.frame_buf.header.to_node),
+                    #     ),
+                    # )
                     if not self._addr >> 3:
                         time.sleep(0.0024)
                     time.sleep((self._addr % 4) * 0.0006)
