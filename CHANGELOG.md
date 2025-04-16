@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 <!-- markdownlint-disable MD024 -->
 
+## [2.1.5] - 2025-04-16
+
+### <!-- 9 --> 🗨️ Changed
+
+- Comment out debug print() call by \@2bndy5 in [`9be2955`](https://github.com/nRF24/CircuitPython_nRF24L01/commit/9be295588ddebb3af0c65945bf5361f280c13cba)
+
+[2.1.5]: https://github.com/nRF24/CircuitPython_nRF24L01/compare/v2.1.4...v2.1.5
+
+Full commit diff: [`v2.1.4...v2.1.5`][2.1.5]
+
 ## [2.1.4] - 2025-01-29
 
 ### <!-- 1 --> 🚀 Added
@@ -33,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update pre commit hooks by \@2bndy5 in [#54](https://github.com/nRF24/CircuitPython_nRF24L01/pull/54)
 - Update list of linting tools used in CONTIBUTING guideline by \@2bndy5 in [`fc69216`](https://github.com/nRF24/CircuitPython_nRF24L01/commit/fc6921671893daa659c2aa12de805bfbcbfabbbf)
 - Prepare for trusted publisher releases to pypi by \@2bndy5 in [`0870573`](https://github.com/nRF24/CircuitPython_nRF24L01/commit/087057321395a5d1e2fe21b0f58c58504f9c5af9)
+- Bump version to v2.1.4 by \@2bndy5 in [`719522d`](https://github.com/nRF24/CircuitPython_nRF24L01/commit/719522d5cd34887aa90f7ee851a0737c566ecbc7)
 
 [2.1.4]: https://github.com/nRF24/CircuitPython_nRF24L01/compare/2.1.3...v2.1.4
 
