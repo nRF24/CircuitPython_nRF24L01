@@ -278,7 +278,7 @@ class RF24:
         else:
             if self._features & 6 == 6:
                 self.flush_tx()
-            if self._is_p0_rx and self._aa & 1:
+            if self._aa & 1:
                 self._reg_write_bytes(RX_ADDR_P0, self._tx_address[: self._addr_len])
                 if not self._open_pipes & 1:
                     self._open_pipes |= 1
