@@ -176,7 +176,7 @@ to the MCU via a digital input pin during the interrupt example.
 
 .. tip::
     User reports and personal experiences have improved results if there is a capacitor of
-    100 microfarads (+ another optional 0.1 microfarads capacitor for added stability) connected
+    100 microfarad (+ another optional 0.1 microfarad capacitor for added stability) connected
     in parallel to the VCC and GND pins.
 .. important::
     The nRF24L01's VCC pin is not 5V compliant. All other nRF24L01 pins *should* be 5V compliant,
@@ -242,11 +242,9 @@ For CPython in Linux
 What to purchase
 =================
 
-See the following links to Sparkfun or just google "nRF24L01+".
-
-* `2.4GHz Transceiver IC - nRF24L01+ <https://www.sparkfun.com/products/690>`_
-* `SparkFun Transceiver Breakout - nRF24L01+ <https://www.sparkfun.com/products/691>`_
-* `SparkFun Transceiver Breakout - nRF24L01+ (RP-SMA) <https://www.sparkfun.com/products/705>`_
+Just do a Google search for the term "nRF24L01+".
+This chip is no longer recommended for new designs (since 2014),
+but it is still widely available from some less reputable online retailers (amazon.com included).
 
 It is worth noting that you
 generally want to buy more than 1 as you need 2 for testing -- 1 to send & 1 to receive and
@@ -266,8 +264,7 @@ then adding capacitor(s) (100 µF + an optional 0.1µF) in parallel (& as close
 as possible) to the VCC and GND pins is highly recommended. Stabilizing the power
 input provides significant performance increases. More finite details about the
 nRF24L01 are available from the datasheet (referenced here in the documentation as the
-`nRF24L01+ Specification Sheet <https://www.sparkfun.com/datasheets/
-Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf>`_)
+`nRF24L01+ Specification Sheet <https://github.com/nRF24/RF24/blob/beb8ffebc5be0f5470fb08c851f941d0c70a45e0/datasheets/nRF24L01_datasheet_v2.pdf>`_)
 
 About the nRF24L01+PA+LNA modules
 ---------------------------------
@@ -310,16 +307,14 @@ nRF24L01(+) clones and counterfeits
 This library does not directly support clones/counterfeits as there is no way for the library
 to differentiate between an actual nRF24L01+ and a clone/counterfeit. To determine if your
 purchase is a counterfeit, please contact the retailer you purchased from (also `reading this
-article and its links might help
-<https://hackaday.com/2015/02/23/nordic-nrf24l01-real-vs-fake/>`_). The most notable clone is the `Si24R1 <https://lcsc.com/product-detail/
-RF-Transceiver-ICs_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.html>`_. I could not find
-the `Si24R1 datasheet <https://datasheet.lcsc.com/szlcsc/
-1811142211_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.pdf>`_ in english. Troubleshooting
-the SI24R1 may require `replacing the onboard antenna with a wire
-<https://forum.mysensors.org/post/96871>`_. Furthermore, the Si24R1 has different power
+article and its links might help <https://hackaday.com/2015/02/23/nordic-nrf24l01-real-vs-fake/>`_).
+The most notable clone is the `Si24R1 <https://lcsc.com/product-detail/RF-Transceiver-ICs_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.html>`_.
+I could not find the `Si24R1 datasheet <https://datasheet.lcsc.com/szlcsc/1811142211_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.pdf>`_
+in english. Troubleshooting
+the SI24R1 may require `replacing the onboard antenna with a wire <https://forum.mysensors.org/post/96871>`_.
+Furthermore, the Si24R1 has different power
 amplifier options as noted in the `RF_PWR section (bits 0 through 2) of the RF_SETUP register
-(address 0x06) of the datasheet <https://datasheet.lcsc.com/szlcsc/
-1811142211_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.pdf#%5B%7B%22num%22%3A329%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C0%2C755%2Cnull%5D>`_.
+(address 0x06) of the datasheet <https://datasheet.lcsc.com/szlcsc/1811142211_Nanjing-Zhongke-Microelectronics-Si24R1_C14436.pdf#%5B%7B%22num%22%3A329%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C0%2C755%2Cnull%5D>`_.
 While the options' values differ from those identified by this library's API, the
 underlying commands to configure those options are almost identical to the nRF24L01.
 The Si24R1 is also famous for not supporting :py:attr:`~circuitpython_nrf24l01.rf24.RF24.auto_ack`
@@ -351,11 +346,10 @@ Future Project Ideas/Additions
 The following are only ideas; they are not currently supported by this circuitpython library.
 
 * `There's a few blog posts by Nerd Ralph demonstrating how to use the nRF24L01 via 2 or 3
-  pins <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.
-  html>`_ (uses custom bitbanging SPI functions and an external circuit involving a
+  pins <http://nerdralph.blogspot.com/2015/05/nrf24l01-control-with-2-mcu-pins-using.html>`_
+  (uses custom bit-banging SPI functions and an external circuit involving a
   resistor and a capacitor)
-* TCI/IP OSI layer, maybe something like `TMRh20's RF24Ethernet
-  <http://nRF24.github.io/RF24Ethernet/>`_
+* TCI/IP OSI layer, maybe something like `TMRh20's RF24Ethernet <http://nRF24.github.io/RF24Ethernet/>`_
 
 Sphinx documentation
 -----------------------

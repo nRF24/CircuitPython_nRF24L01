@@ -10,7 +10,9 @@ words:
   - busdevice
   - busio
   - capsys
+  - CIRCUITPY
   - circuitpython
+  - datasheet
   - digitalio
   - Disabl
   - Dmitry
@@ -21,21 +23,31 @@ words:
   - Grinberg
   - hexlified
   - HHHBB
+  - Hinch
+  - Itsy
   - Kbps
   - LENG
   - levelname
   - Mbps
+  - microcontroller
   - micropython
   - minversion
   - MOSI
   - multicasted
   - multicasting
   - multicasts
+  - multiceiver
   - mypy
+  - Pinout
   - pytest
   - raspberrypi
+  - Rhys
+  - seealso
   - setuptools
   - spidev
   - testpaths
+  - toctree
   - urandom
+  - venv
+  - versionadded
   - xfer
