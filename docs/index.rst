@@ -172,7 +172,7 @@ to the MCU via a digital input pin during the interrupt example.
     SCK, SCK, "GPIO11 (SCK)"
     MOSI, MOSI, "GPIO10 (MOSI)"
     MISO, MISO, "GPIO9 (MISO)"
-    IRQ, D12, GPIO12
+    IRQ, D12, GPIO24
 
 .. tip::
     User reports and personal experiences have improved results if there is a capacitor of
