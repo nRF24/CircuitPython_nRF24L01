@@ -662,7 +662,7 @@ class RF24:
             raise ValueError("auto_ack: {} is not a valid input".format(enable))
         self._reg_write(AUTO_ACK, self._aa)
 
-    def set_auto_ack(self, enable: bool, pipe_number: int):
+    def set_auto_ack(self, enable: bool, pipe_number: Optional[int] = None):
         """Control the `auto_ack` feature for a specific data pipe."""
         if pipe_number is None:
             self.auto_ack = bool(enable)
@@ -705,10 +705,8 @@ class RF24:
             raise ValueError("payload must have a byte length in range [1, 32]")
         if not bool((self._features & 6) == 6 and ((self._aa & self._dyn_pl) & 1)):
             self.ack = True
-        if not self.tx_full:
-            self._reg_write_bytes(0xA8 | pipe_number, buf)
-            return True
-        return False
+        self._reg_write_bytes(0xA8 | pipe_number, buf)
+        return not bool(self._in[0] & 1)
 
     @property
     def allow_ask_no_ack(self) -> bool:
@@ -837,12 +835,10 @@ class RF24:
         elif not buf or len(buf) > 32:
             raise ValueError("buffer must have a length in range [1, 32]")
         self.clear_status_flags()
-        if self._in[0] & 1:
-            return False
         self._reg_write_bytes(0xA0 | (bool(ask_no_ack) << 4), buf)
         if not write_only:
             self._ce_pin.value = True
-        return True
+        return not bool(self._in[0] & 1)
 
     def flush_rx(self):
         """Flush all 3 levels of the RX FIFO."""
