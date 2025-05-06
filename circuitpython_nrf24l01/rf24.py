@@ -127,6 +127,9 @@ class RF24:
     def __enter__(self):
         self._ce_pin.value = False
         self._config |= 2
+        if self._aa & 1:
+            self._open_pipes |= 1
+            self._reg_write_bytes(RX_ADDR_P0, self._tx_address)
         self._reg_write(CONFIGURE, self._config)
         # time.sleep(0.00015)  # let the rest of this function be the delay
         self._reg_write(RF_PA_RATE, self._rf_setup)
@@ -136,11 +139,13 @@ class RF24:
         self._reg_write(TX_FEATURE, self._features)
         self._reg_write(SETUP_RETR, self._retry_setup)
         for i, addr in enumerate(self._pipes):
-            if i < 2:
+            self.set_payload_length(self._pl_len[i], i)
+            if not i:  # skip pipe 0 RX address because we're going into TX mode
+                continue
+            if i == 1:
                 self._reg_write_bytes(RX_ADDR_P0 + i, addr)
             else:
-                self._reg_write(RX_ADDR_P0 + i, addr)
-            self.set_payload_length(self._pl_len[i], i)
+                self._reg_write(RX_ADDR_P0 + i + 1, addr)
         self._reg_write_bytes(TX_ADDRESS, self._tx_address)
         self._reg_write(0x05, self._channel)
         self._reg_write(0x03, self._addr_len - 2)
