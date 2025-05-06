@@ -38,3 +38,4 @@ words:
   - spidev
   - testpaths
   - urandom
+  - xfer

@@ -26,7 +26,7 @@ def test_context(rf24_obj: RF24, ble_obj: FakeBLE):
 
 
 @pytest.mark.parametrize("value", [True, False])
-def test_ce(rf24_obj: RF24, value: False):
+def test_ce(rf24_obj: RF24, value: bool):
     """test ce_pin attribute."""
     rf24_obj.ce_pin = value
     assert rf24_obj.ce_pin == value
@@ -156,7 +156,7 @@ def test_dyn_pl_attr(rf24_obj: RF24):
     """test dynamic_payloads attribute (using list of integers)."""
     enable = [1, -1, 0, 1]
     previous = rf24_obj.dynamic_payloads & enable.index(-1)
-    rf24_obj.dynamic_payloads = enable
+    rf24_obj.dynamic_payloads = enable  # type: ignore[assignment]
     for i, pipe in enumerate(enable):
         if pipe < 0:
             assert rf24_obj.get_dynamic_payloads(i) == previous
@@ -177,7 +177,7 @@ def test_payload_length_attr(rf24_obj: RF24):
     """test payload_length attribute (using list of integers)."""
     enable = [1, -1, 20, 0]
     previous = rf24_obj.payload_length
-    rf24_obj.payload_length = enable
+    rf24_obj.payload_length = enable  # type: ignore[assignment]
     for i, pipe in enumerate(enable):
         if pipe <= 0:
             assert rf24_obj.get_payload_length(i) == previous
@@ -198,7 +198,7 @@ def test_auto_ack_attr(rf24_obj: RF24):
     """test auto_ack attribute (using list of integers)."""
     enable = [1, -1, 20, 0]
     previous = bool(rf24_obj.auto_ack & (enable.index(-1)))
-    rf24_obj.auto_ack = enable
+    rf24_obj.auto_ack = enable  # type: ignore[assignment]
     for i, pipe in enumerate(enable):
         if pipe < 0:
             assert rf24_obj.get_auto_ack(i) == previous

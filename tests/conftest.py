@@ -2,7 +2,7 @@
 registers in a dict."""
 
 import logging
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 import pytest
 from circuitpython_nrf24l01.rf24 import (
     RF24,
@@ -54,8 +54,8 @@ class RadioState:
     }
 
     # SPI commands
-    rx_fifo = []  # command 0x61
-    tx_fifo = []  # commands 0xA0, 0xB0, 0xA8 + pipe number
+    rx_fifo: List[bytearray] = []  # command 0x61
+    tx_fifo: List[bytearray] = []  # commands 0xA0, 0xB0, 0xA8 + pipe number
     logger = logging.getLogger("nRF24L01")
 
     def __init__(self):
@@ -80,6 +80,7 @@ class RadioState:
     def read_payload(master_out_buf):
         """Read payload from state machine's RX FIFO.
         For simplicity, this doesn't pop payloads from the FIFO."""
+        status_byte = RadioState.registers[7][0]  # copy current STATUS byte
         if RadioState.rx_fifo:
             RadioState.logger.debug(
                 "Requesting %d bytes from the RX FIFO", len(master_out_buf)
@@ -107,21 +108,22 @@ class RadioState:
                 if len(RadioState.rx_fifo) >= 3:
                     RadioState.registers[0x17][0] |= 2
             return (
-                RadioState.registers[7]
+                bytearray([status_byte])
                 + ret_val[:size]
                 + bytearray(b"." * (len(master_out_buf) - size))
             )
-        return RadioState.registers[7] + (b"." * len(master_out_buf))
+        return bytearray([status_byte]) + (b"." * len(master_out_buf))
 
     @staticmethod
     def write_payload(payload):
         """Write payload to state machine's TX FIFO."""
+        status_byte = RadioState.registers[7][0]  # copy current STATUS byte
         RadioState.tx_fifo.append(payload)
         RadioState.registers[0x17][0] &= 0xCF
         if len(RadioState.tx_fifo) >= 3:
             RadioState.registers[0x17][0] |= 0x20
             RadioState.registers[7][0] |= 1
-        return RadioState.registers[7] + (b"\0" * len(payload))
+        return bytearray([status_byte]) + (b"\0" * len(payload))
 
     @staticmethod
     def get_pl_width(*_):
@@ -138,20 +140,22 @@ class RadioState:
     @staticmethod
     def flush_tx(*_):
         """Flush the state machine's TX FIFO."""
+        status_byte = RadioState.registers[7][0]  # copy current STATUS byte
         RadioState.tx_fifo.clear()
         RadioState.registers[7][0] &= 0xFE
         RadioState.registers[0x17][0] &= 0xCF
         RadioState.registers[0x17][0] |= 0x10
-        return RadioState.registers[7]
+        return bytearray([status_byte])
 
     @staticmethod
     def flush_rx(*_):
         """Flush the state machine's RX FIFO."""
+        status_byte = RadioState.registers[7][0]  # copy current STATUS byte
         RadioState.rx_fifo.clear()
         RadioState.registers[7][0] |= 0x0E
         RadioState.registers[0x17][0] &= 0xF0
         RadioState.registers[0x17][0] |= 1
-        return RadioState.registers[7]
+        return bytearray([status_byte])
 
     def __getitem__(self, __offset: int) -> bytearray:
         register = __offset & 0x1F
@@ -212,15 +216,17 @@ class ShimSpiDev:
         """A mock function for a full duplex SPI transaction."""
         register = out_buf[0]
         assert baud_rate
+        # copy STATUS register before outcome alters it
+        status_byte = self.state.registers[7]
         try:  # assume `register` is a write operation
             self.state[register] = bytearray(out_buf[1:])
-            return self.state.registers[7]
+            return status_byte
         except RegisterReadOnly:  # `register` is a SPI read operation
             return self.state[register]
         except RegisterError:  # `register` is a SPI command
             if register in self.state.commands:
                 return self.state.commands[register](out_buf[1:])
-            return self.state.registers[7]
+            return status_byte
 
 
 class ShimDigitalIO:
