@@ -36,11 +36,13 @@ from .constants import (
     MSG_FRAG_FIRST,
     MSG_FRAG_MORE,
     MSG_FRAG_LAST,
+    NETWORK_CORRUPTION,
     NETWORK_DEFAULT_ADDR,
     MESH_ADDR_RESPONSE,
     MESH_ADDR_REQUEST,
     NETWORK_ACK,
     NETWORK_EXT_DATA,
+    NETWORK_OVERRUN,
     NETWORK_PING,
     NETWORK_POLL,
     TX_ROUTED,
@@ -339,15 +341,18 @@ class NetworkMixin(RadioMixin):
     def _net_update(self) -> int:
         """keep the network layer current; returns the received message type"""
         ret_val = 0  # sentinel indicating there is nothing to report
+        timeout = time.monotonic_ns() + 100000000
         while True:
+            if time.monotonic_ns() > timeout:
+                return NETWORK_OVERRUN
             temp_buf = self._rf24.read()
             if temp_buf is None:
                 return ret_val
-            if (
-                not self.frame_buf.unpack(temp_buf)
-                or not is_address_valid(self.frame_buf.header.to_node)
-                or not is_address_valid(self.frame_buf.header.from_node)
-            ):
+            if not self.frame_buf.unpack(temp_buf):
+                return NETWORK_CORRUPTION
+            if not is_address_valid(
+                self.frame_buf.header.to_node
+            ) or not is_address_valid(self.frame_buf.header.from_node):
                 # print("discarding frame due to invalid network addresses.")
                 continue
 
@@ -483,7 +488,9 @@ class NetworkMixin(RadioMixin):
         """entry point for transmitting the current frame_buf"""
         is_ack_t = self.frame_buf.is_ack_type()
 
-        to_node, to_pipe, is_multicast = self._logi_2_phys(write_direct, send_type)
+        to_node, to_pipe, is_multicast = self._logical_2_physical(
+            write_direct, send_type
+        )
 
         if send_type == TX_ROUTED and write_direct == to_node and is_ack_t:
             time.sleep(0.002)
@@ -501,7 +508,7 @@ class NetworkMixin(RadioMixin):
             ):
                 self.frame_buf.header.message_type = NETWORK_ACK
                 self.frame_buf.header.to_node = self.frame_buf.header.from_node
-                ack_to_node, ack_to_pipe, is_multicast = self._logi_2_phys(
+                ack_to_node, ack_to_pipe, is_multicast = self._logical_2_physical(
                     self.frame_buf.header.from_node, TX_ROUTED
                 )
                 # ack_ok =
@@ -593,7 +600,7 @@ class NetworkMixin(RadioMixin):
             result = self._rf24.resend(send_only=True)
         return result
 
-    def _logi_2_phys(
+    def _logical_2_physical(
         self, to_node: int, send_type: int, is_multicast: bool = False
     ) -> Tuple[int, int, bool]:
         """translate msg route into node address, pipe number, & multicast flag."""

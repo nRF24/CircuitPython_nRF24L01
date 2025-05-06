@@ -44,7 +44,7 @@ html_baseurl = os.environ.get(
 # General information about the project.
 project = "CircuitPython nRF24L01"
 author = "Brendan Doherty"
-copyright = f'{time.strftime("%Y", time.localtime())} {author}'
+copyright = f"{time.strftime('%Y', time.localtime())} {author}"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

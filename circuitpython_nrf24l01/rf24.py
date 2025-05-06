@@ -26,7 +26,7 @@ import time
 
 try:
     from typing import Union, Sequence, Optional, List, Tuple
-    from typing_extensions import Literal
+    from typing_extensions import Literal  # type: ignore
 except ImportError:
     pass
 from micropython import const
@@ -90,7 +90,11 @@ class RF24:
         # non-plus variants
         self._open_pipes, self._is_plus_variant = (0, False)  # close all RX pipes
         self._features = self._reg_read(TX_FEATURE)
-        self._reg_write(0x50, 0x73)  # derelict command toggles TX_FEATURE register
+        # invoke derelict command toggles TX_FEATURE register (test for plus variant)
+        self._out[0] = 0x50
+        self._out[1] = 0x73
+        with self._spi as _spi:
+            _spi.write_readinto(self._out, self._in, in_end=2, out_end=2)
         after_toggle = self._reg_read(TX_FEATURE)
         if self._features == after_toggle:
             self._is_plus_variant = True
@@ -102,7 +106,7 @@ class RF24:
         self._features = 5
         # init shadow copy of last RX_ADDR_P0 written to pipe 0 needed as
         # open_tx_pipe() appropriates pipe 0 for ACK packet
-        self._pipe0_read_addr: Optional[Union[bytes, bytearray]] = None
+        self._is_p0_rx: bool = False
         # shadow copy of the TX_ADDRESS
         self._tx_address = self._reg_read_bytes(TX_ADDRESS)
         # pre-configure the SETUP_RETR register
@@ -158,13 +162,19 @@ class RF24:
     def ce_pin(self, val: bool):
         self._ce_pin.value = val
 
-    def _reg_read(self, reg: int) -> int:
+    def _reg_read(self, reg: int, command: bool = False) -> int:
         self._out[0] = reg
+        len = int(not command) + 1
         with self._spi as spi:
             # time.sleep(0.000005)
-            spi.write_readinto(self._out, self._in, out_end=2, in_end=2)
-        # print("SPI read 1 byte from", ("%02X" % reg), ("%02X" % self._in[1]))
-        return self._in[1]
+            spi.write_readinto(self._out, self._in, out_end=len, in_end=len)
+        # if command:
+        #     print("SPI command", ("%02X" % reg))
+        # else:
+        #     print(
+        #         "SPI read", len, "byte from", ("%02X" % reg), ("%02X" % self._in[1])
+        #     )
+        return self._in[not command]
 
     def _reg_read_bytes(self, reg: int, buf_len: int = 5) -> bytearray:
         self._out[0] = reg
@@ -188,21 +198,15 @@ class RF24:
         #     buf_len - 1, ("%02X" % reg), address_repr(self._out[1 : buf_len], 0)
         # ))
 
-    def _reg_write(self, reg: int, value: Optional[int] = None):
-        self._out[0] = reg
-        buf_len = 1
-        if value is not None:
-            self._out[0] = (0x20 if reg != 0x50 else 0) | reg
-            self._out[1] = value
-            buf_len += 1
+    def _reg_write(self, reg: int, value: int):
+        self._out[0] = 0x20 | reg
+        self._out[1] = value
+        buf_len = 2
         with self._spi as spi:
             # time.sleep(0.000005)
             spi.write_readinto(self._out, self._in, out_end=buf_len, in_end=buf_len)
         # if reg != 0xFF:
-        #     print(
-        #         "SPI write", "command" if value is None else "1 byte to",
-        #         ("%02X" % reg), "" if value is None else ("%02X" % value)
-        #     )
+        #     print("SPI write 1 byte to", ("%02X" % reg), ("%02X" % value))
 
     @property
     def address_length(self) -> int:
@@ -217,13 +221,12 @@ class RF24:
 
     def open_tx_pipe(self, address: Union[bytes, bytearray]) -> None:
         """Open a data pipe for TX transmissions."""
-        if self._pipe0_read_addr != address and self._aa & 1:
-            for i, val in enumerate(address):
-                self._pipes[0][i] = val  # type: ignore[assignment, index]
-            self._reg_write_bytes(RX_ADDR_P0, address)
-        for i, val in enumerate(address):
-            self._tx_address[i] = val
-        self._reg_write_bytes(TX_ADDRESS, address)
+        addr_len = min(len(address), self._addr_len)
+        addr = address[:addr_len]
+        self._tx_address[:addr_len] = addr
+        if self._config & 1 == 0 and self._aa & 1:
+            self._reg_write_bytes(RX_ADDR_P0, addr)
+        self._reg_write_bytes(TX_ADDRESS, addr)
 
     def close_rx_pipe(self, pipe_number: int) -> None:
         """Close a specific data pipe from RX transmissions."""
@@ -231,7 +234,7 @@ class RF24:
             raise IndexError("pipe number must be in range [0, 5]")
         self._open_pipes = self._reg_read(OPEN_PIPES) & ~(1 << pipe_number)
         if not pipe_number:
-            self._pipe0_read_addr = None
+            self._is_p0_rx = False
         self._reg_write(OPEN_PIPES, self._open_pipes)
 
     def open_rx_pipe(self, pipe_number: int, address: Union[bytes, bytearray]) -> None:
@@ -240,14 +243,16 @@ class RF24:
             raise IndexError("pipe number must be in range [0, 5]")
         if not address:
             raise ValueError("address length cannot be 0")
+        addr_len = min(len(address), self._addr_len)
+        addr = address[:addr_len]
         if pipe_number < 2:
             if not pipe_number:
-                self._pipe0_read_addr = address
-            for i, val in enumerate(address):
-                self._pipes[pipe_number][i] = val  # type: ignore[assignment, index]
-            self._reg_write_bytes(RX_ADDR_P0 + pipe_number, address)
+                self._is_p0_rx = True
+            self._pipes[pipe_number][:addr_len] = addr  # type: ignore[assignment, index]
+            if self._config & 1 or pipe_number != 0:
+                self._reg_write_bytes(RX_ADDR_P0 + pipe_number, addr)
         else:
-            self._pipes[pipe_number] = address[0]
+            self._pipes[pipe_number] = addr[0]
             self._reg_write(RX_ADDR_P0 + pipe_number, address[0])
         self._open_pipes = self._reg_read(OPEN_PIPES) | (1 << pipe_number)
         self._reg_write(OPEN_PIPES, self._open_pipes)
@@ -255,7 +260,7 @@ class RF24:
     @property
     def listen(self) -> bool:
         """This attribute is the primary role as a radio."""
-        return self.power and bool(self._config & 1)
+        return self._config & 3 == 3
 
     @listen.setter
     def listen(self, is_rx: bool):
@@ -265,22 +270,19 @@ class RF24:
         start_timer = time.monotonic_ns()
         if is_rx:
             self._ce_pin.value = True
-            if (
-                self._pipe0_read_addr is not None
-                and self._pipe0_read_addr != self.address(0)
-            ):
-                for i, val in enumerate(self._pipe0_read_addr):
-                    self._pipes[0][i] = val  # type: ignore[index]
-                self._reg_write_bytes(RX_ADDR_P0, self._pipe0_read_addr)
-            elif self._pipe0_read_addr is None and self._open_pipes & 1:
+            if self._is_p0_rx:
+                self._reg_write_bytes(RX_ADDR_P0, self._pipes[0][: self._addr_len])  # type: ignore[index]
+            elif self._open_pipes & 1:
                 self._open_pipes &= 0x3E  # close_rx_pipe(0) is slower
                 self._reg_write(OPEN_PIPES, self._open_pipes)
         else:
-            if self._features & 6 == 6 and ((self._aa & self._dyn_pl) & 1):
+            if self._features & 6 == 6:
                 self.flush_tx()
-            if self._aa & 1 and not self._open_pipes & 1:
-                self._open_pipes |= 1
-                self._reg_write(OPEN_PIPES, self._open_pipes)
+            if self._is_p0_rx and self._aa & 1:
+                self._reg_write_bytes(RX_ADDR_P0, self._tx_address[: self._addr_len])
+                if not self._open_pipes & 1:
+                    self._open_pipes |= 1
+                    self._reg_write(OPEN_PIPES, self._open_pipes)
         # mandatory wait time is 130 µs
         delta_time = time.monotonic_ns() - start_timer
         if delta_time < 150000:
@@ -372,7 +374,7 @@ class RF24:
 
     def update(self) -> Literal[True]:
         """This function gets an updated status byte over SPI."""
-        self._reg_write(0xFF)
+        self._reg_read(0xFF, command=True)
         return True
 
     def clear_status_flags(
@@ -800,7 +802,7 @@ class RF24:
         if not send_only and (self._in[0] >> 1) < 6:
             self.flush_rx()
         self.clear_status_flags()
-        # self._reg_write(0xE3)
+        # self._reg_read(0xE3, command=True)
         up_cnt = 0
         self._ce_pin.value = True
         while not self._in[0] & 0x30:
@@ -839,11 +841,11 @@ class RF24:
 
     def flush_rx(self):
         """Flush all 3 levels of the RX FIFO."""
-        self._reg_write(0xE2)
+        self._reg_read(0xE2, command=True)
 
     def flush_tx(self):
         """Flush all 3 levels of the TX FIFO."""
-        self._reg_write(0xE1)
+        self._reg_read(0xE1, command=True)
 
     def fifo(self, about_tx: bool = False, check_empty: Optional[bool] = None):
         """This provides the status of the TX/RX FIFO buffers. (read-only)"""

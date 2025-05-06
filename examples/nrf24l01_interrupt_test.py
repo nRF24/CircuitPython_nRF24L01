@@ -165,8 +165,7 @@ def set_role():
 
 
 print(
-    "    nRF24L01 Interrupt pin test\n"
-    "    Make sure the IRQ pin is connected to the MCU"
+    "    nRF24L01 Interrupt pin test\n    Make sure the IRQ pin is connected to the MCU"
 )
 
 if __name__ == "__main__":

@@ -1,0 +1,35 @@
+version: "0.2"
+words:
+  - abled
+  - adafruit
+  - addopts
+  - armv
+  - baudrate
+  - blinka
+  - busdevice
+  - busio
+  - capsys
+  - circuitpython
+  - digitalio
+  - Disabl
+  - Doherty
+  - elif
+  - Fals
+  - hexlified
+  - HHHBB
+  - Kbps
+  - LENG
+  - levelname
+  - Mbps
+  - micropython
+  - minversion
+  - MOSI
+  - multicasted
+  - multicasting
+  - multicasts
+  - mypy
+  - pytest
+  - raspberrypi
+  - setuptools
+  - spidev
+  - testpaths

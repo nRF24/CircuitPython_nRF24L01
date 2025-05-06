@@ -126,8 +126,7 @@ def master_fifo(count=1, size=32):
                     if failures > 99 and buf_iter < 7 and cnt < 2:
                         # we need to prevent an infinite loop
                         print(
-                            "Make sure slave() node is listening."
-                            " Quiting master_fifo()"
+                            "Make sure slave() node is listening. Quiting master_fifo()"
                         )
                         buf_iter = size + 1  # be sure to exit the while loop
                         nrf.flush_tx()  # discard all payloads in TX FIFO

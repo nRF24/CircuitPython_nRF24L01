@@ -73,3 +73,11 @@ MSG_FRAG_FIRST = const(148)
 MSG_FRAG_MORE = const(149)
 #: Used to indicate the last frame of a fragmented message.
 MSG_FRAG_LAST = const(150)
+
+# error types used in `header.reserved` attribute
+NETWORK_OVERRUN = const(160)
+"""Used to indicate that the network was overrun and `RF24Network.available()`
+had to exit the internal loop when processing the radio's RX FIFO.
+"""
+#: Used to indicate the radio's RX FIFO had somehow been corrupted.
+NETWORK_CORRUPTION = const(161)
