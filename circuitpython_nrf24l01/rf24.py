@@ -174,7 +174,8 @@ class RF24:
             # time.sleep(0.000005)
             spi.write_readinto(self._out, self._in, out_end=len, in_end=len)
         # if command:
-        #     print("SPI command", ("%02X" % reg))
+        #     if reg != 0xFF:
+        #         print("SPI command", ("%02X" % reg))
         # else:
         #     print(
         #         "SPI read", len, "byte from", ("%02X" % reg), ("%02X" % self._in[1])
@@ -210,8 +211,7 @@ class RF24:
         with self._spi as spi:
             # time.sleep(0.000005)
             spi.write_readinto(self._out, self._in, out_end=buf_len, in_end=buf_len)
-        # if reg != 0xFF:
-        #     print("SPI write 1 byte to", ("%02X" % reg), ("%02X" % value))
+        # print("SPI write 1 byte to", ("%02X" % reg), ("%02X" % value))
 
     @property
     def address_length(self) -> int:

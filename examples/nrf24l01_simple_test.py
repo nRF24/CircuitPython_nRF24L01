@@ -116,7 +116,7 @@ def slave(timeout=6):
             start = time.monotonic()
 
     # recommended behavior is to keep in TX mode while idle
-    nrf.listen = False  # put the nRF24L01 is in TX mode
+    nrf.listen = False  # enter inactive TX mode
 
 
 def set_role():

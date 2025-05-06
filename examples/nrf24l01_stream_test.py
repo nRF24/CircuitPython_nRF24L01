@@ -154,7 +154,7 @@ def slave(timeout=5):
             start_timer = time.monotonic()  # reset timer on every RX payload
 
     # recommended behavior is to keep in TX mode while idle
-    nrf.listen = False  # put the nRF24L01 is in TX mode
+    nrf.listen = False  # enter inactive TX mode
 
 
 def set_role():

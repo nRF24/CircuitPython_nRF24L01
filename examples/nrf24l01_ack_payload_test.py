@@ -140,9 +140,9 @@ def slave(timeout=6):
             buffer = b"World \0" + bytes([counter[0]])  # build new ACK
             nrf.load_ack(buffer, 1)  # load ACK for next response
 
-    # recommended behavior is to keep in TX mode while idle
-    nrf.listen = False  # put radio in TX mode
-    nrf.flush_tx()  # flush any ACK payloads that remain
+    # recommended behavior is to keep in TX mode when in idle
+    nrf.listen = False  # enter inactive TX mode
+    # entering TX mode (when ACK payloads are enabled) also flushes the TX FIFO
 
 
 def set_role():

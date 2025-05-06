@@ -4,6 +4,7 @@ words:
   - adafruit
   - addopts
   - armv
+  - ATSAMD
   - baudrate
   - blinka
   - busdevice
@@ -12,9 +13,12 @@ words:
   - circuitpython
   - digitalio
   - Disabl
+  - Dmitry
   - Doherty
+  - Eddystone
   - elif
   - Fals
+  - Grinberg
   - hexlified
   - HHHBB
   - Kbps
@@ -33,3 +37,4 @@ words:
   - setuptools
   - spidev
   - testpaths
+  - urandom
