@@ -70,13 +70,14 @@ def _ping_and_prompt() -> bool:
     """transmit 1 payload, wait till irq_pin goes active, print IRQ status
     flags."""
     nrf.ce_pin = True  # tell the nRF24L01 to prepare sending a single packet
-    time.sleep(0.00001)  # mandatory 10 microsecond pulse starts transmission
-    nrf.ce_pin = False  # end 10 us pulse; use only 1 buffer from TX FIFO
+    # There is a mandatory 10 microsecond pulse to start transmission.
+    # We'll leave ce_pin True until ACK packet is received or transmission failed.
     timeout = time.monotonic() + 1
     while IRQ_PIN.value:
         # IRQ pin is active when LOW
         if time.monotonic() > timeout:
             break
+    nrf.ce_pin = False  # exits active TX mode (ignores ACK packets also)
     if IRQ_PIN.value:
         print("   IRQ pin was not triggered!")
         return False
