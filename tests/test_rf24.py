@@ -1,8 +1,8 @@
 """Test functions related to core RF24 functionality."""
 
-from typing import Optional
+from typing import Optional, Union
 import pytest
-from circuitpython_nrf24l01.rf24 import RF24
+from circuitpython_nrf24l01.rf24 import RF24, FIFO_EMPTY, FIFO_FULL, FIFO_OCCUPIED
 from circuitpython_nrf24l01.fake_ble import FakeBLE
 
 
@@ -299,3 +299,49 @@ def test_carrier_functions(rf24_obj: RF24, monkeypatch: pytest.MonkeyPatch):
     assert not rf24_obj.power
     assert not rf24_obj.ce_pin
     assert not rf24_obj._spi._spi.state.registers[6][0] & 0x90
+
+
+@pytest.mark.parametrize(
+    "reg_val,expected,about_tx,check_empty",
+    [
+        # raw RX state
+        (0x1, FIFO_EMPTY, False, None),
+        (0x2, FIFO_FULL, False, None),
+        (0, FIFO_OCCUPIED, False, None),
+        # raw TX state
+        (0x10, FIFO_EMPTY, True, None),
+        (0x20, FIFO_FULL, True, None),
+        (0, FIFO_OCCUPIED, True, None),
+        # simplified RX state
+        (0x1, bool(FIFO_EMPTY), False, True),  # is empty
+        (0x2, bool(FIFO_FULL), False, False),  # is full
+        # simplified TX state
+        (0x10, bool(FIFO_EMPTY), True, True),  # is empty
+        (0x20, bool(FIFO_FULL), True, False),  # is full
+        # simulated binary corrupted MISO
+        pytest.param(3, 3, False, None, marks=pytest.mark.xfail),
+    ],
+    ids=[
+        "RX_EMPTY",
+        "RX_FULL",
+        "RX_OCCUPIED",
+        "TX_EMPTY",
+        "TX_FULL",
+        "TX_OCCUPIED",
+        "bool(RX_EMPTY)",
+        "bool(RX_FULL)",
+        "bool(TX_EMPTY)",
+        "bool(TX_FULL)",
+        "bin-corruption",
+    ],
+)
+def test_fifo_state(
+    rf24_obj,
+    reg_val: int,
+    expected: Union[int, bool],
+    about_tx: bool,
+    check_empty: Optional[bool],
+):
+    """check the fifo state is accurately described"""
+    rf24_obj._spi._spi.state.registers[0x17][0] = reg_val
+    assert expected == rf24_obj.fifo(about_tx=about_tx, check_empty=check_empty)

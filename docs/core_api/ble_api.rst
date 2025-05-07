@@ -128,7 +128,7 @@ here has been adapted to work with CircuitPython.
 .. autofunction:: circuitpython_nrf24l01.fake_ble.whitener
 
     This is a helper function to `FakeBLE.whiten()`. It has been broken out of the
-    `FakeBLE` class to allow whitening and dewhitening a BLE payload without the
+    `FakeBLE` class to allow whitening and de-whitening a BLE payload without the
     hardcoded coefficient.
 
     :param buf: The BLE payloads data. This data should include the
@@ -220,7 +220,7 @@ FakeBLE class
 
     .. versionchanged:: 2.1.0 Invalid input ignored
 
-        Prevoiusly, any invalid input value (that is not found in `BLE_FREQ`) had raised a
+        Previously, any invalid input value (that is not found in `BLE_FREQ`) had raised a
         `ValueError` exception. This behavior changed to ignoring invalid input values,
         and the exception is no longer raised.
 

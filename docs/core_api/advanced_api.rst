@@ -286,7 +286,7 @@ Debugging Output
 
     :param buf: The buffer of bytes to convert into a hexlified
         string.
-    :param reverse: A `bool` to control the resulting endianess. `True`
+    :param reverse: A `bool` to control the resulting endianness. `True`
         outputs the result as big endian. `False` outputs the result as little
         endian. This parameter defaults to `True` since `bytearray` and `bytes`
         objects are stored in big endian but written in little endian.
@@ -416,8 +416,7 @@ Status Byte
         is an antiquated status flag (after you've dealt with the specific payload related to
         the status flags that were set), otherwise it can cause payloads to be ignored and
         occupy the RX/TX FIFO buffers. See `Appendix A of the nRF24L01+ Specifications Sheet
-        <https://www.sparkfun.com/datasheets/Components/SMD/
-        nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1047965>`_ for an outline of
+        <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1047965>`_ for an outline of
         proper behavior.
 
 
