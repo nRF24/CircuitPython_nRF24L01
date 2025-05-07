@@ -45,7 +45,7 @@ _RX_PW_P0 = const(0x11)  # RX payload widths; pipes 0-5 = 0x11-0x16
 _DYN_PL = const(0x1C)  # dynamic payloads status for all pipes
 _FEATURE = const(0x1D)  # dynamic TX-payloads, TX-ACK payloads, TX-NO_ACK
 
-# various states of A radio's FIFO.
+# various states of a radio's FIFO.
 #: A constant to represent a FIFO state when it is full.
 FIFO_OCCUPIED = const(0)
 #: A constant to represent a FIFO state when it is empty.
@@ -100,8 +100,7 @@ class RF24:
         self._open_pipes, self._is_plus_variant = (0, False)  # close all RX pipes
         self._features = self._reg_read(_FEATURE)
         # invoke derelict command toggles TX_FEATURE register (test for plus variant)
-        self._out[0] = 0x50
-        self._out[1] = 0x73
+        self._out[:2] = bytes([0x50, 0x73])
         with self._spi as _spi:
             _spi.write_readinto(self._out, self._in, in_end=2, out_end=2)
         after_toggle = self._reg_read(_FEATURE)
@@ -274,7 +273,7 @@ class RF24:
     @property
     def listen(self) -> bool:
         """This attribute is the primary role as a radio."""
-        return self._config & 3 == 3
+        return bool(self._config & 1)
 
     @listen.setter
     def listen(self, is_rx: bool):
