@@ -22,16 +22,18 @@ class RF24:
         self._reg_write(0x1D, 5)
         self._reg_write(4, 0x5F)
         self._pipe0_read_addr = None
+        self._tx_address = bytearray([0] * 5)
         self.channel = 76
         self.payload_length = 32
         self.flush_rx()
         self.flush_tx()
         self.clear_status_flags()
 
-    def _reg_read(self, reg):
-        in_buf = bytearray([0, 0])
+    def _reg_read(self, reg, command=False):
+        in_buf = bytearray([0] * (int(not command) + 1))
+        out_buf = bytes([reg] + ([] if command else [0]))
         with self._spi as spi:
-            spi.write_readinto(bytes([reg, 0]), in_buf)
+            spi.write_readinto(out_buf, in_buf)
         self._status = in_buf[0]
         return in_buf[1]
 
@@ -48,10 +50,8 @@ class RF24:
             spi.write_readinto(bytes([0x20 | reg]) + out_buf, in_buf)
         self._status = in_buf[0]
 
-    def _reg_write(self, reg, value=None):
-        out_buf = bytes([reg])
-        if value is not None:
-            out_buf = bytes([(0x20 if reg != 0x50 else 0) | reg, value])
+    def _reg_write(self, reg, value):
+        out_buf = bytes([0x20 | reg, value])
         in_buf = bytearray(len(out_buf))
         with self._spi as spi:
             spi.write_readinto(out_buf, in_buf)
@@ -74,12 +74,15 @@ class RF24:
         self._reg_write(0x03, (length - 2) if 3 <= length <= 5 else 0)
 
     def open_tx_pipe(self, addr):
+        self._tx_address = addr
         self._reg_write_bytes(0x0A, addr)
         self._reg_write_bytes(0x10, addr)
 
     def close_rx_pipe(self, pipe_num):
         if pipe_num < 0 or pipe_num > 5:
             raise ValueError("pipe_number must be in range [0, 5]")
+        if not pipe_num:
+            self._pipe0_read_addr = None
         open_pipes = self._reg_read(2)
         if open_pipes & (1 << pipe_num):
             self._reg_write(2, open_pipes & ~(1 << pipe_num))
@@ -115,6 +118,7 @@ class RF24:
             if self._reg_read(0x1D) & 6 == 6:
                 self.flush_tx()
             self._reg_write(2, self._reg_read(2) | 1)
+            self._reg_write_bytes(0x0A, self._tx_address)
         time.sleep(0.0001)
 
     def available(self):
@@ -181,7 +185,7 @@ class RF24:
         return bool(self._status & 0x10)
 
     def update(self):
-        self._reg_write(0xFF)
+        self._reg_read(0xFF, command=True)
         return True
 
     def clear_status_flags(self, data_recv=True, data_sent=True, data_fail=True):
@@ -264,10 +268,10 @@ class RF24:
         return self._reg_read(5)
 
     @channel.setter
-    def channel(self, chnl):
-        if not 0 <= int(chnl) <= 125:
+    def channel(self, ch):
+        if not 0 <= int(ch) <= 125:
             raise ValueError("channel must be in range [0, 125]")
-        self._reg_write(5, int(chnl))
+        self._reg_write(5, int(ch))
 
     @property
     def power(self):
@@ -325,16 +329,16 @@ class RF24:
         return self._status & 0x10 == 0
 
     def flush_rx(self):
-        self._reg_write(0xE2)
+        self._reg_read(0xE2, command=True)
 
     def flush_tx(self):
-        self._reg_write(0xE1)
+        self._reg_read(0xE1, command=True)
 
     def fifo(self, about_tx=False, check_empty=None):
-        _fifo, about_tx = (self._reg_read(0x17), bool(about_tx))
+        _fifo = (self._reg_read(0x17) >> (4 * bool(about_tx))) & 3
         if check_empty is None:
-            return (_fifo & (0x30 if about_tx else 0x03)) >> (4 * about_tx)
-        return bool(_fifo & ((2 - bool(check_empty)) << (4 * about_tx)))
+            return _fifo
+        return bool(_fifo & (2 - bool(check_empty)))
 
     @property
     def rpd(self):
