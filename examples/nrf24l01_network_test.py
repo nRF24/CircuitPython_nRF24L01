@@ -123,6 +123,9 @@ def idle(timeout: int = 30, strict_timeout: bool = False):
             if not strict_timeout:
                 start_timer = time.monotonic()  # reset timer
             frame = nrf.read()
+            if frame is None:
+                # should never get here because we check network.available() first
+                continue
             message_len = len(frame.message)
             print("Received payload", end=" ")
             # TMRh20 examples only use 1 or 2 long ints as small messages
@@ -220,7 +223,7 @@ if __name__ == "__main__":
             pass  # continue example until 'Q' is entered
     except KeyboardInterrupt:
         print(" Keyboard Interrupt detected. Powering down radio...")
-        nrf.power = 0
+        nrf.power = False
 elif nrf.node_address != NETWORK_DEFAULT_ADDR:
     print("    Run emit(<node number>) to transmit.")
     print("    Run idle() to receive or forward messages in the network.")
