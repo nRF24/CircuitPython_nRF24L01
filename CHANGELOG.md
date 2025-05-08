@@ -6,11 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 <!-- markdownlint-disable MD024 -->
 
+## [2.1.6] - 2025-05-08
+
+### <!-- 1 --> 🚀 Added
+
+- Updates from upstream C++ by \@2bndy5 in [#66](https://github.com/nRF24/CircuitPython_nRF24L01/pull/66)
+
+[2.1.6]: https://github.com/nRF24/CircuitPython_nRF24L01/compare/v2.1.5...v2.1.6
+
+Full commit diff: [`v2.1.5...v2.1.6`][2.1.6]
+
 ## [2.1.5] - 2025-04-16
 
 ### <!-- 9 --> 🗨️ Changed
 
 - Comment out debug print() call by \@2bndy5 in [`9be2955`](https://github.com/nRF24/CircuitPython_nRF24L01/commit/9be295588ddebb3af0c65945bf5361f280c13cba)
+- Bump version to v2.1.5 by \@2bndy5 in [`ebbdece`](https://github.com/nRF24/CircuitPython_nRF24L01/commit/ebbdeceead96c2f2b20ae4fc843c25e99b52b06f)
 
 [2.1.5]: https://github.com/nRF24/CircuitPython_nRF24L01/compare/v2.1.4...v2.1.5
 
