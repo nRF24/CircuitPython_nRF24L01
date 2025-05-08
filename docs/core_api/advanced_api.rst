@@ -286,7 +286,7 @@ Debugging Output
 
     :param buf: The buffer of bytes to convert into a hexlified
         string.
-    :param reverse: A `bool` to control the resulting endianess. `True`
+    :param reverse: A `bool` to control the resulting endianness. `True`
         outputs the result as big endian. `False` outputs the result as little
         endian. This parameter defaults to `True` since `bytearray` and `bytes`
         objects are stored in big endian but written in little endian.
@@ -416,8 +416,7 @@ Status Byte
         is an antiquated status flag (after you've dealt with the specific payload related to
         the status flags that were set), otherwise it can cause payloads to be ignored and
         occupy the RX/TX FIFO buffers. See `Appendix A of the nRF24L01+ Specifications Sheet
-        <https://www.sparkfun.com/datasheets/Components/SMD/
-        nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1047965>`_ for an outline of
+        <https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf#G1047965>`_ for an outline of
         proper behavior.
 
 
@@ -440,6 +439,10 @@ FIFO management
         successful transmission (see also `resend()` as the handling of failed transmissions
         can be altered).
 
+.. autodata:: circuitpython_nrf24l01.rf24.FIFO_EMPTY
+.. autodata:: circuitpython_nrf24l01.rf24.FIFO_FULL
+.. autodata:: circuitpython_nrf24l01.rf24.FIFO_OCCUPIED
+
 .. automethod:: circuitpython_nrf24l01.rf24.RF24.fifo
 
     :param about_tx:
@@ -452,15 +455,19 @@ FIFO management
         - `None` (when not specified) returns a 2 bit number representing both empty (bit 1) &
           full (bit 0) tests related to the FIFO buffer specified using the ``about_tx``
           parameter.
+    :throws: This will raise a `RuntimeError` when the data over the MISO line is corrupted.
     :returns:
         - A `bool` answer to the question:
 
           "Is the [TX/RX](``about_tx``) FIFO buffer [empty/full](``check_empty``)?
         - If the ``check_empty`` parameter is not specified: an `int` in range [0, 2] for which:
 
-          - ``1`` means the specified FIFO buffer is empty
-          - ``2`` means the specified FIFO buffer is full
-          - ``0`` means the specified FIFO buffer is neither full nor empty
+          - `FIFO_EMPTY` means the specified FIFO buffer is empty
+          - `FIFO_FULL` means the specified FIFO buffer is full
+          - `FIFO_OCCUPIED` means the specified FIFO buffer is neither full nor empty (1 or 2 payloads)
+
+    .. versionchanged:: 2.1.6
+        Throws a `RuntimeError` when binary corruption is observed on the SPI bus' MISO line.
 
 Ambiguous Signal Detection
 ******************************

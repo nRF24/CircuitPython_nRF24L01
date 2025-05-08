@@ -12,7 +12,7 @@ requires = [
 [project]
 name = "circuitpython-nrf24l01"
 requires-python = ">=3.7"
-description = "Circuitpython driver library for the nRF24L01 transceiver"
+description = "CircuitPython driver library for the nRF24L01 transceiver"
 readme = "README.rst"
 authors = [
     {name = "Brendan Doherty", email = "2bndy5@gmail.com"}

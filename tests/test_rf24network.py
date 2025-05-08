@@ -49,7 +49,7 @@ def test_rx_fifo(net_obj: RF24Network):
 @pytest.mark.parametrize("power", [True, 0])
 def test_power(net_obj: RF24Network, power: Union[bool, int]):
     """test power attribute."""
-    net_obj.power = power
+    net_obj.power = power  # type: ignore[assignment]
     assert net_obj.power is bool(power)
 
 
@@ -87,7 +87,7 @@ def test_listen(net_obj: RF24Network, rx_pipe: int):
 )
 def test_pa_level(net_obj: RF24Network, value: Union[int, Tuple[int, bool]]):
     """test pa_level and is_lna_enabled attributes."""
-    net_obj.pa_level = value
+    net_obj.pa_level = value  # type: ignore[assignment]
     if isinstance(value, tuple):
         assert net_obj.is_lna_enabled is value[1]
         assert net_obj.pa_level == value[0]
@@ -134,7 +134,7 @@ def test_last_tx_arc(net_obj: RF24Network):
 
 def test_irq_config(net_obj: RF24Network):
     """test interrupt_config()"""
-    net_obj.interrupt_config(0, 0, 0)  # disable all
+    net_obj.interrupt_config(False, False, False)  # disable all
     assert net_obj._rf24._spi._spi.state.registers[0][0] & 0x70 == 0x70
     net_obj.interrupt_config()  # enable all
     assert not net_obj._rf24._spi._spi.state.registers[0][0] & 0x70
@@ -146,7 +146,8 @@ def test_irq_config(net_obj: RF24Network):
 )
 def test_ctor(spi_obj, logical: int):
     """test constructor's address validation."""
-    RF24Network(*spi_obj, logical)
+    spi, csn_pin, ce_pin = spi_obj
+    RF24Network(spi, csn_pin, ce_pin, logical)
 
 
 def test_context(spi_obj):
@@ -197,10 +198,12 @@ def test_fragmentation(net_obj: RF24Network):
     assert net_obj.available()
     net_obj.fragmentation = False
     assert isinstance(net_obj.queue, FrameQueue)
-    assert net_obj.peek().message == b"test"
+    frame = net_obj.peek()
+    assert frame and frame.message == b"test"
     net_obj.fragmentation = not net_obj.fragmentation
     assert isinstance(net_obj.queue, FrameQueueFrag)
-    assert net_obj.read().message == b"test"
+    frame = net_obj.read()
+    assert frame and frame.message == b"test"
 
 
 @pytest.mark.parametrize("allow", [True, False])
@@ -222,11 +225,14 @@ def test_multicast_level(net_obj: RF24Network, level: int):
 
 @pytest.mark.parametrize(
     "message",
-    [b"\0", pytest.param(None, marks=pytest.mark.xfail)],
+    [b"\0", pytest.param(0, marks=pytest.mark.xfail)],
 )
-def test_send(net_obj: RF24Network, message: Optional[bytes]):
+def test_send(net_obj: RF24Network, message: Union[bytes, int]):
     """test send()"""
-    assert net_obj.send(RF24NetworkHeader(0o4), message)
+    assert net_obj.send(
+        RF24NetworkHeader(0o4),
+        message,  # type: ignore[arg-type]
+    )
 
 
 @pytest.mark.parametrize(

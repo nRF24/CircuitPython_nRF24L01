@@ -35,7 +35,7 @@ def test_lvl_mask(lvl: int, expected: int):
 
 
 def test_whitener(ble_obj: FakeBLE):
-    """test whitening and dewhitening an arbitrary buffer."""
+    """test whitening and de-whitening an arbitrary buffer."""
     buf = os.urandom(24)
     for freq in range(3):
         coef = (freq + 37) | 0x40
@@ -65,7 +65,7 @@ def test_rev_bits():
 def test_ble_mac(ble_obj: FakeBLE, addr: Optional[Union[int, bytes]]):
     """test the FakeBLE mac attribute."""
     assert isinstance(ble_obj.mac, (bytes, bytearray))
-    ble_obj.mac = addr
+    ble_obj.mac = addr  # type: ignore[assignment]
     assert ble_obj.mac is not None and len(ble_obj.mac) == 6
     if addr is not None:
         if isinstance(addr, int):
@@ -86,7 +86,7 @@ def test_ble_mac(ble_obj: FakeBLE, addr: Optional[Union[int, bytes]]):
 )
 def test_name(ble_obj: FakeBLE, name: Optional[Union[str, bytes, int]]):
     """test FakeBLE name attribute."""
-    ble_obj.name = name
+    ble_obj.name = name  # type: ignore[assignment]
     if isinstance(name, str):
         assert name.encode(encoding="utf-8") == ble_obj.name
     else:
@@ -103,7 +103,7 @@ def test_name(ble_obj: FakeBLE, name: Optional[Union[str, bytes, int]]):
 def test_show_pa_level(ble_obj: FakeBLE, name: Optional[Union[str, bytes, int]]):
     """test FakeBLE show_pa_level attribute."""
     assert not ble_obj.show_pa_level
-    ble_obj.name = name
+    ble_obj.name = name  # type: ignore[assignment]
     ble_obj.show_pa_level = True
     assert ble_obj.show_pa_level
 
@@ -169,11 +169,12 @@ def inject_rx_payload(ble_obj: FakeBLE, monkeypatch: pytest.MonkeyPatch):
     return repr(service_data)
 
 
-def test_rx_payload(ble_obj: FakeBLE, inject_rx_payload: pytest.fixture):
+def test_rx_payload(ble_obj: FakeBLE, inject_rx_payload: pytest.fixture):  # type: ignore
     """test available() and read()"""
     buf_repr = inject_rx_payload
     assert ble_obj.available()
     payload = ble_obj.read()
+    assert payload
     assert payload.mac == ble_obj.mac
     assert payload.name == "test"
     assert not payload.pa_level

@@ -91,7 +91,7 @@ def master(count=1, size=32):  # count = 5 will transmit the list 5 times
         # most for payloads that fail to transmit.
         result = nrf.send(buffers, force_retry=2)  # result is a list
         end_timer = time.monotonic_ns()  # end timer
-        print("Transmission took", (end_timer - start_timer) / 1000, "us")
+        print("Transmission took", (end_timer - start_timer) / 1000000, "ms")
         for r in result:  # tally the resulting success rate
             successful += 1 if r else 0
     print(
@@ -103,40 +103,42 @@ def master(count=1, size=32):  # count = 5 will transmit the list 5 times
 def master_fifo(count=1, size=32):
     """Similar to the `master()` above except this function uses the full
     TX FIFO and `RF24.write()` instead of `RF24.send()`"""
-    buf = make_buffers(size)  # make a list of payloads
-    nrf.listen = False  # ensures the nRF24L01 is in TX mode
+    payloads = make_buffers(size)  # make a list of payloads
+    nrf.listen = False  # enter inactive TX mode
     for cnt in range(count):  # transmit the same payloads this many times
         nrf.flush_tx()  # clear the TX FIFO so we can use all 3 levels
-        # NOTE the write_only parameter does not initiate sending
-        buf_iter = 0  # iterator of payloads for the while loop
         failures = 0  # keep track of manual retries
         start_timer = time.monotonic_ns()  # start timer
-        while buf_iter < size:  # cycle through all the payloads
-            nrf.ce_pin = False
-            while buf_iter < size and nrf.write(buf[buf_iter], write_only=1):
+        for buf in payloads:
+            while not nrf.write(buf):
                 # NOTE write() returns False if TX FIFO is already full
-                buf_iter += 1  # increment iterator of payloads
-            nrf.ce_pin = True
-            while not nrf.fifo(True, True):  # updates irq_df flag
-                if nrf.irq_df:
-                    # reception failed; we need to reset the irq_rf flag
-                    nrf.ce_pin = False  # fall back to Standby-I mode
+                if nrf.irq_df:  # reception failed; TX FIFO is locked
                     failures += 1  # increment manual retries
-                    nrf.clear_status_flags()  # clear the irq_df flag
-                    if failures > 99 and buf_iter < 7 and cnt < 2:
-                        # we need to prevent an infinite loop
-                        print(
-                            "Make sure slave() node is listening."
-                            " Quiting master_fifo()"
-                        )
-                        buf_iter = size + 1  # be sure to exit the while loop
-                        nrf.flush_tx()  # discard all payloads in TX FIFO
-                    else:
-                        nrf.ce_pin = True  # start re-transmitting
-        nrf.ce_pin = False
+                    # we need to reset the irq_rf flag and the radio's CE pin
+                    nrf.ce_pin = False  # fall back to Standby-I mode
+                    # NOTE next call to nrf.write() will
+                    # nrf.clear_status_flags()  # clear the irq_df flag
+                    # nrf.ce_pin = True  # restart transmissions
+                if failures > 49:
+                    break  # prevent infinite loop
+            if failures > 49:
+                # exit early because RX side seems absent
+                nrf.flush_tx()  # discard all payloads in TX FIFO
+                print("Make sure slave() node is listening. Quitting master_fifo()")
+                break
+        # wait for radio to finish transmitting everything in the TX FIFO
+        while failures < 49 and not nrf.fifo(about_tx=True, check_empty=True):
+            # fifo() also update()s the StatusFlags
+            if nrf.irq_df:
+                failures += 1
+                # manually restart transmissions because where done write()ing
+                nrf.ce_pin = False
+                nrf.clear_status_flags()
+                nrf.ce_pin = True
         end_timer = time.monotonic_ns()  # end timer
+        nrf.ce_pin = False  # enter inactive TX mode
         print(
-            "Transmission took {} us".format((end_timer - start_timer) / 1000),
+            "Transmission took {} ms".format((end_timer - start_timer) / 1000000),
             "with {} failures detected.".format(failures),
         )
 
@@ -149,13 +151,13 @@ def slave(timeout=5):
     while time.monotonic() < start_timer + timeout:
         if nrf.available():
             count += 1
-            # retreive the received packet's payload
+            # retrieve the received packet's payload
             buffer = nrf.read()  # clears flags & empties RX FIFO
             print("Received:", buffer, "-", count)
             start_timer = time.monotonic()  # reset timer on every RX payload
 
     # recommended behavior is to keep in TX mode while idle
-    nrf.listen = False  # put the nRF24L01 is in TX mode
+    nrf.listen = False  # enter inactive TX mode
 
 
 def set_role():
@@ -165,7 +167,7 @@ def set_role():
     user_input = (
         input(
             "*** Enter 'R' for receiver role.\n"
-            "*** Enter 'T' for transmitter role (using 1 level  of the TX FIFO).\n"
+            "*** Enter 'T' for transmitter role (using 1 level of the TX FIFO).\n"
             "*** Enter 'F' for transmitter role (using all 3 levels of the TX FIFO).\n"
             "*** Enter 'Q' to quit example.\n"
         )

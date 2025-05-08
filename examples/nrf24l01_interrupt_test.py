@@ -7,22 +7,35 @@ nRF24L01
 
 import time
 import board
-import digitalio
+from digitalio import DigitalInOut
 
 # if running this on a ATSAMD21 M0 based board
 # from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
 
-# select your digital input pin that's connected to the IRQ pin on the nRF4L01
-irq_pin = digitalio.DigitalInOut(board.D12)
-irq_pin.switch_to_input()  # make sure its an input object
-# change these (digital output) pins accordingly
-CE_PIN = digitalio.DigitalInOut(board.D4)
-CSN_PIN = digitalio.DigitalInOut(board.D5)
+# invalid default values for scoping
+SPI_BUS, CSN_PIN, CE_PIN = (None, None, None)
 
-# using board.SPI() automatically selects the MCU's
-# available SPI pins, board.SCK, board.MOSI, board.MISO
-SPI_BUS = board.SPI()  # init spi bus object
+try:  # on Linux
+    import spidev
+
+    SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
+    CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
+    CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
+    IRQ_PIN = DigitalInOut(board.D24)  # using gpio24 (BCM numbering)
+
+except ImportError:  # on CircuitPython only
+    # using board.SPI() automatically selects the MCU's
+    # available SPI pins, board.SCK, board.MOSI, board.MISO
+    SPI_BUS = board.SPI()  # init spi bus object
+
+    # change these (GPIO) pins accordingly
+    CE_PIN = DigitalInOut(board.D4)
+    CSN_PIN = DigitalInOut(board.D5)
+    IRQ_PIN = DigitalInOut(board.D12)
+
+# select your digital input pin that's connected to the IRQ pin on the nRF4L01
+IRQ_PIN.switch_to_input()  # make sure its an input object
 
 # we'll be using the dynamic payload size feature (enabled by default)
 # initialize the nRF24L01 on the spi bus object
@@ -53,21 +66,30 @@ nrf.open_tx_pipe(address[radio_number])  # always uses pipe 0
 nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
 
 
-def _ping_and_prompt():
+def _ping_and_prompt() -> bool:
     """transmit 1 payload, wait till irq_pin goes active, print IRQ status
     flags."""
-    nrf.ce_pin = 1  # tell the nRF24L01 to prepare sending a single packet
-    time.sleep(0.00001)  # mandatory 10 microsecond pulse starts transmission
-    nrf.ce_pin = 0  # end 10 us pulse; use only 1 buffer from TX FIFO
-    while irq_pin.value:  # IRQ pin is active when LOW
-        pass
-    print("IRQ pin went active LOW.")
+    nrf.ce_pin = True  # tell the nRF24L01 to prepare sending a single packet
+    # There is a mandatory 10 microsecond pulse to start transmission.
+    # We'll leave ce_pin True until ACK packet is received or transmission failed.
+    timeout = time.monotonic() + 1
+    while IRQ_PIN.value:
+        # IRQ pin is active when LOW
+        if time.monotonic() > timeout:
+            break
+    nrf.ce_pin = False  # exits active TX mode (ignores ACK packets also)
+    if IRQ_PIN.value:
+        print("   IRQ pin was not triggered!")
+        return False
+    # else:
+    print("    IRQ pin went active LOW.")
     nrf.update()  # update irq_d? status flags
     print(
-        "\tirq_ds: {}, irq_dr: {}, irq_df: {}".format(
+        "    irq_ds: {}, irq_dr: {}, irq_df: {}".format(
             nrf.irq_ds, nrf.irq_dr, nrf.irq_df
         )
     )
+    return True
 
 
 def master():
@@ -83,16 +105,16 @@ def master():
     # on data ready test
     print("\nConfiguring IRQ pin to only ignore 'on data sent' event")
     nrf.interrupt_config(data_sent=False)
-    print("    Pinging slave node for an ACK payload...", end=" ")
-    _ping_and_prompt()  # CE pin is managed by this function
-    print('\t"on data ready" event test {}successful'.format("un" * nrf.irq_dr))
+    print("  Pinging slave node for an ACK payload...")
+    if _ping_and_prompt():  # CE pin is managed by this function
+        print('  "on data ready" event test', "passed" if nrf.irq_dr else "failed")
 
     # on data sent test
     print("\nConfiguring IRQ pin to only ignore 'on data ready' event")
     nrf.interrupt_config(data_recv=False)
-    print("    Pinging slave node again...             ", end=" ")
-    _ping_and_prompt()  # CE pin is managed by this function
-    print('\t"on data sent" event test {}successful'.format("un" * nrf.irq_ds))
+    print("  Pinging slave node again...")
+    if _ping_and_prompt():  # CE pin is managed by this function
+        print('  "on data sent" event test', "passed" if nrf.irq_ds else "failed")
 
     # trigger slave node to exit by filling the slave node's RX FIFO
     print("\nSending one extra payload to fill RX FIFO on slave node.")
@@ -108,11 +130,11 @@ def master():
     # on data fail test
     print("\nConfiguring IRQ pin to go active for all events.")
     nrf.interrupt_config()
-    print("    Sending a ping to inactive slave node...", end=" ")
+    print("  Sending a ping to inactive slave node...")
     nrf.flush_tx()  # just in case any previous tests failed
     nrf.write(b"Dummy", write_only=True)  # CE pin is left LOW
-    _ping_and_prompt()  # CE pin is managed by this function
-    print('\t"on data failed" event test {}successful'.format("un" * nrf.irq_df))
+    if _ping_and_prompt():  # CE pin is managed by this function
+        print('  "on data failed" event test', "passed" if nrf.irq_df else "failed")
     nrf.flush_tx()  # flush artifact payload in TX FIFO from last test
     # all 3 ACK payloads received were 4 bytes each, and RX FIFO is full
     # so, fetching 12 bytes from the RX FIFO also flushes RX FIFO
@@ -130,12 +152,14 @@ def slave(timeout=6):  # will listen for 6 seconds before timing out
     while not nrf.fifo(0, 0) and time.monotonic() - start_timer < timeout:
         # if RX FIFO is not full and timeout is not reached, then keep going
         pass
-    nrf.listen = False  # put nRF24L01 in Standby-I mode when idling
+    time.sleep(0.0005)  # wait for ACK packet to finish transmitting
+    # recommended behavior is to keep in TX mode when in idle
+    nrf.listen = False  # enter inactive TX mode
+    # entering TX mode (when ACK payloads are enabled) also flushes the TX FIFO
     if not nrf.fifo(False, True):  # if RX FIFO is not empty
         # all 3 payloads received were 5 bytes each, and RX FIFO is full
         # so, fetching 15 bytes from the RX FIFO also flushes RX FIFO
         print("Complete RX FIFO:", nrf.read(15))
-    nrf.flush_tx()  # discard any pending ACK payloads
 
 
 def set_role():
@@ -165,8 +189,7 @@ def set_role():
 
 
 print(
-    "    nRF24L01 Interrupt pin test\n"
-    "    Make sure the IRQ pin is connected to the MCU"
+    "    nRF24L01 Interrupt pin test\n    Make sure the IRQ pin is connected to the MCU"
 )
 
 if __name__ == "__main__":

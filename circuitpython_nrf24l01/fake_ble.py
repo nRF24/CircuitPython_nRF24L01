@@ -195,7 +195,7 @@ class FakeBLE(RF24):
         self._addr_len = 4  # use only 4 byte address length
         self._tx_address[:4] = b"\x71\x91\x7d\x6b"
         with self:
-            super().open_rx_pipe(0, b"\x71\x91\x7d\x6b\0")
+            super().open_rx_pipe(1, b"\x71\x91\x7d\x6b\0")
         #: The internal queue of received BLE payloads' data.
         self.rx_queue: List[QueueElement] = []
         self.rx_cache: bytearray = bytearray(0)

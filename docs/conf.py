@@ -44,7 +44,7 @@ html_baseurl = os.environ.get(
 # General information about the project.
 project = "CircuitPython nRF24L01"
 author = "Brendan Doherty"
-copyright = f'{time.strftime("%Y", time.localtime())} {author}'
+copyright = f"{time.strftime('%Y', time.localtime())} {author}"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -121,12 +121,9 @@ html_theme = "sphinx_immaterial"
 
 html_theme_options = {
     "features": [
-        # "navigation.expand",
         "navigation.tabs",
-        # "toc.integrate",
         "navigation.sections",
         "navigation.instant",
-        # "header.autohide",
         "navigation.top",
         # "search.highlight",
         "search.share",
@@ -164,6 +161,13 @@ html_theme_options = {
     ],
     "palette": [
         {
+            "media": "(prefers-color-scheme)",
+            "toggle": {
+                "icon": "material/brightness-auto",
+                "name": "Switch to dark mode",
+            },
+        },
+        {
             "media": "(prefers-color-scheme: dark)",
             "scheme": "slate",
             "primary": "lime",
@@ -188,8 +192,6 @@ html_theme_options = {
     "site_url": html_baseurl,
     "repo_url": "https://github.com/nRF24/CircuitPython_nRF24L01/",
     "repo_name": "CircuitPython_nRF24L01",
-    # If False, expand all TOC entries
-    "globaltoc_collapse": False,
     "toc_title_is_page_title": True,
 }
 
@@ -262,6 +264,3 @@ html_favicon = "_static/new_favicon.ico"
 
 # project logo
 html_logo = "_static/Logo large.png"
-
-# Output file base name for HTML help builder.
-htmlhelp_basename = "nRF24L01_Library_doc"
