@@ -2,8 +2,9 @@ name: Build CI
 
 on:
   pull_request:
-    types: [opened, reopened]
+    branches: [main, master]
   push:
+    branches: [main, master]
 
 jobs:
   build-wheel:
@@ -138,9 +139,10 @@ jobs:
           python-version: "3.x"
 
       - name: Install deps
-        run: |
+        run: |-
           pip install -r docs/requirements.txt
           pip install -e .
+          sudo apt-get update
           sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 graphviz
 
       - name: Build docs
