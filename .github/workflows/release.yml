@@ -32,12 +32,12 @@ jobs:
           python-version: "3.x"
 
       - name: Checkout Current Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Checkout tools repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: adafruit/actions-ci-circuitpython-libs
           path: actions-ci
@@ -68,7 +68,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
