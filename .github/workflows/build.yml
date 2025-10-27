@@ -23,7 +23,7 @@ jobs:
         run: pipx run twine check dist/*
 
       - name: Archive wheel
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: wheel
           path: ${{ github.workspace }}/dist/
@@ -121,7 +121,7 @@ jobs:
         run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --package_folder_prefix ${{ steps.pkg-name.outputs.pkg-name }} --library_location .
 
       - name: Archive bundles
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: bundles
           path: ${{ github.workspace }}/bundles/
@@ -150,7 +150,7 @@ jobs:
         run: sphinx-build -E -W -b html . _build/html
 
       - name: Archive docs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: docs
           path: ${{ github.workspace }}/docs/_build/html
