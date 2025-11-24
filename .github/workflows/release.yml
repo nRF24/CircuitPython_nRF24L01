@@ -1,30 +1,62 @@
 name: Release
 
 on:
-  release:
-    types: [published]
+  push:
+    tags: ['v*']
+    branches: [master]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
-  upload-release-assets:
+  build-pypi-distributions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Build PyPI distributions
+        run: pipx run build
+
+      - name: Check distributions
+        # this is done automatically when deploying to PyPI.
+        # We only do this here for non-release builds.
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') && github.event_name != 'workflow_dispatch' }}
+        run: pipx run twine check dist/*
+
+      - name: Archive distributions
+        uses: actions/upload-artifact@v5
+        with:
+          name: dist
+          path: ./dist/*
+
+  build-circuit-py-bundles:
     runs-on: ubuntu-latest
     steps:
       - name: Translate Repo Name For Build Tools filename_prefix
         id: repo-name
+        env:
+          REPO_NAME: ${{ github.event.repository.name }}
         run: |
-          echo repo-name=$(
-          echo ${{ github.repository }} |
-          awk -F '\/' '{ print tolower($2) }' |
-          tr '_' '-'
-          ) >> $GITHUB_OUTPUT
+          echo repo-name=$(echo "${REPO_NAME}" |
+          awk '{ print tolower($1) }' |
+          tr '_' '-') >> $GITHUB_OUTPUT
 
       - name: Translate Repo Name For Build Tools package_prefix
         id: pkg-name
-        run: |
-          echo pkg-name=$(
-          echo ${{ github.repository }} |
-          awk -F '\/' '{ print tolower($2) }'
-          ) >> $GITHUB_OUTPUT
+        env:
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: >-
+          echo pkg-name=$(echo "${REPO_NAME}" |
+          awk '{ print tolower($1) }') >> "${GITHUB_OUTPUT}"
 
       - name: Set up Python 3.x
         uses: actions/setup-python@v6
@@ -37,65 +69,63 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Checkout tools repo
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-          repository: adafruit/actions-ci-circuitpython-libs
-          path: actions-ci
-
-      - name: Install deps
-        run: |
-          source actions-ci/install.sh
+      - name: Install CircuitPython Linux deps
+        run: |-
+          sudo apt-get update
+          sudo apt-get install libudev-dev libusb-1.0
+          sudo apt-get install -y gettext
 
       - name: Build assets
-        run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --package_folder_prefix ${{ steps.pkg-name.outputs.pkg-name }} --library_location .
+        env:
+          FILENAME_PREFIX: ${{ steps.repo-name.outputs.repo-name }}
+          PACKAGE_FOLDER_PREFIX: ${{ steps.pkg-name.outputs.pkg-name }}
+        run: >-
+          pipx run --spec circuitpython-build-tools
+          circuitpython-build-bundles
+          --filename_prefix "${FILENAME_PREFIX}"
+          --package_folder_prefix "${PACKAGE_FOLDER_NAME}"
+          --library_location .
 
       - name: Archive bundles
-        if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v5
         with:
           name: bundles
           path: ${{ github.workspace }}/bundles/
 
-      - name: Upload Release Assets
-        if: github.event_name == 'release'
-        uses: shogo82148/actions-upload-release-asset@v1
+  upload-release-assets:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      # needed to upload release assets
+      contents: write
+    needs: [build-circuit-py-bundles]
+    steps:
+      - name: Download bundles
+        uses: actions/download-artifact@v5
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: "bundles/*"
+          name: bundles
+      - name: Upload Release Assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |-
+          assets=$(ls bundles/*.zip bundles/*.json)
+          gh release upload "${TAG}" ${assets}
 
   upload-pypi:
+    if: (github.ref == 'refs/heads/master' && github.event_name == 'workflow_dispatch') || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    needs: [build-pypi-distributions]
     permissions:
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - name: Download distributions
+        uses: actions/download-artifact@v5
         with:
-          persist-credentials: false
-          fetch-depth: 0
+          name: dist
 
-      - uses: actions/setup-python@v6
+      - name: Publish package (to ${{github.event_name == 'workflow_dispatch' && 'Test' || '' }}PyPI)
+        if: github.repository == 'nRF24/CircuitPython_nRF24L01'
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
         with:
-          python-version: '3.x'
-
-      - name: Install build tools
-        run: |
-          python -m pip install --upgrade pip
-          pip install build twine
-
-      - name: Build distributions
-        run: python -m build
-
-      - name: Check distributions
-        run: twine check dist/*
-
-      - name: Publish package (to TestPyPI)
-        if: github.event_name == 'workflow_dispatch' && github.repository == 'nRF24/CircuitPython_nRF24L01'
-        uses: pypa/gh-action-pypi-publish@v1.13.0
-        with:
-          repository-url: https://test.pypi.org/legacy/
-
-      - name: Publish package (to PyPI)
-        if: github.event_name != 'workflow_dispatch' && github.repository == 'nRF24/CircuitPython_nRF24L01'
-        uses: pypa/gh-action-pypi-publish@v1.13.0
+          repository-url: https://${{github.event_name == 'workflow_dispatch' && 'test' || 'upload' }}.pypi.org/legacy/

@@ -2,38 +2,16 @@ name: Build CI
 
 on:
   pull_request:
-    branches: [main, master]
+    branches: [master]
   push:
-    branches: [main, master]
+    branches: [master]
+
+permissions: {}
 
 jobs:
-  build-wheel:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.x"
-
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Build wheel
-        run: pip wheel -w dist --no-deps .
-
-      - name: check dist
-        run: pipx run twine check dist/*
-
-      - name: Archive wheel
-        uses: actions/upload-artifact@v5
-        with:
-          name: wheel
-          path: ${{ github.workspace }}/dist/
-
   linters:
     runs-on: ubuntu-latest
     steps:
-
       - uses: actions/setup-python@v6
         id: python-setup
         with:
@@ -52,11 +30,8 @@ jobs:
       - name: Install pre-commit and deps
         run: pip install pre-commit -r requirements.txt
 
-      - name: Setup problem matchers
-        uses: adafruit/circuitpython-action-library-ci-problem-matchers@v1
-
       - name: Pre-commit hooks
-        run: pre-commit run --all-files
+        run: pre-commit run --all-files --show-diff-on-failure
 
   test-coverage:
     runs-on: ubuntu-latest
@@ -79,61 +54,12 @@ jobs:
           coverage xml
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           files: ./coverage.xml
           verbose: true # optional (default = false)
-
-  build-bundles:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Translate Repo Name For Build Tools filename_prefix
-        id: repo-name
-        run: |
-          echo repo-name=$(
-          echo ${{ github.repository }} |
-          awk -F '\/' '{ print tolower($2) }' |
-          tr '_' '-'
-          ) >> $GITHUB_OUTPUT
-
-      - name: Translate Repo Name For Build Tools package_prefix
-        id: pkg-name
-        run: |
-          echo pkg-name=$(
-          echo ${{ github.repository }} |
-          awk -F '\/' '{ print tolower($2) }'
-          ) >> $GITHUB_OUTPUT
-
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
-
-      - name: Checkout tools repo
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-          repository: adafruit/actions-ci-circuitpython-libs
-          path: actions-ci
-
-      - name: Install deps
-        run: |
-          source actions-ci/install.sh
-
-      - name: Build assets
-        run: circuitpython-build-bundles --filename_prefix ${{ steps.repo-name.outputs.repo-name }} --package_folder_prefix ${{ steps.pkg-name.outputs.pkg-name }} --library_location .
-
-      - name: Archive bundles
-        uses: actions/upload-artifact@v5
-        with:
-          name: bundles
-          path: ${{ github.workspace }}/bundles/
 
   build-docs:
     runs-on: ubuntu-latest
