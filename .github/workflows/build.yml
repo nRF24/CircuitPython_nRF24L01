@@ -14,7 +14,9 @@ jobs:
         with:
           python-version: "3.x"
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Build wheel
         run: pip wheel -w dist --no-deps .
@@ -37,7 +39,9 @@ jobs:
         with:
           python-version: "3.x"
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Cache pre-commit environments
         uses: actions/cache@v4
@@ -57,7 +61,9 @@ jobs:
   test-coverage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-python@v6
         with:
@@ -100,7 +106,9 @@ jobs:
           awk -F '\/' '{ print tolower($2) }'
           ) >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Set up Python 3.x
         uses: actions/setup-python@v6
@@ -108,8 +116,9 @@ jobs:
           python-version: "3.11"
 
       - name: Checkout tools repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
+          persist-credentials: false
           repository: adafruit/actions-ci-circuitpython-libs
           path: actions-ci
 
@@ -131,7 +140,9 @@ jobs:
     env:
       QT_QPA_PLATFORM: offscreen
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Set up Python 3.x
         uses: actions/setup-python@v6
