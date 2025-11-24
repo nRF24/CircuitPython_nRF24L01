@@ -20,17 +20,23 @@ jobs:
           fetch-depth: 0
 
       - uses: actions/setup-python@v6
+        id: python-setup
         with:
           python-version: "3.x"
 
+      - uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7.1.4
+        with:
+          python-version: ${{ steps.python-setup.outputs.python-version }}
+          enable-cache: false # prevent cache poisoning
+
       - name: Build PyPI distributions
-        run: pipx run build
+        run: uvx --from build pyproject-build
 
       - name: Check distributions
         # this is done automatically when deploying to PyPI.
         # We only do this here for non-release builds.
         if: ${{ !startsWith(github.ref, 'refs/tags/v') && github.event_name != 'workflow_dispatch' }}
-        run: pipx run twine check dist/*
+        run: uvx twine check dist/*
 
       - name: Archive distributions
         uses: actions/upload-artifact@v5
@@ -58,16 +64,21 @@ jobs:
           echo pkg-name=$(echo "${REPO_NAME}" |
           awk '{ print tolower($1) }') >> "${GITHUB_OUTPUT}"
 
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.x"
-
       - name: Checkout Current Repo
         uses: actions/checkout@v6
         with:
           persist-credentials: false
           fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        id: python-setup
+        with:
+          python-version: "3.x"
+
+      - uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7.1.4
+        with:
+          python-version: ${{ steps.python-setup.outputs.python-version }}
+          enable-cache: false # prevent cache poisoning
 
       - name: Install CircuitPython Linux deps
         run: |-
@@ -80,7 +91,7 @@ jobs:
           FILENAME_PREFIX: ${{ steps.repo-name.outputs.repo-name }}
           PACKAGE_FOLDER_PREFIX: ${{ steps.pkg-name.outputs.pkg-name }}
         run: >-
-          pipx run --spec circuitpython-build-tools
+          uvx --from circuitpython-build-tools
           circuitpython-build-bundles
           --filename_prefix "${FILENAME_PREFIX}"
           --package_folder_prefix "${PACKAGE_FOLDER_NAME}"
@@ -113,7 +124,7 @@ jobs:
           gh release upload "${TAG}" ${assets}
 
   upload-pypi:
-    if: (github.ref == 'refs/heads/master' && github.event_name == 'workflow_dispatch') || startsWith(github.ref, 'refs/tags/v')
+    if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     needs: [build-pypi-distributions]
     permissions:
@@ -124,8 +135,8 @@ jobs:
         with:
           name: dist
 
-      - name: Publish package (to ${{github.event_name == 'workflow_dispatch' && 'Test' || '' }}PyPI)
+      - name: Publish package (to ${{ !startsWith(github.ref, 'refs/tags/v') && 'Test' || '' }}PyPI)
         if: github.repository == 'nRF24/CircuitPython_nRF24L01'
         uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
         with:
-          repository-url: https://${{github.event_name == 'workflow_dispatch' && 'test' || 'upload' }}.pypi.org/legacy/
+          repository-url: https://${{ startsWith(github.ref, 'refs/tags/v') && 'upload' || 'test' }}.pypi.org/legacy/

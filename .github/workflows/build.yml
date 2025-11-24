@@ -12,14 +12,18 @@ jobs:
   linters:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
       - uses: actions/setup-python@v6
         id: python-setup
         with:
           python-version: "3.x"
 
-      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7.1.4
         with:
-          persist-credentials: false
+          python-version: ${{ steps.python-setup.outputs.python-version }}
 
       - name: Cache pre-commit environments
         uses: actions/cache@v4
@@ -27,11 +31,8 @@ jobs:
           path: '~/.cache/pre-commit'
           key: pre-commit-${{ steps.python-setup.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
 
-      - name: Install pre-commit and deps
-        run: pip install pre-commit -r requirements.txt
-
-      - name: Pre-commit hooks
-        run: pre-commit run --all-files --show-diff-on-failure
+      - name: Run pre-commit hooks
+        run: uv run pre-commit run --all-files --show-diff-on-failure
 
   test-coverage:
     runs-on: ubuntu-latest
@@ -41,17 +42,24 @@ jobs:
           persist-credentials: false
 
       - uses: actions/setup-python@v6
+        id: python-setup
         with:
           python-version: "3.x"
 
+      - uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7.1.4
+        with:
+          python-version: ${{ steps.python-setup.outputs.python-version }}
+
       - name: Install testing tools
-        run: pip install -r requirements.txt -r tests/requirements.txt
+        run: uv sync --group tests
 
       - name: Collect coverage
+        env:
+          UV_NO_SYNC: 1
         run: |
-          coverage run -m pytest
-          coverage report
-          coverage xml
+          uv run coverage run -m pytest
+          uv run coverage report
+          uv run coverage xml
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
@@ -70,21 +78,26 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6
+        id: python-setup
         with:
           python-version: "3.x"
 
+      - uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7.1.4
+        with:
+          python-version: ${{ steps.python-setup.outputs.python-version }}
+
       - name: Install deps
         run: |-
-          pip install -r docs/requirements.txt
-          pip install -e .
+          uv sync --group docs
           sudo apt-get update
           sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 graphviz
 
       - name: Build docs
         working-directory: docs
-        run: sphinx-build -E -W -b html . _build/html
+        env:
+          UV_NO_SYNC: 1
+        run: uv run sphinx-build -E -W -b html . _build/html
 
       - name: Archive docs
         uses: actions/upload-artifact@v5

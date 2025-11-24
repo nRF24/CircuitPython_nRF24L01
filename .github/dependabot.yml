@@ -17,3 +17,14 @@ updates:
       actions:
         patterns:
           - "*"
+  - package-ecosystem: "uv"
+    # directory of `uv.lock` file
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 5
+    groups:
+      uv-pip:
+        patterns:
+          - "*"

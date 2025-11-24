@@ -70,6 +70,7 @@ words:
   - Pluss
   - pypa
   - pypi
+  - pyproject
   - pytest
   - ranksep
   - raspberrypi
