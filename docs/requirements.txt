@@ -1,2 +1,0 @@
-sphinx-immaterial[keys]
-sphinx-social-cards

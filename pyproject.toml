@@ -35,7 +35,13 @@ classifiers = [
     "Topic :: System :: Hardware",
     "Programming Language :: Python :: 3",
 ]
-dynamic = ["version", "dependencies"]
+dynamic = ["version"]
+dependencies = [
+    "adafruit-blinka>=8.68.0",
+    "adafruit-circuitpython-busdevice>=5.2.14",
+    "spidev>=3.8 ; (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'armv6l' and sys_platform == 'linux') or (platform_machine == 'armv7l' and sys_platform == 'linux')",
+    "typing-extensions>=4.15.0",
+]
 
 [project.urls]
 Documentation = "https://circuitpython-nrf24l01.readthedocs.io"
@@ -44,9 +50,6 @@ Tracker = "https://github.com/2bndy5/CircuitPython_nRF24L01/issues"
 
 [tool.setuptools]
 packages = ["circuitpython_nrf24l01"]
-
-[tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools_scm]
 # It would be nice to include the commit hash in the version, but that
@@ -86,4 +89,19 @@ exclude_lines = [
     "self._spi = SPIDevice",
     "radio hardware not responding",
     "elif not after_toggle",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18.2",
+    "pre-commit>=4.3.0",
+    "ruff>=0.14.6",
+]
+docs = [
+    "sphinx-immaterial[keys]>=0.12.5",
+    "sphinx-social-cards>=0.5.0",
+]
+tests = [
+    "coverage[toml]>=7.10.7",
+    "pytest>=8.4.2",
 ]
