@@ -24,6 +24,7 @@ words:
   - CIRCUITPY
   - circuitpython
   - coef
+  - cooldown
   - datasheet
   - dhcplist
   - digitalio
@@ -49,6 +50,8 @@ words:
   - labelloc
   - LENG
   - levelname
+  - libudev
+  - libusb
   - Mbps
   - microcontroller
   - microcontrollers
@@ -63,7 +66,10 @@ words:
   - newrank
   - penwidth
   - Pinout
+  - pipx
   - Pluss
+  - pypa
+  - pypi
   - pytest
   - ranksep
   - raspberrypi
@@ -78,6 +84,7 @@ words:
   - spidev
   - testpaths
   - toctree
+  - tolower
   - twopi
   - urandom
   - venv
