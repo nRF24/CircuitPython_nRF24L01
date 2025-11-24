@@ -34,11 +34,13 @@ jobs:
       - name: Checkout Current Repo
         uses: actions/checkout@v6
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Checkout tools repo
         uses: actions/checkout@v6
         with:
+          persist-credentials: false
           repository: adafruit/actions-ci-circuitpython-libs
           path: actions-ci
 
@@ -70,6 +72,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - uses: actions/setup-python@v6
