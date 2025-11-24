@@ -790,7 +790,7 @@ class RF24:
         return (3 - ((self._rf_setup & 6) >> 1)) * -6
 
     @pa_level.setter
-    def pa_level(self, power: Union[bool, Tuple[bool, int]]):
+    def pa_level(self, power: Union[int, Tuple[bool, int]]):
         lna_bit = True
         if isinstance(power, (list, tuple)) and len(power) > 1:
             lna_bit, power = bool(power[1]), int(power[0])  # type: ignore[assignment]

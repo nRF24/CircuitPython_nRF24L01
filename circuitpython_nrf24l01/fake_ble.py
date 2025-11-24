@@ -400,12 +400,12 @@ class ServiceData:
         return self._type
 
     @property
-    def data(self) -> Union[int, float, str, bytes, bytearray]:
+    def data(self) -> Union[bytes, bytearray]:
         """This attribute is a `bytearray` or `bytes` object."""
         return self._data
 
     @data.setter
-    def data(self, value: Union[int, float, str, bytes, bytearray]):
+    def data(self, value: Union[bytes, bytearray]) -> None:
         self._data = value  # type: ignore[assignment]
 
     @property
@@ -441,7 +441,7 @@ class TemperatureServiceData(ServiceData):
         return struct.unpack("<i", self._data[:3] + b"\0")[0] * 10**-2
 
     @data.setter
-    def data(self, value: Union[float, bytes, bytearray]):
+    def data(self, value: Union[float, bytes, bytearray]) -> None:
         if isinstance(value, float):
             value = struct.pack("<i", int(value * 100) & 0xFFFFFF)
             self._data = value[:3] + bytes([0xFE])
@@ -465,7 +465,7 @@ class BatteryServiceData(ServiceData):
         return int(self._data[0])
 
     @data.setter
-    def data(self, value: Union[int, bytes, bytearray]):
+    def data(self, value: Union[int, bytes, bytearray]) -> None:
         if isinstance(value, int):
             self._data = struct.pack("B", value)
         elif isinstance(value, (bytes, bytearray)):
@@ -518,7 +518,7 @@ class UrlServiceData(ServiceData):
         return value
 
     @data.setter
-    def data(self, value: Union[str, bytes, bytearray]):
+    def data(self, value: Union[str, bytes, bytearray]) -> None:
         if isinstance(value, str):
             for i, b_code in enumerate(UrlServiceData.codex_prefix):
                 if value.startswith(b_code):
