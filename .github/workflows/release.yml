@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: "3.x"
 
-      - uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+      - uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b # v7.3.0
         with:
           python-version: ${{ steps.python-setup.outputs.python-version }}
           enable-cache: false # prevent cache poisoning
@@ -75,7 +75,7 @@ jobs:
         with:
           python-version: "3.x"
 
-      - uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+      - uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b # v7.3.0
         with:
           python-version: ${{ steps.python-setup.outputs.python-version }}
           enable-cache: false # prevent cache poisoning
