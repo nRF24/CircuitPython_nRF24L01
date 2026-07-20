@@ -16,7 +16,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6.3.0
         id: python-setup
         with:
           python-version: "3.x"
@@ -41,7 +41,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6.3.0
         id: python-setup
         with:
           python-version: "3.x"
@@ -78,7 +78,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6.3.0
         id: python-setup
         with:
           python-version: "3.x"
