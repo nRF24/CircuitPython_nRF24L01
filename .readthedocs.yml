@@ -11,7 +11,7 @@ version: 2
 build:
   os: ubuntu-22.04
   tools:
-    python: latest
+    python: "3.14"
   apt_packages:
     - libgl1-mesa-dev
     - libxkbcommon-x11-0
