@@ -81,7 +81,7 @@ jobs:
       - uses: actions/setup-python@v7
         id: python-setup
         with:
-          python-version: "3.x"
+          python-version: "3.14"
 
       - uses: astral-sh/setup-uv@18d369b23da25a81e9458561248e1aafff6a70fa # v10.3.1
         with:
@@ -91,7 +91,12 @@ jobs:
         run: |-
           uv sync --group docs
           sudo apt-get update
-          sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 graphviz
+          packages=(libgl1-mesa-dev libxkbcommon-x11-0 graphviz)
+          if apt-cache show libgvplugin-neato-layout8 > /dev/null 2>&1; then
+            packages+=(libgvplugin-neato-layout8)
+          fi
+          sudo apt install -y "${packages[@]}"
+          dot -V
 
       - name: Build docs
         working-directory: docs
