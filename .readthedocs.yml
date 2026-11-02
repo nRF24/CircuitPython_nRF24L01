@@ -16,6 +16,7 @@ build:
     - libgl1-mesa-dev
     - libxkbcommon-x11-0
     - graphviz
+    - libgvplugin-neato-layout8
   jobs:
     pre_create_environment:
       - >-
